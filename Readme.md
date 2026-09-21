@@ -1,0 +1,2 @@
+## LUNA
+**Luna** is a webapp built for *NASA Space App Challenge 2026*. It is one kind of CLPS (Commercial Lunar Payload Services) lunar browser. Our challenge is to create an intuitive tool that lets mission planners, educators, and the public compare landing sites and dates quickly, visualizing Sun and Earth positions relative to the horizon to assess power generation potential and direct-to-Earth communication windows.
