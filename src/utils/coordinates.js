@@ -113,3 +113,101 @@ export function parseLunarCoordinates(input) {
 
   return null;
 }
+
+/**
+ * Calculates great-circle geodesic distance between two selenographic points in kilometers.
+ * Lunar radius = 1737.4 km.
+ * 
+ * @param {number} lon1 
+ * @param {number} lat1 
+ * @param {number} lon2 
+ * @param {number} lat2 
+ * @returns {number} Distance in kilometers
+ */
+export function calculateLunarDistance(lon1, lat1, lon2, lat2) {
+  const R = 1737.4; // Mean Moon radius in km
+  const toRad = (d) => (d * Math.PI) / 180;
+
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const rLat1 = toRad(lat1);
+  const rLat2 = toRad(lat2);
+
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(rLat1) * Math.cos(rLat2) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+/**
+ * Determines the lunar hemisphere, quadrant, and region metadata for a selenographic coordinate.
+ * 
+ * @param {number} lon 
+ * @param {number} lat 
+ * @returns {{ hemisphere: string, face: string, quadrant: string, regionDescription: string }}
+ */
+export function getLunarRegionInfo(lon, lat) {
+  const normLon = normalizeLongitude(lon);
+  const normLat = clampLatitude(lat);
+
+  const latHemisphere = normLat >= 0 ? 'Northern Hemisphere' : 'Southern Hemisphere';
+  const isNearside = Math.abs(normLon) <= 90;
+  const face = isNearside ? 'Lunar Nearside (Earth-Facing)' : 'Lunar Farside';
+
+  let quadrant = '';
+  if (normLat >= 0 && normLon >= 0 && normLon <= 90) quadrant = 'Nearside Northeast (Quadrant I)';
+  else if (normLat >= 0 && normLon < 0 && normLon >= -90) quadrant = 'Nearside Northwest (Quadrant II)';
+  else if (normLat < 0 && normLon < 0 && normLon >= -90) quadrant = 'Nearside Southwest (Quadrant III)';
+  else if (normLat < 0 && normLon >= 0 && normLon <= 90) quadrant = 'Nearside Southeast (Quadrant IV)';
+  else if (normLat >= 0 && normLon > 90) quadrant = 'Farside Northeast';
+  else if (normLat >= 0 && normLon < -90) quadrant = 'Farside Northwest';
+  else if (normLat < 0 && normLon > 90) quadrant = 'Farside Southeast';
+  else quadrant = 'Farside Southwest';
+
+  let regionDescription = `${face} • ${latHemisphere}`;
+  if (normLat <= -75) regionDescription = `South Polar Region (Artemis Exploration Zone) • ${face}`;
+  else if (normLat >= 75) regionDescription = `North Polar Region • ${face}`;
+
+  return {
+    hemisphere: latHemisphere,
+    face,
+    quadrant,
+    regionDescription,
+  };
+}
+
+/**
+ * Finds the nearest cataloged lunar feature to a given selenographic coordinate.
+ * 
+ * @param {number} lon 
+ * @param {number} lat 
+ * @param {Array} featureCatalog 
+ * @returns {{ feature: Object, distanceKm: number }|null}
+ */
+export function findNearestLunarFeature(lon, lat, featureCatalog = []) {
+  if (!featureCatalog || featureCatalog.length === 0) return null;
+
+  let minDistance = Infinity;
+  let nearestFeature = null;
+
+  for (const feat of featureCatalog) {
+    if (typeof feat.longitude === 'number' && typeof feat.latitude === 'number') {
+      const dist = calculateLunarDistance(lon, lat, feat.longitude, feat.latitude);
+      if (dist < minDistance) {
+        minDistance = dist;
+        nearestFeature = feat;
+      }
+    }
+  }
+
+  if (nearestFeature) {
+    return {
+      feature: nearestFeature,
+      distanceKm: Math.round(minDistance * 10) / 10,
+    };
+  }
+
+  return null;
+}

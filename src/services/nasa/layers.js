@@ -96,22 +96,12 @@ export const LUNAR_LAYERS_CATALOG = [
   {
     id: 'lunar-craters',
     name: 'Impact Craters',
-    description: 'Major impact craters with verified diameters, central peaks, and Copernican ray systems.',
+    description: 'Named lunar impact craters cataloged by the IAU, with diameter, depth, and Copernican/Eratosthenian geologic age.',
     type: 'vector',
     category: 'FEATURES',
     visible: true,
     opacity: 1.0,
-    attribution: 'IAU Planetary Nomenclature / USGS Astrogeology',
-  },
-  {
-    id: 'lunar-maria',
-    name: 'Lunar Maria (Seas)',
-    description: 'Dark basaltic plains formed by ancient volcanic flooding during late heavy bombardment.',
-    type: 'vector',
-    category: 'FEATURES',
-    visible: true,
-    opacity: 1.0,
-    attribution: 'NASA / USGS Geologic Investigations',
+    attribution: 'IAU / NASA LROC SOC / USGS Astrogeology',
   },
   {
     id: 'lunar-mountains',
@@ -124,6 +114,16 @@ export const LUNAR_LAYERS_CATALOG = [
     attribution: 'IAU Gazetteer of Planetary Nomenclature',
   },
   {
+    id: 'lunar-maria',
+    name: 'Lunar Maria (Seas)',
+    description: 'Dark basaltic plains formed by ancient volcanic flooding during late heavy bombardment.',
+    type: 'vector',
+    category: 'FEATURES',
+    visible: true,
+    opacity: 1.0,
+    attribution: 'NASA / USGS Geologic Investigations',
+  },
+  {
     id: 'lunar-valleys',
     name: 'Valleys & Rilles',
     description: 'Tectonic graben, volcanic lava tubes, and sinuous rilles traversing the lunar surface.',
@@ -133,28 +133,14 @@ export const LUNAR_LAYERS_CATALOG = [
     opacity: 1.0,
     attribution: 'NASA LROC Science Operations Center',
   },
-
-  // ==========================================
-  // MISSIONS (VECTOR & HIGH-RES INSETS)
-  // ==========================================
   {
-    id: 'apollo-landing-sites',
-    name: 'Apollo Landing Sites',
-    description: 'All 6 crewed Apollo lunar surface landing locations (Apollo 11, 12, 14, 15, 16, 17) with coordinates and EVA routes.',
+    id: 'lunar-landing-sites',
+    name: 'Historic Landing Sites',
+    description: 'Crewed Apollo landing sites and international robotic lunar landing missions (Luna, Surveyor, Chang\'e, Chandrayaan, SLIM, Odysseus).',
     type: 'vector',
-    category: 'MISSIONS',
+    category: 'FEATURES',
     visible: true,
     opacity: 1.0,
-    attribution: 'NASA History Division / NSSDC',
-  },
-  {
-    id: 'robotic-landing-sites',
-    name: 'Robotic & Modern Landers',
-    description: 'Historic and contemporary robotic landers including Luna, Surveyor, Chandrayaan-3, SLIM, Odysseus, and Artemis III zones.',
-    type: 'vector',
-    category: 'MISSIONS',
-    visible: true,
-    opacity: 1.0,
-    attribution: 'NASA / CNSA / ISRO / JAXA / Intuitive Machines',
+    attribution: 'NASA History / NSSDC Master Catalog',
   },
 ];

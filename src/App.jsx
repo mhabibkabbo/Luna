@@ -1,5 +1,6 @@
 import React, { useState, useRef, useCallback } from 'react';
 import LunarMap from './components/map/LunarMap.jsx';
+import LunarGlobe3D from './components/globe/LunarGlobe3D.jsx';
 import SearchBox from './components/search/SearchBox.jsx';
 import CoordinateDisplay from './components/map/CoordinateDisplay.jsx';
 import ScaleControl from './components/map/ScaleControl.jsx';
@@ -8,11 +9,16 @@ import LayerPanel from './components/layers/LayerPanel.jsx';
 import FeaturePanel from './components/features/FeaturePanel.jsx';
 import MeasurementToolbar from './components/measurements/MeasurementToolbar.jsx';
 import TerrainModeBar from './components/map/TerrainModeBar.jsx';
+import MoonPhaseWidget from './components/status/MoonPhaseWidget.jsx';
 import { LUNAR_LAYERS_CATALOG } from './services/nasa/layers.js';
-import { Layers, Ruler, Target } from 'lucide-react';
+import { Layers, Ruler, Target, Globe, Map as MapIcon } from 'lucide-react';
 
 export default function App() {
   const mapRef = useRef(null);
+  const globeRef = useRef(null);
+
+  // View mode: '3d' (Three.js 3D Globe) vs '2d' (OpenLayers Planar Map)
+  const [viewMode, setViewMode] = useState('3d');
 
   // Selenographic coordinates under cursor
   const [pointerCoords, setPointerCoords] = useState({ lon: 0.0, lat: 0.0 });
@@ -26,7 +32,7 @@ export default function App() {
   const [layers, setLayers] = useState(LUNAR_LAYERS_CATALOG);
   const [isLayersOpen, setIsLayersOpen] = useState(false);
 
-  // Distance measurement tool state
+  // Distance measurement tool state (2D mode)
   const [isMeasureActive, setIsMeasureActive] = useState(false);
   const [measurement, setMeasurement] = useState({
     coordinates: [],
@@ -36,13 +42,32 @@ export default function App() {
     isComplete: false,
   });
 
-  // Callbacks from Map
+  // Active controller selector helper
+  const getActiveController = () => (viewMode === '3d' ? globeRef.current : mapRef.current);
+
+  // Custom user-dropped pin state
+  const [customPin, setCustomPin] = useState(null);
+
+  // Callbacks from Map / Globe
   const handlePointerCoordinates = useCallback((lon, lat) => {
     setPointerCoords({ lon, lat });
   }, []);
 
   const handleFeatureSelect = useCallback((featureProps) => {
     setSelectedFeature(featureProps);
+  }, []);
+
+  // Dropped custom pin on 3D globe
+  const handleDropCustomPin = useCallback((pinData) => {
+    setCustomPin(pinData);
+    setSelectedFeature(pinData);
+  }, []);
+
+  // Clear custom pin
+  const handleClearCustomPin = useCallback(() => {
+    setCustomPin(null);
+    globeRef.current?.clearCustomPin();
+    setSelectedFeature((prev) => (prev?.isCustomPin ? null : prev));
   }, []);
 
   const handleMeasurementUpdate = useCallback((measureData) => {
@@ -59,16 +84,16 @@ export default function App() {
     }
   }, []);
 
-  // Map control actions
-  const handleZoomIn = () => mapRef.current?.zoomIn();
-  const handleZoomOut = () => mapRef.current?.zoomOut();
-  const handleResetOverview = () => mapRef.current?.resetOverview();
-  const handleGoToSouthPole = () => mapRef.current?.goToSouthPole(4.8);
+  // Controls actions
+  const handleZoomIn = () => getActiveController()?.zoomIn();
+  const handleZoomOut = () => getActiveController()?.zoomOut();
+  const handleResetOverview = () => getActiveController()?.resetOverview();
+  const handleGoToSouthPole = () => getActiveController()?.goToSouthPole(4.8);
 
   // Search feature selection
   const handleSearchSelect = (feature) => {
     setSelectedFeature(feature);
-    mapRef.current?.selectFeature(feature.id, true);
+    getActiveController()?.selectFeature(feature.id, true);
   };
 
   // Layer toggle handler
@@ -78,17 +103,17 @@ export default function App() {
     );
     const layer = layers.find((l) => l.id === layerId);
     mapRef.current?.setLayerVisibility(layerId, visible, layer?.opacity);
+    globeRef.current?.setLayerVisibility(layerId, visible);
   };
 
   // Toggle all symbols on or off
   const handleToggleAllSymbols = (visible) => {
     const symbolLayerIds = [
-      'lunar-mountains',
       'lunar-craters',
+      'lunar-mountains',
       'lunar-maria',
       'lunar-valleys',
-      'apollo-landing-sites',
-      'robotic-landing-sites',
+      'lunar-landing-sites',
     ];
 
     setLayers((prev) =>
@@ -98,12 +123,8 @@ export default function App() {
     symbolLayerIds.forEach((id) => {
       const layer = layers.find((l) => l.id === id);
       mapRef.current?.setLayerVisibility(id, visible, layer?.opacity);
+      globeRef.current?.setLayerVisibility(id, visible);
     });
-  };
-
-  // Quick jump to coordinates
-  const handleQuickJump = (lon, lat, zoom = 4.5) => {
-    mapRef.current?.flyTo(lon, lat, zoom);
   };
 
   // Layer opacity handler
@@ -114,8 +135,11 @@ export default function App() {
     mapRef.current?.setLayerVisibility(layerId, true, opacity);
   };
 
-  // Measurement mode toggling
+  // Measurement mode toggling (2D)
   const handleToggleMeasure = () => {
+    if (viewMode === '3d') {
+      setViewMode('2d');
+    }
     if (isMeasureActive) {
       setIsMeasureActive(false);
       mapRef.current?.deactivateMeasurement();
@@ -133,23 +157,23 @@ export default function App() {
   // Fly to feature from panel
   const handleZoomHere = (lon, lat) => {
     const zoom = selectedFeature?.type === 'mare' ? 2.5 : 5.0;
-    mapRef.current?.flyTo(lon, lat, zoom);
+    getActiveController()?.flyTo(lon, lat, zoom);
   };
 
   // Start measurement from feature
   const handleMeasureFromFeature = (lon, lat) => {
+    if (viewMode === '3d') setViewMode('2d');
     if (!isMeasureActive) {
       setIsMeasureActive(true);
       mapRef.current?.activateMeasurement();
     }
-    // Pan there
     mapRef.current?.flyTo(lon, lat, 4.0);
   };
 
   return (
     <div className="relative w-screen h-screen overflow-hidden flex flex-col bg-[#050811] text-slate-100 font-sans select-none">
       {/* ========================================================================= */}
-      {/* TOP HEADER / SEARCH NAVIGATION BAR */}
+      {/* TOP HEADER / SEARCH & 2D/3D MODE NAVIGATION */}
       {/* ========================================================================= */}
       <header
         id="app-header"
@@ -159,12 +183,44 @@ export default function App() {
         <div className="flex-1 max-w-lg">
           <SearchBox
             onSelectFeature={handleSearchSelect}
-            onCoordinateSearch={([lon, lat]) => mapRef.current?.flyTo(lon, lat, 4)}
+            onCoordinateSearch={([lon, lat]) => getActiveController()?.flyTo(lon, lat, 4)}
           />
         </div>
 
-        {/* Action button shortcuts */}
+        {/* Action buttons & 2D/3D Globe Switcher */}
         <div className="flex items-center gap-2 shrink-0">
+          {/* 2D / 3D Switcher */}
+          <div className="flex items-center p-0.5 rounded-xl bg-slate-900 border border-slate-800 shadow-inner">
+            <button
+              type="button"
+              id="btn-switch-3d"
+              onClick={() => setViewMode('3d')}
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
+                viewMode === '3d'
+                  ? 'bg-cyan-500 text-white shadow-md shadow-cyan-500/25'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+              title="Switch to Interactive 3D Lunar Globe"
+            >
+              <Globe className="w-3.5 h-3.5" />
+              <span>3D Globe</span>
+            </button>
+            <button
+              type="button"
+              id="btn-switch-2d"
+              onClick={() => setViewMode('2d')}
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
+                viewMode === '2d'
+                  ? 'bg-cyan-500 text-white shadow-md shadow-cyan-500/25'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+              title="Switch to 2D Planar Basemap"
+            >
+              <MapIcon className="w-3.5 h-3.5" />
+              <span>2D Map</span>
+            </button>
+          </div>
+
           <button
             type="button"
             id="btn-header-south-pole"
@@ -177,18 +233,20 @@ export default function App() {
             <span className="text-[10px] font-mono text-cyan-200">90°S</span>
           </button>
 
-          <button
-            type="button"
-            onClick={handleToggleMeasure}
-            className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border transition-all ${
-              isMeasureActive
-                ? 'bg-amber-500 text-white border-amber-400 shadow-lg shadow-amber-500/20'
-                : 'bg-slate-900/90 hover:bg-slate-800 text-slate-300 hover:text-white border-slate-800'
-            }`}
-          >
-            <Ruler className="w-3.5 h-3.5" />
-            <span>Measure</span>
-          </button>
+          {viewMode === '2d' && (
+            <button
+              type="button"
+              onClick={handleToggleMeasure}
+              className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border transition-all ${
+                isMeasureActive
+                  ? 'bg-amber-500 text-white border-amber-400 shadow-lg shadow-amber-500/20'
+                  : 'bg-slate-900/90 hover:bg-slate-800 text-slate-300 hover:text-white border-slate-800'
+              }`}
+            >
+              <Ruler className="w-3.5 h-3.5" />
+              <span>Measure</span>
+            </button>
+          )}
 
           <button
             type="button"
@@ -206,27 +264,37 @@ export default function App() {
       </header>
 
       {/* ========================================================================= */}
-      {/* INTERACTIVE 2D OPENLAYERS MAP CANVAS VIEWPORT */}
+      {/* MAP / GLOBE VIEWPORT */}
       {/* ========================================================================= */}
       <main className="relative w-full h-full pt-14">
-        <LunarMap
-          ref={mapRef}
-          onPointerCoordinates={handlePointerCoordinates}
-          onFeatureSelect={handleFeatureSelect}
-          onMeasurementUpdate={handleMeasurementUpdate}
-          onResolutionChange={handleResolutionChange}
-        />
+        {viewMode === '3d' ? (
+          <LunarGlobe3D
+            ref={globeRef}
+            onPointerCoordinates={handlePointerCoordinates}
+            onFeatureSelect={handleFeatureSelect}
+            onDropCustomPin={handleDropCustomPin}
+            hasCustomPin={!!customPin}
+            onClearCustomPin={handleClearCustomPin}
+          />
+        ) : (
+          <LunarMap
+            ref={mapRef}
+            onPointerCoordinates={handlePointerCoordinates}
+            onFeatureSelect={handleFeatureSelect}
+            onMeasurementUpdate={handleMeasurementUpdate}
+            onResolutionChange={handleResolutionChange}
+          />
+        )}
 
         {/* Floating Feature & Symbol Quick-Toggle Toolbar */}
         <TerrainModeBar
           layers={layers}
           onToggleLayer={handleToggleLayer}
           onToggleAllSymbols={handleToggleAllSymbols}
-          onQuickJump={handleQuickJump}
           onGoToSouthPole={handleGoToSouthPole}
         />
 
-        {/* Floating Map Navigation Controls (Zoom In/Out, Layers, Home Overview) */}
+        {/* Floating Map Navigation Controls */}
         <div className="absolute bottom-16 right-4 z-20">
           <MapControls
             onZoomIn={handleZoomIn}
@@ -255,19 +323,22 @@ export default function App() {
           onClose={() => setSelectedFeature(null)}
           onZoomHere={handleZoomHere}
           onMeasureFromHere={handleMeasureFromFeature}
+          onClearCustomPin={handleClearCustomPin}
         />
 
-        {/* Floating Measurement Toolbar */}
-        <MeasurementToolbar
-          isActive={isMeasureActive}
-          measurement={measurement}
-          onToggleActive={handleToggleMeasure}
-          onClear={handleClearMeasurement}
-        />
+        {/* Floating Measurement Toolbar (2D) */}
+        {viewMode === '2d' && (
+          <MeasurementToolbar
+            isActive={isMeasureActive}
+            measurement={measurement}
+            onToggleActive={handleToggleMeasure}
+            onClear={handleClearMeasurement}
+          />
+        )}
       </main>
 
       {/* ========================================================================= */}
-      {/* BOTTOM SCIENTIFIC STATUS & SCALE BAR */}
+      {/* BOTTOM STATUS & SCALE BAR */}
       {/* ========================================================================= */}
       <footer
         id="app-bottom-bar"
@@ -278,22 +349,29 @@ export default function App() {
           <CoordinateDisplay
             longitude={pointerCoords.lon}
             latitude={pointerCoords.lat}
-            zoom={currentZoom}
+            zoom={viewMode === '3d' ? 3.0 : currentZoom}
           />
         </div>
 
-        {/* Center: Dynamic Lunar Scale Bar */}
-        <div className="hidden sm:flex items-center">
-          <ScaleControl resolution={currentResolution} />
-        </div>
+        {/* Center: Dynamic Scale Bar for 2D */}
+        {viewMode === '2d' && (
+          <div className="hidden sm:flex items-center">
+            <ScaleControl resolution={currentResolution} />
+          </div>
+        )}
 
-        {/* Right: NASA Data Attribution */}
-        <div className="flex items-center gap-2 text-[10px] text-slate-500 font-mono pointer-events-auto">
-          <span className="hidden md:inline">NASA LRO WAC Photo Basemap</span>
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-          <span className="text-slate-400">Live NASA WMTS</span>
+        {/* Right: Real-time Moon Phase Widget & NASA Attribution */}
+        <div className="flex items-center gap-3 pointer-events-auto">
+          <MoonPhaseWidget />
+
+          <div className="hidden lg:flex items-center gap-2 text-[10px] text-slate-500 font-mono">
+            <span className="hidden xl:inline">NASA LRO Mosaic</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="text-slate-400">Live WMTS</span>
+          </div>
         </div>
       </footer>
     </div>
   );
 }
+

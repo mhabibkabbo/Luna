@@ -5,7 +5,7 @@ import { LUNAR_FEATURES } from '../../data/lunarFeatures.js';
 import { LANDING_SITES } from '../../data/landingSites.js';
 import { parseLunarCoordinates } from '../../utils/coordinates.js';
 
-// Combined searchable catalog
+// Searchable catalog including craters, mountains, maria, valleys/rilles, and landing sites
 const COMBINED_SEARCH_DATA = [...LUNAR_FEATURES, ...LANDING_SITES];
 
 /**

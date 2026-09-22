@@ -25,3 +25,13 @@ code, kbd, samp, pre {
 ::-webkit-scrollbar-thumb:hover {
   background: #334155;
 }
+
+/* Cesium Widget UI refinements */
+.cesium-widget, .cesium-widget canvas {
+  width: 100% !important;
+  height: 100% !important;
+  touch-action: none;
+}
+.cesium-viewer-bottom {
+  display: none !important; /* Hide Cesium default bottom container since we provide NASA attribution in footer */
+}

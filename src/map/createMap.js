@@ -55,15 +55,13 @@ export function createLunarMap(targetElement, callbacks = {}) {
     rasterLayersMap.set(layerConfig.id, tileLayer);
   });
 
-  // Create vector layers
+  // Create vector layers (Craters, Mountains, Maria, Valleys & Rilles, Landing Sites)
   const {
-    craterRimsLayer,
     cratersLayer,
     mountainsLayer,
     mariaLayer,
     valleysLayer,
-    apolloSitesLayer,
-    roboticSitesLayer,
+    landingSitesLayer,
     vectorLayers,
     vectorSources,
   } = createLunarVectorLayers();
@@ -74,13 +72,11 @@ export function createLunarMap(targetElement, callbacks = {}) {
   // Assemble all layers in proper stacking order
   const allLayers = [
     ...Array.from(rasterLayersMap.values()),
-    craterRimsLayer,
     mariaLayer,
     valleysLayer,
     cratersLayer,
     mountainsLayer,
-    apolloSitesLayer,
-    roboticSitesLayer,
+    landingSitesLayer,
     measureLayer,
   ];
 
@@ -122,16 +118,15 @@ export function createLunarMap(targetElement, callbacks = {}) {
     callbacks.onMeasurementUpdate
   );
 
-  // Helper to find feature by ID across all sources
+  // Helper to find feature by ID across active sources
   const findFeatureById = (id) => {
     if (!id) return null;
     return (
-      vectorSources.cratersSource.getFeatureById(id) ||
-      vectorSources.mountainsSource.getFeatureById(id) ||
-      vectorSources.mariaSource.getFeatureById(id) ||
-      vectorSources.valleysSource.getFeatureById(id) ||
-      vectorSources.apolloSource.getFeatureById(id) ||
-      vectorSources.roboticSource.getFeatureById(id)
+      vectorSources.cratersSource?.getFeatureById(id) ||
+      vectorSources.mountainsSource?.getFeatureById(id) ||
+      vectorSources.mariaSource?.getFeatureById(id) ||
+      vectorSources.valleysSource?.getFeatureById(id) ||
+      vectorSources.landingSitesSource?.getFeatureById(id)
     );
   };
 
@@ -144,21 +139,13 @@ export function createLunarMap(targetElement, callbacks = {}) {
 
     let hit = null;
     map.forEachFeatureAtPixel(evt.pixel, (feat, layer) => {
-      // If user clicks directly on a crater rim polygon, select the parent crater
-      if (feat.get('isRim')) {
-        const parentCraterId = feat.get('craterId');
-        hit = findFeatureById(parentCraterId);
-        if (hit) return true;
-      }
-
       // Check if feature belongs to one of our interactive vector layers
       if (
         layer === cratersLayer ||
         layer === mountainsLayer ||
         layer === mariaLayer ||
         layer === valleysLayer ||
-        layer === apolloSitesLayer ||
-        layer === roboticSitesLayer
+        layer === landingSitesLayer
       ) {
         hit = feat;
         return true;
@@ -169,18 +156,11 @@ export function createLunarMap(targetElement, callbacks = {}) {
     if (selectedFeatureId) {
       const prevFeat = findFeatureById(selectedFeatureId);
       if (prevFeat) prevFeat.set('isSelected', false);
-
-      const prevRim = vectorSources.craterRimsSource.getFeatureById(`rim-${selectedFeatureId}`);
-      if (prevRim) prevRim.set('isSelected', false);
     }
 
     if (hit) {
       selectedFeatureId = hit.getId();
       hit.set('isSelected', true);
-
-      // Also highlight associated crater rim polygon if applicable
-      const associatedRim = vectorSources.craterRimsSource.getFeatureById(`rim-${selectedFeatureId}`);
-      if (associatedRim) associatedRim.set('isSelected', true);
 
       const props = hit.getProperties();
       if (callbacks.onFeatureSelect) {
@@ -230,17 +210,11 @@ export function createLunarMap(targetElement, callbacks = {}) {
     if (selectedFeatureId && selectedFeatureId !== featureId) {
       const prev = findFeatureById(selectedFeatureId);
       if (prev) prev.set('isSelected', false);
-
-      const prevRim = vectorSources.craterRimsSource.getFeatureById(`rim-${selectedFeatureId}`);
-      if (prevRim) prevRim.set('isSelected', false);
     }
 
     if (feat) {
       selectedFeatureId = featureId;
       feat.set('isSelected', true);
-
-      const associatedRim = vectorSources.craterRimsSource.getFeatureById(`rim-${featureId}`);
-      if (associatedRim) associatedRim.set('isSelected', true);
 
       const props = feat.getProperties();
 
@@ -273,7 +247,6 @@ export function createLunarMap(targetElement, callbacks = {}) {
     switch (layerId) {
       case 'lunar-craters':
         applyVector(cratersLayer);
-        applyVector(craterRimsLayer);
         break;
       case 'lunar-mountains':
         applyVector(mountainsLayer);
@@ -284,11 +257,8 @@ export function createLunarMap(targetElement, callbacks = {}) {
       case 'lunar-valleys':
         applyVector(valleysLayer);
         break;
-      case 'apollo-landing-sites':
-        applyVector(apolloSitesLayer);
-        break;
-      case 'robotic-landing-sites':
-        applyVector(roboticSitesLayer);
+      case 'lunar-landing-sites':
+        applyVector(landingSitesLayer);
         break;
       default:
         break;
@@ -360,13 +330,9 @@ export function createLunarMap(targetElement, callbacks = {}) {
     map,
     view,
     rasterLayersMap,
-    craterRimsLayer,
-    cratersLayer,
     mountainsLayer,
     mariaLayer,
     valleysLayer,
-    apolloSitesLayer,
-    roboticSitesLayer,
     vectorLayers,
     measurementController,
     flyToCoordinate,

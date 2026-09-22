@@ -1,6 +1,6 @@
 {
   "name": "Lunar Explorer",
-  "description": "Interactive 2D lunar GIS map inspired by Google Maps, powered by NASA Moon Trek WMTS data, featuring selenographic coordinates, lunar feature search, multi-layer toggling, and geodesic distance measurement.",
+  "description": "Interactive 3D Cesium Moon and 2D lunar GIS map, powered by CesiumJS and NASA Moon Trek WMTS data, featuring selenographic coordinates, lunar feature search, and live lunar phase ephemeris.",
   "requestFramePermissions": [],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"

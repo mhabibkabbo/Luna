@@ -152,9 +152,9 @@ export function mountainStyleFunction(feature, resolution) {
     'Mons Bradley',
     'Mons Blanc',
   ].includes(name);
-  const showLabel = isSelected || (resolution <= 0.45 && isMajorRange) || resolution <= 0.28;
+  const showLabel = isSelected || (resolution <= 0.38 && isMajorRange) || resolution <= 0.20;
 
-  const peakSize = isSelected ? 11 : (resolution < 0.1 ? 9 : 7.5);
+  const peakSize = isSelected ? 8 : (resolution < 0.1 ? 6.5 : 5);
 
   return new Style({
     image: new RegularShape({
@@ -164,16 +164,16 @@ export function mountainStyleFunction(feature, resolution) {
       fill: new Fill({ color: isSelected ? '#fbbf24' : '#f59e0b' }),
       stroke: new Stroke({
         color: isSelected ? '#ffffff' : '#451a03',
-        width: isSelected ? 2.5 : 1.5,
+        width: isSelected ? 2.0 : 1.2,
       }),
     }),
     text: showLabel
       ? new Text({
-          text: elevationM ? `▲ ${name} (${elevationM.toLocaleString()}m)` : `▲ ${name}`,
-          font: isSelected ? 'bold 12px "Plus Jakarta Sans", sans-serif' : '11px "Plus Jakarta Sans", sans-serif',
-          offsetY: -15,
+          text: elevationM ? `${name} (${elevationM.toLocaleString()}m)` : name,
+          font: isSelected ? 'bold 11px "Plus Jakarta Sans", sans-serif' : '10px "Plus Jakarta Sans", sans-serif',
+          offsetY: -12,
           fill: new Fill({ color: isSelected ? '#fde68a' : '#fef3c7' }),
-          stroke: new Stroke({ color: '#1c1917', width: 3.5 }),
+          stroke: new Stroke({ color: '#1c1917', width: 3 }),
         })
       : undefined,
     zIndex: isSelected ? 130 : 60,
@@ -188,25 +188,24 @@ export function mareStyleFunction(feature, resolution) {
   const isSelected = feature.get('isSelected');
   const name = feature.get('name');
 
-  // Maria are massive continental-scale basins, show at all overview zooms
-  const showLabel = true;
+  const showLabel = isSelected || resolution <= 0.32;
 
   return new Style({
     image: new CircleStyle({
-      radius: isSelected ? 8 : 5,
+      radius: isSelected ? 6.5 : 4,
       fill: new Fill({ color: isSelected ? '#60a5fa' : 'rgba(30, 41, 59, 0.85)' }),
       stroke: new Stroke({
         color: isSelected ? '#ffffff' : '#93c5fd',
-        width: isSelected ? 2.5 : 1.2,
+        width: isSelected ? 2.0 : 1.0,
       }),
     }),
     text: showLabel
       ? new Text({
           text: name.toUpperCase(),
-          font: isSelected ? 'bold 13px "Space Mono", monospace' : 'bold 11px "Space Mono", monospace',
-          offsetY: -14,
+          font: isSelected ? 'bold 11px "Space Mono", monospace' : 'bold 9.5px "Space Mono", monospace',
+          offsetY: -11,
           fill: new Fill({ color: isSelected ? '#67e8f9' : '#93c5fd' }),
-          stroke: new Stroke({ color: '#030712', width: 4 }),
+          stroke: new Stroke({ color: '#030712', width: 3.5 }),
         })
       : undefined,
     zIndex: isSelected ? 110 : 30,
@@ -221,26 +220,26 @@ export function valleyStyleFunction(feature, resolution) {
   const name = feature.get('name');
   const lengthKm = feature.get('lengthKm');
 
-  const showLabel = isSelected || resolution <= 0.35;
+  const showLabel = isSelected || resolution <= 0.28;
 
   return new Style({
     image: new RegularShape({
       points: 4,
-      radius: isSelected ? 8 : 6,
+      radius: isSelected ? 6.5 : 4.5,
       rotation: Math.PI / 4, // Diamond
       fill: new Fill({ color: isSelected ? '#c084fc' : '#a855f7' }),
       stroke: new Stroke({
         color: isSelected ? '#ffffff' : '#581c87',
-        width: isSelected ? 2.5 : 1.2,
+        width: isSelected ? 2.0 : 1.0,
       }),
     }),
     text: showLabel
       ? new Text({
           text: lengthKm ? `${name} (${lengthKm} km)` : name,
-          font: isSelected ? 'bold 12px "Plus Jakarta Sans", sans-serif' : '11px "Plus Jakarta Sans", sans-serif',
-          offsetY: -14,
+          font: isSelected ? 'bold 11px "Plus Jakarta Sans", sans-serif' : '10px "Plus Jakarta Sans", sans-serif',
+          offsetY: -12,
           fill: new Fill({ color: isSelected ? '#e9d5ff' : '#d8b4fe' }),
-          stroke: new Stroke({ color: '#090d16', width: 3.5 }),
+          stroke: new Stroke({ color: '#090d16', width: 3 }),
         })
       : undefined,
     zIndex: isSelected ? 120 : 40,
@@ -282,7 +281,8 @@ export function landingSiteStyleFunction(feature, resolution) {
 }
 
 /**
- * Creates distinct vector layers for lunar natural features (craters, rims, mountains, maria, valleys) and landing sites.
+ * Creates distinct vector layers for lunar natural features: mountains, maria, and valleys/rilles.
+ * Craters and mission landing sites are omitted per user specification.
  * @returns {Object} Layer bundle with individual vector layers and sources.
  */
 export function createLunarVectorLayers() {
@@ -290,28 +290,16 @@ export function createLunarVectorLayers() {
   const mountains = LUNAR_FEATURES.filter((f) => f.type === 'mountain');
   const maria = LUNAR_FEATURES.filter((f) => f.type === 'mare');
   const valleys = LUNAR_FEATURES.filter((f) => f.type === 'valley' || f.type === 'rille');
-
-  const apolloSites = LANDING_SITES.filter((s) => s.id.startsWith('landing-apollo'));
-  const roboticSites = LANDING_SITES.filter((s) => !s.id.startsWith('landing-apollo'));
+  const landingSites = LANDING_SITES;
 
   // Vector Sources (wrapX: false prevents feature duplication across repeating world extents)
   const cratersSource = new VectorSource({ features: createFeatureGeometries(craters), wrapX: false });
-  const craterRimsSource = new VectorSource({ features: createCraterRimGeometries(craters), wrapX: false });
   const mountainsSource = new VectorSource({ features: createFeatureGeometries(mountains), wrapX: false });
   const mariaSource = new VectorSource({ features: createFeatureGeometries(maria), wrapX: false });
   const valleysSource = new VectorSource({ features: createFeatureGeometries(valleys), wrapX: false });
-
-  const apolloSource = new VectorSource({ features: createFeatureGeometries(apolloSites), wrapX: false });
-  const roboticSource = new VectorSource({ features: createFeatureGeometries(roboticSites), wrapX: false });
+  const landingSitesSource = new VectorSource({ features: createFeatureGeometries(landingSites), wrapX: false });
 
   // Vector Layers
-  const craterRimsLayer = new VectorLayer({
-    source: craterRimsSource,
-    style: craterRimStyleFunction,
-    properties: { id: 'lunar-crater-rims', category: 'FEATURES', layerType: 'vector' },
-    zIndex: 15,
-  });
-
   const cratersLayer = new VectorLayer({
     source: cratersSource,
     style: craterStyleFunction,
@@ -340,45 +328,32 @@ export function createLunarVectorLayers() {
     zIndex: 24,
   });
 
-  const apolloSitesLayer = new VectorLayer({
-    source: apolloSource,
+  const landingSitesLayer = new VectorLayer({
+    source: landingSitesSource,
     style: landingSiteStyleFunction,
-    properties: { id: 'apollo-landing-sites', category: 'MISSIONS', layerType: 'vector' },
-    zIndex: 35,
-  });
-
-  const roboticSitesLayer = new VectorLayer({
-    source: roboticSource,
-    style: landingSiteStyleFunction,
-    properties: { id: 'robotic-landing-sites', category: 'MISSIONS', layerType: 'vector' },
-    zIndex: 34,
+    properties: { id: 'lunar-landing-sites', category: 'FEATURES', layerType: 'vector' },
+    zIndex: 28,
   });
 
   return {
-    craterRimsLayer,
     cratersLayer,
     mountainsLayer,
     mariaLayer,
     valleysLayer,
-    apolloSitesLayer,
-    roboticSitesLayer,
+    landingSitesLayer,
     vectorLayers: [
-      craterRimsLayer,
       cratersLayer,
       mountainsLayer,
       mariaLayer,
       valleysLayer,
-      apolloSitesLayer,
-      roboticSitesLayer,
+      landingSitesLayer,
     ],
     vectorSources: {
       cratersSource,
-      craterRimsSource,
       mountainsSource,
       mariaSource,
       valleysSource,
-      apolloSource,
-      roboticSource,
+      landingSitesSource,
     },
   };
 }
