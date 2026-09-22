@@ -13,8 +13,8 @@ export default function ScaleControl({ resolution = 0.703125 }) {
   const kmPerDegree = (2 * Math.PI * MOON_MEAN_RADIUS_KM) / 360;
   const kmPerPixel = resolution * kmPerDegree;
 
-  // Choose a nice target scale length in pixels (around 80 to 120 px)
-  const targetPx = 90;
+  // Choose a nice target scale length in pixels (around 60 to 90 px)
+  const targetPx = 70;
   const rawKm = targetPx * kmPerPixel;
 
   // Round rawKm to standard scale intervals
@@ -32,30 +32,28 @@ export default function ScaleControl({ resolution = 0.703125 }) {
   }
 
   // Calculate actual pixel width for chosenKm
-  const barWidthPx = Math.max(30, Math.min(180, Math.round(chosenKm / kmPerPixel)));
+  const barWidthPx = Math.max(24, Math.min(120, Math.round(chosenKm / kmPerPixel)));
 
   return (
     <div
       id="lunar-scale-control"
-      className="inline-flex flex-col items-center bg-slate-900/90 backdrop-blur-md border border-slate-800/80 px-2.5 py-1.5 rounded-lg text-xs font-mono text-slate-300 shadow-lg pointer-events-auto select-none"
+      className="inline-flex items-center gap-2 bg-slate-900/90 backdrop-blur-md border border-slate-800/80 px-2.5 py-1 rounded-lg text-xs font-mono text-slate-300 shadow-md pointer-events-auto select-none"
+      title="Lunar Surface Scale"
     >
-      <div className="text-[10px] text-slate-300 font-semibold mb-1">
-        {chosenKm >= 1000 ? `${(chosenKm / 1000).toFixed(0)},000 km` : `${chosenKm} km`}
-      </div>
       <div className="relative flex items-center justify-center">
         {/* Left notch */}
-        <div className="h-2 w-0.5 bg-slate-300" />
+        <div className="h-2 w-0.5 bg-slate-400" />
         {/* Scale bar */}
         <div
-          className="h-0.5 bg-slate-300"
+          className="h-0.5 bg-slate-400"
           style={{ width: `${barWidthPx}px` }}
         />
         {/* Right notch */}
-        <div className="h-2 w-0.5 bg-slate-300" />
+        <div className="h-2 w-0.5 bg-slate-400" />
       </div>
-      <div className="text-[8px] text-slate-500 uppercase tracking-widest mt-0.5 font-sans">
-        Lunar Scale
-      </div>
+      <span className="text-[10px] text-slate-200 font-semibold font-mono">
+        {chosenKm >= 1000 ? `${(chosenKm / 1000).toFixed(0)},000 km` : `${chosenKm} km`}
+      </span>
     </div>
   );
 }

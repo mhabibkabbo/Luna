@@ -9,19 +9,14 @@ import {
   ChevronDown,
   ChevronUp,
   Sparkles,
-  Target
+  Target,
+  Rocket,
+  CircleDot,
 } from 'lucide-react';
 
 /**
  * Floating On-Map Symbol & Feature Quick-Toggle Toolbar.
- * Contains only: South Pole (90°S), Mountains, Maria (Seas), and Valleys & Rilles.
- * 
- * @param {{
- *   layers: Array<import('../../types/lunar.js').LunarLayer>,
- *   onToggleLayer: (layerId: string, visible: boolean) => void,
- *   onToggleAllSymbols: (visible: boolean) => void,
- *   onGoToSouthPole?: () => void
- * }} props
+ * Contains: Landing Sites, Craters, Mountains, Maria (Seas), and Valleys & Rilles.
  */
 export default function TerrainModeBar({
   layers,
@@ -31,15 +26,37 @@ export default function TerrainModeBar({
 }) {
   const [isLegendOpen, setIsLegendOpen] = useState(false);
 
-  // Status for kept symbol layers
+  // Status for symbol layers
+  const isLandingsVisible = layers.find((l) => l.id === 'lunar-landing-sites')?.visible ?? true;
+  const isCratersVisible = layers.find((l) => l.id === 'lunar-craters')?.visible ?? true;
   const isMountainsVisible = layers.find((l) => l.id === 'lunar-mountains')?.visible ?? true;
   const isMariaVisible = layers.find((l) => l.id === 'lunar-maria')?.visible ?? true;
   const isValleysVisible = layers.find((l) => l.id === 'lunar-valleys')?.visible ?? true;
 
-  const anySymbolVisible = isMountainsVisible || isMariaVisible || isValleysVisible;
-  const allSymbolsVisible = isMountainsVisible && isMariaVisible && isValleysVisible;
+  const anySymbolVisible = isLandingsVisible || isCratersVisible || isMountainsVisible || isMariaVisible || isValleysVisible;
+  const allSymbolsVisible = isLandingsVisible && isCratersVisible && isMountainsVisible && isMariaVisible && isValleysVisible;
 
   const symbolToggles = [
+    {
+      id: 'lunar-landing-sites',
+      name: 'Landing Sites',
+      glyph: '🚀',
+      icon: Rocket,
+      visible: isLandingsVisible,
+      color: 'cyan',
+      accentClass: 'text-cyan-300 border-cyan-500/50 bg-cyan-950/40 shadow-cyan-500/10',
+      description: 'Apollo crewed missions & robotic probe landing locations',
+    },
+    {
+      id: 'lunar-craters',
+      name: 'Craters',
+      glyph: '⭕',
+      icon: CircleDot,
+      visible: isCratersVisible,
+      color: 'slate',
+      accentClass: 'text-slate-200 border-slate-500/50 bg-slate-900/60 shadow-slate-500/10',
+      description: 'Impact craters cataloged by IAU selenography with morphometry',
+    },
     {
       id: 'lunar-mountains',
       name: 'Mountains',
@@ -48,7 +65,7 @@ export default function TerrainModeBar({
       visible: isMountainsVisible,
       color: 'amber',
       accentClass: 'text-amber-400 border-amber-500/50 bg-amber-950/40 shadow-amber-500/10',
-      description: 'Mountain massifs & polar peaks (Mons Malapert, Mons Mouton, Montes Leibnitz, Montes Apenninus)',
+      description: 'Mountain massifs & polar peaks (Mons Malapert, Mons Huygens, Montes Apenninus)',
     },
     {
       id: 'lunar-maria',
@@ -58,7 +75,7 @@ export default function TerrainModeBar({
       visible: isMariaVisible,
       color: 'sky',
       accentClass: 'text-sky-300 border-sky-500/50 bg-sky-950/40 shadow-sky-500/10',
-      description: 'Vast ancient basalt plains and South Pole-Aitken (SPA) basin rim',
+      description: 'Vast ancient basalt plains and impact basins (Mare Tranquillitatis, Imbrium)',
     },
     {
       id: 'lunar-valleys',

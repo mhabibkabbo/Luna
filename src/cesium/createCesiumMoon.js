@@ -35,116 +35,210 @@ if ('default' in Cesium.Ellipsoid) {
   Cesium.Ellipsoid.default = Cesium.Ellipsoid.MOON;
 }
 
-// In-memory cache for high-DPI 3D Red Location Pin data URLs
-let redPinDataUrl = null;
-let redPinSelectedDataUrl = null;
+// In-memory cache for high-DPI category pin data URLs
+const pinTextureCache = new Map();
 
 /**
- * Creates high-DPI 3D Red Location Pointer Pin billboard matching the classic 3D location marker
- * with circular teardrop head, inner cutout hole, specular sheen, and ground landing ellipse.
+ * Creates high-DPI crisp vector billboard icons categorized by feature type.
+ * Rendered at 2x resolution (112x112) for razor-sharp display on Retina/4K displays.
+ * @param {'landing_apollo' | 'landing_robotic' | 'south_pole' | 'crater_major' | 'crater_minor' | 'mountain' | 'mare' | 'valley' | 'custom_pin'} category
+ * @param {boolean} isSelected
  */
-function getRedLocationPinDataUrl(isSelected = false) {
-  if (isSelected && redPinSelectedDataUrl) return redPinSelectedDataUrl;
-  if (!isSelected && redPinDataUrl) return redPinDataUrl;
+function getLunarMarkerDataUrl(category = 'crater_minor', isSelected = false) {
+  const cacheKey = `${category}_${isSelected ? 'sel' : 'norm'}`;
+  if (pinTextureCache.has(cacheKey)) {
+    return pinTextureCache.get(cacheKey);
+  }
 
-  const width = 64;
-  const height = 80;
+  const width = 112;
+  const height = 112;
   const canvas = document.createElement('canvas');
   canvas.width = width;
   canvas.height = height;
   const ctx = canvas.getContext('2d');
-
-  const centerX = width / 2; // 32
-  const headCenterY = 26;
-  const outerRadius = 20;
-  const innerRadius = 8;
-  const tipY = 70;
-  const groundRingY = 72;
+  const cx = width / 2;
+  const cy = height / 2;
 
   ctx.clearRect(0, 0, width, height);
 
-  // 1. Draw Red Ground Landing Ellipse Ring
-  ctx.save();
-  ctx.beginPath();
-  ctx.ellipse(centerX, groundRingY, 22, 6.5, 0, 0, Math.PI * 2);
-  ctx.strokeStyle = isSelected ? '#ff4d6d' : '#ef4444';
-  ctx.lineWidth = isSelected ? 3.5 : 2.5;
-  ctx.stroke();
+  // Configuration per marker type
+  let primaryColor = '#06b6d4'; // cyan
+  let glowColor = 'rgba(6, 182, 212, 0.45)';
 
-  // Subtle ground shadow inside the ring
-  ctx.beginPath();
-  ctx.ellipse(centerX, groundRingY, 18, 5, 0, 0, Math.PI * 2);
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
-  ctx.fill();
-  ctx.restore();
-
-  // 2. Outer Teardrop Pin Path
-  ctx.save();
-  ctx.beginPath();
-  const angle = Math.atan2(tipY - headCenterY, outerRadius) - 0.26;
-  ctx.arc(centerX, headCenterY, outerRadius, Math.PI - angle, angle, true);
-  // Sharp needle point at bottom
-  ctx.lineTo(centerX, tipY);
-  ctx.closePath();
-
-  // 3D Rich Crimson-to-Ruby Gradient Fill
-  const pinGrad = ctx.createRadialGradient(
-    centerX - 6,
-    headCenterY - 7,
-    3,
-    centerX,
-    headCenterY + 10,
-    outerRadius + 15
-  );
-  if (isSelected) {
-    pinGrad.addColorStop(0, '#ff758f');
-    pinGrad.addColorStop(0.35, '#ff2e55');
-    pinGrad.addColorStop(0.75, '#e11d48');
-    pinGrad.addColorStop(1, '#881337');
-  } else {
-    pinGrad.addColorStop(0, '#ff6b6b');
-    pinGrad.addColorStop(0.3, '#ee2222');
-    pinGrad.addColorStop(0.75, '#cc1111');
-    pinGrad.addColorStop(1, '#880808');
+  switch (category) {
+    case 'south_pole':
+      primaryColor = isSelected ? '#38bdf8' : '#00f2fe';
+      glowColor = 'rgba(0, 242, 254, 0.7)';
+      break;
+    case 'landing_apollo':
+      primaryColor = isSelected ? '#38bdf8' : '#06b6d4';
+      glowColor = 'rgba(6, 182, 212, 0.6)';
+      break;
+    case 'landing_robotic':
+      primaryColor = isSelected ? '#34d399' : '#10b981';
+      glowColor = 'rgba(16, 185, 129, 0.6)';
+      break;
+    case 'crater_major':
+      primaryColor = isSelected ? '#f8fafc' : '#e2e8f0';
+      glowColor = 'rgba(241, 245, 249, 0.5)';
+      break;
+    case 'crater_minor':
+      primaryColor = isSelected ? '#cbd5e1' : '#94a3b8';
+      glowColor = 'rgba(148, 163, 184, 0.4)';
+      break;
+    case 'mountain':
+      primaryColor = isSelected ? '#fbbf24' : '#f59e0b';
+      glowColor = 'rgba(245, 158, 11, 0.6)';
+      break;
+    case 'mare':
+      primaryColor = isSelected ? '#60a5fa' : '#38bdf8';
+      glowColor = 'rgba(56, 189, 248, 0.5)';
+      break;
+    case 'valley':
+      primaryColor = isSelected ? '#d8b4fe' : '#c084fc';
+      glowColor = 'rgba(192, 132, 252, 0.5)';
+      break;
+    case 'custom_pin':
+      primaryColor = isSelected ? '#fda4af' : '#f43f5e';
+      glowColor = 'rgba(244, 63, 94, 0.75)';
+      break;
   }
 
-  // Pin drop shadow for 3D appearance
-  ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
-  ctx.shadowBlur = 6;
-  ctx.shadowOffsetY = 3;
-  ctx.fillStyle = pinGrad;
-  ctx.fill();
-  ctx.restore();
-
-  // 3. Cutout Inner Hole with 3D Inner Bevel
+  // Draw sleek glowing radar/target beacon
   ctx.save();
-  ctx.beginPath();
-  ctx.arc(centerX, headCenterY, innerRadius, 0, Math.PI * 2);
-  ctx.fillStyle = '#050811'; // Space dark inner cutout
-  ctx.fill();
+  ctx.shadowColor = glowColor;
+  ctx.shadowBlur = isSelected ? 20 : 12;
 
-  // Inner ring shadow / bevel
-  ctx.lineWidth = 2;
-  ctx.strokeStyle = isSelected ? '#be123c' : '#7f1d1d';
-  ctx.stroke();
-  ctx.restore();
+  if (category === 'custom_pin') {
+    // Elegant teardrop waypoint with needle
+    const headRadius = 28;
+    const headY = 36;
+    const tipY = 100;
 
-  // 4. 3D Left Glossy Specular Highlight Sheen
-  ctx.save();
-  ctx.beginPath();
-  ctx.arc(centerX, headCenterY, outerRadius - 3, Math.PI * 0.85, Math.PI * 1.45);
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
-  ctx.lineWidth = 3;
-  ctx.lineCap = 'round';
-  ctx.stroke();
+    // Ground shadow
+    ctx.beginPath();
+    ctx.ellipse(cx, tipY + 4, 28, 8, 0, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+    ctx.fill();
+
+    // Pin body
+    ctx.beginPath();
+    ctx.arc(cx, headY, headRadius, Math.PI * 0.8, Math.PI * 0.2, true);
+    ctx.lineTo(cx, tipY);
+    ctx.closePath();
+    ctx.fillStyle = primaryColor;
+    ctx.fill();
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = '#ffffff';
+    ctx.stroke();
+
+    // Inner white dot
+    ctx.beginPath();
+    ctx.arc(cx, headY, 10, 0, Math.PI * 2);
+    ctx.fillStyle = '#ffffff';
+    ctx.fill();
+  } else if (category === 'south_pole') {
+    // Pulsing polar reticle
+    ctx.beginPath();
+    ctx.arc(cx, cy, 36, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(0, 242, 254, 0.4)';
+    ctx.lineWidth = 4;
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(cx, cy, 24, 0, Math.PI * 2);
+    ctx.fillStyle = primaryColor;
+    ctx.fill();
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 4;
+    ctx.stroke();
+
+    // Reticle cross lines
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(cx - 44, cy); ctx.lineTo(cx - 28, cy);
+    ctx.moveTo(cx + 28, cy); ctx.lineTo(cx + 44, cy);
+    ctx.moveTo(cx, cy - 44); ctx.lineTo(cx, cy - 28);
+    ctx.moveTo(cx, cy + 28); ctx.lineTo(cx, cy + 44);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(cx, cy, 8, 0, Math.PI * 2);
+    ctx.fillStyle = '#ffffff';
+    ctx.fill();
+  } else if (category === 'landing_apollo' || category === 'landing_robotic') {
+    // Mission badge with outer ring & inner icon
+    ctx.beginPath();
+    ctx.arc(cx, cy, 30, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(5, 8, 17, 0.9)';
+    ctx.fill();
+    ctx.strokeStyle = primaryColor;
+    ctx.lineWidth = 5;
+    ctx.stroke();
+
+    // Inner core
+    ctx.beginPath();
+    ctx.arc(cx, cy, 16, 0, Math.PI * 2);
+    ctx.fillStyle = primaryColor;
+    ctx.fill();
+
+    // Center white dot
+    ctx.beginPath();
+    ctx.arc(cx, cy, 7, 0, Math.PI * 2);
+    ctx.fillStyle = '#ffffff';
+    ctx.fill();
+  } else if (category === 'mountain') {
+    // Peak triangle badge
+    ctx.beginPath();
+    ctx.arc(cx, cy, 28, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(5, 8, 17, 0.85)';
+    ctx.fill();
+    ctx.strokeStyle = primaryColor;
+    ctx.lineWidth = 4;
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - 14);
+    ctx.lineTo(cx + 14, cy + 12);
+    ctx.lineTo(cx - 14, cy + 12);
+    ctx.closePath();
+    ctx.fillStyle = primaryColor;
+    ctx.fill();
+  } else if (category === 'mare') {
+    // Celestial sea plain badge
+    ctx.beginPath();
+    ctx.arc(cx, cy, 26, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(5, 8, 17, 0.85)';
+    ctx.fill();
+    ctx.strokeStyle = primaryColor;
+    ctx.lineWidth = 4;
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(cx, cy, 12, 0, Math.PI * 2);
+    ctx.fillStyle = primaryColor;
+    ctx.fill();
+  } else {
+    // Crater circular ring with illuminated center
+    ctx.beginPath();
+    ctx.arc(cx, cy, category === 'crater_major' ? 26 : 18, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(5, 8, 17, 0.85)';
+    ctx.fill();
+    ctx.strokeStyle = primaryColor;
+    ctx.lineWidth = 4;
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(cx, cy, category === 'crater_major' ? 10 : 7, 0, Math.PI * 2);
+    ctx.fillStyle = primaryColor;
+    ctx.fill();
+  }
+
   ctx.restore();
 
   const dataUrl = canvas.toDataURL('image/png');
-  if (isSelected) {
-    redPinSelectedDataUrl = dataUrl;
-  } else {
-    redPinDataUrl = dataUrl;
-  }
+  pinTextureCache.set(cacheKey, dataUrl);
   return dataUrl;
 }
 
@@ -208,15 +302,17 @@ export function createCesiumMoon(container, callbacks = {}) {
     },
   });
 
+  // Enable high-DPI native resolution scale for razor-sharp rendering on Retina/4K screens
+  viewer.resolutionScale = Math.min(window.devicePixelRatio || 1.0, 2.0);
+  viewer.useBrowserRecommendedResolution = false;
+
   // Optimize scene for Moon visualization
   const scene = viewer.scene;
   scene.backgroundColor = Cesium.Color.fromCssColorString('#050811');
-  scene.globe.baseColor = Cesium.Color.fromCssColorString('#2d333b');
+  scene.globe.baseColor = Cesium.Color.fromCssColorString('#1e293b');
   scene.globe.enableLighting = false; // Default clean full surface illumination
+  scene.globe.depthTestAgainstTerrain = true; // Occlude markers on the far side of the Moon
   scene.highDynamicRange = true;
-  // Request the highest-detail tile already available sooner (default is 2).
-  // This does not create detail beyond the source imagery's native
-  // resolution, but reduces visible blockiness right at that ceiling.
   scene.globe.maximumScreenSpaceError = 1.5;
 
   // Configure Moon camera controller with Moon ellipsoid to prevent sphere distortion
@@ -233,62 +329,90 @@ export function createCesiumMoon(container, callbacks = {}) {
   cameraController.inertiaTranslate = 0.85;
   cameraController.inertiaZoom = 0.80;
   cameraController.zoomFactor = 2.0;
-  // NASA's LRO_WAC_Mosaic_Global_303ppd_v02 WMTS layer only goes to tile
-  // level 8 (~83 m/pixel — see NASA_MOON_RESOLUTIONS). At the old 8km floor
-  // the camera could get ~7x closer than that native resolution, so Cesium
-  // was stretching/upsampling the last available tile (visible blur/mush).
-  // 20km keeps close-up views near what the source data can render sharply.
-  // This is a data-resolution ceiling, not a rendering bug: getting genuinely
-  // sharp close-ups would require pointing at a higher-resolution NASA layer
-  // (e.g. a regional LROC NAC mosaic) in addition to this global WAC layer.
   cameraController.minimumZoomDistance = 20000.0; // 20 km minimum altitude
   cameraController.maximumZoomDistance = 30000000.0; // 30,000 km overview
 
-  // 3. Populate Lunar Feature Pin Entities using 3D Red Location Pointers
+  // 3. Populate Lunar Feature Pin Entities using Categorized Vector Billboards
   const pinEntities = [];
 
-  // Helper to add entity pin with unified 3D red pointer marker
-  const addFeaturePin = (feat, category, isMajor = false) => {
-    const dataUrl = getRedLocationPinDataUrl(false);
-    const altitude = 1500; // Elevation in meters above lunar ellipsoid
+  /**
+   * Helper to add an entity pin with LOD distance culling and categorized vector icons.
+   * @param {Object} feat
+   * @param {string} category
+   * @param {'landing_apollo' | 'landing_robotic' | 'south_pole' | 'crater_major' | 'crater_minor' | 'mountain' | 'mare' | 'valley'} markerType
+   * @param {1 | 2 | 3} tier LOD Tier (1 = Global, 2 = Regional, 3 = Close-up)
+   */
+  const addFeaturePin = (feat, category, markerType = 'crater_minor', tier = 3) => {
+    const dataUrl = getLunarMarkerDataUrl(markerType, false);
+    const altitude = 2500; // Elevation in meters above lunar ellipsoid
+
+    // LOD Distance display conditions
+    let maxBillboardDist = 7.0e6;
+    let maxLabelDist = 3.2e6;
+    let baseScale = 0.22;
+    let labelFont = '600 12px "Plus Jakarta Sans", system-ui, -apple-system, sans-serif';
+    let labelOffset = -18;
+
+    if (tier === 1) {
+      maxBillboardDist = 3.5e7;
+      maxLabelDist = 2.4e7;
+      baseScale = 0.28;
+      labelFont = '700 13px "Plus Jakarta Sans", system-ui, -apple-system, sans-serif';
+      labelOffset = -22;
+    } else if (tier === 2) {
+      maxBillboardDist = 1.5e7;
+      maxLabelDist = 8.5e6;
+      baseScale = 0.25;
+      labelFont = '600 12px "Plus Jakarta Sans", system-ui, -apple-system, sans-serif';
+      labelOffset = -20;
+    }
+
+    // Clean, readable short name without excessive subtitles on map
+    const shortName = feat.name.split('(')[0].trim();
 
     const entity = viewer.entities.add({
       name: feat.name,
       position: Cesium.Cartesian3.fromDegrees(feat.longitude, feat.latitude, altitude, Cesium.Ellipsoid.MOON),
       billboard: {
         image: dataUrl,
-        verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+        verticalOrigin: Cesium.VerticalOrigin.CENTER,
         horizontalOrigin: Cesium.HorizontalOrigin.CENTER,
-        pixelOffset: new Cesium.Cartesian2(0, 0),
-        scale: isMajor ? 0.78 : 0.65,
-        disableDepthTestDistance: Number.POSITIVE_INFINITY, // Never vanishes behind terrain/horizon
-        scaleByDistance: new Cesium.NearFarScalar(1.0e5, 0.95, 2.0e7, 0.65),
-        translucencyByDistance: new Cesium.NearFarScalar(2.0e7, 1.0, 3.5e7, 0.5),
+        scale: baseScale,
+        eyeOffset: new Cesium.Cartesian3(0, 0, -20),
+        distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0.0, maxBillboardDist),
+        scaleByDistance: new Cesium.NearFarScalar(1.0e5, 1.0, 2.5e7, 0.8),
+        translucencyByDistance: new Cesium.NearFarScalar(2.0e7, 1.0, 3.5e7, 0.7),
       },
       label: {
-        text: feat.name,
-        font: isMajor ? 'bold 12px "Plus Jakarta Sans", sans-serif' : '11px "Plus Jakarta Sans", sans-serif',
+        text: shortName,
+        font: labelFont,
         style: Cesium.LabelStyle.FILL_AND_OUTLINE,
         fillColor: Cesium.Color.WHITE,
         outlineColor: Cesium.Color.fromCssColorString('#020617'),
-        outlineWidth: 4,
+        outlineWidth: 2,
+        showBackground: true,
+        backgroundColor: Cesium.Color.fromCssColorString('rgba(8, 13, 27, 0.92)'),
+        backgroundPadding: new Cesium.Cartesian2(6, 3),
         verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
-        pixelOffset: new Cesium.Cartesian2(0, isMajor ? -64 : -54),
-        disableDepthTestDistance: Number.POSITIVE_INFINITY, // Label never vanishes
-        distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0.0, isMajor ? 3.0e7 : 1.6e7),
-        scaleByDistance: new Cesium.NearFarScalar(1.0e5, 1.0, 1.8e7, 0.75),
+        pixelOffset: new Cesium.Cartesian2(0, labelOffset),
+        eyeOffset: new Cesium.Cartesian3(0, 0, -30),
+        scale: 1.0,
+        distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0.0, maxLabelDist),
+        scaleByDistance: new Cesium.NearFarScalar(1.0e5, 1.0, 1.8e7, 0.9),
       },
       properties: {
         feature: feat,
         category,
-        baseScale: isMajor ? 0.78 : 0.65,
+        markerType,
+        tier,
+        baseScale,
       },
     });
 
     pinEntities.push(entity);
   };
 
-  // A. South Pole (90°S) - Prime Artemis site
+  // A. South Pole (90°S) - Prime Artemis Site (Tier 1)
   const southPoleFeature = {
     id: 'south-pole',
     name: 'Lunar South Pole (90°S)',
@@ -297,25 +421,49 @@ export function createCesiumMoon(container, callbacks = {}) {
     longitude: 0,
     description: 'Permanently shadowed craters (PSRs) harboring volatile water ice deposits. Prime target zone for NASA Artemis and CLPS lunar landers.',
   };
-  addFeaturePin(southPoleFeature, 'south_pole', true);
+  addFeaturePin(southPoleFeature, 'lunar-landing-sites', 'south_pole', 1);
 
   // B. Landing Sites (Apollo, Luna, Chang\'e, Chandrayaan, SLIM, Odysseus)
   LANDING_SITES.forEach((site) => {
-    const isApollo = site.id.includes('apollo');
-    addFeaturePin(site, 'lunar-landing-sites', isApollo);
+    const isApollo11 = site.id === 'landing-apollo-11';
+    const isCrewedApollo = site.id.includes('apollo');
+    const isMajorRobotic = ['landing-change-4', 'landing-change-5', 'landing-change-6', 'landing-chandrayaan-3', 'landing-slim', 'landing-surveyor-3'].includes(site.id);
+
+    if (isApollo11) {
+      addFeaturePin(site, 'lunar-landing-sites', 'landing_apollo', 1);
+    } else if (isCrewedApollo) {
+      addFeaturePin(site, 'lunar-landing-sites', 'landing_apollo', 2);
+    } else if (isMajorRobotic) {
+      addFeaturePin(site, 'lunar-landing-sites', 'landing_robotic', 2);
+    } else {
+      addFeaturePin(site, 'lunar-landing-sites', 'landing_robotic', 3);
+    }
   });
 
   // C. Named Craters, Mountains, Maria, and Valleys from LUNAR_FEATURES
+  const iconicFeatures = ['Tycho', 'Copernicus', 'Mare Tranquillitatis'];
+  const majorLandmarks = ['Plato', 'Aristarchus', 'Kepler', 'Clavius', 'Archimedes', 'Langrenus', 'Shackleton', 'Mare Imbrium', 'Mare Serenitatis', 'Oceanus Procellarum', 'Mare Crisium', 'Montes Apenninus', 'Mons Huygens', 'Mons Malapert'];
+
   LUNAR_FEATURES.forEach((feat) => {
     if (feat.type === 'crater') {
-      const isMajor = (feat.diameterKm && feat.diameterKm >= 60) || ['Tycho', 'Copernicus', 'Plato', 'Aristarchus', 'Kepler', 'Clavius', 'Archimedes', 'Langrenus', 'Shackleton'].includes(feat.name);
-      addFeaturePin(feat, 'lunar-craters', isMajor);
+      if (iconicFeatures.includes(feat.name)) {
+        addFeaturePin(feat, 'lunar-craters', 'crater_major', 1);
+      } else if (majorLandmarks.includes(feat.name) || (feat.diameterKm && feat.diameterKm >= 80)) {
+        addFeaturePin(feat, 'lunar-craters', 'crater_major', 2);
+      } else {
+        addFeaturePin(feat, 'lunar-craters', 'crater_minor', 3);
+      }
     } else if (feat.type === 'mountain') {
-      addFeaturePin(feat, 'lunar-mountains', true);
+      const isMajor = majorLandmarks.includes(feat.name) || (feat.elevationM && feat.elevationM >= 3000);
+      addFeaturePin(feat, 'lunar-mountains', 'mountain', isMajor ? 2 : 3);
     } else if (feat.type === 'mare') {
-      addFeaturePin(feat, 'lunar-maria', true);
+      if (iconicFeatures.includes(feat.name)) {
+        addFeaturePin(feat, 'lunar-maria', 'mare', 1);
+      } else {
+        addFeaturePin(feat, 'lunar-maria', 'mare', 2);
+      }
     } else if (feat.type === 'valley' || feat.type === 'rille') {
-      addFeaturePin(feat, 'lunar-valleys', false);
+      addFeaturePin(feat, 'lunar-valleys', 'valley', 3);
     }
   });
 
@@ -362,17 +510,17 @@ export function createCesiumMoon(container, callbacks = {}) {
       customPinEntity = null;
     }
 
-    const pinIconUrl = getRedLocationPinDataUrl(true);
+    const pinIconUrl = getLunarMarkerDataUrl('custom_pin', true);
 
     customPinEntity = viewer.entities.add({
       name: pinTitle,
-      position: Cesium.Cartesian3.fromDegrees(normLon, normLat, 1500, Cesium.Ellipsoid.MOON),
+      position: Cesium.Cartesian3.fromDegrees(normLon, normLat, 3000, Cesium.Ellipsoid.MOON),
       billboard: {
         image: pinIconUrl,
         verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
         horizontalOrigin: Cesium.HorizontalOrigin.CENTER,
-        scale: 0.90,
-        disableDepthTestDistance: Number.POSITIVE_INFINITY,
+        scale: 0.35,
+        eyeOffset: new Cesium.Cartesian3(0, 0, -20),
         scaleByDistance: new Cesium.NearFarScalar(1.0e5, 1.0, 2.0e7, 0.75),
       },
       label: {
@@ -381,16 +529,21 @@ export function createCesiumMoon(container, callbacks = {}) {
         style: Cesium.LabelStyle.FILL_AND_OUTLINE,
         fillColor: Cesium.Color.fromCssColorString('#ffe4e6'),
         outlineColor: Cesium.Color.fromCssColorString('#881337'),
-        outlineWidth: 5,
+        outlineWidth: 2,
+        showBackground: true,
+        backgroundColor: Cesium.Color.fromCssColorString('rgba(15, 23, 42, 0.94)'),
+        backgroundPadding: new Cesium.Cartesian2(7, 4),
         verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
-        pixelOffset: new Cesium.Cartesian2(0, -74),
-        disableDepthTestDistance: Number.POSITIVE_INFINITY,
-        scaleByDistance: new Cesium.NearFarScalar(1.0e5, 1.0, 1.8e7, 0.8),
+        pixelOffset: new Cesium.Cartesian2(0, -42),
+        eyeOffset: new Cesium.Cartesian3(0, 0, -30),
+        scale: 1.0,
+        scaleByDistance: new Cesium.NearFarScalar(1.0e5, 1.0, 1.8e7, 0.9),
       },
       properties: {
         feature: customPinData,
         category: 'custom-pin',
-        baseScale: 0.90,
+        markerType: 'custom_pin',
+        baseScale: 0.35,
       },
     });
 
@@ -425,23 +578,29 @@ export function createCesiumMoon(container, callbacks = {}) {
     if (Cesium.defined(pickedObject) && pickedObject.id?.properties?.feature) {
       container.style.cursor = 'pointer';
       const feature = pickedObject.id.properties.feature.getValue();
-      const baseScale = pickedObject.id.properties.baseScale?.getValue() || 0.65;
+      const markerType = pickedObject.id.properties.markerType?.getValue() || 'crater_minor';
+      const baseScale = pickedObject.id.properties.baseScale?.getValue() || 0.55;
 
       if (hoveredEntity !== pickedObject.id) {
         if (hoveredEntity) {
-          const prevBase = hoveredEntity.properties.baseScale?.getValue() || 0.65;
+          const prevBase = hoveredEntity.properties.baseScale?.getValue() || 0.55;
+          const prevType = hoveredEntity.properties.markerType?.getValue() || 'crater_minor';
           hoveredEntity.billboard.scale = prevBase;
+          hoveredEntity.billboard.image = getLunarMarkerDataUrl(prevType, false);
         }
         hoveredEntity = pickedObject.id;
-        hoveredEntity.billboard.scale = baseScale * 1.3;
+        hoveredEntity.billboard.scale = baseScale * 1.35;
+        hoveredEntity.billboard.image = getLunarMarkerDataUrl(markerType, true);
       }
 
       callbacks.onFeatureHover?.(feature, movement.endPosition.x, movement.endPosition.y);
     } else {
       container.style.cursor = 'default';
       if (hoveredEntity) {
-        const prevBase = hoveredEntity.properties.baseScale?.getValue() || 0.65;
+        const prevBase = hoveredEntity.properties.baseScale?.getValue() || 0.55;
+        const prevType = hoveredEntity.properties.markerType?.getValue() || 'crater_minor';
         hoveredEntity.billboard.scale = prevBase;
+        hoveredEntity.billboard.image = getLunarMarkerDataUrl(prevType, false);
         hoveredEntity = null;
       }
       callbacks.onFeatureHover?.(null, 0, 0);

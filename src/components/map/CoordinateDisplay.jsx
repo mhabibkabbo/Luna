@@ -2,48 +2,39 @@ import React from 'react';
 import { formatLunarCoordinates } from '../../utils/coordinates.js';
 
 /**
- * Bottom status bar coordinate display showing selenographic latitude and longitude.
+ * Floating selenographic coordinate readout in plain white text with no background.
+ * Displays Latitude, Longitude, and Zoom cleanly on the canvas.
  * 
  * @param {{
  *   longitude: number,
  *   latitude: number,
- *   zoom?: number,
- *   datum?: string
+ *   zoom?: number
  * }} props
  */
-export default function CoordinateDisplay({ longitude, latitude, zoom = 2.5, datum = '1737.4 km' }) {
+export default function CoordinateDisplay({ longitude, latitude, zoom = 2.5 }) {
   const { latStr, lonStr } = formatLunarCoordinates(longitude, latitude, 2);
+  const zoomDisplay = typeof zoom === 'number' ? zoom.toFixed(1) : '2.5';
 
   return (
     <div
       id="coordinate-display-bar"
-      className="inline-flex items-center gap-4 bg-slate-900/90 backdrop-blur-md border border-slate-800/80 px-3.5 py-1.5 rounded-lg text-xs font-mono text-slate-300 shadow-lg pointer-events-auto select-none"
+      className="flex items-center gap-2.5 text-xs sm:text-sm font-mono text-white select-none pointer-events-none drop-shadow-[0_1px_3px_rgba(0,0,0,0.95)]"
     >
-      <div className="flex items-center gap-1.5">
-        <span className="text-slate-500 font-sans uppercase tracking-wider text-[10px]">Lat</span>
-        <span className="text-slate-100 font-semibold">{latStr}</span>
-      </div>
+      <span>
+        LAT <span className="font-semibold text-white">{latStr}</span>
+      </span>
 
-      <div className="h-3 w-px bg-slate-700/60" />
+      <span className="text-white/40 font-light">|</span>
 
-      <div className="flex items-center gap-1.5">
-        <span className="text-slate-500 font-sans uppercase tracking-wider text-[10px]">Lon</span>
-        <span className="text-slate-100 font-semibold">{lonStr}</span>
-      </div>
+      <span>
+        LON <span className="font-semibold text-white">{lonStr}</span>
+      </span>
 
-      <div className="hidden sm:block h-3 w-px bg-slate-700/60" />
+      <span className="text-white/40 font-light">|</span>
 
-      <div className="hidden sm:flex items-center gap-1.5 text-slate-400">
-        <span className="text-slate-500 font-sans uppercase tracking-wider text-[10px]">Zoom</span>
-        <span>{typeof zoom === 'number' ? zoom.toFixed(1) : '2.5'}x</span>
-      </div>
-
-      <div className="hidden md:block h-3 w-px bg-slate-700/60" />
-
-      <div className="hidden md:flex items-center gap-1 text-[11px] text-slate-400">
-        <span className="text-slate-500 font-sans uppercase tracking-wider text-[10px]">Datum</span>
-        <span>{datum}</span>
-      </div>
+      <span>
+        ZOOM <span className="font-semibold text-white">{zoomDisplay}x</span>
+      </span>
     </div>
   );
 }

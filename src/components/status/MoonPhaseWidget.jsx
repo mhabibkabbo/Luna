@@ -100,32 +100,27 @@ export default function MoonPhaseWidget({ className = '' }) {
         type="button"
         id="btn-moon-phase-widget"
         onClick={() => setIsOpen((prev) => !prev)}
-        className={`group flex items-center gap-2.5 px-3 py-1.5 rounded-xl border backdrop-blur-xl transition-all shadow-lg ${
+        className={`group flex items-center gap-2 px-2.5 py-1 rounded-lg border backdrop-blur-xl transition-all shadow-md ${
           isOpen
             ? 'bg-slate-900 text-white border-cyan-500/60 shadow-cyan-950/50'
-            : 'bg-slate-900/90 hover:bg-slate-850 text-slate-200 border-slate-800 hover:border-slate-700'
+            : 'bg-slate-900/90 hover:bg-slate-850 text-slate-200 border-slate-800/80 hover:border-slate-700'
         }`}
         title="View Real-Time Astronomical Lunar Illumination and Phase Details"
       >
         {/* Visual Real-time SVG Moon */}
-        <MoonPhaseGraphic phaseIndex={phaseData.phaseIndex} size={22} />
+        <MoonPhaseGraphic phaseIndex={phaseData.phaseIndex} size={18} />
 
-        <div className="flex flex-col text-left">
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs font-bold text-slate-100 tracking-tight leading-none group-hover:text-cyan-300 transition-colors">
-              {phaseData.phaseName}
-            </span>
-            <span className="text-[10px] font-mono font-semibold px-1.5 py-0.2 rounded-md bg-cyan-950/80 text-cyan-300 border border-cyan-500/30">
-              {phaseData.percentage}%
-            </span>
-          </div>
-          <span className="text-[9.5px] font-mono text-slate-400 leading-tight">
-            Age {phaseData.ageDays}d • {phaseData.isWaxing ? 'Waxing' : 'Waning'}
+        <div className="flex items-center gap-1.5 text-left">
+          <span className="text-xs font-semibold text-slate-100 tracking-tight leading-none group-hover:text-cyan-300 transition-colors">
+            {phaseData.phaseName}
+          </span>
+          <span className="text-[10px] font-mono font-medium px-1.5 py-0.5 rounded bg-cyan-950/80 text-cyan-300 border border-cyan-500/30 leading-none">
+            {phaseData.percentage}%
           </span>
         </div>
 
         <div className="text-slate-400 group-hover:text-white transition-colors ml-0.5">
-          {isOpen ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronUp className="w-3.5 h-3.5" />}
+          {isOpen ? <ChevronDown className="w-3 h-3" /> : <ChevronUp className="w-3 h-3" />}
         </div>
       </button>
 
@@ -133,7 +128,7 @@ export default function MoonPhaseWidget({ className = '' }) {
       {isOpen && (
         <div
           id="moon-phase-details-popover"
-          className="absolute bottom-full right-0 mb-3 w-80 bg-slate-950/95 backdrop-blur-2xl border border-slate-800 rounded-2xl p-4 shadow-2xl shadow-black/80 z-50 flex flex-col gap-3.5 animate-in fade-in slide-in-from-bottom-2 duration-150"
+          className="absolute bottom-full left-0 mb-2 w-80 bg-slate-950/95 backdrop-blur-2xl border border-slate-800 rounded-2xl p-4 shadow-2xl shadow-black/80 z-50 flex flex-col gap-3.5 animate-in fade-in slide-in-from-bottom-2 duration-150"
         >
           {/* Header */}
           <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">

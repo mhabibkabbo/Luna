@@ -96,10 +96,12 @@ export function craterStyleFunction(feature, resolution) {
     text: showLabel
       ? new Text({
           text: diameterKm ? `${name} (${Math.round(diameterKm)} km)` : name,
-          font: isSelected ? 'bold 12px "Plus Jakarta Sans", sans-serif' : '11px "Plus Jakarta Sans", sans-serif',
-          offsetY: -14,
+          font: isSelected ? 'bold 13px "Plus Jakarta Sans", sans-serif' : '600 12px "Plus Jakarta Sans", sans-serif',
+          offsetY: -15,
           fill: new Fill({ color: isSelected ? '#38bdf8' : '#f8fafc' }),
-          stroke: new Stroke({ color: '#050811', width: 3.5 }),
+          stroke: new Stroke({ color: '#050811', width: 4 }),
+          backgroundFill: new Fill({ color: 'rgba(5, 8, 17, 0.85)' }),
+          padding: [2, 5, 2, 5],
         })
       : undefined,
     zIndex: isSelected ? 120 : (isMajorCrater ? 50 : 20),
@@ -170,10 +172,12 @@ export function mountainStyleFunction(feature, resolution) {
     text: showLabel
       ? new Text({
           text: elevationM ? `${name} (${elevationM.toLocaleString()}m)` : name,
-          font: isSelected ? 'bold 11px "Plus Jakarta Sans", sans-serif' : '10px "Plus Jakarta Sans", sans-serif',
-          offsetY: -12,
+          font: isSelected ? 'bold 12px "Plus Jakarta Sans", sans-serif' : '600 11px "Plus Jakarta Sans", sans-serif',
+          offsetY: -14,
           fill: new Fill({ color: isSelected ? '#fde68a' : '#fef3c7' }),
-          stroke: new Stroke({ color: '#1c1917', width: 3 }),
+          stroke: new Stroke({ color: '#1c1917', width: 3.5 }),
+          backgroundFill: new Fill({ color: 'rgba(28, 25, 23, 0.85)' }),
+          padding: [2, 4, 2, 4],
         })
       : undefined,
     zIndex: isSelected ? 130 : 60,
@@ -202,10 +206,12 @@ export function mareStyleFunction(feature, resolution) {
     text: showLabel
       ? new Text({
           text: name.toUpperCase(),
-          font: isSelected ? 'bold 11px "Space Mono", monospace' : 'bold 9.5px "Space Mono", monospace',
-          offsetY: -11,
+          font: isSelected ? 'bold 12px "Space Mono", monospace' : 'bold 11px "Space Mono", monospace',
+          offsetY: -13,
           fill: new Fill({ color: isSelected ? '#67e8f9' : '#93c5fd' }),
-          stroke: new Stroke({ color: '#030712', width: 3.5 }),
+          stroke: new Stroke({ color: '#030712', width: 4 }),
+          backgroundFill: new Fill({ color: 'rgba(3, 7, 18, 0.85)' }),
+          padding: [2, 5, 2, 5],
         })
       : undefined,
     zIndex: isSelected ? 110 : 30,
@@ -236,10 +242,12 @@ export function valleyStyleFunction(feature, resolution) {
     text: showLabel
       ? new Text({
           text: lengthKm ? `${name} (${lengthKm} km)` : name,
-          font: isSelected ? 'bold 11px "Plus Jakarta Sans", sans-serif' : '10px "Plus Jakarta Sans", sans-serif',
-          offsetY: -12,
+          font: isSelected ? 'bold 12px "Plus Jakarta Sans", sans-serif' : '600 11px "Plus Jakarta Sans", sans-serif',
+          offsetY: -14,
           fill: new Fill({ color: isSelected ? '#e9d5ff' : '#d8b4fe' }),
-          stroke: new Stroke({ color: '#090d16', width: 3 }),
+          stroke: new Stroke({ color: '#090d16', width: 3.5 }),
+          backgroundFill: new Fill({ color: 'rgba(9, 13, 22, 0.85)' }),
+          padding: [2, 4, 2, 4],
         })
       : undefined,
     zIndex: isSelected ? 120 : 40,
@@ -270,10 +278,12 @@ export function landingSiteStyleFunction(feature, resolution) {
     text: showLabel
       ? new Text({
           text: name.split('(')[0].trim(),
-          font: isSelected ? 'bold 12px "Space Mono", monospace' : '10px "Space Mono", monospace',
-          offsetY: -13,
+          font: isSelected ? 'bold 13px "Space Mono", monospace' : 'bold 11.5px "Space Mono", monospace',
+          offsetY: -15,
           fill: new Fill({ color: isApollo ? '#fde68a' : '#a5f3fc' }),
-          stroke: new Stroke({ color: '#090d16', width: 3.5 }),
+          stroke: new Stroke({ color: '#090d16', width: 4 }),
+          backgroundFill: new Fill({ color: 'rgba(9, 13, 22, 0.9)' }),
+          padding: [2, 5, 2, 5],
         })
       : undefined,
     zIndex: isSelected ? 150 : (isApollo ? 80 : 70),

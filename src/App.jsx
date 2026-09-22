@@ -9,7 +9,6 @@ import LayerPanel from './components/layers/LayerPanel.jsx';
 import FeaturePanel from './components/features/FeaturePanel.jsx';
 import MeasurementToolbar from './components/measurements/MeasurementToolbar.jsx';
 import TerrainModeBar from './components/map/TerrainModeBar.jsx';
-import MoonPhaseWidget from './components/status/MoonPhaseWidget.jsx';
 import { LUNAR_LAYERS_CATALOG } from './services/nasa/layers.js';
 import { Layers, Ruler, Target, Globe, Map as MapIcon } from 'lucide-react';
 
@@ -34,6 +33,8 @@ export default function App() {
 
   // Distance measurement tool state (2D mode)
   const [isMeasureActive, setIsMeasureActive] = useState(false);
+  const [isAutoRotating, setIsAutoRotating] = useState(false);
+  const [isSolarLighting, setIsSolarLighting] = useState(false);
   const [measurement, setMeasurement] = useState({
     coordinates: [],
     totalDistanceKm: 0,
@@ -89,6 +90,20 @@ export default function App() {
   const handleZoomOut = () => getActiveController()?.zoomOut();
   const handleResetOverview = () => getActiveController()?.resetOverview();
   const handleGoToSouthPole = () => getActiveController()?.goToSouthPole(4.8);
+
+  const handleToggleAutoRotate = () => {
+    if (globeRef.current) {
+      const state = globeRef.current.toggleAutoRotate();
+      setIsAutoRotating(state);
+    }
+  };
+
+  const handleToggleLighting = () => {
+    if (globeRef.current) {
+      const state = globeRef.current.toggleLighting();
+      setIsSolarLighting(state);
+    }
+  };
 
   // Search feature selection
   const handleSearchSelect = (feature) => {
@@ -297,6 +312,7 @@ export default function App() {
         {/* Floating Map Navigation Controls */}
         <div className="absolute bottom-16 right-4 z-20">
           <MapControls
+            viewMode={viewMode}
             onZoomIn={handleZoomIn}
             onZoomOut={handleZoomOut}
             onResetOverview={handleResetOverview}
@@ -305,6 +321,10 @@ export default function App() {
             isLayersOpen={isLayersOpen}
             onToggleMeasure={handleToggleMeasure}
             isMeasureActive={isMeasureActive}
+            onToggleAutoRotate={handleToggleAutoRotate}
+            isAutoRotating={isAutoRotating}
+            onToggleLighting={handleToggleLighting}
+            isSolarLighting={isSolarLighting}
           />
         </div>
 
@@ -338,39 +358,25 @@ export default function App() {
       </main>
 
       {/* ========================================================================= */}
-      {/* BOTTOM STATUS & SCALE BAR */}
+      {/* FLOATING TELEMETRY: Plain white text on the blank space, bottom-left of moon */}
       {/* ========================================================================= */}
-      <footer
-        id="app-bottom-bar"
-        className="absolute bottom-0 left-0 right-0 z-20 flex items-center justify-between gap-3 px-3 sm:px-4 py-2 bg-slate-950/80 backdrop-blur-xl border-t border-slate-800/80 shadow-lg pointer-events-none"
+      <div
+        id="app-bottom-telemetry"
+        className="absolute bottom-5 left-5 z-20 flex items-center gap-4 pointer-events-none select-none"
       >
-        {/* Left: Dynamic Selenographic Coordinates */}
-        <div className="flex items-center gap-2 pointer-events-auto">
-          <CoordinateDisplay
-            longitude={pointerCoords.lon}
-            latitude={pointerCoords.lat}
-            zoom={viewMode === '3d' ? 3.0 : currentZoom}
-          />
-        </div>
+        <CoordinateDisplay
+          longitude={pointerCoords.lon}
+          latitude={pointerCoords.lat}
+          zoom={viewMode === '3d' ? 3.0 : currentZoom}
+        />
 
-        {/* Center: Dynamic Scale Bar for 2D */}
+        {/* Dynamic Scale Bar for 2D mode */}
         {viewMode === '2d' && (
-          <div className="hidden sm:flex items-center">
+          <div className="hidden sm:flex items-center pointer-events-auto">
             <ScaleControl resolution={currentResolution} />
           </div>
         )}
-
-        {/* Right: Real-time Moon Phase Widget & NASA Attribution */}
-        <div className="flex items-center gap-3 pointer-events-auto">
-          <MoonPhaseWidget />
-
-          <div className="hidden lg:flex items-center gap-2 text-[10px] text-slate-500 font-mono">
-            <span className="hidden xl:inline">NASA LRO Mosaic</span>
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-slate-400">Live WMTS</span>
-          </div>
-        </div>
-      </footer>
+      </div>
     </div>
   );
 }
