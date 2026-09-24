@@ -9,6 +9,7 @@ import * as Cesium from 'cesium';
 import 'cesium/Build/Cesium/Widgets/widgets.css';
 import { LUNAR_FEATURES } from '../data/lunarFeatures.js';
 import { LANDING_SITES } from '../data/landingSites.js';
+import { createCelestialOverlay } from './createCelestialOverlay.js';
 import {
   formatLunarCoordinates,
   getLunarRegionInfo,
@@ -331,6 +332,10 @@ export function createCesiumMoon(container, callbacks = {}) {
   cameraController.zoomFactor = 2.0;
   cameraController.minimumZoomDistance = 20000.0; // 20 km minimum altitude
   cameraController.maximumZoomDistance = 30000000.0; // 30,000 km overview
+
+  // Real-time Earth & Sun overlay. Also drives scene.light from the lunar ephemeris,
+  // so the solar-shading terminator matches the Sun marker.
+  const celestial = createCelestialOverlay(viewer);
 
   // 3. Populate Lunar Feature Pin Entities using Categorized Vector Billboards
   const pinEntities = [];
@@ -760,6 +765,7 @@ export function createCesiumMoon(container, callbacks = {}) {
 
   // Destruction / cleanup
   const destroy = () => {
+    celestial.destroy();
     if (removeRotationListener) {
       removeRotationListener();
       removeRotationListener = null;
@@ -787,6 +793,9 @@ export function createCesiumMoon(container, callbacks = {}) {
     toggleLighting,
     dropCustomPin,
     clearCustomPin,
+    setCelestialTime: celestial.setTime,
+    setCelestialVisible: celestial.setVisible,
+    flyToCelestialOverview: celestial.flyToOverview,
     destroy,
   };
 }

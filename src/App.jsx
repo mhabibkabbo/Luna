@@ -9,6 +9,7 @@ import LayerPanel from './components/layers/LayerPanel.jsx';
 import FeaturePanel from './components/features/FeaturePanel.jsx';
 import MeasurementToolbar from './components/measurements/MeasurementToolbar.jsx';
 import TerrainModeBar from './components/map/TerrainModeBar.jsx';
+import CelestialPanel from './components/celestial/CelestialPanel.jsx';
 import { LUNAR_LAYERS_CATALOG } from './services/nasa/layers.js';
 import { Layers, Ruler, Target, Globe, Map as MapIcon } from 'lucide-react';
 
@@ -300,6 +301,10 @@ export default function App() {
             onResolutionChange={handleResolutionChange}
           />
         )}
+
+        {/* Real-time Earth & Sun positions (3D globe only). Kept after the globe so the
+            globe instance exists when the panel's effects run. */}
+        <CelestialPanel globeRef={globeRef} isActive={viewMode === '3d'} />
 
         {/* Floating Feature & Symbol Quick-Toggle Toolbar */}
         <TerrainModeBar

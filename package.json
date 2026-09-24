@@ -10,6 +10,7 @@
     "lint": "node -e 'console.log(\"Lint passed\")'"
   },
   "dependencies": {
+    "astronomy-engine": "^2.1.19",
     "cesium": "^1.145.0",
     "lucide-react": "^0.468.0",
     "ol": "^10.10.0",

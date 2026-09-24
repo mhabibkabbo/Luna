@@ -104,6 +104,10 @@ const LunarGlobe3D = forwardRef(function LunarGlobe3D(
     setLayerVisibility: (layerId, isVisible) => {
       globeInstanceRef.current?.setLayerVisibility(layerId, isVisible);
     },
+    // Earth & Sun overlay (see CelestialPanel)
+    setCelestialTime: (date) => globeInstanceRef.current?.setCelestialTime(date),
+    setCelestialVisible: (visible) => globeInstanceRef.current?.setCelestialVisible(visible),
+    flyToCelestialOverview: () => globeInstanceRef.current?.flyToCelestialOverview(),
   }));
 
   return (
