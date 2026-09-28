@@ -260,9 +260,12 @@ export function createCelestialOverlay(viewer, options = {}) {
   // Hide Cesium's Earth-centric Sun.
   // We replace it with a Sun positioned using the lunar ephemeris.
   if (scene.sun) {
-    scene.sun.show = false;
+    scene.sun.show = true;
   }
 
+  // FOR NOW, WE ARE USING CESIUM'S DEFAULT SUN, WHICH LOOKS GOOD, BUT THE POSITION WITH RESPECT TO
+  // THE MOON IS NOT SO ACCURATE, WILL FIX IT LATER
+  /*
   const sunBillboards = new Cesium.BillboardCollection();
 
   group.add(sunBillboards);
@@ -277,6 +280,7 @@ export function createCelestialOverlay(viewer, options = {}) {
 
     disableDepthTestDistance: Number.POSITIVE_INFINITY,
   });
+  */
 
   // if (scene.moon) scene.moon.show = false;
 
@@ -326,7 +330,7 @@ export function createCelestialOverlay(viewer, options = {}) {
 
     // Sun: position, sprite and vector
     const sunPos = scaled(sun.dir, LAYOUT.sunDistance);
-    sunBillboard.position = sunPos;
+    // sunBillboard.position = sunPos;
     sunVector.positions = [
       scaled(sun.dir, R_MOON + LAYOUT.surfaceLift),
       scaled(sun.dir, LAYOUT.sunDistance - LAYOUT.sunSpriteSize * 0.2),

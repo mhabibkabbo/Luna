@@ -4,10 +4,7 @@
  * commands to whichever planet is currently active.
  */
 
-export function createPlanetManager({
-  moonController,
-  earthController,
-}) {
+export function createPlanetManager({ moonController, earthController }) {
   const moonViewer = moonController.getViewer();
   const earthViewer = earthController.viewer;
 
@@ -21,47 +18,58 @@ export function createPlanetManager({
     earth: earthViewer,
   };
 
-  let activePlanet = 'moon';
+  let activePlanet = "moon";
 
   function setViewerActive(viewer, active) {
     viewer.useDefaultRenderLoop = active;
-    viewer.container.style.display =
-      active ? 'block' : 'none';
+    viewer.container.style.display = active ? "block" : "none";
   }
 
-  
   function switchTo(planetName) {
     if (!(planetName in controllers)) {
-      throw new Error(
-        `Unknown planet: "${planetName}"`
-      );
+      throw new Error(`Unknown planet: "${planetName}"`);
     }
-    
+
     if (planetName === activePlanet) {
       return;
     }
-    
-    setViewerActive(
-      viewers[activePlanet],
-      false
-    );
-    
-    setViewerActive(
-      viewers[planetName],
-      true
-    );
-    
+
+    setViewerActive(viewers[activePlanet], false);
+    setViewerActive(viewers[planetName], true);
+
     activePlanet = planetName;
   }
-  
+
   function getActivePlanet() {
     return activePlanet;
   }
-  
+
   function getActiveController() {
     return controllers[activePlanet];
   }
-  
+
+  // --- Delegate methods ---------------------------------------------------
+
+  function toggleLighting() {
+    return getActiveController()?.toggleLighting?.();
+  }
+
+  function toggleAutoRotate() {
+    return getActiveController()?.toggleAutoRotate?.();
+  }
+
+  function setLayerVisibility(layerId, isVisible) {
+    getActiveController()?.setLayerVisibility?.(layerId, isVisible);
+  }
+
+  function dropCustomPin(lon, lat, name) {
+    return moonController.dropCustomPin?.(lon, lat, name);
+  }
+
+  function clearCustomPin() {
+    moonController.clearCustomPin?.();
+  }
+
   function setCelestialTime(when) {
     moonController.setCelestialTime(when);
   }
@@ -75,23 +83,19 @@ export function createPlanetManager({
   }
 
   function resetOverview() {
-    getActiveController().resetOverview();
+    getActiveController()?.resetOverview();
   }
 
   function zoomIn() {
-    getActiveController().zoomIn();
+    getActiveController()?.zoomIn();
   }
 
   function zoomOut() {
-    getActiveController().zoomOut();
+    getActiveController()?.zoomOut();
   }
 
-  function flyToCoordinate(
-    longitude,
-    latitude,
-    height
-  ) {
-    getActiveController().flyToCoordinate(
+  function flyToCoordinate(longitude, latitude, height) {
+    getActiveController()?.flyToCoordinate(
       longitude,
       latitude,
       height
@@ -103,9 +107,12 @@ export function createPlanetManager({
     earthController.destroy();
   }
 
-  // Start with Moon visible.
+  // --- Initial viewer state -----------------------------------------------
+
   setViewerActive(moonViewer, true);
   setViewerActive(earthViewer, false);
+
+  // --- Public API ----------------------------------------------------------
 
   return {
     switchTo,
@@ -116,6 +123,13 @@ export function createPlanetManager({
     zoomIn,
     zoomOut,
     flyToCoordinate,
+
+    toggleLighting,
+    toggleAutoRotate,
+    setLayerVisibility,
+
+    dropCustomPin,
+    clearCustomPin,
 
     setCelestialTime,
     setCelestialVisible,
