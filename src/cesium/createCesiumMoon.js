@@ -16,6 +16,10 @@ import {
   findNearestLunarFeature,
 } from '../utils/coordinates.js';
 
+import { createMoonGlobe } from './createMoonGlobe.js'; // imports the cesium globe for moon 
+import { createEarthGlobe } from './createEarthGlobe.js'; // same for Earth 
+import { createPlanetManager } from './createPlanetManager.js'; // imports the planet manager
+
 // Combined catalog for nearest neighbor calculations
 const ALL_CATALOG_FEATURES = [...LUNAR_FEATURES, ...LANDING_SITES];
 
@@ -33,7 +37,7 @@ Cesium.Ion.defaultAccessToken = '';
 // See: https://github.com/CesiumGS/cesium/issues/4244
 if ('default' in Cesium.Ellipsoid) {
   // Cesium >= 1.113: the officially supported way to switch bodies.
-  Cesium.Ellipsoid.default = Cesium.Ellipsoid.MOON;
+  Cesium.Ellipsoid.default = Cesium.Ellipsoid.MOON;  // not changed (for now)
 }
 
 // In-memory cache for high-DPI category pin data URLs
@@ -254,36 +258,23 @@ function getLunarMarkerDataUrl(category = 'crater_minor', isSelected = false) {
  * @returns {Object} Cesium Moon Controller API
  */
 export function createCesiumMoon(container, callbacks = {}) {
+  let destroyed = false;
   // 1. Create NASA LRO WAC Global Multi-Resolution WMTS Imagery Provider
-  const nasaLroProvider = new Cesium.UrlTemplateImageryProvider({
-    url: 'https://trek.nasa.gov/tiles/Moon/EQ/LRO_WAC_Mosaic_Global_303ppd_v02/1.0.0/default/default028mm/{z}/{y}/{x}.jpg',
-    ellipsoid: Cesium.Ellipsoid.MOON,
-    tilingScheme: new Cesium.GeographicTilingScheme({
-      ellipsoid: Cesium.Ellipsoid.MOON,
-      numberOfLevelZeroTilesX: 2,
-      numberOfLevelZeroTilesY: 1,
-    }),
-    maximumLevel: 8,
-    hasAlphaChannel: false,
-    credit: new Cesium.Credit('NASA / LROC / USGS Moon Trek'),
-  });
-
-  const baseLayer = new Cesium.ImageryLayer(nasaLroProvider);
-  baseLayer.brightness = 1.06;
-  baseLayer.contrast = 1.12;
+  // REMOVED: They belong to ./createMoonGlobe.js now
 
   // 2. Initialize Cesium.Viewer with Moon Ellipsoid and custom baseLayer (disabling Ion)
+  // Using the imported MoonGlobe from ./createMoonGlobe.js
+  const moonGlobe = createMoonGlobe();
+
   const viewer = new Cesium.Viewer(container, {
-    globe: new Cesium.Globe(Cesium.Ellipsoid.MOON),
-    // Explicit, version-independent belt-and-suspenders fix alongside the
-    // Ellipsoid.default assignment above: without this, mapProjection
-    // defaults to `new GeographicProjection()`, i.e. WGS84.
-    mapProjection: new Cesium.GeographicProjection(Cesium.Ellipsoid.MOON),
-    baseLayer: baseLayer,
-    terrainProvider: new Cesium.EllipsoidTerrainProvider({
-      ellipsoid: Cesium.Ellipsoid.MOON,
-    }),
-    skyAtmosphere: false, // Lunar space environment has no atmosphere
+    globe: moonGlobe,
+
+    mapProjection: new Cesium.GeographicProjection(
+      Cesium.Ellipsoid.MOON
+    ),
+
+    skyAtmosphere: false,
+
     baseLayerPicker: false,
     geocoder: false,
     homeButton: false,
@@ -294,7 +285,9 @@ export function createCesiumMoon(container, callbacks = {}) {
     navigationHelpButton: false,
     fullscreenButton: false,
     sceneModePicker: false,
+
     orderIndependentTranslucency: false,
+
     contextOptions: {
       webgl: {
         alpha: true,
@@ -303,6 +296,10 @@ export function createCesiumMoon(container, callbacks = {}) {
     },
   });
 
+  // Earth Globe created, but not shown right away
+  const earthGlobe = createEarthGlobe();
+
+  
   // Enable high-DPI native resolution scale for razor-sharp rendering on Retina/4K screens
   viewer.resolutionScale = Math.min(window.devicePixelRatio || 1.0, 2.0);
   viewer.useBrowserRecommendedResolution = false;
@@ -311,10 +308,12 @@ export function createCesiumMoon(container, callbacks = {}) {
   const scene = viewer.scene;
   scene.backgroundColor = Cesium.Color.fromCssColorString('#050811');
   scene.globe.baseColor = Cesium.Color.fromCssColorString('#1e293b');
-  scene.globe.enableLighting = false; // Default clean full surface illumination
+  scene.globe.enableLighting = true; // Defaults to RTX (jk)
   scene.globe.depthTestAgainstTerrain = true; // Occlude markers on the far side of the Moon
-  scene.highDynamicRange = true;
+  scene.highDynamicRange = false;
   scene.globe.maximumScreenSpaceError = 1.5;
+  scene.globe.lambertDiffuseMultiplier = 1.0;
+  scene.globe.vertexShadowDarkness = 2.0;
 
   // Configure Moon camera controller with Moon ellipsoid to prevent sphere distortion
   const cameraController = scene.screenSpaceCameraController;
@@ -331,11 +330,12 @@ export function createCesiumMoon(container, callbacks = {}) {
   cameraController.inertiaZoom = 0.80;
   cameraController.zoomFactor = 2.0;
   cameraController.minimumZoomDistance = 20000.0; // 20 km minimum altitude
-  cameraController.maximumZoomDistance = 30000000.0; // 30,000 km overview
+  cameraController.maximumZoomDistance = 1_000_000_000; // 1M km overview
 
   // Real-time Earth & Sun overlay. Also drives scene.light from the lunar ephemeris,
   // so the solar-shading terminator matches the Sun marker.
   const celestial = createCelestialOverlay(viewer);
+
 
   // 3. Populate Lunar Feature Pin Entities using Categorized Vector Billboards
   const pinEntities = [];
@@ -471,6 +471,34 @@ export function createCesiumMoon(container, callbacks = {}) {
       addFeaturePin(feat, 'lunar-valleys', 'valley', 3);
     }
   });
+
+
+  // // 3.5 (?, idk how to number this) INIT THE PLANET MANAGER
+  // const planetManager = createPlanetManager(viewer, {
+  //   moonGlobe,
+  //   earthGlobe,
+
+  //   onSwitch: (planetName) => {
+  //     const moonIsActive = planetName === 'moon';
+
+  //     celestial.setVisible(moonIsActive);
+
+  //     pinEntities.forEach((entity) => {
+  //       entity.show = moonIsActive;
+  //     });
+  //   },
+  // });
+
+
+  // // FOR TESTING 
+  // window.testEarth = () => {
+  //   planetManager.switchTo('earth');
+  // };
+
+  // window.testMoon = () => {
+  //   planetManager.switchTo('moon');
+  // };
+
 
   // 4. Screen Space Event Handler for Mouse Hover and Clicks
   const handler = new Cesium.ScreenSpaceEventHandler(scene.canvas);
@@ -783,6 +811,8 @@ export function createCesiumMoon(container, callbacks = {}) {
   };
 
   return {
+    getViewer: () => viewer,
+    
     flyToCoordinate,
     flyToSouthPole,
     resetOverview,
@@ -793,9 +823,13 @@ export function createCesiumMoon(container, callbacks = {}) {
     toggleLighting,
     dropCustomPin,
     clearCustomPin,
-    setCelestialTime: celestial.setTime,
-    setCelestialVisible: celestial.setVisible,
-    flyToCelestialOverview: celestial.flyToOverview,
-    destroy,
+    setCelestialTime: (when) => celestial.setCelestialTime(when),
+    setCelestialVisible: (visible) => celestial.setCelestialVisible(visible),
+    flyToCelestialOverview: () => celestial.flyToCelestialOverview(),
+
+    destroy() {
+      destroyed = true;
+      viewer.destroy();
+    },
   };
 }

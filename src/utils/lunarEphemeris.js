@@ -172,7 +172,7 @@ export function computeCelestialState(when) {
     Astronomy.InverseRotation(Astronomy.Rotation_EQJ_EQD(time)),
     time
   );
-  const earthFixedToEqd = transpose(R3(gast)); // active rotation about +Z by GAST
+  const earthFixedToEqd = transpose(R3(-gast)); // active rotation about +Z by GAST
   const earthFixedToEqj = mul(eqdToEqj, earthFixedToEqd);
   const earthToMoonFixed = mul(moonFixed, earthFixedToEqj);
 

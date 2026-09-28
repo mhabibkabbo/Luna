@@ -24,9 +24,11 @@ const R_MOON = MOON_RADIUS_KM * 1000; // metres, equals Ellipsoid.MOON.maximumRa
 
 /** Schematic display layout, in metres from the Moon's centre. */
 const LAYOUT = {
-  earthDistance: 3.4 * R_MOON,
-  earthRadius: 0.55 * R_MOON,
-  sunDistance: 4.6 * R_MOON,
+  earthDistance: 384400*1000,
+  // earthDistance: 1441*100000,  // dont worry val for testing
+  // earthRadius: 0.55 * R_MOON,
+  earthRadius: 6371 * 1000,
+  sunDistance:  4.6 * R_MOON, // 150*1000*1000*1000
   sunSpriteSize: 3.4 * R_MOON, // sprite width; the bright disc is roughly a third of it
   surfaceLift: 6000, // keeps sub-point markers clear of the terrain
 };
@@ -39,9 +41,14 @@ const COLORS = {
 
 // Same package and version the app already pulls its textures from.
 const EARTH_TEXTURE_URLS = [
-  'https://cdn.jsdelivr.net/npm/three-globe@2.31.0/example/img/earth-blue-marble.jpg',
-  'https://unpkg.com/three-globe@2.31.0/example/img/earth-blue-marble.jpg',
+  // Local public asset fallback
+  "/public/assets/earth-blue-marble.jpg",
+
+  // CDN fallbacks
+  "https://cdn.jsdelivr.net/npm/three-globe@2.31.0/example/img/earth-blue-marble.jpg",
+  "https://unpkg.com/three-globe@2.31.0/example/img/earth-blue-marble.jpg",
 ];
+
 
 const LABEL_FONT = '600 12px "Plus Jakarta Sans", system-ui, -apple-system, sans-serif';
 const LABEL_FONT_SMALL = '600 11px "Plus Jakarta Sans", system-ui, -apple-system, sans-serif';
@@ -129,6 +136,7 @@ function makeLabel(labels, { fill, offsetY, small = false }) {
  *   light computes the Sun for Earth's rotating frame, which is wrong for the Moon.
  */
 export function createCelestialOverlay(viewer, options = {}) {
+  let destroyed = false;
   const { initialDate = new Date(), syncLighting = true } = options;
   const scene = viewer.scene;
 
@@ -136,33 +144,49 @@ export function createCelestialOverlay(viewer, options = {}) {
   scene.primitives.add(group);
 
   // --- Earth ---------------------------------------------------------------
-  const earthSphere = new Cesium.EllipsoidPrimitive({
-    radii: new Cartesian3(LAYOUT.earthRadius, LAYOUT.earthRadius, LAYOUT.earthRadius),
+
+  const earthAppearance = new Cesium.MaterialAppearance({
     material: Cesium.Material.fromType('Color', {
       color: Color.fromCssColorString(COLORS.earthFallback),
     }),
+    translucent: false,
+    closed: true,
   });
+
+  const earthSphere = new Cesium.Primitive({
+    geometryInstances: new Cesium.GeometryInstance({
+      geometry: new Cesium.EllipsoidGeometry({
+        radii: new Cesium.Cartesian3(
+          LAYOUT.earthRadius,
+          LAYOUT.earthRadius,
+          LAYOUT.earthRadius
+        ),
+        vertexFormat: earthAppearance.vertexFormat,
+      }),
+    }),
+
+    appearance: earthAppearance,
+
+    cull: false,
+    asynchronous: false,
+  });
+
   group.add(earthSphere);
 
-  let destroyed = false;
   firstLoadableImage(EARTH_TEXTURE_URLS).then((url) => {
-    // Keep the solid-blue sphere if no mirror is reachable
-    if (!url || destroyed) return;
-    earthSphere.material = Cesium.Material.fromType('Image', { image: url });
+    if (!url || destroyed) {
+      return;
+    }
+
+    earthAppearance.material =
+      Cesium.Material.fromType('Image', {
+        image: url,
+      });
+
     scene.requestRender?.();
   });
 
-  // --- Sun -----------------------------------------------------------------
-  const billboards = new Cesium.BillboardCollection();
-  group.add(billboards);
-  const sunSprite = billboards.add({
-    image: createSunSprite(),
-    sizeInMeters: true,
-    width: LAYOUT.sunSpriteSize,
-    height: LAYOUT.sunSpriteSize,
-    position: Cartesian3.ZERO,
-  });
-
+  
   // --- Direction vectors ---------------------------------------------------
   const polylines = new Cesium.PolylineCollection();
   group.add(polylines);
@@ -221,16 +245,40 @@ export function createCelestialOverlay(viewer, options = {}) {
     moonLight = new Cesium.DirectionalLight({
       direction: new Cartesian3(-1, 0, 0),
       color: previousLight?.color,
-      intensity: previousLight?.intensity ?? 2.0,
+      intensity: previousLight?.intensity ?? 5.0,
     });
     scene.light = moonLight;
   }
+
+  // --- Lunar Sun visual -----------------------------------------------------
   // Cesium draws its own Sun and Earth's Moon at Earth-based positions, which would
   // contradict the accurate markers. Hide them while the overlay is active.
+
   const previousSunShow = scene.sun?.show;
   const previousMoonShow = scene.moon?.show;
-  if (scene.sun) scene.sun.show = false;
-  if (scene.moon) scene.moon.show = false;
+
+  // Hide Cesium's Earth-centric Sun.
+  // We replace it with a Sun positioned using the lunar ephemeris.
+  if (scene.sun) {
+    scene.sun.show = false;
+  }
+
+  const sunBillboards = new Cesium.BillboardCollection();
+
+  group.add(sunBillboards);
+
+  const sunBillboard = sunBillboards.add({
+    image: createSunSprite(),
+    position: Cartesian3.ZERO,
+
+    sizeInMeters: true,
+    width: LAYOUT.sunSpriteSize,
+    height: LAYOUT.sunSpriteSize,
+
+    disableDepthTestDistance: Number.POSITIVE_INFINITY,
+  });
+
+  // if (scene.moon) scene.moon.show = false;
 
   // --- State -------------------------------------------------------------------
   let lastState = null;
@@ -251,13 +299,24 @@ export function createCelestialOverlay(viewer, options = {}) {
     const { earth, sun } = state;
 
     // Earth: position, orientation (Earth-fixed -> Moon-fixed) and vector
-    const earthPos = scaled(earth.dir, LAYOUT.earthDistance);
+    const earthPos = scaled(
+      earth.dir,
+      LAYOUT.earthDistance
+    );
     const m = earth.toMoonFixed;
     Cesium.Matrix3.fromRowMajorArray(
-      [m[0][0], m[0][1], m[0][2], m[1][0], m[1][1], m[1][2], m[2][0], m[2][1], m[2][2]],
+      [
+        m[0][0], m[0][1], m[0][2],
+        m[1][0], m[1][1], m[1][2],
+        m[2][0], m[2][1], m[2][2],
+      ],
       rotation
     );
-    Cesium.Matrix4.fromRotationTranslation(rotation, earthPos, earthSphere.modelMatrix);
+    Cesium.Matrix4.fromRotationTranslation(
+      rotation,
+      earthPos,
+      earthSphere.modelMatrix
+    );
     earthVector.positions = [
       scaled(earth.dir, R_MOON + LAYOUT.surfaceLift),
       scaled(earth.dir, LAYOUT.earthDistance - LAYOUT.earthRadius * 1.02),
@@ -267,7 +326,7 @@ export function createCelestialOverlay(viewer, options = {}) {
 
     // Sun: position, sprite and vector
     const sunPos = scaled(sun.dir, LAYOUT.sunDistance);
-    sunSprite.position = sunPos;
+    sunBillboard.position = sunPos;
     sunVector.positions = [
       scaled(sun.dir, R_MOON + LAYOUT.surfaceLift),
       scaled(sun.dir, LAYOUT.sunDistance - LAYOUT.sunSpriteSize * 0.2),
@@ -349,8 +408,9 @@ export function createCelestialOverlay(viewer, options = {}) {
         (Math.abs(dot3(b.pos, up)) + b.margin) / tanV + towardCamera
       );
     }
-    // Stay inside the viewer's maximum zoom (30,000 km above the surface)
-    distance = Math.min(distance * 1.08, R_MOON + 2.95e7);
+    
+    // Allow the camera to reach the Earth at its real display distance.
+    distance *= 1.08;
 
     viewer.camera.flyTo({
       destination: new Cartesian3(c[0] * distance, c[1] * distance, c[2] * distance),
@@ -381,6 +441,9 @@ export function createCelestialOverlay(viewer, options = {}) {
 
   return {
     setTime,
+    setCelestialTime: setTime,
+    setCelestialVisible: setVisible,
+    flyToCelestialOverview: flyToOverview,
     getState: () => lastState,
     setVisible,
     isVisible: () => group.show,
