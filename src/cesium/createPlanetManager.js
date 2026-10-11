@@ -70,16 +70,20 @@ export function createPlanetManager({ moonController, earthController }) {
     moonController.clearCustomPin?.();
   }
 
+  function selectFeaturePin(featureId) {
+    moonController.selectFeaturePin?.(featureId);
+  }
+
   function setCelestialTime(when) {
-    moonController.setCelestialTime(when);
+    return moonController.setCelestialTime?.(when);
   }
 
   function setCelestialVisible(visible) {
-    moonController.setCelestialVisible(visible);
+    moonController.setCelestialVisible?.(visible);
   }
 
   function flyToCelestialOverview() {
-    moonController.flyToCelestialOverview();
+    moonController.flyToCelestialOverview?.();
   }
 
   function resetOverview() {
@@ -103,8 +107,8 @@ export function createPlanetManager({ moonController, earthController }) {
   }
 
   function destroy() {
-    moonController.destroy();
-    earthController.destroy();
+    moonController?.destroy?.();
+    earthController?.destroy?.();
   }
 
   // --- Initial viewer state -----------------------------------------------
@@ -130,6 +134,7 @@ export function createPlanetManager({ moonController, earthController }) {
 
     dropCustomPin,
     clearCustomPin,
+    selectFeaturePin,
 
     setCelestialTime,
     setCelestialVisible,

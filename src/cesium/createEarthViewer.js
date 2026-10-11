@@ -11,6 +11,7 @@ export function createEarthViewer(container) {
 
     const viewer = new Cesium.Viewer(container, {
         globe: earthGlobe,
+        baseLayer: false,
 
         mapProjection:
             new Cesium.GeographicProjection(Cesium.Ellipsoid.WGS84),
@@ -136,7 +137,9 @@ export function createEarthViewer(container) {
         flyToCoordinate,
 
         destroy() {
-            viewer.destroy();
+            if (viewer && !viewer.isDestroyed()) {
+                viewer.destroy();
+            }
         },
     };
 }

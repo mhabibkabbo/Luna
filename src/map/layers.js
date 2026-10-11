@@ -77,11 +77,18 @@ export function craterStyleFunction(feature, resolution) {
   const diameterKm = feature.get('diameterKm') || 0;
 
   // Zoom levels: Level 0 ~ 0.70, Level 1 ~ 0.35, Zoom 2.5 ~ 0.25, Level 2 ~ 0.17, Level 3 ~ 0.08
-  const isMajorCrater = diameterKm >= 60 || ['Tycho', 'Copernicus', 'Plato', 'Clavius', 'Aristarchus', 'Kepler', 'Langrenus', 'Shackleton', 'Archimedes', 'Ptolemaeus', 'Theophilus', 'Gassendi'].includes(name);
-  const showLabel = isSelected || (resolution <= 0.45 && isMajorCrater) || (resolution <= 0.25 && diameterKm >= 30) || resolution <= 0.12;
+  const isIconicCrater = ['Tycho', 'Copernicus', 'Shackleton'].includes(name);
+  const isMajorCrater = diameterKm >= 80 || ['Plato', 'Clavius', 'Aristarchus', 'Kepler'].includes(name);
+  
+  // Decluttered zoom thresholds: Never show all labels simultaneously at overview
+  const showLabel = isSelected || 
+    (resolution <= 0.14 && isIconicCrater) || 
+    (resolution <= 0.07 && isMajorCrater) || 
+    (resolution <= 0.035 && diameterKm >= 35) || 
+    resolution <= 0.02;
 
-  const radius = isSelected ? 9 : (resolution < 0.1 ? 7 : 5.5);
-  const ringColor = isSelected ? '#38bdf8' : '#7dd3fc';
+  const radius = isSelected ? 8 : (resolution < 0.1 ? 6 : 4.5);
+  const ringColor = isSelected ? '#38bdf8' : (isIconicCrater ? '#94a3b8' : '#64748b');
   const fillColor = isSelected ? '#0284c7' : 'rgba(15, 23, 42, 0.85)';
 
   return new Style({
@@ -90,21 +97,21 @@ export function craterStyleFunction(feature, resolution) {
       fill: new Fill({ color: fillColor }),
       stroke: new Stroke({
         color: ringColor,
-        width: isSelected ? 3 : 1.8,
+        width: isSelected ? 2.5 : (isIconicCrater ? 1.5 : 1.1),
       }),
     }),
     text: showLabel
       ? new Text({
           text: diameterKm ? `${name} (${Math.round(diameterKm)} km)` : name,
-          font: isSelected ? 'bold 13px "Plus Jakarta Sans", sans-serif' : '600 12px "Plus Jakarta Sans", sans-serif',
-          offsetY: -15,
-          fill: new Fill({ color: isSelected ? '#38bdf8' : '#f8fafc' }),
-          stroke: new Stroke({ color: '#050811', width: 4 }),
-          backgroundFill: new Fill({ color: 'rgba(5, 8, 17, 0.85)' }),
+          font: isSelected ? 'bold 12px system-ui, sans-serif' : '500 10.5px system-ui, sans-serif',
+          offsetY: -14,
+          fill: new Fill({ color: isSelected ? '#38bdf8' : '#e2e8f0' }),
+          stroke: new Stroke({ color: '#030712', width: 3 }),
+          backgroundFill: new Fill({ color: 'rgba(3, 7, 18, 0.88)' }),
           padding: [2, 5, 2, 5],
         })
       : undefined,
-    zIndex: isSelected ? 120 : (isMajorCrater ? 50 : 20),
+    zIndex: isSelected ? 120 : (isIconicCrater ? 60 : (isMajorCrater ? 40 : 20)),
   });
 }
 
@@ -140,23 +147,13 @@ export function mountainStyleFunction(feature, resolution) {
     'Montes Apenninus',
     'Montes Caucasus',
     'Montes Alpes',
-    'Montes Carpatus',
-    'Montes Jura',
-    'Montes Taurus',
-    'Montes Haemus',
-    'Montes Pyrenaeus',
-    'Montes Rook',
-    'Montes Cordillera',
     'Mons Huygens',
-    'Mons Pico',
-    'Mons Piton',
     'Mons Hadley',
-    'Mons Bradley',
-    'Mons Blanc',
   ].includes(name);
-  const showLabel = isSelected || (resolution <= 0.38 && isMajorRange) || resolution <= 0.20;
+  // Declutter: only prominent ranges when zooming in, and all mountains only at close-up
+  const showLabel = isSelected || (resolution <= 0.08 && isMajorRange) || resolution <= 0.025;
 
-  const peakSize = isSelected ? 8 : (resolution < 0.1 ? 6.5 : 5);
+  const peakSize = isSelected ? 8 : (resolution < 0.1 ? 6 : 4.5);
 
   return new Style({
     image: new RegularShape({
@@ -171,8 +168,8 @@ export function mountainStyleFunction(feature, resolution) {
     }),
     text: showLabel
       ? new Text({
-          text: elevationM ? `${name} (${elevationM.toLocaleString()}m)` : name,
-          font: isSelected ? 'bold 12px "Plus Jakarta Sans", sans-serif' : '600 11px "Plus Jakarta Sans", sans-serif',
+          text: elevationM ? `${name} (+${elevationM.toLocaleString()}m)` : name,
+          font: isSelected ? 'bold 12px system-ui, sans-serif' : '600 10.5px system-ui, sans-serif',
           offsetY: -14,
           fill: new Fill({ color: isSelected ? '#fde68a' : '#fef3c7' }),
           stroke: new Stroke({ color: '#1c1917', width: 3.5 }),
@@ -192,7 +189,8 @@ export function mareStyleFunction(feature, resolution) {
   const isSelected = feature.get('isSelected');
   const name = feature.get('name');
 
-  const showLabel = isSelected || resolution <= 0.32;
+  // Maria are large geographical expanses; show labels only at moderate to deep zoom
+  const showLabel = isSelected || resolution <= 0.14;
 
   return new Style({
     image: new CircleStyle({
@@ -206,7 +204,7 @@ export function mareStyleFunction(feature, resolution) {
     text: showLabel
       ? new Text({
           text: name.toUpperCase(),
-          font: isSelected ? 'bold 12px "Space Mono", monospace' : 'bold 11px "Space Mono", monospace',
+          font: isSelected ? 'bold 12px monospace' : 'bold 10.5px monospace',
           offsetY: -13,
           fill: new Fill({ color: isSelected ? '#67e8f9' : '#93c5fd' }),
           stroke: new Stroke({ color: '#030712', width: 4 }),
@@ -226,12 +224,13 @@ export function valleyStyleFunction(feature, resolution) {
   const name = feature.get('name');
   const lengthKm = feature.get('lengthKm');
 
-  const showLabel = isSelected || resolution <= 0.28;
+  // Valleys are local geological features; show labels only when zoomed in
+  const showLabel = isSelected || resolution <= 0.05;
 
   return new Style({
     image: new RegularShape({
       points: 4,
-      radius: isSelected ? 6.5 : 4.5,
+      radius: isSelected ? 6.5 : 4,
       rotation: Math.PI / 4, // Diamond
       fill: new Fill({ color: isSelected ? '#c084fc' : '#a855f7' }),
       stroke: new Stroke({
@@ -242,7 +241,7 @@ export function valleyStyleFunction(feature, resolution) {
     text: showLabel
       ? new Text({
           text: lengthKm ? `${name} (${lengthKm} km)` : name,
-          font: isSelected ? 'bold 12px "Plus Jakarta Sans", sans-serif' : '600 11px "Plus Jakarta Sans", sans-serif',
+          font: isSelected ? 'bold 12px system-ui, sans-serif' : '600 10.5px system-ui, sans-serif',
           offsetY: -14,
           fill: new Fill({ color: isSelected ? '#e9d5ff' : '#d8b4fe' }),
           stroke: new Stroke({ color: '#090d16', width: 3.5 }),
@@ -256,43 +255,54 @@ export function valleyStyleFunction(feature, resolution) {
 
 /**
  * Zoom-adaptive vector style function for mission landing sites.
+ * Prioritizes Apollo 11, Odysseus (NASA CLPS), and South Pole.
  */
 export function landingSiteStyleFunction(feature, resolution) {
   const isSelected = feature.get('isSelected');
-  const isApollo = feature.get('id')?.startsWith('landing-apollo');
+  const id = feature.get('id') || '';
+  const isApollo = id.startsWith('landing-apollo');
+  const isApollo11 = id === 'landing-apollo-11';
+  const isOdysseus = id === 'landing-odysseus';
+  const isArtemis = id.includes('artemis');
   const name = feature.get('name');
 
-  const showLabel = isSelected || resolution <= 0.45;
-  const fillColor = isApollo ? '#f59e0b' : '#06b6d4';
-  const strokeColor = isSelected ? '#ffffff' : (isApollo ? '#78350f' : '#083344');
+  // Priority landing sites visible earlier, other robotic probes only visible when zoomed in
+  const isTopMission = isApollo11 || isOdysseus || isArtemis || id === 'south-pole';
+  const showLabel = isSelected || 
+    (resolution <= 0.18 && isTopMission) || 
+    (resolution <= 0.09 && isApollo) || 
+    resolution <= 0.04;
+
+  const fillColor = isApollo ? '#f59e0b' : (isOdysseus ? '#06b6d4' : '#10b981');
+  const strokeColor = isSelected ? '#ffffff' : (isApollo ? '#78350f' : '#064e3b');
 
   return new Style({
     image: new CircleStyle({
-      radius: isSelected ? 9 : (isApollo ? 7.5 : 6.5),
+      radius: isSelected ? 8.5 : (isTopMission ? 7 : 5.5),
       fill: new Fill({ color: isSelected ? '#38bdf8' : fillColor }),
       stroke: new Stroke({
         color: strokeColor,
-        width: isSelected ? 3 : 2,
+        width: isSelected ? 2.5 : 1.5,
       }),
     }),
     text: showLabel
       ? new Text({
           text: name.split('(')[0].trim(),
-          font: isSelected ? 'bold 13px "Space Mono", monospace' : 'bold 11.5px "Space Mono", monospace',
+          font: isSelected ? 'bold 12px monospace' : 'bold 10.5px monospace',
           offsetY: -15,
           fill: new Fill({ color: isApollo ? '#fde68a' : '#a5f3fc' }),
-          stroke: new Stroke({ color: '#090d16', width: 4 }),
-          backgroundFill: new Fill({ color: 'rgba(9, 13, 22, 0.9)' }),
+          stroke: new Stroke({ color: '#090d16', width: 3.5 }),
+          backgroundFill: new Fill({ color: 'rgba(9, 13, 22, 0.88)' }),
           padding: [2, 5, 2, 5],
         })
       : undefined,
-    zIndex: isSelected ? 150 : (isApollo ? 80 : 70),
+    zIndex: isSelected ? 150 : (isTopMission ? 90 : (isApollo ? 80 : 70)),
   });
 }
 
 /**
  * Creates distinct vector layers for lunar natural features: mountains, maria, and valleys/rilles.
- * Craters and mission landing sites are omitted per user specification.
+ * Enables OpenLayers native decluttering to completely prevent overlapping text & symbols.
  * @returns {Object} Layer bundle with individual vector layers and sources.
  */
 export function createLunarVectorLayers() {
@@ -309,10 +319,11 @@ export function createLunarVectorLayers() {
   const valleysSource = new VectorSource({ features: createFeatureGeometries(valleys), wrapX: false });
   const landingSitesSource = new VectorSource({ features: createFeatureGeometries(landingSites), wrapX: false });
 
-  // Vector Layers
+  // Vector Layers with native collision decluttering enabled
   const cratersLayer = new VectorLayer({
     source: cratersSource,
     style: craterStyleFunction,
+    declutter: true,
     properties: { id: 'lunar-craters', category: 'FEATURES', layerType: 'vector' },
     zIndex: 25,
   });
@@ -320,6 +331,7 @@ export function createLunarVectorLayers() {
   const mountainsLayer = new VectorLayer({
     source: mountainsSource,
     style: mountainStyleFunction,
+    declutter: true,
     properties: { id: 'lunar-mountains', category: 'FEATURES', layerType: 'vector' },
     zIndex: 26,
   });
@@ -327,6 +339,7 @@ export function createLunarVectorLayers() {
   const mariaLayer = new VectorLayer({
     source: mariaSource,
     style: mareStyleFunction,
+    declutter: true,
     properties: { id: 'lunar-maria', category: 'FEATURES', layerType: 'vector' },
     zIndex: 20,
   });
@@ -334,6 +347,7 @@ export function createLunarVectorLayers() {
   const valleysLayer = new VectorLayer({
     source: valleysSource,
     style: valleyStyleFunction,
+    declutter: true,
     properties: { id: 'lunar-valleys', category: 'FEATURES', layerType: 'vector' },
     zIndex: 24,
   });
@@ -341,6 +355,7 @@ export function createLunarVectorLayers() {
   const landingSitesLayer = new VectorLayer({
     source: landingSitesSource,
     style: landingSiteStyleFunction,
+    declutter: true,
     properties: { id: 'lunar-landing-sites', category: 'FEATURES', layerType: 'vector' },
     zIndex: 28,
   });

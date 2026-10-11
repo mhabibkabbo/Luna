@@ -1,6 +1,6 @@
 {
   "name": "Lunar Explorer",
-  "description": "Interactive 3D Cesium Moon and 2D lunar GIS map, powered by CesiumJS and NASA Moon Trek WMTS data, featuring selenographic coordinates, lunar feature search, and live lunar phase ephemeris.",
+  "description": "Interactive 3D Cesium Moon and 2D lunar GIS map, powered by CesiumJS and NASA Moon Trek WMTS data, exploring NASA CLPS missions, landing sites, and live ephemeris.",
   "requestFramePermissions": [],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"

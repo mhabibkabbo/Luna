@@ -40,7 +40,6 @@ export default function TerrainModeBar({
     {
       id: 'lunar-landing-sites',
       name: 'Landing Sites',
-      glyph: '🚀',
       icon: Rocket,
       visible: isLandingsVisible,
       color: 'cyan',
@@ -50,7 +49,6 @@ export default function TerrainModeBar({
     {
       id: 'lunar-craters',
       name: 'Craters',
-      glyph: '⭕',
       icon: CircleDot,
       visible: isCratersVisible,
       color: 'slate',
@@ -60,7 +58,6 @@ export default function TerrainModeBar({
     {
       id: 'lunar-mountains',
       name: 'Mountains',
-      glyph: '▲',
       icon: Mountain,
       visible: isMountainsVisible,
       color: 'amber',
@@ -70,7 +67,6 @@ export default function TerrainModeBar({
     {
       id: 'lunar-maria',
       name: 'Maria (Seas)',
-      glyph: '🌊',
       icon: Waves,
       visible: isMariaVisible,
       color: 'sky',
@@ -80,7 +76,6 @@ export default function TerrainModeBar({
     {
       id: 'lunar-valleys',
       name: 'Valleys & Rilles',
-      glyph: '◆',
       icon: Diamond,
       visible: isValleysVisible,
       color: 'purple',
@@ -92,7 +87,7 @@ export default function TerrainModeBar({
   return (
     <div
       id="lunar-symbol-toolbar"
-      className="absolute top-16 left-3 sm:left-4 z-20 flex flex-col gap-2 pointer-events-auto max-w-[calc(100vw-24px)]"
+      className="absolute top-24 left-3 sm:left-4 z-20 flex flex-col gap-2 pointer-events-auto max-w-[calc(100vw-24px)]"
     >
       {/* Top Main Toolbar */}
       <div className="flex items-center gap-1.5 p-1 bg-slate-950/90 backdrop-blur-xl border border-slate-800/90 rounded-2xl shadow-2xl overflow-x-auto custom-scrollbar">
@@ -143,28 +138,31 @@ export default function TerrainModeBar({
 
         {/* Individual Symbol Quick Toggles (Mountains, Maria, Valleys & Rilles) */}
         <div className="flex items-center gap-1 shrink-0">
-          {symbolToggles.map((sym) => (
-            <button
-              key={sym.id}
-              type="button"
-              id={`btn-symbol-${sym.id}`}
-              onClick={() => onToggleLayer(sym.id, !sym.visible)}
-              title={`Toggle ${sym.name} on map (${sym.visible ? 'Visible - click to hide' : 'Hidden - click to show'})`}
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap border transition-all ${
-                sym.visible
-                  ? `${sym.accentClass} shadow-sm font-semibold`
-                  : 'bg-slate-900/60 text-slate-500 border-slate-800/80 hover:bg-slate-800/80 hover:text-slate-300'
-              }`}
-            >
-              <span className="text-[11px] leading-none select-none">{sym.glyph}</span>
-              <span>{sym.name}</span>
-              <span
-                className={`w-1.5 h-1.5 rounded-full transition-all ${
-                  sym.visible ? 'bg-current shadow-sm' : 'bg-slate-600'
+          {symbolToggles.map((sym) => {
+            const Icon = sym.icon;
+            return (
+              <button
+                key={sym.id}
+                type="button"
+                id={`btn-symbol-${sym.id}`}
+                onClick={() => onToggleLayer(sym.id, !sym.visible)}
+                title={`Toggle ${sym.name} on map (${sym.visible ? 'Visible - click to hide' : 'Hidden - click to show'})`}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap border transition-all ${
+                  sym.visible
+                    ? `${sym.accentClass} shadow-sm font-semibold`
+                    : 'bg-slate-900/60 text-slate-500 border-slate-800/80 hover:bg-slate-800/80 hover:text-slate-300'
                 }`}
-              />
-            </button>
-          ))}
+              >
+                <Icon className="w-3.5 h-3.5 shrink-0 select-none" />
+                <span>{sym.name}</span>
+                <span
+                  className={`w-1.5 h-1.5 rounded-full transition-all ${
+                    sym.visible ? 'bg-current shadow-sm' : 'bg-slate-600'
+                  }`}
+                />
+              </button>
+            );
+          })}
         </div>
 
         {/* Key & Info Drawer Toggle */}
@@ -214,36 +212,38 @@ export default function TerrainModeBar({
           </div>
 
           <div className="flex flex-col gap-2 text-[11px]">
-            {symbolToggles.map((sym) => (
-              <div
-                key={sym.id}
-                className="flex items-start gap-2.5 p-2 rounded-xl bg-slate-900/60 border border-slate-800/60"
-              >
-                <div className="w-6 h-6 rounded-lg bg-slate-800/80 flex items-center justify-center shrink-0 text-sm">
-                  {sym.glyph}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold text-slate-200">{sym.name}</span>
-                    <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">
-                      {sym.visible ? 'ON' : 'OFF'}
-                    </span>
+            {symbolToggles.map((sym) => {
+              const Icon = sym.icon;
+              return (
+                <div
+                  key={sym.id}
+                  className="flex items-start gap-2.5 p-2 rounded-xl bg-slate-900/60 border border-slate-800/60"
+                >
+                  <div className="w-6 h-6 rounded-lg bg-slate-800/80 flex items-center justify-center shrink-0 text-cyan-300">
+                    <Icon className="w-3.5 h-3.5" />
                   </div>
-                  <p className="text-[10px] text-slate-400 leading-tight mt-0.5">
-                    {sym.description}
-                  </p>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold text-slate-200">{sym.name}</span>
+                      <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">
+                        {sym.visible ? 'ON' : 'OFF'}
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-slate-400 leading-tight mt-0.5">
+                      {sym.description}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* NASA WMTS Connection note */}
           <div className="mt-3 p-2.5 rounded-xl bg-cyan-950/30 border border-cyan-500/20 flex items-center justify-between text-[11px] text-cyan-300">
             <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-              <span>NASA Moon Trek Active</span>
+              <span className="font-medium">NASA Moon Trek WMTS</span>
             </div>
-            <span className="font-mono text-[10px] text-cyan-400/80">trek.nasa.gov/tiles/Moon/EQ/</span>
+            <span className="font-mono text-[10px] text-cyan-400/80">trek.nasa.gov</span>
           </div>
         </div>
       )}

@@ -23,6 +23,8 @@ const LunarGlobe3D = forwardRef(function LunarGlobe3D(
     onDropCustomPin,
     hasCustomPin = false,
     onClearCustomPin,
+    activePlanet = 'moon',
+    onPlanetChange,
   },
   ref
 ) {
@@ -31,11 +33,21 @@ const LunarGlobe3D = forwardRef(function LunarGlobe3D(
   const moonContainerRef = useRef(null);
   const earthContainerRef = useRef(null);
   const planetManagerRef = useRef(null);
-  const [activePlanet, setActivePlanet] = useState('moon');
+  const [currentPlanet, setCurrentPlanet] = useState(activePlanet || 'moon');
 
   const [isAutoRotating, setIsAutoRotating] = useState(false);
   const [isSolarLighting, setIsSolarLighting] = useState(false);
   const [hoveredInfo, setHoveredInfo] = useState(null); // { feature, x, y }
+
+  // Sync external activePlanet prop
+  useEffect(() => {
+    if (planetManagerRef.current && activePlanet) {
+      if (planetManagerRef.current.getActivePlanet() !== activePlanet) {
+        planetManagerRef.current.switchTo(activePlanet);
+        setCurrentPlanet(activePlanet);
+      }
+    }
+  }, [activePlanet]);
 
     useEffect(() => {
     if (
@@ -81,9 +93,12 @@ const LunarGlobe3D = forwardRef(function LunarGlobe3D(
     planetManagerRef.current =
       planetManager;
 
-    setActivePlanet(
-      planetManager.getActivePlanet()
-    );
+    const initialPlanet = planetManager.getActivePlanet();
+    setCurrentPlanet(initialPlanet);
+    if (activePlanet && activePlanet !== initialPlanet) {
+      planetManager.switchTo(activePlanet);
+      setCurrentPlanet(activePlanet);
+    }
 
     // TESTING ONLY 
     window.testEarth = () => {
@@ -123,11 +138,12 @@ const LunarGlobe3D = forwardRef(function LunarGlobe3D(
   useImperativeHandle(ref, () => ({
     switchPlanet: (planetName) => {
       planetManagerRef.current?.switchTo(planetName);
-      setActivePlanet(planetName);
+      setCurrentPlanet(planetName);
+      onPlanetChange?.(planetName);
     },
 
     getActivePlanet: () => {
-      return planetManagerRef.current?.getActivePlanet();
+      return planetManagerRef.current?.getActivePlanet() || currentPlanet;
     },
 
     resetOverview: () => {
@@ -185,6 +201,7 @@ const LunarGlobe3D = forwardRef(function LunarGlobe3D(
     },
 
     selectFeature: (featureId) => {
+      planetManagerRef.current?.selectFeaturePin(featureId);
       const feat =
         LUNAR_FEATURES.find(
           (f) => f.id === featureId
@@ -202,6 +219,10 @@ const LunarGlobe3D = forwardRef(function LunarGlobe3D(
             : 900000
         );
       }
+    },
+
+    selectFeaturePin: (featureId) => {
+      planetManagerRef.current?.selectFeaturePin(featureId);
     },
 
     setLayerVisibility: (layerId, isVisible) => {
@@ -232,38 +253,6 @@ const LunarGlobe3D = forwardRef(function LunarGlobe3D(
         className="absolute inset-0"
         style={{ display: "none" }}
       />
-
-      {/* PLANET SWITCHER BUTTON */}
-      <button
-        type="button"
-        onClick={() => {
-          const nextPlanet = activePlanet === "moon" ? "earth" : "moon";
-
-          planetManagerRef.current?.switchTo(nextPlanet);
-          setActivePlanet(nextPlanet);
-        }}
-        className="absolute top-14 left-4 z-20 pointer-events-auto flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-medium text-slate-200 bg-slate-900/90 border border-slate-700/80 hover:bg-slate-800 hover:text-white transition-all shadow-xl backdrop-blur-md"
-        title={`Switch to ${activePlanet === "moon" ? "Earth" : "Moon"}`}
-      >
-        {activePlanet === "moon" ? (
-          <Globe className="h-4 w-4 text-cyan-400" />
-        ) : (
-          <Moon className="h-4 w-4 text-amber-300" />
-        )}
-
-        <span>
-          Switch to {activePlanet === "moon" ? "Earth" : "Moon"}
-        </span>
-      </button>
-
-      {/* 3D Cesium HUD Indicator */}
-      <div className="absolute top-4 right-4 z-10 pointer-events-none hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-950/80 backdrop-blur-md border border-cyan-500/30 text-[11px] text-cyan-300 shadow-lg">
-        <Globe className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
-
-        <span className="font-mono">
-          {activePlanet === "moon" ? "CesiumJS Moon" : "CesiumJS Earth"}
-        </span>
-      </div>
 
       {/* Floating Hover Feature Tooltip */}
       {hoveredInfo?.feature && (

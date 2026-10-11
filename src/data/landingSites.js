@@ -4,6 +4,35 @@
  * Sourced from NASA NSSDC Master Catalog, NASA History Office, CNSA, ISRO, and JAXA.
  */
 
+import { CLPS_MISSIONS } from './clpsMissions.js';
+
+export const CLPS_SITE_FEATURES = CLPS_MISSIONS.map((m) => ({
+  id: m.id,
+  name: m.name,
+  type: 'clps-mission',
+  latitude: m.latitude,
+  longitude: m.longitude,
+  agency: `${m.provider} / NASA CLPS`,
+  date: m.landingDate || m.launchDate,
+  status:
+    m.missionStatus === 'completed'
+      ? 'Completed soft landing'
+      : m.missionStatus === 'failed'
+      ? 'Flight anomaly (Earth re-entry)'
+      : 'Planned mission target',
+  description: m.description,
+  source: m.source,
+  sourceUrl: m.sourceUrl,
+  isClps: true,
+  clpsData: m,
+  locationType: m.locationType,
+  taskOrder: m.taskOrder,
+  provider: m.provider,
+  lander: m.lander,
+  payloads: m.payloads,
+  objectives: m.objectives,
+}));
+
 /**
  * @type {Array<import('../types/lunar.js').LunarFeature>}
  */
@@ -214,7 +243,7 @@ export const LANDING_SITES = [
   {
     id: 'landing-odysseus',
     name: 'Odysseus (IM-1 Nova-C)',
-    type: 'mission-site',
+    type: 'clps-mission',
     latitude: -80.13,
     longitude: 1.44,
     agency: 'Intuitive Machines / NASA CLPS',
@@ -222,7 +251,17 @@ export const LANDING_SITES = [
     status: 'First commercial lunar soft landing',
     description: 'NASA Commercial Lunar Payload Services (CLPS) mission landing at Malapert A, approximately 300 km from the lunar South Pole.',
     source: 'NASA CLPS / Intuitive Machines',
+    sourceUrl: 'https://www.nasa.gov/missions/clps/clps-intuitive-machines-im-1/',
+    isClps: true,
+    taskOrder: 'TO 2-IM',
+    provider: 'Intuitive Machines',
+    lander: 'Nova-C (Odysseus)',
+    locationType: 'confirmed',
+    payloads: CLPS_SITE_FEATURES[0]?.payloads || [],
+    objectives: CLPS_SITE_FEATURES[0]?.objectives || '',
   },
+  // Full Manifest of NASA Commercial Lunar Payload Services (CLPS) Missions
+  ...CLPS_SITE_FEATURES.filter((m) => m.id !== 'clps-im1-odysseus'),
   {
     id: 'landing-change-6',
     name: 'Chang\'e 6',

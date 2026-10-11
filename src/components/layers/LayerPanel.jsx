@@ -31,7 +31,7 @@ export default function LayerPanel({
   return (
     <div
       id="lunar-layer-panel"
-      className="absolute top-16 right-4 z-30 w-80 max-h-[calc(100vh-5.5rem)] flex flex-col bg-slate-900/95 backdrop-blur-xl border border-slate-800 rounded-2xl shadow-2xl overflow-hidden pointer-events-auto transition-all animate-fade-in"
+      className="absolute top-14 right-3 sm:right-4 z-30 w-80 max-h-[calc(100vh-5rem)] flex flex-col bg-[#060b14]/96 backdrop-blur-2xl border border-slate-800 rounded-xl shadow-2xl overflow-hidden pointer-events-auto transition-all animate-in fade-in select-none"
     >
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800 bg-slate-950/50">

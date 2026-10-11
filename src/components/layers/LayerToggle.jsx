@@ -1,5 +1,5 @@
 import React from 'react';
-import { Check, Sliders } from 'lucide-react';
+import { Check, Mountain, CircleDot, Waves, Diamond, Rocket, Radio } from 'lucide-react';
 
 /**
  * Individual layer toggle row with checkbox, description, and opacity control.
@@ -13,27 +13,27 @@ import { Check, Sliders } from 'lucide-react';
 export default function LayerToggle({ layer, onToggle, onChangeOpacity }) {
   const isRaster = layer.type === 'wmts';
 
-  // Corresponding symbol glyph
-  const getSymbolGlyph = (id) => {
+  // Corresponding symbol icon
+  const getSymbolBadge = (id) => {
     switch (id) {
       case 'lunar-mountains':
-        return { glyph: '▲', color: 'text-amber-400 bg-amber-950/40 border-amber-500/30' };
+        return { Icon: Mountain, color: 'text-amber-400 bg-amber-950/40 border-amber-500/30' };
       case 'lunar-craters':
-        return { glyph: '⭕', color: 'text-cyan-300 bg-cyan-950/40 border-cyan-500/30' };
+        return { Icon: CircleDot, color: 'text-cyan-300 bg-cyan-950/40 border-cyan-500/30' };
       case 'lunar-maria':
-        return { glyph: '🌊', color: 'text-sky-300 bg-sky-950/40 border-sky-500/30' };
+        return { Icon: Waves, color: 'text-sky-300 bg-sky-950/40 border-sky-500/30' };
       case 'lunar-valleys':
-        return { glyph: '◆', color: 'text-purple-300 bg-purple-950/40 border-purple-500/30' };
+        return { Icon: Diamond, color: 'text-purple-300 bg-purple-950/40 border-purple-500/30' };
       case 'apollo-landing-sites':
-        return { glyph: '🚀', color: 'text-amber-300 bg-amber-950/40 border-amber-500/30' };
+        return { Icon: Rocket, color: 'text-amber-300 bg-amber-950/40 border-amber-500/30' };
       case 'robotic-landing-sites':
-        return { glyph: '🛰️', color: 'text-emerald-300 bg-emerald-950/40 border-emerald-500/30' };
+        return { Icon: Radio, color: 'text-emerald-300 bg-emerald-950/40 border-emerald-500/30' };
       default:
         return null;
     }
   };
 
-  const symbolBadge = getSymbolGlyph(layer.id);
+  const symbolBadge = getSymbolBadge(layer.id);
 
   return (
     <div
@@ -68,9 +68,9 @@ export default function LayerToggle({ layer, onToggle, onChangeOpacity }) {
             <div className="flex items-center gap-1.5">
               {symbolBadge && (
                 <span
-                  className={`w-4 h-4 rounded flex items-center justify-center text-[10px] border ${symbolBadge.color}`}
+                  className={`w-4 h-4 rounded flex items-center justify-center border ${symbolBadge.color}`}
                 >
-                  {symbolBadge.glyph}
+                  <symbolBadge.Icon className="w-2.5 h-2.5" />
                 </span>
               )}
               <span

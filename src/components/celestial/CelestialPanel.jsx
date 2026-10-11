@@ -10,6 +10,7 @@ import {
   ChevronUp,
   ChevronDown,
   Maximize2,
+  X,
 } from 'lucide-react';
 import { formatLunarCoordinates } from '../../utils/coordinates.js';
 
@@ -72,10 +73,12 @@ function Readout({ icon: Icon, title, accent, children }) {
  *
  * @param {{
  *   globeRef: React.RefObject<any>,
- *   isActive: boolean
+ *   isActive: boolean,
+ *   isOpen?: boolean,
+ *   onClose?: () => void
  * }} props
  */
-export default function CelestialPanel({ globeRef, isActive }) {
+export default function CelestialPanel({ globeRef, isActive, isOpen = true, onClose }) {
   const [expanded, setExpanded] = useState(
     () => typeof window === 'undefined' || window.innerWidth >= 640
   );
@@ -190,7 +193,7 @@ export default function CelestialPanel({ globeRef, isActive }) {
     globeRef.current?.flyToCelestialOverview?.();
   };
 
-  if (!isActive) return null;
+  if (!isActive || !isOpen) return null;
 
   const { earth, sun, moon } = state || {};
   const iconButton =
@@ -201,16 +204,17 @@ export default function CelestialPanel({ globeRef, isActive }) {
   return (
     <div
       id="celestial-panel"
-      className="absolute bottom-14 left-3 sm:left-4 z-20 w-[min(21rem,calc(100vw-1.5rem))] max-h-[calc(100vh-11rem)] flex flex-col bg-slate-900/95 backdrop-blur-xl border border-slate-800 rounded-2xl shadow-2xl overflow-hidden pointer-events-auto"
+      className="absolute top-14 right-3 sm:right-4 z-30 w-[min(22rem,calc(100vw-2rem))] max-h-[calc(100vh-5rem)] flex flex-col bg-[#060b14]/96 backdrop-blur-2xl border border-slate-800 rounded-xl shadow-2xl shadow-black/80 overflow-hidden pointer-events-auto transition-all animate-in fade-in select-none"
     >
       {/* Header */}
-      <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-slate-800 bg-slate-950/50">
+      <div className="flex items-center justify-between gap-2 px-3.5 py-2.5 border-b border-slate-800 bg-slate-900/60">
         <div className="flex items-center gap-2 min-w-0">
           <Sun className="h-4 w-4 shrink-0 text-amber-400" />
-          <h2 className="text-sm font-semibold text-slate-100 truncate">Earth &amp; Sun</h2>
+          <h2 className="text-xs font-bold text-slate-100 uppercase tracking-wider truncate">
+            Celestial Ephemeris
+          </h2>
           {live && (
-            <span className="flex items-center gap-1 text-[10px] font-medium text-emerald-300">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="font-mono text-[9px] uppercase px-1.5 py-0.5 rounded bg-emerald-950/80 text-emerald-300 border border-emerald-500/30">
               Live
             </span>
           )}
@@ -224,7 +228,7 @@ export default function CelestialPanel({ globeRef, isActive }) {
             title="Frame the Moon, Earth and Sun"
             aria-label="Frame the Moon, Earth and Sun"
           >
-            <Maximize2 className="h-4 w-4" />
+            <Maximize2 className="h-3.5 w-3.5" />
           </button>
           <button
             type="button"
@@ -235,7 +239,7 @@ export default function CelestialPanel({ globeRef, isActive }) {
             aria-label={overlayVisible ? 'Hide Earth and Sun' : 'Show Earth and Sun'}
             aria-pressed={overlayVisible}
           >
-            {overlayVisible ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+            {overlayVisible ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
           </button>
           <button
             type="button"
@@ -245,8 +249,19 @@ export default function CelestialPanel({ globeRef, isActive }) {
             aria-label={expanded ? 'Collapse Earth and Sun panel' : 'Expand Earth and Sun panel'}
             aria-expanded={expanded}
           >
-            {expanded ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+            {expanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronUp className="h-3.5 w-3.5" />}
           </button>
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              className={iconButton}
+              title="Close Ephemeris panel"
+              aria-label="Close panel"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
         </div>
       </div>
 

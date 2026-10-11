@@ -221,7 +221,7 @@ export function createLunarGlobe3D(container, callbacks = {}) {
     longitude: 0,
     description: 'Permanently shadowed craters (PSRs) harboring volatile water ice deposits. Prime exploration zone for NASA Artemis and CLPS landers.',
   };
-  const southPoleSprite = createCompactPinSprite(southPoleFeature, '🎯', '#06b6d4', 'rgba(8, 51, 68, 0.95)', '#22d3ee');
+  const southPoleSprite = createCompactPinSprite(southPoleFeature, '◎', '#06b6d4', 'rgba(8, 51, 68, 0.95)', '#22d3ee');
   southPoleSprite.position.copy(selenographicToCartesian(0, -90, MOON_RADIUS * 1.03));
   southPoleSprite.userData = { feature: southPoleFeature, category: 'south_pole', isPin: true };
   scene.add(southPoleSprite);
@@ -245,7 +245,7 @@ export function createLunarGlobe3D(container, callbacks = {}) {
     let category = 'lunar-mountains';
 
     if (feat.type === 'mare') {
-      glyph = '🌊';
+      glyph = '≈';
       color = '#38bdf8';
       bgColor = 'rgba(8, 47, 73, 0.92)';
       borderColor = '#0ea5e9';

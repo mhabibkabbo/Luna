@@ -174,16 +174,24 @@ export function createCelestialOverlay(viewer, options = {}) {
   group.add(earthSphere);
 
   firstLoadableImage(EARTH_TEXTURE_URLS).then((url) => {
-    if (!url || destroyed) {
+    if (!url || destroyed || scene.isDestroyed?.() || viewer.isDestroyed?.()) {
       return;
     }
 
-    earthAppearance.material =
-      Cesium.Material.fromType('Image', {
-        image: url,
-      });
+    try {
+      if (earthAppearance && !earthSphere.isDestroyed?.()) {
+        earthAppearance.material =
+          Cesium.Material.fromType('Image', {
+            image: url,
+          });
+      }
 
-    scene.requestRender?.();
+      if (!scene.isDestroyed?.() && !viewer.isDestroyed?.()) {
+        scene.requestRender?.();
+      }
+    } catch {
+      // Scene or primitives may have been destroyed during async load
+    }
   });
 
   
@@ -298,6 +306,7 @@ export function createCelestialOverlay(viewer, options = {}) {
    * @returns {ReturnType<typeof computeCelestialState>}
    */
   function setTime(when) {
+    if (destroyed || scene.isDestroyed?.() || viewer.isDestroyed?.()) return null;
     const state = computeCelestialState(when);
     lastState = state;
     const { earth, sun } = state;
@@ -356,7 +365,11 @@ export function createCelestialOverlay(viewer, options = {}) {
       Cartesian3.negate(new Cartesian3(sun.dir[0], sun.dir[1], sun.dir[2]), moonLight.direction);
     }
 
-    scene.requestRender?.();
+    try {
+      if (!scene.isDestroyed?.() && !viewer.isDestroyed?.()) {
+        scene.requestRender?.();
+      }
+    } catch {}
     return state;
   }
 
@@ -366,7 +379,7 @@ export function createCelestialOverlay(viewer, options = {}) {
    * orbital plane, on the side facing the Sun so the lit hemisphere is visible.
    */
   function flyToOverview({ duration = 2.0 } = {}) {
-    if (!lastState) return;
+    if (destroyed || scene.isDestroyed?.() || viewer.isDestroyed?.() || !lastState) return;
     const e = lastState.earth.dir;
     const s = lastState.sun.dir;
     const pole = [0, 0, 1];
@@ -428,17 +441,24 @@ export function createCelestialOverlay(viewer, options = {}) {
   }
 
   function setVisible(visible) {
+    if (destroyed || scene.isDestroyed?.() || viewer.isDestroyed?.()) return;
     group.show = !!visible;
-    scene.requestRender?.();
+    try {
+      if (!scene.isDestroyed?.() && !viewer.isDestroyed?.()) {
+        scene.requestRender?.();
+      }
+    } catch {}
   }
 
   function destroy() {
     if (destroyed) return;
     destroyed = true;
-    if (moonLight && scene.light === moonLight) scene.light = previousLight;
-    if (scene.sun && previousSunShow !== undefined) scene.sun.show = previousSunShow;
-    if (scene.moon && previousMoonShow !== undefined) scene.moon.show = previousMoonShow;
-    if (!scene.isDestroyed?.()) scene.primitives.remove(group);
+    try {
+      if (moonLight && !scene.isDestroyed?.() && scene.light === moonLight) scene.light = previousLight;
+      if (!scene.isDestroyed?.() && scene.sun && previousSunShow !== undefined) scene.sun.show = previousSunShow;
+      if (!scene.isDestroyed?.() && scene.moon && previousMoonShow !== undefined) scene.moon.show = previousMoonShow;
+      if (!scene.isDestroyed?.()) scene.primitives.remove(group);
+    } catch {}
   }
 
   setTime(initialDate);

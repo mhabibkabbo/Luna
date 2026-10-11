@@ -57,13 +57,40 @@ export default function SearchBox({ onSelectFeature, onCoordinateSearch }) {
         return;
       }
 
-      // Feature name / type matching
+      // Feature name, CLPS metadata, payloads, provider, and type matching
       const matches = COMBINED_SEARCH_DATA.filter((item) => {
         const nameMatch = item.name.toLowerCase().includes(trimmed);
         const typeMatch = item.type.toLowerCase().includes(trimmed);
         const agencyMatch = item.agency ? item.agency.toLowerCase().includes(trimmed) : false;
         const periodMatch = item.period ? item.period.toLowerCase().includes(trimmed) : false;
-        return nameMatch || typeMatch || agencyMatch || periodMatch;
+
+        // Enhanced CLPS & mission metadata search
+        const taskOrderMatch = item.taskOrder ? item.taskOrder.toLowerCase().includes(trimmed) : false;
+        const providerMatch = item.provider ? item.provider.toLowerCase().includes(trimmed) : false;
+        const landerMatch = item.lander ? item.lander.toLowerCase().includes(trimmed) : false;
+        const siteNameMatch = item.landingSiteName ? item.landingSiteName.toLowerCase().includes(trimmed) : false;
+        const regionMatch = item.targetRegion ? item.targetRegion.toLowerCase().includes(trimmed) : false;
+
+        // Payloads array search
+        const payloadMatch = Array.isArray(item.payloads) && item.payloads.some((p) => {
+          const pName = typeof p === 'string' ? p : p?.name || '';
+          const pFull = typeof p === 'object' && p?.fullName ? p.fullName : '';
+          const pPurpose = typeof p === 'object' && p?.purpose ? p.purpose : '';
+          return pName.toLowerCase().includes(trimmed) || pFull.toLowerCase().includes(trimmed) || pPurpose.toLowerCase().includes(trimmed);
+        });
+
+        return (
+          nameMatch ||
+          typeMatch ||
+          agencyMatch ||
+          periodMatch ||
+          taskOrderMatch ||
+          providerMatch ||
+          landerMatch ||
+          siteNameMatch ||
+          regionMatch ||
+          payloadMatch
+        );
       }).slice(0, 8); // Top 8 results
 
       setResults(matches);
@@ -146,11 +173,11 @@ export default function SearchBox({ onSelectFeature, onCoordinateSearch }) {
             if (results.length > 0) setIsOpen(true);
           }}
           onKeyDown={handleKeyDown}
-          placeholder="Search the Moon (e.g., Tycho, Apollo 11, Mare Imbrium)..."
+          placeholder="Search missions, craters, maria, coordinates..."
           aria-label="Search lunar features, maria, craters, or landing sites"
           autoComplete="off"
           spellCheck="false"
-          className="w-full h-11 pl-10 pr-9 bg-slate-900/90 backdrop-blur-xl border border-slate-800 focus:border-cyan-500/80 rounded-xl text-xs sm:text-sm text-slate-100 placeholder-slate-500 shadow-xl focus:outline-none focus:ring-1 focus:ring-cyan-500/50 transition-all font-sans"
+          className="w-full h-8.5 pl-9 pr-8 bg-slate-900/90 backdrop-blur-xl border border-slate-800/90 focus:border-cyan-500/80 rounded-lg text-xs text-slate-100 placeholder-slate-500 shadow-inner focus:outline-none focus:ring-1 focus:ring-cyan-500/40 transition-all font-sans"
         />
 
         {query && (

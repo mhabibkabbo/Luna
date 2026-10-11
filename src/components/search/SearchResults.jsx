@@ -14,7 +14,10 @@ import { formatLunarCoordinates } from '../../utils/coordinates.js';
 export default function SearchResults({ results, onSelect, activeIndex }) {
   if (!results || results.length === 0) return null;
 
-  const getTypeIcon = (type) => {
+  const getTypeIcon = (type, feature) => {
+    if (feature?.isClps || type === 'clps-mission') {
+      return <Rocket className="w-3.5 h-3.5 text-cyan-400 shrink-0" />;
+    }
     switch (type) {
       case 'landing-site':
       case 'mission-site':
@@ -29,7 +32,10 @@ export default function SearchResults({ results, onSelect, activeIndex }) {
     }
   };
 
-  const getTypeBadge = (type) => {
+  const getTypeBadge = (type, feature) => {
+    if (feature?.isClps || type === 'clps-mission') {
+      return feature?.taskOrder ? `CLPS ${feature.taskOrder}` : 'NASA CLPS';
+    }
     switch (type) {
       case 'landing-site':
         return 'Apollo Landing';
@@ -73,15 +79,19 @@ export default function SearchResults({ results, onSelect, activeIndex }) {
           >
             <div className="flex items-center gap-2.5 min-w-0">
               <div className="p-1.5 bg-slate-800/80 rounded-lg">
-                {getTypeIcon(feature.type)}
+                {getTypeIcon(feature.type, feature)}
               </div>
               <div className="flex flex-col min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-semibold text-slate-100 truncate">
                     {feature.name}
                   </span>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700/60">
-                    {getTypeBadge(feature.type)}
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded border ${
+                    feature.isClps || feature.type === 'clps-mission'
+                      ? 'bg-cyan-950/80 text-cyan-300 border-cyan-500/30'
+                      : 'bg-slate-800 text-slate-400 border-slate-700/60'
+                  }`}>
+                    {getTypeBadge(feature.type, feature)}
                   </span>
                 </div>
                 <div className="flex items-center gap-2 text-[10px] text-slate-400 font-mono mt-0.5">

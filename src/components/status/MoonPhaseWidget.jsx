@@ -128,7 +128,7 @@ export default function MoonPhaseWidget({ className = '' }) {
       {isOpen && (
         <div
           id="moon-phase-details-popover"
-          className="absolute bottom-full left-0 mb-2 w-80 bg-slate-950/95 backdrop-blur-2xl border border-slate-800 rounded-2xl p-4 shadow-2xl shadow-black/80 z-50 flex flex-col gap-3.5 animate-in fade-in slide-in-from-bottom-2 duration-150"
+          className="absolute top-full right-0 mt-2 w-80 bg-[#060b14]/98 backdrop-blur-2xl border border-slate-800 rounded-xl p-4 shadow-2xl shadow-black/80 z-50 flex flex-col gap-3.5 animate-in fade-in slide-in-from-top-2 duration-150"
         >
           {/* Header */}
           <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
@@ -215,8 +215,7 @@ export default function MoonPhaseWidget({ className = '' }) {
               <Clock className="w-3 h-3 text-slate-400" />
               <span>{currentTime.toUTCString().replace('GMT', 'UTC')}</span>
             </div>
-            <span className="text-emerald-400 flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="font-mono text-[9px] uppercase px-1.5 py-0.5 rounded bg-emerald-950/60 text-emerald-300 border border-emerald-500/30">
               Live Sync
             </span>
           </div>

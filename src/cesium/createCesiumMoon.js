@@ -268,6 +268,7 @@ export function createCesiumMoon(container, callbacks = {}) {
 
   const viewer = new Cesium.Viewer(container, {
     globe: moonGlobe,
+    baseLayer: false,
 
     mapProjection: new Cesium.GeographicProjection(
       Cesium.Ellipsoid.MOON
@@ -339,6 +340,7 @@ export function createCesiumMoon(container, callbacks = {}) {
 
   // 3. Populate Lunar Feature Pin Entities using Categorized Vector Billboards
   const pinEntities = [];
+  let selectedEntity = null;
 
   /**
    * Helper to add an entity pin with LOD distance culling and categorized vector icons.
@@ -351,24 +353,24 @@ export function createCesiumMoon(container, callbacks = {}) {
     const dataUrl = getLunarMarkerDataUrl(markerType, false);
     const altitude = 2500; // Elevation in meters above lunar ellipsoid
 
-    // LOD Distance display conditions
-    let maxBillboardDist = 7.0e6;
-    let maxLabelDist = 3.2e6;
-    let baseScale = 0.22;
-    let labelFont = '600 12px "Plus Jakarta Sans", system-ui, -apple-system, sans-serif';
+    // Restrained, zoom-dependent LOD distance thresholds to eliminate label collisions & clutter
+    let maxBillboardDist = 2.8e6;
+    let maxLabelDist = 9.0e5;
+    let baseScale = 0.20;
+    let labelFont = '600 11px system-ui, -apple-system, sans-serif';
     let labelOffset = -18;
 
     if (tier === 1) {
-      maxBillboardDist = 3.5e7;
-      maxLabelDist = 2.4e7;
+      maxBillboardDist = 2.5e7;
+      maxLabelDist = 5.2e6; // Only top missions (Apollo 11, Odysseus CLPS, South Pole) visible from orbit
       baseScale = 0.28;
-      labelFont = '700 13px "Plus Jakarta Sans", system-ui, -apple-system, sans-serif';
+      labelFont = '700 12px system-ui, -apple-system, sans-serif';
       labelOffset = -22;
     } else if (tier === 2) {
-      maxBillboardDist = 1.5e7;
-      maxLabelDist = 8.5e6;
-      baseScale = 0.25;
-      labelFont = '600 12px "Plus Jakarta Sans", system-ui, -apple-system, sans-serif';
+      maxBillboardDist = 7.0e6;
+      maxLabelDist = 2.2e6; // Regional landmarks visible when zooming closer
+      baseScale = 0.23;
+      labelFont = '600 11px system-ui, -apple-system, sans-serif';
       labelOffset = -20;
     }
 
@@ -392,11 +394,11 @@ export function createCesiumMoon(container, callbacks = {}) {
         text: shortName,
         font: labelFont,
         style: Cesium.LabelStyle.FILL_AND_OUTLINE,
-        fillColor: Cesium.Color.WHITE,
+        fillColor: Cesium.Color.fromCssColorString('#f8fafc'),
         outlineColor: Cesium.Color.fromCssColorString('#020617'),
-        outlineWidth: 2,
+        outlineWidth: 2.5,
         showBackground: true,
-        backgroundColor: Cesium.Color.fromCssColorString('rgba(8, 13, 27, 0.92)'),
+        backgroundColor: Cesium.Color.fromCssColorString('rgba(6, 11, 22, 0.88)'),
         backgroundPadding: new Cesium.Cartesian2(6, 3),
         verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
         pixelOffset: new Cesium.Cartesian2(0, labelOffset),
@@ -411,10 +413,59 @@ export function createCesiumMoon(container, callbacks = {}) {
         markerType,
         tier,
         baseScale,
+        maxLabelDist,
       },
     });
 
     pinEntities.push(entity);
+  };
+
+  /**
+   * Highlights and scales a selected pin entity, ensuring its label is always visible.
+   */
+  const selectFeaturePin = (featureId) => {
+    if (selectedEntity) {
+      try {
+        const prevProps = selectedEntity.properties;
+        const prevScale = prevProps.baseScale?.getValue() || 0.22;
+        const prevMaxDist = prevProps.maxLabelDist?.getValue() || 9.0e5;
+        const prevType = prevProps.markerType?.getValue() || 'crater_minor';
+
+        if (selectedEntity.billboard) {
+          selectedEntity.billboard.scale = prevScale;
+          selectedEntity.billboard.image = getLunarMarkerDataUrl(prevType, false);
+        }
+        if (selectedEntity.label) {
+          selectedEntity.label.distanceDisplayCondition = new Cesium.DistanceDisplayCondition(0.0, prevMaxDist);
+          selectedEntity.label.fillColor = Cesium.Color.fromCssColorString('#f8fafc');
+        }
+      } catch {}
+      selectedEntity = null;
+    }
+
+    if (!featureId) return;
+
+    const target = pinEntities.find((e) => {
+      const f = e.properties?.feature?.getValue();
+      return f?.id === featureId;
+    });
+
+    if (target) {
+      selectedEntity = target;
+      try {
+        const markerType = target.properties?.markerType?.getValue() || 'landing_apollo';
+        const base = target.properties?.baseScale?.getValue() || 0.22;
+        if (target.billboard) {
+          target.billboard.scale = base * 1.4;
+          target.billboard.image = getLunarMarkerDataUrl(markerType, true);
+        }
+        if (target.label) {
+          // Force selected label visible across orbital zooms
+          target.label.distanceDisplayCondition = new Cesium.DistanceDisplayCondition(0.0, 5.0e7);
+          target.label.fillColor = Cesium.Color.fromCssColorString('#38bdf8');
+        }
+      } catch {}
+    }
   };
 
   // A. South Pole (90°S) - Prime Artemis Site (Tier 1)
@@ -428,15 +479,19 @@ export function createCesiumMoon(container, callbacks = {}) {
   };
   addFeaturePin(southPoleFeature, 'lunar-landing-sites', 'south_pole', 1);
 
-  // B. Landing Sites (Apollo, Luna, Chang\'e, Chandrayaan, SLIM, Odysseus)
+  // B. Landing Sites (CLPS, Apollo, Chang\'e, Chandrayaan, SLIM)
   LANDING_SITES.forEach((site) => {
     const isApollo11 = site.id === 'landing-apollo-11';
+    const isOdysseus = site.id === 'landing-odysseus';
+    const isArtemisCandidate = site.id.includes('artemis');
     const isCrewedApollo = site.id.includes('apollo');
-    const isMajorRobotic = ['landing-change-4', 'landing-change-5', 'landing-change-6', 'landing-chandrayaan-3', 'landing-slim', 'landing-surveyor-3'].includes(site.id);
+    const isMajorRobotic = ['landing-change-4', 'landing-change-5', 'landing-change-6', 'landing-chandrayaan-3', 'landing-slim', 'landing-lcross'].includes(site.id);
 
-    if (isApollo11) {
+    if (isApollo11 || isOdysseus) {
+      // Tier 1: Global visibility for Apollo 11 and Odysseus (CLPS)
       addFeaturePin(site, 'lunar-landing-sites', 'landing_apollo', 1);
-    } else if (isCrewedApollo) {
+    } else if (isArtemisCandidate || isCrewedApollo) {
+      // Tier 2: Regional visibility
       addFeaturePin(site, 'lunar-landing-sites', 'landing_apollo', 2);
     } else if (isMajorRobotic) {
       addFeaturePin(site, 'lunar-landing-sites', 'landing_robotic', 2);
@@ -658,6 +713,7 @@ export function createCesiumMoon(container, callbacks = {}) {
     const pickedObject = scene.pick(click.position);
     if (Cesium.defined(pickedObject) && pickedObject.id?.properties?.feature) {
       const feature = pickedObject.id.properties.feature.getValue();
+      selectFeaturePin(feature.id);
       callbacks.onFeatureSelect?.(feature);
       const targetHeight =
         feature.type === 'mare'
@@ -793,13 +849,21 @@ export function createCesiumMoon(container, callbacks = {}) {
 
   // Destruction / cleanup
   const destroy = () => {
-    celestial.destroy();
+    if (destroyed) return;
+    destroyed = true;
+    if (celestial) {
+      try {
+        celestial.destroy();
+      } catch {}
+    }
     if (removeRotationListener) {
       removeRotationListener();
       removeRotationListener = null;
     }
-    if (customPinEntity) {
-      viewer.entities.remove(customPinEntity);
+    if (customPinEntity && viewer && !viewer.isDestroyed()) {
+      try {
+        viewer.entities.remove(customPinEntity);
+      } catch {}
       customPinEntity = null;
     }
     if (handler && !handler.isDestroyed()) {
@@ -823,13 +887,11 @@ export function createCesiumMoon(container, callbacks = {}) {
     toggleLighting,
     dropCustomPin,
     clearCustomPin,
+    selectFeaturePin,
     setCelestialTime: (when) => celestial.setCelestialTime(when),
     setCelestialVisible: (visible) => celestial.setCelestialVisible(visible),
     flyToCelestialOverview: () => celestial.flyToCelestialOverview(),
 
-    destroy() {
-      destroyed = true;
-      viewer.destroy();
-    },
+    destroy,
   };
 }

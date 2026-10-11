@@ -1,24 +1,71 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import LunarMap from './components/map/LunarMap.jsx';
 import LunarGlobe3D from './components/globe/LunarGlobe3D.jsx';
 import SearchBox from './components/search/SearchBox.jsx';
-import CoordinateDisplay from './components/map/CoordinateDisplay.jsx';
-import ScaleControl from './components/map/ScaleControl.jsx';
 import MapControls from './components/map/MapControls.jsx';
 import LayerPanel from './components/layers/LayerPanel.jsx';
 import FeaturePanel from './components/features/FeaturePanel.jsx';
 import MeasurementToolbar from './components/measurements/MeasurementToolbar.jsx';
-import TerrainModeBar from './components/map/TerrainModeBar.jsx';
 import CelestialPanel from './components/celestial/CelestialPanel.jsx';
+import UnifiedToolbar from './components/navigation/UnifiedToolbar.jsx';
+import TelemetryStatusBar from './components/map/TelemetryStatusBar.jsx';
+import MoonPhaseWidget from './components/status/MoonPhaseWidget.jsx';
+import MissionExplorerModal from './components/missions/MissionExplorerModal.jsx';
+import MissionComparisonModal from './components/missions/MissionComparisonModal.jsx';
+import LandingPage from './components/landing/LandingPage.jsx';
+import LunaBrandLogo from './components/common/LunaBrandLogo.jsx';
+import { CLPS_MISSIONS } from './data/clpsMissions.js';
 import { LUNAR_LAYERS_CATALOG } from './services/nasa/layers.js';
-import { Layers, Ruler, Target, Globe, Map as MapIcon } from 'lucide-react';
+import { Layers, Ruler, Globe, Map as MapIcon, Moon, Sun, ArrowLeft } from 'lucide-react';
 
 export default function App() {
   const mapRef = useRef(null);
   const globeRef = useRef(null);
 
-  // View mode: '3d' (Three.js 3D Globe) vs '2d' (OpenLayers Planar Map)
-  const [viewMode, setViewMode] = useState('3d');
+  // App View: 'landing' (cinematic overview & mission discovery) vs 'explorer' (interactive 3D/2D lunar GIS)
+  const [currentView, setCurrentView] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const hash = window.location.hash.toLowerCase();
+      if (hash.includes('explorer') || hash.includes('map') || hash.includes('globe')) {
+        return 'explorer';
+      }
+    }
+    return 'landing';
+  });
+
+  // Listen to hash changes (for browser back/forward buttons and direct bookmark navigation)
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.toLowerCase();
+      if (hash.includes('explorer') || hash.includes('map') || hash.includes('globe')) {
+        setCurrentView('explorer');
+      } else if (
+        hash === '' ||
+        hash === '#' ||
+        hash.includes('landing') ||
+        hash.includes('about') ||
+        hash.includes('explore') ||
+        hash.includes('missions') ||
+        hash.includes('datasources')
+      ) {
+        setCurrentView('landing');
+      }
+    };
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
+  // View mode: '3d' (Cesium 3D Globe) vs '2d' (OpenLayers Planar Map)
+  // Default to 2D on mobile phones for optimal mobile-first performance
+  const [viewMode, setViewMode] = useState(() => {
+    if (typeof window !== 'undefined' && window.innerWidth < 640) {
+      return '2d';
+    }
+    return '3d';
+  });
+
+  // In 3D: 'moon' vs 'earth'
+  const [activePlanet, setActivePlanet] = useState('moon');
 
   // Selenographic coordinates under cursor
   const [pointerCoords, setPointerCoords] = useState({ lon: 0.0, lat: 0.0 });
@@ -28,9 +75,13 @@ export default function App() {
   // Selected feature for detail inspection
   const [selectedFeature, setSelectedFeature] = useState(null);
 
-  // Layer management state
+  // Layer & Tool drawers
   const [layers, setLayers] = useState(LUNAR_LAYERS_CATALOG);
   const [isLayersOpen, setIsLayersOpen] = useState(false);
+  const [isCelestialOpen, setIsCelestialOpen] = useState(false);
+  const [isMissionExplorerOpen, setIsMissionExplorerOpen] = useState(false);
+  const [isComparisonOpen, setIsComparisonOpen] = useState(false);
+  const [comparisonMissionA, setComparisonMissionA] = useState(null);
 
   // Distance measurement tool state (2D mode)
   const [isMeasureActive, setIsMeasureActive] = useState(false);
@@ -57,7 +108,10 @@ export default function App() {
 
   const handleFeatureSelect = useCallback((featureProps) => {
     setSelectedFeature(featureProps);
-  }, []);
+    if (viewMode === '3d' && featureProps?.id) {
+      globeRef.current?.selectFeaturePin?.(featureProps.id);
+    }
+  }, [viewMode]);
 
   // Dropped custom pin on 3D globe
   const handleDropCustomPin = useCallback((pinData) => {
@@ -90,7 +144,16 @@ export default function App() {
   const handleZoomIn = () => getActiveController()?.zoomIn();
   const handleZoomOut = () => getActiveController()?.zoomOut();
   const handleResetOverview = () => getActiveController()?.resetOverview();
-  const handleGoToSouthPole = () => getActiveController()?.goToSouthPole(4.8);
+  const handleGoToSouthPole = () => {
+    if (viewMode === '3d' && activePlanet !== 'moon') {
+      setActivePlanet('moon');
+    }
+    if (getActiveController()?.goToSouthPole) {
+      getActiveController()?.goToSouthPole(4.8);
+    } else {
+      getActiveController()?.flyTo(0, -90, 4.8);
+    }
+  };
 
   const handleToggleAutoRotate = () => {
     if (globeRef.current) {
@@ -109,7 +172,37 @@ export default function App() {
   // Search feature selection
   const handleSearchSelect = (feature) => {
     setSelectedFeature(feature);
+    if (viewMode === '3d' && activePlanet !== 'moon') {
+      setActivePlanet('moon');
+    }
+    if (viewMode === '3d') {
+      globeRef.current?.selectFeaturePin?.(feature.id);
+    }
     getActiveController()?.selectFeature(feature.id, true);
+  };
+
+  // Quick Expedition Selection
+  const handleSelectExpedition = (feature, lon, lat, zoom = 5.0) => {
+    setSelectedFeature(feature);
+    if (viewMode === '3d' && activePlanet !== 'moon') {
+      setActivePlanet('moon');
+    }
+    if (viewMode === '3d') {
+      globeRef.current?.selectFeaturePin?.(feature.id);
+    }
+    getActiveController()?.flyTo(lon, lat, zoom);
+  };
+
+  const handleOpenComparison = (initialMission = null) => {
+    setComparisonMissionA(initialMission);
+    setIsComparisonOpen(true);
+  };
+
+  const handleSelectMissionFromModal = (mission) => {
+    const lon = mission.verifiedCoordinates?.longitude ?? mission.lon ?? 0;
+    const lat = mission.verifiedCoordinates?.latitude ?? mission.lat ?? 0;
+    const zoom = mission.defaultZoom || 5.2;
+    handleSelectExpedition(mission, lon, lat, zoom);
   };
 
   // Layer toggle handler
@@ -186,103 +279,220 @@ export default function App() {
     mapRef.current?.flyTo(lon, lat, 4.0);
   };
 
+  // Launch Lunar Explorer from Landing Page
+  const handleLaunchExplorer = (options = {}) => {
+    if (options.viewMode) {
+      setViewMode(options.viewMode);
+    }
+    setCurrentView('explorer');
+    window.location.hash = '#explorer';
+
+    // If an explicit mission was targeted from the showcase
+    if (options.selectedMission || options.missionId) {
+      const mission =
+        options.selectedMission ||
+        CLPS_MISSIONS.find((m) => m.id === options.missionId);
+      if (mission) {
+        setTimeout(() => {
+          handleSelectMissionFromModal(mission);
+        }, 350);
+      }
+    } else if (options.target === 'south-pole') {
+      setTimeout(() => {
+        handleGoToSouthPole();
+      }, 350);
+    }
+
+    if (options.openCelestial) {
+      setIsCelestialOpen(true);
+    }
+    if (options.openLayers) {
+      setIsLayersOpen(true);
+    }
+    if (options.activateMeasure) {
+      setIsMeasureActive(true);
+      mapRef.current?.activateMeasurement();
+    }
+  };
+
+  // Return from Explorer to Landing Page
+  const handleReturnToLanding = () => {
+    setCurrentView('landing');
+    window.location.hash = '#';
+  };
+
+  // Render Landing Page if currentView is 'landing'
+  if (currentView === 'landing') {
+    return <LandingPage onLaunchExplorer={handleLaunchExplorer} />;
+  }
+
   return (
-    <div className="relative w-screen h-screen overflow-hidden flex flex-col bg-[#050811] text-slate-100 font-sans select-none">
+    <div className="relative w-screen h-screen overflow-hidden flex flex-col bg-[#020409] text-slate-100 font-sans select-none animate-in fade-in duration-200">
       {/* ========================================================================= */}
-      {/* TOP HEADER / SEARCH & 2D/3D MODE NAVIGATION */}
+      {/* TOP HEADER: Clean NASA-inspired compact navigation */}
       {/* ========================================================================= */}
       <header
         id="app-header"
-        className="absolute top-0 left-0 right-0 z-30 h-14 px-3 sm:px-4 flex items-center justify-between gap-3 bg-slate-950/85 backdrop-blur-xl border-b border-slate-800/80 shadow-lg pointer-events-auto"
+        className="absolute top-0 left-0 right-0 z-30 h-12 px-3 sm:px-4 flex items-center justify-between gap-2.5 bg-[#020409]/92 backdrop-blur-xl border-b border-slate-800/80 shadow-xl pointer-events-auto"
       >
-        {/* Global Lunar Feature Search Box */}
-        <div className="flex-1 max-w-lg">
-          <SearchBox
-            onSelectFeature={handleSearchSelect}
-            onCoordinateSearch={([lon, lat]) => getActiveController()?.flyTo(lon, lat, 4)}
+        {/* Unified Luna Brand Logo & Quick Back to Home indicator */}
+        <div className="flex items-center gap-2 shrink-0">
+          <LunaBrandLogo
+            asButton
+            onClick={handleReturnToLanding}
+            showBackIndicator
+            backLabel="Home"
+            title="Return to Luna Overview & Mission Discovery"
           />
         </div>
 
-        {/* Action buttons & 2D/3D Globe Switcher */}
-        <div className="flex items-center gap-2 shrink-0">
-          {/* 2D / 3D Switcher */}
-          <div className="flex items-center p-0.5 rounded-xl bg-slate-900 border border-slate-800 shadow-inner">
+        {/* Search Field & View Switcher */}
+        <div className="flex items-center gap-2 sm:gap-3 flex-1 max-w-lg justify-center">
+          <div className="w-full max-w-xs sm:max-w-sm">
+            <SearchBox
+              onSelectFeature={handleSearchSelect}
+              onCoordinateSearch={([lon, lat]) => getActiveController()?.flyTo(lon, lat, 4)}
+            />
+          </div>
+
+          {/* 2D / 3D Mode Segmented Switcher */}
+          <div className="flex items-center p-0.5 rounded-lg bg-slate-900/90 border border-slate-800/90 shrink-0">
             <button
               type="button"
               id="btn-switch-3d"
               onClick={() => setViewMode('3d')}
-              className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs transition-all ${
                 viewMode === '3d'
-                  ? 'bg-cyan-500 text-white shadow-md shadow-cyan-500/25'
+                  ? 'bg-slate-800 text-cyan-300 font-semibold border border-cyan-500/40 shadow-sm'
                   : 'text-slate-400 hover:text-white'
               }`}
-              title="Switch to Interactive 3D Lunar Globe"
+              title="3D Cesium Orbit View"
             >
-              <Globe className="w-3.5 h-3.5" />
-              <span>3D Globe</span>
+              <Globe className="w-3 h-3" />
+              <span>3D</span>
             </button>
             <button
               type="button"
               id="btn-switch-2d"
               onClick={() => setViewMode('2d')}
-              className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs transition-all ${
                 viewMode === '2d'
-                  ? 'bg-cyan-500 text-white shadow-md shadow-cyan-500/25'
+                  ? 'bg-slate-800 text-cyan-300 font-semibold border border-cyan-500/40 shadow-sm'
                   : 'text-slate-400 hover:text-white'
               }`}
-              title="Switch to 2D Planar Basemap"
+              title="2D Planar GIS Map"
             >
-              <MapIcon className="w-3.5 h-3.5" />
-              <span>2D Map</span>
+              <MapIcon className="w-3 h-3" />
+              <span>2D</span>
             </button>
           </div>
 
-          <button
-            type="button"
-            id="btn-header-south-pole"
-            onClick={handleGoToSouthPole}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-cyan-950/90 text-cyan-300 hover:text-white hover:bg-cyan-600/90 border border-cyan-500/40 shadow-lg shadow-cyan-950/50 transition-all select-none group"
-            title="Fly directly to the Lunar South Pole (90°S)"
-          >
-            <Target className="w-3.5 h-3.5 text-cyan-400 group-hover:rotate-90 transition-transform duration-300" />
-            <span className="hidden xs:inline">South Pole</span>
-            <span className="text-[10px] font-mono text-cyan-200">90°S</span>
-          </button>
+          {/* 3D Moon vs Earth comparison toggle */}
+          {viewMode === '3d' && (
+            <div className="hidden xl:flex items-center p-0.5 rounded-lg bg-slate-900/90 border border-slate-800/90 shrink-0">
+              <button
+                type="button"
+                onClick={() => setActivePlanet('moon')}
+                className={`px-2 py-0.5 rounded text-[11px] font-medium transition-all ${
+                  activePlanet === 'moon'
+                    ? 'bg-slate-800 text-cyan-300 font-semibold'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                Moon
+              </button>
+              <button
+                type="button"
+                onClick={() => setActivePlanet('earth')}
+                className={`px-2 py-0.5 rounded text-[11px] font-medium transition-all ${
+                  activePlanet === 'earth'
+                    ? 'bg-slate-800 text-blue-300 font-semibold'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                Earth
+              </button>
+            </div>
+          )}
+        </div>
 
+        {/* Right Actions: Ephemeris, Measure, Layers & Moon Phase */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          {/* Live Astronomical Moon Phase */}
+          <div className="hidden lg:block">
+            <MoonPhaseWidget />
+          </div>
+
+          {/* 3D Ephemeris Drawer */}
+          {viewMode === '3d' && (
+            <button
+              type="button"
+              id="btn-toggle-ephemeris"
+              onClick={() => setIsCelestialOpen((prev) => !prev)}
+              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-all ${
+                isCelestialOpen
+                  ? 'bg-amber-950/80 text-amber-300 border-amber-500/40 shadow-sm'
+                  : 'bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-white border-slate-800'
+              }`}
+              title="Earth & Sun Solar Terminator Ephemeris"
+            >
+              <Sun className="w-3.5 h-3.5 text-amber-400" />
+              <span className="hidden sm:inline">Ephemeris</span>
+            </button>
+          )}
+
+          {/* 2D Geodesic Measurement */}
           {viewMode === '2d' && (
             <button
               type="button"
               onClick={handleToggleMeasure}
-              className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border transition-all ${
+              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-all ${
                 isMeasureActive
-                  ? 'bg-amber-500 text-white border-amber-400 shadow-lg shadow-amber-500/20'
-                  : 'bg-slate-900/90 hover:bg-slate-800 text-slate-300 hover:text-white border-slate-800'
+                  ? 'bg-amber-950/80 text-amber-300 border-amber-500/40 shadow-sm'
+                  : 'bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-white border-slate-800'
               }`}
+              title="Measure surface distance"
             >
-              <Ruler className="w-3.5 h-3.5" />
-              <span>Measure</span>
+              <Ruler className="w-3.5 h-3.5 text-amber-400" />
+              <span className="hidden sm:inline">Measure</span>
             </button>
           )}
 
+          {/* Map Layers Panel Toggle */}
           <button
             type="button"
             onClick={() => setIsLayersOpen((prev) => !prev)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border transition-all ${
+            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-all ${
               isLayersOpen
-                ? 'bg-cyan-500 text-white border-cyan-400 shadow-lg shadow-cyan-500/20'
-                : 'bg-slate-900/90 hover:bg-slate-800 text-slate-300 hover:text-white border-slate-800'
+                ? 'bg-cyan-950/80 text-cyan-300 border-cyan-500/40 shadow-sm'
+                : 'bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-white border-slate-800'
             }`}
+            title="Toggle Map Layers & NASA Datasets"
           >
-            <Layers className="w-3.5 h-3.5" />
-            <span>Layers</span>
+            <Layers className="w-3.5 h-3.5 text-cyan-400" />
+            <span className="hidden sm:inline">Layers</span>
           </button>
         </div>
       </header>
 
       {/* ========================================================================= */}
-      {/* MAP / GLOBE VIEWPORT */}
+      {/* UNIFIED COMPACT MISSION & SURFACE EXPLORER TOOLBAR */}
+      {/* Replaces the two crowded rows with one streamlined, minimal control strip */}
       {/* ========================================================================= */}
-      <main className="relative w-full h-full pt-14">
+      <UnifiedToolbar
+        layers={layers}
+        onToggleLayer={handleToggleLayer}
+        onToggleAllSymbols={handleToggleAllSymbols}
+        onGoToSouthPole={handleGoToSouthPole}
+        onSelectExpedition={handleSelectExpedition}
+        onOpenMissionExplorer={() => setIsMissionExplorerOpen(true)}
+        onOpenComparison={() => handleOpenComparison(null)}
+      />
+
+      {/* ========================================================================= */}
+      {/* MAIN VIEWPORT: Moon & Terrain occupy 100% of the canvas */}
+      {/* ========================================================================= */}
+      <main className="relative w-full h-full">
         {viewMode === '3d' ? (
           <LunarGlobe3D
             ref={globeRef}
@@ -291,6 +501,8 @@ export default function App() {
             onDropCustomPin={handleDropCustomPin}
             hasCustomPin={!!customPin}
             onClearCustomPin={handleClearCustomPin}
+            activePlanet={activePlanet}
+            onPlanetChange={setActivePlanet}
           />
         ) : (
           <LunarMap
@@ -302,28 +514,22 @@ export default function App() {
           />
         )}
 
-        {/* Real-time Earth & Sun positions (3D globe only). Kept after the globe so the
-            globe instance exists when the panel's effects run. */}
-        <CelestialPanel globeRef={globeRef} isActive={viewMode === '3d'} />
-
-        {/* Floating Feature & Symbol Quick-Toggle Toolbar */}
-        <TerrainModeBar
-          layers={layers}
-          onToggleLayer={handleToggleLayer}
-          onToggleAllSymbols={handleToggleAllSymbols}
-          onGoToSouthPole={handleGoToSouthPole}
+        {/* Real-time Earth & Sun Ephemeris Drawer (3D Mode) */}
+        <CelestialPanel
+          globeRef={globeRef}
+          isActive={viewMode === '3d'}
+          isOpen={isCelestialOpen}
+          onClose={() => setIsCelestialOpen(false)}
         />
 
-        {/* Floating Map Navigation Controls */}
-        <div className="absolute bottom-16 right-4 z-20">
+        {/* Single Compact Floating Control Cluster */}
+        <div className="absolute bottom-9 right-3 sm:right-4 z-20">
           <MapControls
             viewMode={viewMode}
             onZoomIn={handleZoomIn}
             onZoomOut={handleZoomOut}
             onResetOverview={handleResetOverview}
             onGoToSouthPole={handleGoToSouthPole}
-            onToggleLayers={() => setIsLayersOpen((prev) => !prev)}
-            isLayersOpen={isLayersOpen}
             onToggleMeasure={handleToggleMeasure}
             isMeasureActive={isMeasureActive}
             onToggleAutoRotate={handleToggleAutoRotate}
@@ -342,16 +548,17 @@ export default function App() {
           onChangeOpacity={handleChangeOpacity}
         />
 
-        {/* Floating Feature Details Panel */}
+        {/* Collapsible Mission / Feature Details Side Panel & Mobile Bottom Sheet */}
         <FeaturePanel
           feature={selectedFeature}
           onClose={() => setSelectedFeature(null)}
           onZoomHere={handleZoomHere}
           onMeasureFromHere={handleMeasureFromFeature}
           onClearCustomPin={handleClearCustomPin}
+          onCompareMission={(mission) => handleOpenComparison(mission)}
         />
 
-        {/* Floating Measurement Toolbar (2D) */}
+        {/* 2D Geodesic Measurement Status Ribbon */}
         {viewMode === '2d' && (
           <MeasurementToolbar
             isActive={isMeasureActive}
@@ -360,29 +567,42 @@ export default function App() {
             onClear={handleClearMeasurement}
           />
         )}
+
+        {/* Dedicated NASA CLPS Mission Explorer Dialog */}
+        <MissionExplorerModal
+          isOpen={isMissionExplorerOpen}
+          onClose={() => setIsMissionExplorerOpen(false)}
+          onSelectMission={handleSelectMissionFromModal}
+          onCompareMission={(mission) => {
+            setIsMissionExplorerOpen(false);
+            handleOpenComparison(mission);
+          }}
+          currentSelectedId={selectedFeature?.id}
+        />
+
+        {/* Side-by-side CLPS Mission Comparison Modal */}
+        <MissionComparisonModal
+          isOpen={isComparisonOpen}
+          onClose={() => setIsComparisonOpen(false)}
+          initialMissionA={comparisonMissionA}
+          onSelectMission={(mission) => {
+            setIsComparisonOpen(false);
+            handleSelectMissionFromModal(mission);
+          }}
+        />
       </main>
 
       {/* ========================================================================= */}
-      {/* FLOATING TELEMETRY: Plain white text on the blank space, bottom-left of moon */}
+      {/* DISCREET STATUS BAR AT BOTTOM EDGE */}
       {/* ========================================================================= */}
-      <div
-        id="app-bottom-telemetry"
-        className="absolute bottom-5 left-5 z-20 flex items-center gap-4 pointer-events-none select-none"
-      >
-        <CoordinateDisplay
-          longitude={pointerCoords.lon}
-          latitude={pointerCoords.lat}
-          zoom={viewMode === '3d' ? 3.0 : currentZoom}
-        />
-
-        {/* Dynamic Scale Bar for 2D mode */}
-        {viewMode === '2d' && (
-          <div className="hidden sm:flex items-center pointer-events-auto">
-            <ScaleControl resolution={currentResolution} />
-          </div>
-        )}
-      </div>
+      <TelemetryStatusBar
+        longitude={pointerCoords.lon}
+        latitude={pointerCoords.lat}
+        zoom={viewMode === '3d' ? 3.0 : currentZoom}
+        viewMode={viewMode}
+        resolution={currentResolution}
+        selectedFeature={selectedFeature}
+      />
     </div>
   );
 }
-
