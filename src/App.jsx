@@ -287,8 +287,15 @@ export default function App() {
     setCurrentView('explorer');
     window.location.hash = '#explorer';
 
-    // If an explicit mission was targeted from the showcase
-    if (options.selectedMission || options.missionId) {
+    // If an explicit feature or mission was targeted
+    if (options.selectedFeature) {
+      setTimeout(() => {
+        const feat = options.selectedFeature;
+        const lon = feat.longitude ?? feat.lon ?? options.lon ?? 0;
+        const lat = feat.latitude ?? feat.lat ?? options.lat ?? 0;
+        handleSelectExpedition(feat, lon, lat, options.zoom || 5.0);
+      }, 350);
+    } else if (options.selectedMission || options.missionId) {
       const mission =
         options.selectedMission ||
         CLPS_MISSIONS.find((m) => m.id === options.missionId);
@@ -297,6 +304,10 @@ export default function App() {
           handleSelectMissionFromModal(mission);
         }, 350);
       }
+    } else if (typeof options.lon === 'number' && typeof options.lat === 'number') {
+      setTimeout(() => {
+        getActiveController()?.flyTo(options.lon, options.lat, options.zoom || 5.0);
+      }, 350);
     } else if (options.target === 'south-pole') {
       setTimeout(() => {
         handleGoToSouthPole();
@@ -327,13 +338,13 @@ export default function App() {
   }
 
   return (
-    <div className="relative w-screen h-screen overflow-hidden flex flex-col bg-[#020409] text-slate-100 font-sans select-none animate-in fade-in duration-200">
+    <div className="relative w-screen h-screen overflow-hidden flex flex-col bg-black text-slate-100 font-sans select-none animate-in fade-in duration-200">
       {/* ========================================================================= */}
       {/* TOP HEADER: Clean NASA-inspired compact navigation */}
       {/* ========================================================================= */}
       <header
         id="app-header"
-        className="absolute top-0 left-0 right-0 z-30 h-12 px-3 sm:px-4 flex items-center justify-between gap-2.5 bg-[#020409]/92 backdrop-blur-xl border-b border-slate-800/80 shadow-xl pointer-events-auto"
+        className="absolute top-0 left-0 right-0 z-30 h-12 px-3 sm:px-4 flex items-center justify-between gap-2.5 bg-transparent border-none shadow-none pointer-events-auto"
       >
         {/* Unified Luna Brand Logo & Quick Back to Home indicator */}
         <div className="flex items-center gap-2 shrink-0">

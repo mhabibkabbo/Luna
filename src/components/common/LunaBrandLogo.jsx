@@ -16,8 +16,8 @@ export default function LunaBrandLogo({
 }) {
   const content = (
     <div className={`flex items-center gap-2.5 shrink-0 ${className}`}>
-      {/* Brand Icon Box: Dark glass with fine border and lunar emblem */}
-      <div className="w-7 h-7 rounded-lg bg-slate-900/90 border border-slate-700/60 flex items-center justify-center shadow-inner group-hover:border-cyan-500/50 transition-colors">
+      {/* Brand Icon Box: Transparent with fine border and lunar emblem */}
+      <div className="w-7 h-7 rounded-lg bg-transparent border border-slate-700/60 flex items-center justify-center group-hover:border-cyan-500/50 transition-colors">
         <Moon className="w-3.5 h-3.5 text-slate-200 group-hover:text-cyan-300 transition-colors" />
       </div>
 

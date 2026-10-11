@@ -56,17 +56,31 @@ export default function FeaturePanel({
   const isCustomPin = feature.isCustomPin || feature.type === 'custom_pin';
   const isClps = Boolean(clpsData || feature.isClps || feature.type === 'clps-mission');
 
+  const featLat =
+    typeof feature.latitude === 'number'
+      ? feature.latitude
+      : typeof feature.lat === 'number'
+      ? feature.lat
+      : 0;
+
+  const featLon =
+    typeof feature.longitude === 'number'
+      ? feature.longitude
+      : typeof feature.lon === 'number'
+      ? feature.lon
+      : 0;
+
   const precision = isCustomPin ? 4 : 2;
   const { latStr, lonStr } = formatLunarCoordinates(
-    feature.longitude,
-    feature.latitude,
+    featLon,
+    featLat,
     precision
   );
 
-  const regionInfo = feature.regionInfo || getLunarRegionInfo(feature.longitude, feature.latitude);
+  const regionInfo = feature.regionInfo || getLunarRegionInfo(featLon, featLat);
 
   const handleCopyCoords = () => {
-    const textToCopy = `${latStr}, ${lonStr} (${feature.latitude.toFixed(4)}°, ${feature.longitude.toFixed(4)}°)`;
+    const textToCopy = `${latStr}, ${lonStr} (${featLat.toFixed(4)}°, ${featLon.toFixed(4)}°)`;
     if (navigator.clipboard) {
       navigator.clipboard.writeText(textToCopy);
       setIsCopied(true);
@@ -329,12 +343,12 @@ export default function FeaturePanel({
             <div>
               <div className="text-[9.5px] text-slate-500 font-sans">Latitude</div>
               <div className="text-white font-bold">{latStr}</div>
-              <div className="text-[9.5px] text-slate-500">({feature.latitude.toFixed(4)}°)</div>
+              <div className="text-[9.5px] text-slate-500">({featLat.toFixed(4)}°)</div>
             </div>
             <div>
               <div className="text-[9.5px] text-slate-500 font-sans">Longitude</div>
               <div className="text-white font-bold">{lonStr}</div>
-              <div className="text-[9.5px] text-slate-500">({feature.longitude.toFixed(4)}°)</div>
+              <div className="text-[9.5px] text-slate-500">({featLon.toFixed(4)}°)</div>
             </div>
           </div>
         </div>
@@ -480,7 +494,7 @@ export default function FeaturePanel({
         <button
           id="btn-feature-zoom-here"
           type="button"
-          onClick={() => onZoomHere(feature.longitude, feature.latitude)}
+          onClick={() => onZoomHere(featLon, featLat)}
           className={`flex-1 flex items-center justify-center gap-1.5 h-8.5 font-medium text-xs rounded-xl transition-all shadow-md ${
             isCustomPin
               ? 'bg-rose-600 hover:bg-rose-500 text-white'
@@ -507,7 +521,7 @@ export default function FeaturePanel({
           <button
             id="btn-feature-measure-from-here"
             type="button"
-            onClick={() => onMeasureFromHere(feature.longitude, feature.latitude)}
+            onClick={() => onMeasureFromHere(featLon, featLat)}
             className="flex items-center justify-center gap-1.5 px-3 h-8.5 bg-slate-900 hover:bg-slate-800 text-slate-200 font-medium text-xs rounded-xl border border-slate-800 transition-colors"
             title="Start measurement from this point"
           >
