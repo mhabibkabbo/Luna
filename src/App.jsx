@@ -56,10 +56,13 @@ export default function App() {
   }, []);
 
   // View mode: '3d' (Cesium 3D Globe) vs '2d' (OpenLayers Planar Map)
-  // Default to 2D on mobile phones for optimal mobile-first performance
+  // 3D Moon is available on all platforms (mobile and desktop)
   const [viewMode, setViewMode] = useState(() => {
-    if (typeof window !== 'undefined' && window.innerWidth < 640) {
-      return '2d';
+    if (typeof window !== 'undefined') {
+      const hash = window.location.hash.toLowerCase();
+      if (hash.includes('2d') || hash.includes('planar')) {
+        return '2d';
+      }
     }
     return '3d';
   });
@@ -87,6 +90,7 @@ export default function App() {
   const [isMeasureActive, setIsMeasureActive] = useState(false);
   const [isAutoRotating, setIsAutoRotating] = useState(false);
   const [isSolarLighting, setIsSolarLighting] = useState(false);
+  const [isVectorsVisible, setIsVectorsVisible] = useState(false); // Vector arrows from Earth & Sun default OFF
   const [measurement, setMeasurement] = useState({
     coordinates: [],
     totalDistanceKm: 0,
@@ -166,6 +170,14 @@ export default function App() {
     if (globeRef.current) {
       const state = globeRef.current.toggleLighting();
       setIsSolarLighting(state);
+    }
+  };
+
+  const handleToggleVectors = () => {
+    if (globeRef.current) {
+      const next = !isVectorsVisible;
+      setIsVectorsVisible(next);
+      globeRef.current.setCelestialVectorsVisible?.(next);
     }
   };
 
@@ -502,9 +514,15 @@ export default function App() {
 
       {/* ========================================================================= */}
       {/* MAIN VIEWPORT: Moon & Terrain occupy 100% of the canvas */}
+      {/* Both Viewers are kept mounted to preserve tile caches, camera states, and GPU memory */}
       {/* ========================================================================= */}
       <main className="relative w-full h-full">
-        {viewMode === '3d' ? (
+        {/* 3D Cesium Orbit View */}
+        <div
+          className={`absolute inset-0 w-full h-full ${
+            viewMode === '3d' ? 'block' : 'hidden'
+          }`}
+        >
           <LunarGlobe3D
             ref={globeRef}
             onPointerCoordinates={handlePointerCoordinates}
@@ -514,16 +532,25 @@ export default function App() {
             onClearCustomPin={handleClearCustomPin}
             activePlanet={activePlanet}
             onPlanetChange={setActivePlanet}
+            isVisible={viewMode === '3d'}
           />
-        ) : (
+        </div>
+
+        {/* 2D Planar GIS Map */}
+        <div
+          className={`absolute inset-0 w-full h-full ${
+            viewMode === '2d' ? 'block' : 'hidden'
+          }`}
+        >
           <LunarMap
             ref={mapRef}
             onPointerCoordinates={handlePointerCoordinates}
             onFeatureSelect={handleFeatureSelect}
             onMeasurementUpdate={handleMeasurementUpdate}
             onResolutionChange={handleResolutionChange}
+            isVisible={viewMode === '2d'}
           />
-        )}
+        </div>
 
         {/* Real-time Earth & Sun Ephemeris Drawer (3D Mode) */}
         <CelestialPanel
@@ -531,6 +558,8 @@ export default function App() {
           isActive={viewMode === '3d'}
           isOpen={isCelestialOpen}
           onClose={() => setIsCelestialOpen(false)}
+          vectorsVisible={isVectorsVisible}
+          onToggleVectors={handleToggleVectors}
         />
 
         {/* Single Compact Floating Control Cluster */}
@@ -547,6 +576,8 @@ export default function App() {
             isAutoRotating={isAutoRotating}
             onToggleLighting={handleToggleLighting}
             isSolarLighting={isSolarLighting}
+            onToggleVectors={handleToggleVectors}
+            isVectorsVisible={isVectorsVisible}
           />
         </div>
 

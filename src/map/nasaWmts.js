@@ -70,10 +70,14 @@ export function createNasaWmtsLayer(layerConfig, moonProjection, options = {}) {
     });
   }
 
+  const isBaseLayer = wmtsLayerName.includes('WAC') || wmtsLayerName.includes('Mosaic');
+
   const tileLayer = new TileLayer({
     source: wmtsSource,
     visible: layerConfig.visible,
     opacity: layerConfig.opacity,
+    preload: isBaseLayer ? 1 : 0, // Preload low-resolution coarse tiles so zoom transitions are instant
+    cacheSize: 512, // Cache up to 512 tiles in memory to avoid redundant re-fetches
     extent: LUNAR_EXTENT,
     properties: {
       id: layerConfig.id,

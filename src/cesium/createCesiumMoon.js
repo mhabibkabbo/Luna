@@ -17,7 +17,6 @@ import {
 } from '../utils/coordinates.js';
 
 import { createMoonGlobe } from './createMoonGlobe.js'; // imports the cesium globe for moon 
-import { createEarthGlobe } from './createEarthGlobe.js'; // same for Earth 
 import { createPlanetManager } from './createPlanetManager.js'; // imports the planet manager
 
 // Combined catalog for nearest neighbor calculations
@@ -262,8 +261,14 @@ export function createCesiumMoon(container, callbacks = {}) {
   // 1. Create NASA LRO WAC Global Multi-Resolution WMTS Imagery Provider
   // REMOVED: They belong to ./createMoonGlobe.js now
 
-  // 2. Initialize Cesium.Viewer with Moon Ellipsoid and custom baseLayer (disabling Ion)
-  // Using the imported MoonGlobe from ./createMoonGlobe.js
+  // Detect mobile / touch environment for tailored performance defaults
+  const isMobile = typeof window !== 'undefined' && (
+    window.innerWidth < 768 ||
+    navigator.maxTouchPoints > 1 ||
+    /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+  );
+
+  // 1. Initialize Cesium.Viewer with Moon Ellipsoid and custom baseLayer (disabling Ion)
   const moonGlobe = createMoonGlobe();
 
   const viewer = new Cesium.Viewer(container, {
@@ -297,26 +302,83 @@ export function createCesiumMoon(container, callbacks = {}) {
     },
   });
 
-  // Earth Globe created, but not shown right away
-  const earthGlobe = createEarthGlobe();
+  // Adaptive Resolution:
+  // Mobile starts at 0.70 to avoid 3x retina fragment shader bottlenecks while preserving CSS layout.
+  // Desktop defaults to 1.0 (clamped to prevent 4K GPU exhaustion).
+  let currentResolutionScale = isMobile ? 0.70 : 1.0;
+  const minResolutionScale = isMobile ? 0.55 : 0.75;
+  const maxResolutionScale = isMobile ? 0.85 : 1.25;
 
-  
-  // Enable high-DPI native resolution scale for razor-sharp rendering on Retina/4K screens
-  viewer.resolutionScale = Math.min(window.devicePixelRatio || 1.0, 2.0);
+  viewer.resolutionScale = currentResolutionScale;
   viewer.useBrowserRecommendedResolution = false;
 
-  // Optimize scene for Moon visualization
+  // Optimize scene and globe for fast lunar tile streaming & crisp rendering
   const scene = viewer.scene;
-  scene.backgroundColor = Cesium.Color.fromCssColorString('#050811');
-  scene.globe.baseColor = Cesium.Color.fromCssColorString('#1e293b');
-  scene.globe.enableLighting = true; // Defaults to RTX (jk)
+  scene.backgroundColor = Cesium.Color.fromCssColorString('#020409');
+  scene.globe.baseColor = Cesium.Color.fromCssColorString('#0f172a');
   scene.globe.depthTestAgainstTerrain = true; // Occlude markers on the far side of the Moon
   scene.highDynamicRange = false;
-  scene.globe.maximumScreenSpaceError = 1.5;
+
+  // Benchmark-tuned Screen Space Error (SSE) & Tile Cache:
+  // 2.0 on desktop gives standard crisp LOD; 2.8 on mobile cuts concurrent tile floods by ~50%
+  scene.globe.maximumScreenSpaceError = isMobile ? 2.8 : 2.0;
+  scene.globe.tileCacheSize = isMobile ? 150 : 250;
+  scene.globe.preloadAncestors = true;
+  scene.globe.preloadSiblings = false;
+  scene.globe.loadingDescendantLimit = 2;
   scene.globe.lambertDiffuseMultiplier = 1.0;
   scene.globe.vertexShadowDarkness = 2.0;
 
-  // Configure Moon camera controller with Moon ellipsoid to prevent sphere distortion
+  // Start with flat solar shading for instantaneous scene appearance,
+  // user can toggle dynamic solar terminator lighting smoothly on demand
+  scene.globe.enableLighting = false;
+
+  // Gradual adaptive resolution controller:
+  // Monitors actual frame times over a 40-frame window with hysteresis cooldown to avoid thrashing
+  let frameCount = 0;
+  let accumulatedFrameDuration = 0;
+  let lastFrameTimestamp = performance.now();
+  let lastScaleAdjustTimestamp = performance.now();
+  const SCALE_ADJUST_COOLDOWN_MS = 3000;
+
+  const removeAdaptiveResolutionListener = scene.postRender.addEventListener(() => {
+    const now = performance.now();
+    const delta = now - lastFrameTimestamp;
+    lastFrameTimestamp = now;
+
+    // Disregard anomalous frames (tab backgrounding, hitch > 250ms)
+    if (delta > 250) return;
+
+    accumulatedFrameDuration += delta;
+    frameCount++;
+
+    const sampleWindow = isMobile ? 35 : 45;
+    if (frameCount >= sampleWindow) {
+      const avgDuration = accumulatedFrameDuration / frameCount;
+      const timeSinceAdjust = now - lastScaleAdjustTimestamp;
+      const isCameraFlying = viewer.camera._currentFlight !== undefined;
+
+      if (!isCameraFlying && timeSinceAdjust >= SCALE_ADJUST_COOLDOWN_MS) {
+        // High GPU load: frame time > 32ms (< 31 fps)
+        if (avgDuration > 32.0 && currentResolutionScale > minResolutionScale) {
+          currentResolutionScale = Math.max(minResolutionScale, currentResolutionScale - 0.05);
+          viewer.resolutionScale = Number(currentResolutionScale.toFixed(2));
+          lastScaleAdjustTimestamp = now;
+        }
+        // Substantial performance headroom: frame time < 16.5ms (> 60 fps)
+        else if (avgDuration < 16.5 && currentResolutionScale < maxResolutionScale) {
+          currentResolutionScale = Math.min(maxResolutionScale, currentResolutionScale + 0.05);
+          viewer.resolutionScale = Number(currentResolutionScale.toFixed(2));
+          lastScaleAdjustTimestamp = now;
+        }
+      }
+
+      frameCount = 0;
+      accumulatedFrameDuration = 0;
+    }
+  });
+
+  // Configure Moon camera controller with Moon ellipsoid and mobile-friendly touch responsiveness
   const cameraController = scene.screenSpaceCameraController;
   cameraController._ellipsoid = Cesium.Ellipsoid.MOON;
   viewer.camera._ellipsoid = Cesium.Ellipsoid.MOON;
@@ -326,16 +388,21 @@ export function createCesiumMoon(container, callbacks = {}) {
   cameraController.enableTilt = true;
   cameraController.enableLook = false;
   cameraController.enableCollisionDetection = false;
-  cameraController.inertiaSpin = 0.88;
-  cameraController.inertiaTranslate = 0.85;
-  cameraController.inertiaZoom = 0.80;
+  cameraController.inertiaSpin = isMobile ? 0.82 : 0.88;
+  cameraController.inertiaTranslate = isMobile ? 0.80 : 0.85;
+  cameraController.inertiaZoom = isMobile ? 0.76 : 0.80;
   cameraController.zoomFactor = 2.0;
   cameraController.minimumZoomDistance = 20000.0; // 20 km minimum altitude
   cameraController.maximumZoomDistance = 1_000_000_000; // 1M km overview
 
-  // Real-time Earth & Sun overlay. Also drives scene.light from the lunar ephemeris,
-  // so the solar-shading terminator matches the Sun marker.
-  const celestial = createCelestialOverlay(viewer);
+  // Enable Cesium's built-in Sun
+  if (!scene.sun) {
+    scene.sun = new Cesium.Sun();
+  }
+  scene.sun.show = true;
+
+  // Real-time Earth & Sun overlay (synchronizes Cesium built-in Sun, Moon & Earth ephemeris)
+  const celestial = createCelestialOverlay(viewer, { showVectors: false, syncLighting: true });
 
 
   // 3. Populate Lunar Feature Pin Entities using Categorized Vector Billboards
@@ -648,50 +715,64 @@ export function createCesiumMoon(container, callbacks = {}) {
     }
   };
 
+  // Throttled mouse move event handler to avoid 60fps React state updates during navigation
+  let lastCoordsThrottleTime = 0;
+  let lastHoverPickTime = 0;
+  const COORDS_THROTTLE_MS = 80;
+  const HOVER_THROTTLE_MS = 60;
+
   handler.setInputAction((movement) => {
-    // 1. Raycast on Moon globe surface to calculate Selenographic Longitude / Latitude
-    const ray = viewer.camera.getPickRay(movement.endPosition);
-    if (ray) {
-      const cartesian = scene.globe.pick(ray, scene);
-      if (cartesian) {
-        const cartographic = Cesium.Ellipsoid.MOON.cartesianToCartographic(cartesian);
-        const lon = Cesium.Math.toDegrees(cartographic.longitude);
-        const lat = Cesium.Math.toDegrees(cartographic.latitude);
-        callbacks.onPointerCoordinates?.(lon, lat);
+    const now = performance.now();
+
+    // 1. Raycast on Moon globe surface to calculate Selenographic Longitude / Latitude (throttled)
+    if (now - lastCoordsThrottleTime >= COORDS_THROTTLE_MS) {
+      lastCoordsThrottleTime = now;
+      const ray = viewer.camera.getPickRay(movement.endPosition);
+      if (ray) {
+        const cartesian = scene.globe.pick(ray, scene);
+        if (cartesian) {
+          const cartographic = Cesium.Ellipsoid.MOON.cartesianToCartographic(cartesian);
+          const lon = Cesium.Math.toDegrees(cartographic.longitude);
+          const lat = Cesium.Math.toDegrees(cartographic.latitude);
+          callbacks.onPointerCoordinates?.(lon, lat);
+        }
       }
     }
 
-    // 2. Pick feature pins on hover
-    const pickedObject = scene.pick(movement.endPosition);
-    if (Cesium.defined(pickedObject) && pickedObject.id?.properties?.feature) {
-      container.style.cursor = 'pointer';
-      const feature = pickedObject.id.properties.feature.getValue();
-      const markerType = pickedObject.id.properties.markerType?.getValue() || 'crater_minor';
-      const baseScale = pickedObject.id.properties.baseScale?.getValue() || 0.55;
+    // 2. Pick feature pins on hover (throttled)
+    if (now - lastHoverPickTime >= HOVER_THROTTLE_MS) {
+      lastHoverPickTime = now;
+      const pickedObject = scene.pick(movement.endPosition);
+      if (Cesium.defined(pickedObject) && pickedObject.id?.properties?.feature) {
+        container.style.cursor = 'pointer';
+        const feature = pickedObject.id.properties.feature.getValue();
+        const markerType = pickedObject.id.properties.markerType?.getValue() || 'crater_minor';
+        const baseScale = pickedObject.id.properties.baseScale?.getValue() || 0.55;
 
-      if (hoveredEntity !== pickedObject.id) {
+        if (hoveredEntity !== pickedObject.id) {
+          if (hoveredEntity) {
+            const prevBase = hoveredEntity.properties.baseScale?.getValue() || 0.55;
+            const prevType = hoveredEntity.properties.markerType?.getValue() || 'crater_minor';
+            hoveredEntity.billboard.scale = prevBase;
+            hoveredEntity.billboard.image = getLunarMarkerDataUrl(prevType, false);
+          }
+          hoveredEntity = pickedObject.id;
+          hoveredEntity.billboard.scale = baseScale * 1.35;
+          hoveredEntity.billboard.image = getLunarMarkerDataUrl(markerType, true);
+        }
+
+        callbacks.onFeatureHover?.(feature, movement.endPosition.x, movement.endPosition.y);
+      } else {
+        container.style.cursor = 'default';
         if (hoveredEntity) {
           const prevBase = hoveredEntity.properties.baseScale?.getValue() || 0.55;
           const prevType = hoveredEntity.properties.markerType?.getValue() || 'crater_minor';
           hoveredEntity.billboard.scale = prevBase;
           hoveredEntity.billboard.image = getLunarMarkerDataUrl(prevType, false);
+          hoveredEntity = null;
         }
-        hoveredEntity = pickedObject.id;
-        hoveredEntity.billboard.scale = baseScale * 1.35;
-        hoveredEntity.billboard.image = getLunarMarkerDataUrl(markerType, true);
+        callbacks.onFeatureHover?.(null, 0, 0);
       }
-
-      callbacks.onFeatureHover?.(feature, movement.endPosition.x, movement.endPosition.y);
-    } else {
-      container.style.cursor = 'default';
-      if (hoveredEntity) {
-        const prevBase = hoveredEntity.properties.baseScale?.getValue() || 0.55;
-        const prevType = hoveredEntity.properties.markerType?.getValue() || 'crater_minor';
-        hoveredEntity.billboard.scale = prevBase;
-        hoveredEntity.billboard.image = getLunarMarkerDataUrl(prevType, false);
-        hoveredEntity = null;
-      }
-      callbacks.onFeatureHover?.(null, 0, 0);
     }
   }, Cesium.ScreenSpaceEventType.MOUSE_MOVE);
 
@@ -851,6 +932,9 @@ export function createCesiumMoon(container, callbacks = {}) {
   const destroy = () => {
     if (destroyed) return;
     destroyed = true;
+    if (removeAdaptiveResolutionListener) {
+      removeAdaptiveResolutionListener();
+    }
     if (celestial) {
       try {
         celestial.destroy();
@@ -890,6 +974,8 @@ export function createCesiumMoon(container, callbacks = {}) {
     selectFeaturePin,
     setCelestialTime: (when) => celestial.setCelestialTime(when),
     setCelestialVisible: (visible) => celestial.setCelestialVisible(visible),
+    setCelestialVectorsVisible: (visible) => celestial.setVectorsVisible(visible),
+    areCelestialVectorsVisible: () => celestial.areVectorsVisible(),
     flyToCelestialOverview: () => celestial.flyToCelestialOverview(),
 
     destroy,

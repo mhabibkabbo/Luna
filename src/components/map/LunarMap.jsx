@@ -12,6 +12,7 @@ const LunarMap = forwardRef(function LunarMap(
     onFeatureSelect,
     onMeasurementUpdate,
     onResolutionChange,
+    isVisible = true,
   },
   ref
 ) {
@@ -20,6 +21,15 @@ const LunarMap = forwardRef(function LunarMap(
 
   const [isLoadingTiles, setIsLoadingTiles] = useState(true);
   const [loadError, setLoadError] = useState(null);
+
+  // Sync OpenLayers viewport size when visibility changes
+  useEffect(() => {
+    if (isVisible && mapInstanceRef.current?.map) {
+      setTimeout(() => {
+        mapInstanceRef.current?.map.updateSize();
+      }, 50);
+    }
+  }, [isVisible]);
 
   useEffect(() => {
     if (!mapContainerRef.current) return;

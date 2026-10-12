@@ -4,29 +4,38 @@
  * commands to whichever planet is currently active.
  */
 
-export function createPlanetManager({ moonController, earthController }) {
+export function createPlanetManager({ moonController, earthController: initialEarthController, getEarthController }) {
   const moonViewer = moonController.getViewer();
-  const earthViewer = earthController.viewer;
-
-  const controllers = {
-    moon: moonController,
-    earth: earthController,
-  };
-
-  const viewers = {
-    moon: moonViewer,
-    earth: earthViewer,
-  };
+  let earthController = initialEarthController || null;
+  let earthViewer = earthController?.viewer || null;
 
   let activePlanet = "moon";
 
   function setViewerActive(viewer, active) {
+    if (!viewer) return;
     viewer.useDefaultRenderLoop = active;
-    viewer.container.style.display = active ? "block" : "none";
+    if (viewer.container) {
+      viewer.container.style.display = active ? "block" : "none";
+    }
+    if (active) {
+      viewer.resize?.();
+      viewer.scene?.requestRender?.();
+    }
+  }
+
+  function ensureEarth() {
+    if (!earthController && getEarthController) {
+      earthController = getEarthController();
+      if (earthController) {
+        earthViewer = earthController.viewer;
+        setViewerActive(earthViewer, false);
+      }
+    }
+    return earthController;
   }
 
   function switchTo(planetName) {
-    if (!(planetName in controllers)) {
+    if (planetName !== 'moon' && planetName !== 'earth') {
       throw new Error(`Unknown planet: "${planetName}"`);
     }
 
@@ -34,8 +43,15 @@ export function createPlanetManager({ moonController, earthController }) {
       return;
     }
 
-    setViewerActive(viewers[activePlanet], false);
-    setViewerActive(viewers[planetName], true);
+    if (planetName === 'earth') {
+      ensureEarth();
+    }
+
+    const currentViewer = activePlanet === 'moon' ? moonViewer : earthViewer;
+    const targetViewer = planetName === 'moon' ? moonViewer : earthViewer;
+
+    if (currentViewer) setViewerActive(currentViewer, false);
+    if (targetViewer) setViewerActive(targetViewer, true);
 
     activePlanet = planetName;
   }
@@ -45,7 +61,10 @@ export function createPlanetManager({ moonController, earthController }) {
   }
 
   function getActiveController() {
-    return controllers[activePlanet];
+    if (activePlanet === 'earth') {
+      return ensureEarth();
+    }
+    return moonController;
   }
 
   // --- Delegate methods ---------------------------------------------------
@@ -80,6 +99,14 @@ export function createPlanetManager({ moonController, earthController }) {
 
   function setCelestialVisible(visible) {
     moonController.setCelestialVisible?.(visible);
+  }
+
+  function setCelestialVectorsVisible(visible) {
+    return moonController.setCelestialVectorsVisible?.(visible);
+  }
+
+  function areCelestialVectorsVisible() {
+    return moonController.areCelestialVectorsVisible?.() ?? false;
   }
 
   function flyToCelestialOverview() {
@@ -138,6 +165,8 @@ export function createPlanetManager({ moonController, earthController }) {
 
     setCelestialTime,
     setCelestialVisible,
+    setCelestialVectorsVisible,
+    areCelestialVectorsVisible,
     flyToCelestialOverview,
 
     destroy,

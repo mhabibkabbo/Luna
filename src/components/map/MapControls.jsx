@@ -7,6 +7,7 @@ import {
   Target,
   RotateCw,
   Sun,
+  Navigation,
 } from 'lucide-react';
 
 /**
@@ -25,6 +26,8 @@ export default function MapControls({
   isAutoRotating = false,
   onToggleLighting,
   isSolarLighting = false,
+  onToggleVectors,
+  isVectorsVisible = false,
 }) {
   return (
     <div
@@ -114,6 +117,28 @@ export default function MapControls({
           >
             <Sun className="w-4 h-4" />
           </button>
+
+          {/* Earth & Sun Vector Arrows Toggle (Default: OFF) */}
+          {onToggleVectors && (
+            <button
+              id="btn-toggle-celestial-vectors"
+              type="button"
+              onClick={onToggleVectors}
+              title={
+                isVectorsVisible
+                  ? 'Turn off Earth & Sun vector lines (currently ON)'
+                  : 'Turn on Earth & Sun vector lines (currently OFF)'
+              }
+              className={`p-2 rounded-lg transition-colors flex items-center justify-center ${
+                isVectorsVisible
+                  ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-800'
+              }`}
+              aria-label={isVectorsVisible ? 'Turn off vector lines' : 'Turn on vector lines'}
+            >
+              <Navigation className={`w-4 h-4 transition-transform ${isVectorsVisible ? 'rotate-45 text-cyan-300' : ''}`} />
+            </button>
+          )}
         </>
       )}
 

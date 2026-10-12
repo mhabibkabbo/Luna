@@ -5,8 +5,7 @@
 
 import * as Cesium from 'cesium';
 
-const EARTH_TEXTURE_URL =
-  'https://cdn.jsdelivr.net/npm/three-globe@2.31.0/example/img/earth-blue-marble.jpg';
+const EARTH_TEXTURE_URL = '/assets/earth-blue-marble.jpg';
 
 export function createEarthGlobe() {
   const earthImageryProvider =

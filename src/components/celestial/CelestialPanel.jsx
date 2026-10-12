@@ -11,6 +11,7 @@ import {
   ChevronDown,
   Maximize2,
   X,
+  Navigation,
 } from 'lucide-react';
 import { formatLunarCoordinates } from '../../utils/coordinates.js';
 
@@ -75,14 +76,25 @@ function Readout({ icon: Icon, title, accent, children }) {
  *   globeRef: React.RefObject<any>,
  *   isActive: boolean,
  *   isOpen?: boolean,
- *   onClose?: () => void
+ *   onClose?: () => void,
+ *   vectorsVisible?: boolean,
+ *   onToggleVectors?: () => void
  * }} props
  */
-export default function CelestialPanel({ globeRef, isActive, isOpen = true, onClose }) {
+export default function CelestialPanel({
+  globeRef,
+  isActive,
+  isOpen = true,
+  onClose,
+  vectorsVisible: propVectorsVisible,
+  onToggleVectors: propToggleVectors,
+}) {
   const [expanded, setExpanded] = useState(
     () => typeof window === 'undefined' || window.innerWidth >= 640
   );
   const [overlayVisible, setOverlayVisible] = useState(true);
+  const [internalVectorsVisible, setInternalVectorsVisible] = useState(false); // Default is OFF as requested
+  const vectorsVisible = propVectorsVisible !== undefined ? propVectorsVisible : internalVectorsVisible;
   const [live, setLive] = useState(true);
   const [playing, setPlaying] = useState(false);
   const [rate, setRate] = useState(3600);
@@ -113,6 +125,7 @@ export default function CelestialPanel({ globeRef, isActive, isOpen = true, onCl
   useEffect(() => {
     if (!isActive) return;
     globeRef.current?.setCelestialVisible?.(overlayVisible);
+    globeRef.current?.setCelestialVectorsVisible?.(vectorsVisible);
     if (!live) applyTime(timeRef.current, { force: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isActive]);
@@ -185,6 +198,16 @@ export default function CelestialPanel({ globeRef, isActive, isOpen = true, onCl
     globeRef.current?.setCelestialVisible?.(next);
   };
 
+  const handleToggleVectors = () => {
+    if (propToggleVectors) {
+      propToggleVectors();
+    } else {
+      const next = !vectorsVisible;
+      setInternalVectorsVisible(next);
+      globeRef.current?.setCelestialVectorsVisible?.(next);
+    }
+  };
+
   const handleFrame = () => {
     if (!overlayVisible) {
       setOverlayVisible(true);
@@ -243,6 +266,17 @@ export default function CelestialPanel({ globeRef, isActive, isOpen = true, onCl
           </button>
           <button
             type="button"
+            id="btn-celestial-vectors-header"
+            onClick={handleToggleVectors}
+            className={`${iconButton} ${vectorsVisible ? 'text-cyan-300 bg-cyan-950/70 border border-cyan-500/40' : ''}`}
+            title={vectorsVisible ? 'Turn off Earth & Sun vector lines (currently ON)' : 'Turn on Earth & Sun vector lines (currently OFF)'}
+            aria-label={vectorsVisible ? 'Turn off vector lines' : 'Turn on vector lines'}
+            aria-pressed={vectorsVisible}
+          >
+            <Navigation className={`h-3.5 w-3.5 ${vectorsVisible ? 'rotate-45 text-cyan-300' : 'text-slate-400'}`} />
+          </button>
+          <button
+            type="button"
             id="btn-celestial-collapse"
             onClick={() => setExpanded((v) => !v)}
             className={iconButton}
@@ -267,6 +301,43 @@ export default function CelestialPanel({ globeRef, isActive, isOpen = true, onCl
 
       {expanded && (
         <div className="overflow-y-auto custom-scrollbar p-3 space-y-3">
+          {/* Earth & Sun Direction Vectors Toggle Card */}
+          <div className="flex items-center justify-between p-2.5 rounded-xl border border-slate-800/80 bg-slate-950/70">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className={`p-1.5 rounded-lg border transition-colors shrink-0 ${
+                vectorsVisible ? 'bg-cyan-950/80 border-cyan-500/40 text-cyan-300' : 'bg-slate-900 border-slate-800 text-slate-500'
+              }`}>
+                <Navigation className={`h-3.5 w-3.5 transition-transform ${vectorsVisible ? 'rotate-45' : ''}`} />
+              </div>
+              <div className="min-w-0">
+                <div className="text-xs font-semibold text-slate-200 truncate">
+                  Earth & Sun Vector Arrows
+                </div>
+                <div className="text-[10px] text-slate-400 truncate">
+                  {vectorsVisible ? 'Vector arrows & sub-points ON' : 'Turned OFF by default'}
+                </div>
+              </div>
+            </div>
+            <button
+              type="button"
+              id="btn-celestial-vectors-toggle"
+              onClick={handleToggleVectors}
+              className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/70 ${
+                vectorsVisible ? 'bg-cyan-500' : 'bg-slate-800'
+              }`}
+              role="switch"
+              aria-checked={vectorsVisible}
+              aria-label="Toggle Earth and Sun vector arrows"
+            >
+              <span
+                aria-hidden="true"
+                className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+                  vectorsVisible ? 'translate-x-4' : 'translate-x-0'
+                }`}
+              />
+            </button>
+          </div>
+
           {/* Time controls */}
           <div className="space-y-2">
             <div className="flex items-center gap-2">

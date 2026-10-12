@@ -70,7 +70,7 @@ export function createMeasurementLayer() {
  * @param {number} [throttleMs=50]
  * @returns {Function} Unsubscribe cleanup function
  */
-export function setupPointerTracking(map, onCoordinateChange, throttleMs = 50) {
+export function setupPointerTracking(map, onCoordinateChange, throttleMs = 80) {
   let lastCall = 0;
 
   const handlePointerMove = (evt) => {

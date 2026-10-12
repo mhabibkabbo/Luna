@@ -6,7 +6,7 @@
 import * as Cesium from 'cesium';
 
 export function createMoonGlobe() {
-  // Moon imagery
+  // NASA LRO WAC Global Multi-Resolution Equirectangular WMTS Imagery Provider
   const nasaLroProvider = new Cesium.UrlTemplateImageryProvider({
     url: 'https://trek.nasa.gov/tiles/Moon/EQ/LRO_WAC_Mosaic_Global_303ppd_v02/1.0.0/default/default028mm/{z}/{y}/{x}.jpg',
     ellipsoid: Cesium.Ellipsoid.MOON,
@@ -17,12 +17,13 @@ export function createMoonGlobe() {
       numberOfLevelZeroTilesY: 1,
     }),
 
+    tileWidth: 256,
+    tileHeight: 256,
+    minimumLevel: 0,
     maximumLevel: 8,
     hasAlphaChannel: false,
 
-    credit: new Cesium.Credit(
-      'NASA / LROC / USGS Moon Trek'
-    ),
+    credit: new Cesium.Credit('NASA / LROC / USGS Moon Trek'),
   });
 
   const baseLayer = new Cesium.ImageryLayer(nasaLroProvider);
@@ -30,19 +31,19 @@ export function createMoonGlobe() {
   baseLayer.brightness = 1.06;
   baseLayer.contrast = 1.12;
 
-  // Create the actual Moon globe.
-  const globe = new Cesium.Globe(
-    Cesium.Ellipsoid.MOON
-  );
+  // Create the Moon globe with Cesium.Ellipsoid.MOON
+  const globe = new Cesium.Globe(Cesium.Ellipsoid.MOON);
 
-  // Give the globe its imagery.
+  // Surface base color matches deep space lunar mare before tiles finish streaming
+  globe.baseColor = Cesium.Color.fromCssColorString('#0b0f19');
+
+  // Give the globe its imagery
   globe.imageryLayers.add(baseLayer);
 
-  // The Moon currently uses an ellipsoid terrain provider.
-  globe.terrainProvider =
-    new Cesium.EllipsoidTerrainProvider({
-      ellipsoid: Cesium.Ellipsoid.MOON,
-    });
+  // Lunar ellipsoid terrain provider
+  globe.terrainProvider = new Cesium.EllipsoidTerrainProvider({
+    ellipsoid: Cesium.Ellipsoid.MOON,
+  });
 
   return globe;
 }

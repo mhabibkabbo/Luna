@@ -25,13 +25,14 @@ const LunarGlobe3D = forwardRef(function LunarGlobe3D(
     onClearCustomPin,
     activePlanet = 'moon',
     onPlanetChange,
+    isVisible = true,
   },
   ref
 ) {
   const globeContainerRef = useRef(null);
-  const globeInstanceRef = useRef(null);
   const moonContainerRef = useRef(null);
   const earthContainerRef = useRef(null);
+  const moonControllerRef = useRef(null);
   const planetManagerRef = useRef(null);
   const [currentPlanet, setCurrentPlanet] = useState(activePlanet || 'moon');
 
@@ -49,49 +50,56 @@ const LunarGlobe3D = forwardRef(function LunarGlobe3D(
     }
   }, [activePlanet]);
 
-    useEffect(() => {
-    if (
-      !moonContainerRef.current ||
-      !earthContainerRef.current
-    ) {
+  // Pause render loop when hidden (e.g. in 2D mode) to save 100% GPU/CPU, and resume smoothly when active
+  useEffect(() => {
+    const viewer = moonControllerRef.current?.getViewer?.();
+    if (viewer && !viewer.isDestroyed()) {
+      viewer.useDefaultRenderLoop = isVisible;
+      if (isVisible) {
+        viewer.resize?.();
+        viewer.scene?.requestRender?.();
+      }
+    }
+  }, [isVisible]);
+
+  useEffect(() => {
+    if (!moonContainerRef.current) {
       return;
     }
 
-    const moonController =
-      createCesiumMoon(
-        moonContainerRef.current,
-        {
-          onPointerCoordinates,
-          onFeatureSelect,
-          onDropCustomPin,
+    const moonController = createCesiumMoon(
+      moonContainerRef.current,
+      {
+        onPointerCoordinates,
+        onFeatureSelect,
+        onDropCustomPin,
 
-          onFeatureHover: (feature, x, y) => {
-            if (feature) {
-              setHoveredInfo({
-                feature,
-                x,
-                y,
-              });
-            } else {
-              setHoveredInfo(null);
-            }
-          },
-        }
-      );
+        onFeatureHover: (feature, x, y) => {
+          if (feature) {
+            setHoveredInfo({
+              feature,
+              x,
+              y,
+            });
+          } else {
+            setHoveredInfo(null);
+          }
+        },
+      }
+    );
 
-    const earthController =
-      createEarthViewer(
-        earthContainerRef.current
-      );
+    moonControllerRef.current = moonController;
 
-    const planetManager =
-      createPlanetManager({
-        moonController,
-        earthController,
-      });
+    // Lazily instantiate Earth Viewer on demand only if the user explicitly switches to Earth
+    const planetManager = createPlanetManager({
+      moonController,
+      getEarthController: () => {
+        if (!earthContainerRef.current) return null;
+        return createEarthViewer(earthContainerRef.current);
+      },
+    });
 
-    planetManagerRef.current =
-      planetManager;
+    planetManagerRef.current = planetManager;
 
     const initialPlanet = planetManager.getActivePlanet();
     setCurrentPlanet(initialPlanet);
@@ -100,7 +108,7 @@ const LunarGlobe3D = forwardRef(function LunarGlobe3D(
       setCurrentPlanet(activePlanet);
     }
 
-    // TESTING ONLY 
+    // Window test hooks
     window.testEarth = () => {
       planetManagerRef.current?.switchTo('earth');
     };
@@ -121,7 +129,6 @@ const LunarGlobe3D = forwardRef(function LunarGlobe3D(
       planetManagerRef.current?.resetOverview();
     };
 
-    // RETURN (cleanup basically)
     return () => {
       delete window.testEarth;
       delete window.testMoon;
@@ -131,11 +138,14 @@ const LunarGlobe3D = forwardRef(function LunarGlobe3D(
 
       planetManager.destroy();
       planetManagerRef.current = null;
+      moonControllerRef.current = null;
     };
   }, []);
 
   // Expose API via ref
   useImperativeHandle(ref, () => ({
+    getViewer: () => moonControllerRef.current?.getViewer?.(),
+
     switchPlanet: (planetName) => {
       planetManagerRef.current?.switchTo(planetName);
       setCurrentPlanet(planetName);
@@ -238,6 +248,12 @@ const LunarGlobe3D = forwardRef(function LunarGlobe3D(
 
     setCelestialVisible: (visible) =>
       planetManagerRef.current?.setCelestialVisible(visible),
+
+    setCelestialVectorsVisible: (visible) =>
+      planetManagerRef.current?.setCelestialVectorsVisible(visible),
+
+    areCelestialVectorsVisible: () =>
+      planetManagerRef.current?.areCelestialVectorsVisible?.() ?? false,
 
     flyToCelestialOverview: () =>
       planetManagerRef.current?.flyToCelestialOverview(),

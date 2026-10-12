@@ -41,8 +41,8 @@ const COLORS = {
 
 // Same package and version the app already pulls its textures from.
 const EARTH_TEXTURE_URLS = [
-  // Local public asset fallback
-  "/public/assets/earth-blue-marble.jpg",
+  // Local asset (served by Vite from public/ at /assets/...)
+  "/assets/earth-blue-marble.jpg",
 
   // CDN fallbacks
   "https://cdn.jsdelivr.net/npm/three-globe@2.31.0/example/img/earth-blue-marble.jpg",
@@ -109,7 +109,7 @@ function firstLoadableImage(urls) {
   });
 }
 
-function makeLabel(labels, { fill, offsetY, small = false }) {
+function makeLabel(labels, { fill, offsetY, small = false, scaleByDistance = new Cesium.NearFarScalar(1.0e6, 1.0, 1.0e8, 0.8) }) {
   return labels.add({
     text: '',
     font: small ? LABEL_FONT_SMALL : LABEL_FONT,
@@ -123,7 +123,7 @@ function makeLabel(labels, { fill, offsetY, small = false }) {
     verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
     horizontalOrigin: Cesium.HorizontalOrigin.CENTER,
     pixelOffset: new Cesium.Cartesian2(0, offsetY),
-    scaleByDistance: new Cesium.NearFarScalar(1.0e6, 1.0, 4.0e7, 0.8),
+    scaleByDistance,
   });
 }
 
@@ -137,7 +137,7 @@ function makeLabel(labels, { fill, offsetY, small = false }) {
  */
 export function createCelestialOverlay(viewer, options = {}) {
   let destroyed = false;
-  const { initialDate = new Date(), syncLighting = true } = options;
+  const { initialDate = new Date(), syncLighting = true, showVectors = false } = options;
   const scene = viewer.scene;
 
   const group = new Cesium.PrimitiveCollection();
@@ -195,8 +195,9 @@ export function createCelestialOverlay(viewer, options = {}) {
   });
 
   
-  // --- Direction vectors ---------------------------------------------------
+  // --- Direction vectors (Default: OFF, user can toggle on demand) ---------
   const polylines = new Cesium.PolylineCollection();
+  polylines.show = showVectors;
   group.add(polylines);
   const earthVector = polylines.add({
     positions: [Cartesian3.ZERO, Cartesian3.UNIT_X],
@@ -215,6 +216,7 @@ export function createCelestialOverlay(viewer, options = {}) {
 
   // --- Sub-point markers on the Moon's surface ------------------------------
   const points = new Cesium.PointPrimitiveCollection();
+  points.show = showVectors;
   group.add(points);
   const subEarthPoint = points.add({
     pixelSize: 11,
@@ -238,6 +240,8 @@ export function createCelestialOverlay(viewer, options = {}) {
   const sunLabel = makeLabel(labels, { fill: '#fef3c7', offsetY: -30 });
   const subEarthLabel = makeLabel(labels, { fill: '#e0f2fe', offsetY: -16, small: true });
   const subSolarLabel = makeLabel(labels, { fill: '#fef3c7', offsetY: -16, small: true });
+  subEarthLabel.show = showVectors;
+  subSolarLabel.show = showVectors;
   // Sub-point labels only matter once the Moon is reasonably large on screen
   [subEarthLabel, subSolarLabel].forEach((l) => {
     l.distanceDisplayCondition = new Cesium.DistanceDisplayCondition(0, 2.2e7);
@@ -246,51 +250,47 @@ export function createCelestialOverlay(viewer, options = {}) {
   earthLabel.eyeOffset = new Cartesian3(0, 0, -LAYOUT.earthRadius * 1.4);
   sunLabel.eyeOffset = new Cartesian3(0, 0, -LAYOUT.sunSpriteSize * 0.3);
 
-  // --- Lighting, Cesium's Earth-centric Sun/Moon sprites -----------------------
+  // --- Lighting & Cesium's built-in Sun synchronization -------------------
+  if (!scene.sun) {
+    scene.sun = new Cesium.Sun();
+  }
+  scene.sun.show = true;
+  scene.sunBloom = true;
+  scene.light = new Cesium.SunLight();
+
   const previousLight = scene.light;
-  let moonLight = null;
-  if (syncLighting) {
-    moonLight = new Cesium.DirectionalLight({
-      direction: new Cartesian3(-1, 0, 0),
-      color: previousLight?.color,
-      intensity: previousLight?.intensity ?? 5.0,
-    });
-    scene.light = moonLight;
+
+  // Track active Sun positions in Moon's body-fixed coordinate frame
+  let currentSunPosWC = new Cesium.Cartesian3();
+  let currentSunDirWC = new Cesium.Cartesian3();
+
+  // Hook uniformState.update directly: setSunAndMoonDirections runs inside update(),
+  // so intercepting update() ensures Cesium's built-in Sun and lighting ALWAYS use
+  // the exact Moon body-fixed solar position and direction without being overwritten.
+  const uniformState = scene.context?.uniformState;
+  const originalUniformStateUpdate = uniformState?.update;
+
+  if (uniformState && originalUniformStateUpdate) {
+    uniformState.update = function (frameState) {
+      originalUniformStateUpdate.call(this, frameState);
+      if (currentSunPosWC && currentSunDirWC && !Cesium.Cartesian3.equals(currentSunPosWC, Cesium.Cartesian3.ZERO)) {
+        Cesium.Cartesian3.clone(currentSunPosWC, this._sunPositionWC);
+        Cesium.Cartesian3.clone(currentSunDirWC, this._sunDirectionWC);
+        if (frameState.camera?.viewMatrix) {
+          Cesium.Matrix4.multiplyByPointAsVector(
+            frameState.camera.viewMatrix,
+            currentSunDirWC,
+            this._sunDirectionEC
+          );
+          Cesium.Cartesian3.normalize(this._sunDirectionEC, this._sunDirectionEC);
+        }
+        Cesium.Cartesian3.clone(this._sunDirectionWC, this._lightDirectionWC);
+        if (this._sunDirectionEC) {
+          Cesium.Cartesian3.clone(this._sunDirectionEC, this._lightDirectionEC);
+        }
+      }
+    };
   }
-
-  // --- Lunar Sun visual -----------------------------------------------------
-  // Cesium draws its own Sun and Earth's Moon at Earth-based positions, which would
-  // contradict the accurate markers. Hide them while the overlay is active.
-
-  const previousSunShow = scene.sun?.show;
-  const previousMoonShow = scene.moon?.show;
-
-  // Hide Cesium's Earth-centric Sun.
-  // We replace it with a Sun positioned using the lunar ephemeris.
-  if (scene.sun) {
-    scene.sun.show = true;
-  }
-
-  // FOR NOW, WE ARE USING CESIUM'S DEFAULT SUN, WHICH LOOKS GOOD, BUT THE POSITION WITH RESPECT TO
-  // THE MOON IS NOT SO ACCURATE, WILL FIX IT LATER
-  /*
-  const sunBillboards = new Cesium.BillboardCollection();
-
-  group.add(sunBillboards);
-
-  const sunBillboard = sunBillboards.add({
-    image: createSunSprite(),
-    position: Cartesian3.ZERO,
-
-    sizeInMeters: true,
-    width: LAYOUT.sunSpriteSize,
-    height: LAYOUT.sunSpriteSize,
-
-    disableDepthTestDistance: Number.POSITIVE_INFINITY,
-  });
-  */
-
-  // if (scene.moon) scene.moon.show = false;
 
   // --- State -------------------------------------------------------------------
   let lastState = null;
@@ -301,69 +301,89 @@ export function createCelestialOverlay(viewer, options = {}) {
   };
 
   /**
-   * Recomputes and applies the Earth/Sun geometry for a moment in time.
+   * Recomputes and applies the Earth/Sun geometry synchronized with Cesium's built-in Sun.
+   * Uses high-precision IAU 2009/2015 lunar ephemeris and synchronizes Cesium's built-in Sun.
    * @param {Date|number} when - UTC
-   * @returns {ReturnType<typeof computeCelestialState>}
+   * @returns {Object}
    */
   function setTime(when) {
     if (destroyed || scene.isDestroyed?.() || viewer.isDestroyed?.()) return null;
-    const state = computeCelestialState(when);
-    lastState = state;
-    const { earth, sun } = state;
 
-    // Earth: position, orientation (Earth-fixed -> Moon-fixed) and vector
-    const earthPos = scaled(
-      earth.dir,
-      LAYOUT.earthDistance
-    );
-    const m = earth.toMoonFixed;
-    Cesium.Matrix3.fromRowMajorArray(
-      [
-        m[0][0], m[0][1], m[0][2],
-        m[1][0], m[1][1], m[1][2],
-        m[2][0], m[2][1], m[2][2],
-      ],
-      rotation
-    );
-    Cesium.Matrix4.fromRotationTranslation(
-      rotation,
-      earthPos,
-      earthSphere.modelMatrix
-    );
-    earthVector.positions = [
-      scaled(earth.dir, R_MOON + LAYOUT.surfaceLift),
-      scaled(earth.dir, LAYOUT.earthDistance - LAYOUT.earthRadius * 1.02),
-    ];
-    earthLabel.position = earthPos;
-    setText(earthLabel, `Earth\n${formatInt(earth.distanceKm)} km`);
+    const date = when instanceof Date ? when : new Date(when);
+    const julianDate = Cesium.JulianDate.fromDate(date);
 
-    // Sun: position, sprite and vector
-    const sunPos = scaled(sun.dir, LAYOUT.sunDistance);
-    // sunBillboard.position = sunPos;
+    // Synchronize Cesium's internal clock so Cesium time stays synchronized
+    if (viewer.clock) {
+      viewer.clock.currentTime = julianDate;
+    }
+
+    // High precision lunar ephemeris in Moon body-fixed selenographic frame
+    const state = computeCelestialState(date);
+    if (!state) return null;
+
+    // Vectors in Moon's body-fixed frame (Cesium's world frame for Ellipsoid.MOON)
+    const sunDirWC = new Cesium.Cartesian3(state.sun.dir[0], state.sun.dir[1], state.sun.dir[2]);
+    const earthDirWC = new Cesium.Cartesian3(state.earth.dir[0], state.earth.dir[1], state.earth.dir[2]);
+
+    const sunDistanceM = state.sun.distanceKm * 1000;
+    const earthDistanceM = LAYOUT.earthDistance; // 384,400 km display distance
+    const sunDistKm = state.sun.distanceKm;
+    const earthDistKm = state.earth.distanceKm;
+
+    // Synchronize Cesium's built-in Sun uniform position (1 AU away along sunDirWC)
+    currentSunDirWC = sunDirWC;
+    currentSunPosWC = Cesium.Cartesian3.multiplyByScalar(sunDirWC, sunDistanceM, new Cesium.Cartesian3());
+
+    // 1. Position Sun Label and Direction Vector to match Cesium's built-in Sun exactly
+    // Position the Sun label far along the solar ray (80,000 km) to eliminate parallax with Cesium's built-in Sun
+    const sunLabelDist = 80000000;
+    const sunLabelPos = Cesium.Cartesian3.multiplyByScalar(sunDirWC, sunLabelDist, new Cesium.Cartesian3());
     sunVector.positions = [
-      scaled(sun.dir, R_MOON + LAYOUT.surfaceLift),
-      scaled(sun.dir, LAYOUT.sunDistance - LAYOUT.sunSpriteSize * 0.2),
+      Cesium.Cartesian3.multiplyByScalar(sunDirWC, R_MOON + LAYOUT.surfaceLift, new Cesium.Cartesian3()),
+      Cesium.Cartesian3.multiplyByScalar(sunDirWC, sunLabelDist * 0.92, new Cesium.Cartesian3()),
     ];
-    sunLabel.position = sunPos;
+    sunLabel.position = sunLabelPos;
     setText(
       sunLabel,
-      `Sun\n${(sun.distanceKm / 1e6).toFixed(1)} million km · ${sun.distanceAU.toFixed(3)} AU`
+      `Sun\n${(sunDistKm / 1e6).toFixed(1)} million km · ${state.sun.distanceAU.toFixed(3)} AU`
     );
 
-    // Sub-point markers where each vector meets the surface
-    subEarthPoint.position = scaled(earth.dir, R_MOON + LAYOUT.surfaceLift);
-    subSolarPoint.position = scaled(sun.dir, R_MOON + LAYOUT.surfaceLift);
-    subEarthLabel.position = subEarthPoint.position;
-    subSolarLabel.position = subSolarPoint.position;
-    const eCoord = formatLunarCoordinates(earth.subLon, earth.subLat, 1);
-    const sCoord = formatLunarCoordinates(sun.subLon, sun.subLat, 1);
-    setText(subEarthLabel, `Sub-Earth point\n${eCoord.latStr}, ${eCoord.lonStr}`);
+    // Subsolar point on lunar surface
+    const subSolarPos = Cesium.Cartesian3.multiplyByScalar(sunDirWC, R_MOON + LAYOUT.surfaceLift, new Cesium.Cartesian3());
+    subSolarPoint.position = subSolarPos;
+    subSolarLabel.position = subSolarPos;
+    const sCoord = formatLunarCoordinates(state.sun.subLon, state.sun.subLat, 1);
     setText(subSolarLabel, `Subsolar point\n${sCoord.latStr}, ${sCoord.lonStr}`);
 
-    // Light travels from the Sun toward the Moon
-    if (moonLight) {
-      Cartesian3.negate(new Cartesian3(sun.dir[0], sun.dir[1], sun.dir[2]), moonLight.direction);
+    // 2. Position Earth Sphere, Label and Direction Vector in orbit around Moon
+    const earthPos = Cesium.Cartesian3.multiplyByScalar(earthDirWC, earthDistanceM, new Cesium.Cartesian3());
+    
+    // Accurately orient the Earth model using Earth's diurnal rotation matrix (GAST)
+    if (state.earth.toMoonFixed && state.earth.toMoonFixed.length === 3) {
+      const m = state.earth.toMoonFixed;
+      Cesium.Matrix3.setRow(rotation, 0, new Cesium.Cartesian3(m[0][0], m[0][1], m[0][2]), rotation);
+      Cesium.Matrix3.setRow(rotation, 1, new Cesium.Cartesian3(m[1][0], m[1][1], m[1][2]), rotation);
+      Cesium.Matrix3.setRow(rotation, 2, new Cesium.Cartesian3(m[2][0], m[2][1], m[2][2]), rotation);
+    } else {
+      Cesium.Transforms.rotationMatrixFromPositionVelocity(earthPos, earthDirWC, Cesium.Ellipsoid.WGS84, rotation);
     }
+    Cesium.Matrix4.fromRotationTranslation(rotation, earthPos, earthSphere.modelMatrix);
+
+    earthVector.positions = [
+      Cesium.Cartesian3.multiplyByScalar(earthDirWC, R_MOON + LAYOUT.surfaceLift, new Cesium.Cartesian3()),
+      Cesium.Cartesian3.multiplyByScalar(earthDirWC, earthDistanceM - LAYOUT.earthRadius * 1.02, new Cesium.Cartesian3()),
+    ];
+    earthLabel.position = earthPos;
+    setText(earthLabel, `Earth\n${formatInt(earthDistKm)} km`);
+
+    // Sub-Earth point on lunar surface
+    const subEarthPos = Cesium.Cartesian3.multiplyByScalar(earthDirWC, R_MOON + LAYOUT.surfaceLift, new Cesium.Cartesian3());
+    subEarthPoint.position = subEarthPos;
+    subEarthLabel.position = subEarthPos;
+    const eCoord = formatLunarCoordinates(state.earth.subLon, state.earth.subLat, 1);
+    setText(subEarthLabel, `Sub-Earth point\n${eCoord.latStr}, ${eCoord.lonStr}`);
+
+    lastState = state;
 
     try {
       if (!scene.isDestroyed?.() && !viewer.isDestroyed?.()) {
@@ -450,14 +470,37 @@ export function createCelestialOverlay(viewer, options = {}) {
     } catch {}
   }
 
+  function setVectorsVisible(visible) {
+    if (destroyed || scene.isDestroyed?.() || viewer.isDestroyed?.()) return;
+    const show = !!visible;
+    polylines.show = show;
+    points.show = show;
+    subEarthLabel.show = show;
+    subSolarLabel.show = show;
+    try {
+      if (!scene.isDestroyed?.() && !viewer.isDestroyed?.()) {
+        scene.requestRender?.();
+      }
+    } catch {}
+  }
+
+  function areVectorsVisible() {
+    return polylines.show;
+  }
+
   function destroy() {
     if (destroyed) return;
     destroyed = true;
     try {
-      if (moonLight && !scene.isDestroyed?.() && scene.light === moonLight) scene.light = previousLight;
-      if (!scene.isDestroyed?.() && scene.sun && previousSunShow !== undefined) scene.sun.show = previousSunShow;
-      if (!scene.isDestroyed?.() && scene.moon && previousMoonShow !== undefined) scene.moon.show = previousMoonShow;
-      if (!scene.isDestroyed?.()) scene.primitives.remove(group);
+      if (uniformState && originalUniformStateUpdate) {
+        uniformState.update = originalUniformStateUpdate;
+      }
+      if (!scene.isDestroyed?.() && previousLight) {
+        scene.light = previousLight;
+      }
+      if (!scene.isDestroyed?.()) {
+        scene.primitives.remove(group);
+      }
     } catch {}
   }
 
@@ -467,6 +510,9 @@ export function createCelestialOverlay(viewer, options = {}) {
     setTime,
     setCelestialTime: setTime,
     setCelestialVisible: setVisible,
+    setVectorsVisible,
+    areVectorsVisible,
+    setCelestialVectorsVisible: setVectorsVisible,
     flyToCelestialOverview: flyToOverview,
     getState: () => lastState,
     setVisible,
