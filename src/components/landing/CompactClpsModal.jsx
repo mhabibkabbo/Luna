@@ -28,7 +28,7 @@ export default function CompactClpsModal({ isOpen, onClose, onLaunchExplorer }) 
         <div className="text-[11px] font-mono tracking-widest text-cyan-400 uppercase mb-2">
           NASA INITIATIVE
         </div>
-        <h2 className="text-2xl font-bold text-white mb-4 tracking-tight">
+        <h2 className="text-[1.5rem] font-bold text-white mb-4 tracking-tight">
           What is CLPS?
         </h2>
 

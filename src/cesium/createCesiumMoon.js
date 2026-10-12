@@ -314,7 +314,7 @@ export function createCesiumMoon(container, callbacks = {}) {
 
   // Optimize scene and globe for fast lunar tile streaming & crisp rendering
   const scene = viewer.scene;
-  scene.backgroundColor = Cesium.Color.fromCssColorString('#020409');
+  scene.backgroundColor = Cesium.Color.TRANSPARENT;
   scene.globe.baseColor = Cesium.Color.fromCssColorString('#0f172a');
   scene.globe.depthTestAgainstTerrain = true; // Occlude markers on the far side of the Moon
   scene.highDynamicRange = false;

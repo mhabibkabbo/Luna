@@ -8,37 +8,58 @@ export default function LandingPage({ onLaunchExplorer }) {
   const [isClpsOpen, setIsClpsOpen] = useState(false);
 
   return (
-    <div className="relative min-h-screen w-full bg-black text-slate-100 font-sans selection:bg-cyan-500 selection:text-white overflow-x-hidden flex flex-col justify-between select-none">
+    <div className="relative min-h-screen w-full bg-black text-slate-100 font-sans selection:bg-cyan-500 selection:text-white overflow-x-hidden flex flex-col justify-between select-none isolate">
       {/* ========================================================================= */}
-      {/* DEEP SPACE BACKGROUND: Sparse, realistic stars & gentle gradient */}
+      {/* DEEP SPACE BACKGROUND: Rich multi-layered starfield & nebula glow */}
       {/* ========================================================================= */}
-      <div className="absolute inset-0 pointer-events-none -z-20 overflow-hidden">
-        {/* Soft radial depth glow behind Moon */}
+      <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
+        {/* Soft cosmic nebula depth behind Moon */}
         <div
-          className="absolute top-1/2 right-1/4 -translate-y-1/2 w-[700px] h-[700px] rounded-full pointer-events-none opacity-20"
+          className="absolute top-1/2 right-1/4 -translate-y-1/2 w-[850px] h-[850px] rounded-full pointer-events-none opacity-25"
           style={{
             background:
-              'radial-gradient(circle, rgba(6, 182, 212, 0.10) 0%, rgba(15, 23, 42, 0.04) 50%, transparent 75%)',
+              'radial-gradient(circle, rgba(6, 182, 212, 0.16) 0%, rgba(30, 58, 138, 0.08) 45%, transparent 72%)',
           }}
         />
 
-        {/* Sparse Astronomical Starfield (lightweight CSS points) */}
+        {/* Micro-stars layer (dense, tiny 1px celestial dust & distant stars) */}
         <div
-          className="absolute inset-0 opacity-35"
+          className="absolute inset-0 opacity-75"
           style={{
             backgroundImage: `
-              radial-gradient(1px 1px at 15% 25%, #ffffff 100%, transparent 0),
-              radial-gradient(1.5px 1.5px at 35% 15%, #94a3b8 100%, transparent 0),
-              radial-gradient(1px 1px at 65% 10%, #e2e8f0 100%, transparent 0),
-              radial-gradient(1px 1px at 85% 30%, #64748b 100%, transparent 0),
-              radial-gradient(1.2px 1.2px at 20% 70%, #94a3b8 100%, transparent 0),
-              radial-gradient(1px 1px at 45% 85%, #ffffff 100%, transparent 0),
-              radial-gradient(1.5px 1.5px at 75% 75%, #e2e8f0 100%, transparent 0),
-              radial-gradient(1px 1px at 90% 90%, #64748b 100%, transparent 0),
-              radial-gradient(1px 1px at 5% 55%, #cbd5e1 100%, transparent 0)
+              radial-gradient(1px 1px at 8% 12%, #ffffff 100%, transparent 0),
+              radial-gradient(1px 1px at 18% 45%, #93c5fd 100%, transparent 0),
+              radial-gradient(1px 1px at 28% 82%, #cbd5e1 100%, transparent 0),
+              radial-gradient(1px 1px at 38% 22%, #ffffff 100%, transparent 0),
+              radial-gradient(1px 1px at 48% 68%, #e2e8f0 100%, transparent 0),
+              radial-gradient(1px 1px at 58% 15%, #93c5fd 100%, transparent 0),
+              radial-gradient(1px 1px at 68% 52%, #ffffff 100%, transparent 0),
+              radial-gradient(1px 1px at 78% 88%, #fef08a 100%, transparent 0),
+              radial-gradient(1px 1px at 88% 34%, #e2e8f0 100%, transparent 0),
+              radial-gradient(1px 1px at 95% 72%, #ffffff 100%, transparent 0),
+              radial-gradient(1px 1px at 12% 92%, #60a5fa 100%, transparent 0),
+              radial-gradient(1px 1px at 84% 18%, #cbd5e1 100%, transparent 0)
             `,
             backgroundRepeat: 'repeat',
-            backgroundSize: '400px 400px',
+            backgroundSize: '240px 240px',
+          }}
+        />
+
+        {/* Medium brighter stars (1.5px - 2px with spectral tint) */}
+        <div
+          className="absolute inset-0 opacity-85"
+          style={{
+            backgroundImage: `
+              radial-gradient(1.5px 1.5px at 14% 30%, #ffffff 100%, transparent 0),
+              radial-gradient(2px 2px at 42% 12%, #bae6fd 100%, transparent 0),
+              radial-gradient(1.5px 1.5px at 70% 65%, #ffffff 100%, transparent 0),
+              radial-gradient(1.8px 1.8px at 86% 40%, #fef3c7 100%, transparent 0),
+              radial-gradient(1.5px 1.5px at 25% 75%, #e2e8f0 100%, transparent 0),
+              radial-gradient(2px 2px at 62% 90%, #67e8f9 100%, transparent 0),
+              radial-gradient(1.4px 1.4px at 92% 16%, #ffffff 100%, transparent 0)
+            `,
+            backgroundRepeat: 'repeat',
+            backgroundSize: '380px 380px',
           }}
         />
       </div>
@@ -103,7 +124,7 @@ export default function LandingPage({ onLaunchExplorer }) {
               <button
                 type="button"
                 onClick={() => setIsClpsOpen(true)}
-                className="text-xs font-mono text-slate-400 hover:text-cyan-300 tracking-wider transition-colors underline-offset-4 hover:underline"
+                className="text-1rem font-mono text-slate-400 hover:text-cyan-300 tracking-wider transition-colors underline-offset-4 hover:underline"
               >
                 What is CLPS?
               </button>

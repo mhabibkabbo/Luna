@@ -280,21 +280,41 @@ export default function RealisticMoon({ onLaunchExplorer }) {
     renderer.toneMappingExposure = 1.08;
     container.appendChild(renderer.domElement);
 
-    // 3. Faint Astronomical Starfield (260 subtle points)
-    const starCount = 260;
+    // 3. Crisp Astronomical Starfield (750 multi-depth points with spectral tints)
+    const starCount = 750;
     const starGeometry = new THREE.BufferGeometry();
     const starPositions = new Float32Array(starCount * 3);
+    const starColors = new Float32Array(starCount * 3);
+
     for (let i = 0; i < starCount * 3; i += 3) {
-      starPositions[i] = (Math.random() - 0.5) * 16;
-      starPositions[i + 1] = (Math.random() - 0.5) * 16;
-      starPositions[i + 2] = -4.5 - Math.random() * 6;
+      // Distribute widely in background with natural depth
+      const spreadX = (Math.random() - 0.5) * 24;
+      const spreadY = (Math.random() - 0.5) * 24;
+      const spreadZ = -3.5 - Math.random() * 12;
+
+      starPositions[i] = spreadX;
+      starPositions[i + 1] = spreadY;
+      starPositions[i + 2] = spreadZ;
+
+      // Realistic stellar spectral temperatures (blue-white, white, warm amber)
+      const spectral = Math.random();
+      if (spectral > 0.85) {
+        starColors[i] = 0.75; starColors[i + 1] = 0.88; starColors[i + 2] = 1.0; // Class B/A (cool blue)
+      } else if (spectral < 0.12) {
+        starColors[i] = 1.0; starColors[i + 1] = 0.92; starColors[i + 2] = 0.72; // Class K/G (warm amber)
+      } else {
+        starColors[i] = 0.96; starColors[i + 1] = 0.97; starColors[i + 2] = 1.0; // Class F (crisp white)
+      }
     }
+
     starGeometry.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
+    starGeometry.setAttribute('color', new THREE.BufferAttribute(starColors, 3));
+
     const starMaterial = new THREE.PointsMaterial({
-      color: 0x94a3b8,
-      size: 0.022,
+      size: 0.032,
+      vertexColors: true,
       transparent: true,
-      opacity: 0.5,
+      opacity: 0.82,
     });
     const starPoints = new THREE.Points(starGeometry, starMaterial);
     scene.add(starPoints);
@@ -742,11 +762,11 @@ export default function RealisticMoon({ onLaunchExplorer }) {
       </div>
 
       {/* 4. Polar Annotation & Selenographic Datum Indicator */}
-      <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 text-[10px] font-mono text-slate-500 tracking-wider uppercase pointer-events-none whitespace-nowrap">
+      {/* <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 text-[10px] font-mono text-slate-500 tracking-wider uppercase pointer-events-none whitespace-nowrap">
         <span>0.00° N, 0.00° E · Subsolar Datum</span>
         <span className="text-slate-700">•</span>
         <span className="text-cyan-400/90">South Pole Highlight: 80°–90°S</span>
-      </div>
+      </div> */}
     </div>
   );
 }

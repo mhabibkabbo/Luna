@@ -21,16 +21,56 @@ export default function HeroSection({ onLaunchExplorer }) {
   };
 
   return (
-    <section className="relative min-h-[92vh] flex items-center justify-center pt-20 pb-16 px-4 sm:px-6 lg:px-8 overflow-hidden bg-[#030611]">
-      {/* Deep Space Background Grid & Stars */}
-      <div className="absolute inset-0 pointer-events-none -z-20">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900/40 via-[#030611] to-[#010308]" />
+    <section className="relative min-h-[92vh] flex items-center justify-center pt-20 pb-16 px-4 sm:px-6 lg:px-8 overflow-hidden bg-black isolate">
+      {/* Deep Space Background Stars & Soft Glow */}
+      <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
+        {/* Soft cosmic glow */}
         <div
-          className="absolute inset-0 opacity-[0.03]"
+          className="absolute top-1/2 right-1/4 -translate-y-1/2 w-[800px] h-[800px] rounded-full pointer-events-none opacity-20"
           style={{
-            backgroundImage:
-              'linear-gradient(to right, #ffffff 1px, transparent 1px), linear-gradient(to bottom, #ffffff 1px, transparent 1px)',
-            backgroundSize: '40px 40px',
+            background:
+              'radial-gradient(circle, rgba(6, 182, 212, 0.15) 0%, rgba(30, 58, 138, 0.06) 45%, transparent 72%)',
+          }}
+        />
+
+        {/* Micro-stars layer */}
+        <div
+          className="absolute inset-0 opacity-75"
+          style={{
+            backgroundImage: `
+              radial-gradient(1px 1px at 8% 12%, #ffffff 100%, transparent 0),
+              radial-gradient(1px 1px at 18% 45%, #93c5fd 100%, transparent 0),
+              radial-gradient(1px 1px at 28% 82%, #cbd5e1 100%, transparent 0),
+              radial-gradient(1px 1px at 38% 22%, #ffffff 100%, transparent 0),
+              radial-gradient(1px 1px at 48% 68%, #e2e8f0 100%, transparent 0),
+              radial-gradient(1px 1px at 58% 15%, #93c5fd 100%, transparent 0),
+              radial-gradient(1px 1px at 68% 52%, #ffffff 100%, transparent 0),
+              radial-gradient(1px 1px at 78% 88%, #fef08a 100%, transparent 0),
+              radial-gradient(1px 1px at 88% 34%, #e2e8f0 100%, transparent 0),
+              radial-gradient(1px 1px at 95% 72%, #ffffff 100%, transparent 0),
+              radial-gradient(1px 1px at 12% 92%, #60a5fa 100%, transparent 0),
+              radial-gradient(1px 1px at 84% 18%, #cbd5e1 100%, transparent 0)
+            `,
+            backgroundRepeat: 'repeat',
+            backgroundSize: '240px 240px',
+          }}
+        />
+
+        {/* Medium brighter stars */}
+        <div
+          className="absolute inset-0 opacity-85"
+          style={{
+            backgroundImage: `
+              radial-gradient(1.5px 1.5px at 14% 30%, #ffffff 100%, transparent 0),
+              radial-gradient(2px 2px at 42% 12%, #bae6fd 100%, transparent 0),
+              radial-gradient(1.5px 1.5px at 70% 65%, #ffffff 100%, transparent 0),
+              radial-gradient(1.8px 1.8px at 86% 40%, #fef3c7 100%, transparent 0),
+              radial-gradient(1.5px 1.5px at 25% 75%, #e2e8f0 100%, transparent 0),
+              radial-gradient(2px 2px at 62% 90%, #67e8f9 100%, transparent 0),
+              radial-gradient(1.4px 1.4px at 92% 16%, #ffffff 100%, transparent 0)
+            `,
+            backgroundRepeat: 'repeat',
+            backgroundSize: '380px 380px',
           }}
         />
       </div>

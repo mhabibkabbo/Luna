@@ -260,7 +260,28 @@ const LunarGlobe3D = forwardRef(function LunarGlobe3D(
   }));
 
   return (
-    <div className="relative w-full h-full overflow-hidden select-none bg-[#050811]">
+    <div className="relative w-full h-full overflow-hidden select-none bg-black">
+      {/* Subtle Deep Space Starfield (soft, distant, non-distracting background) */}
+      <div
+        className="absolute inset-0 pointer-events-none opacity-35"
+        style={{
+          backgroundImage: `
+            radial-gradient(1px 1px at 12% 18%, #ffffff 100%, transparent 0),
+            radial-gradient(1px 1px at 24% 54%, #93c5fd 100%, transparent 0),
+            radial-gradient(1px 1px at 42% 28%, #e2e8f0 100%, transparent 0),
+            radial-gradient(1px 1px at 64% 78%, #ffffff 100%, transparent 0),
+            radial-gradient(1.2px 1.2px at 78% 32%, #fef08a 100%, transparent 0),
+            radial-gradient(1px 1px at 88% 82%, #cbd5e1 100%, transparent 0),
+            radial-gradient(1px 1px at 94% 20%, #ffffff 100%, transparent 0),
+            radial-gradient(1px 1px at 32% 86%, #94a3b8 100%, transparent 0),
+            radial-gradient(1.2px 1.2px at 16% 72%, #67e8f9 100%, transparent 0),
+            radial-gradient(1px 1px at 52% 48%, #ffffff 100%, transparent 0)
+          `,
+          backgroundRepeat: 'repeat',
+          backgroundSize: '360px 360px',
+        }}
+      />
+
       {/* 3D WebGL Canvas Containers */}
       <div ref={moonContainerRef} className="absolute inset-0" />
 

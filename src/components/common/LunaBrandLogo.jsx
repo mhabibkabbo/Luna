@@ -15,31 +15,67 @@ export default function LunaBrandLogo({
   title = 'Luna — CLPS Lunar Mission Browser',
 }) {
   const content = (
-    <div className={`flex items-center gap-2.5 shrink-0 ${className}`}>
-      {/* Brand Icon Box: Transparent with fine border and lunar emblem */}
-      <div className="w-7 h-7 rounded-lg bg-transparent border border-slate-700/60 flex items-center justify-center group-hover:border-cyan-500/50 transition-colors">
-        <Moon className="w-3.5 h-3.5 text-slate-200 group-hover:text-cyan-300 transition-colors" />
-      </div>
+  <div className={`flex items-center gap-2.5 shrink-0 group ${className}`}>
+    {/* Brand Icon Box: Transparent with fine border & CLPS Lunar Orbit Emblem */}
+    <div className="w-7 h-7 rounded-lg bg-slate-950/40 border border-slate-700/60 flex items-center justify-center group-hover:border-cyan-500/50 group-hover:bg-cyan-950/20 transition-all duration-300">
+      <svg
+        viewBox="0 0 24 24"
+        className="w-4 h-4"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <defs>
+          <linearGradient id="orbit-grad" x1="0%" y1="100%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#06b6d4" stopOpacity="0.2" />
+            <stop offset="100%" stopColor="#38bdf8" />
+          </linearGradient>
+        </defs>
 
-      {/* Brand Name & Identifier */}
-      <div className="flex items-baseline gap-1.5">
-        <span className="text-sm font-semibold tracking-wider text-white uppercase font-sans group-hover:text-cyan-200 transition-colors">
-          LUNA
-        </span>
-        <span className="text-[10px] font-mono text-cyan-400/80 tracking-widest uppercase hidden sm:inline">
-          CLPS BROWSER
-        </span>
-      </div>
+        {/* Crescent Moon Base */}
+        <path
+          d="M 12 3 A 9 9 0 1 0 18.5 18 A 8 8 0 1 1 12 3 Z"
+          className="fill-slate-200 group-hover:fill-cyan-100 transition-colors duration-300"
+        />
 
-      {/* Optional subtle back-to-landing indicator (for Explorer workspace) */}
-      {showBackIndicator && (
-        <span className="hidden sm:inline-flex items-center gap-1 ml-1 px-1.5 py-0.5 rounded text-[10px] font-mono text-slate-400 group-hover:text-white bg-slate-900/60 border border-slate-800 transition-colors">
-          <ArrowLeft className="w-2.5 h-2.5 text-cyan-400" />
-          <span>{backLabel}</span>
-        </span>
-      )}
+        {/* Surface Cratering Accents */}
+        <circle cx="8" cy="11.5" r="0.85" className="fill-slate-400 group-hover:fill-cyan-300/80 transition-colors" />
+        <circle cx="10" cy="15" r="0.6" className="fill-slate-400 group-hover:fill-cyan-300/80 transition-colors" />
+
+        {/* CLPS Orbital Trajectory Arc */}
+        <path
+          d="M 3.5 19 C 5 11, 14 7, 19.5 9"
+          stroke="url(#orbit-grad)"
+          strokeWidth="1.25"
+          strokeLinecap="round"
+        />
+
+        {/* Payload / Lander Target Reticle */}
+        <circle cx="19.5" cy="9" r="1" className="fill-white" />
+        <circle
+          cx="19.5"
+          cy="9"
+          r="1.8"
+          className="stroke-cyan-400 group-hover:stroke-cyan-300 transition-colors"
+          strokeWidth="0.6"
+        />
+      </svg>
     </div>
-  );
+
+    {/* Brand Name & Identifier */}
+    <div className="flex items-baseline gap-1.5">
+      <span className="text-[1.2rem] font-semibold tracking-wider text-white uppercase font-orbitron group-hover:text-cyan-200 transition-colors">
+        LUNA
+      </span>
+      {!showBackIndicator &&
+<span className="text-[8px] font-mono text-cyan-400/80 tracking-widest uppercase hidden sm:inline">
+        CLPS BROWSER
+      </span>
+      }
+
+    </div>
+
+  </div>
+);
 
   if (asButton) {
     return (
