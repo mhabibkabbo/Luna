@@ -1,3 +1,4 @@
 node_modules
 dist
 .vite
+PROJECT_DOCUMENTATION.md
