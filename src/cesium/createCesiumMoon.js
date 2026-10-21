@@ -294,6 +294,10 @@ export function createCesiumMoon(container, callbacks = {}) {
 
     orderIndependentTranslucency: false,
 
+    // Render only when something changed (camera, tiles, entities) instead of 60 fps forever
+    requestRenderMode: true,
+    maximumRenderTimeChange: Infinity,
+
     contextOptions: {
       webgl: {
         alpha: true,
@@ -305,9 +309,13 @@ export function createCesiumMoon(container, callbacks = {}) {
   // Adaptive Resolution:
   // Mobile starts at 0.70 to avoid 3x retina fragment shader bottlenecks while preserving CSS layout.
   // Desktop defaults to 1.0 (clamped to prevent 4K GPU exhaustion).
-  let currentResolutionScale = isMobile ? 0.70 : 1.0;
-  const minResolutionScale = isMobile ? 0.55 : 0.75;
-  const maxResolutionScale = isMobile ? 0.85 : 1.25;
+  // Effective render ratio = devicePixelRatio * resolutionScale. Cap it so 3x/4x displays
+  // do not shade 9-16 pixels per CSS pixel.
+  const dpr = (typeof window !== 'undefined' && window.devicePixelRatio) || 1;
+  const targetRatio = isMobile ? 1.0 : Math.min(dpr, 1.5);
+  let currentResolutionScale = targetRatio / dpr;
+  const minResolutionScale = (isMobile ? 0.6 : 0.75) * currentResolutionScale;
+  const maxResolutionScale = isMobile ? currentResolutionScale : Math.min(1.0, currentResolutionScale * 1.15);
 
   viewer.resolutionScale = currentResolutionScale;
   viewer.useBrowserRecommendedResolution = false;
@@ -318,6 +326,10 @@ export function createCesiumMoon(container, callbacks = {}) {
   scene.globe.baseColor = Cesium.Color.fromCssColorString('#0f172a');
   scene.globe.depthTestAgainstTerrain = true; // Occlude markers on the far side of the Moon
   scene.highDynamicRange = false;
+  scene.msaaSamples = isMobile ? 1 : 2; // Cesium default is 4x MSAA
+  scene.fog.enabled = false;
+  scene.globe.showGroundAtmosphere = false;
+  scene.globe.showWaterEffect = false;
 
   // Benchmark-tuned Screen Space Error (SSE) & Tile Cache:
   // 2.0 on desktop gives standard crisp LOD; 2.8 on mobile cuts concurrent tile floods by ~50%
@@ -339,7 +351,7 @@ export function createCesiumMoon(container, callbacks = {}) {
   let accumulatedFrameDuration = 0;
   let lastFrameTimestamp = performance.now();
   let lastScaleAdjustTimestamp = performance.now();
-  const SCALE_ADJUST_COOLDOWN_MS = 3000;
+  const SCALE_ADJUST_COOLDOWN_MS = 2000;
 
   const removeAdaptiveResolutionListener = scene.postRender.addEventListener(() => {
     const now = performance.now();
@@ -356,17 +368,18 @@ export function createCesiumMoon(container, callbacks = {}) {
     if (frameCount >= sampleWindow) {
       const avgDuration = accumulatedFrameDuration / frameCount;
       const timeSinceAdjust = now - lastScaleAdjustTimestamp;
+      // requestRenderMode produces idle gaps; those were already filtered by the >250 ms check
       const isCameraFlying = viewer.camera._currentFlight !== undefined;
 
       if (!isCameraFlying && timeSinceAdjust >= SCALE_ADJUST_COOLDOWN_MS) {
         // High GPU load: frame time > 32ms (< 31 fps)
-        if (avgDuration > 32.0 && currentResolutionScale > minResolutionScale) {
-          currentResolutionScale = Math.max(minResolutionScale, currentResolutionScale - 0.05);
+        if (avgDuration > 26.0 && currentResolutionScale > minResolutionScale) {
+          currentResolutionScale = Math.max(minResolutionScale, currentResolutionScale - 0.08);
           viewer.resolutionScale = Number(currentResolutionScale.toFixed(2));
           lastScaleAdjustTimestamp = now;
         }
         // Substantial performance headroom: frame time < 16.5ms (> 60 fps)
-        else if (avgDuration < 16.5 && currentResolutionScale < maxResolutionScale) {
+        else if (!isMobile && avgDuration < 16.5 && currentResolutionScale < maxResolutionScale) {
           currentResolutionScale = Math.min(maxResolutionScale, currentResolutionScale + 0.05);
           viewer.resolutionScale = Number(currentResolutionScale.toFixed(2));
           lastScaleAdjustTimestamp = now;
@@ -718,24 +731,26 @@ export function createCesiumMoon(container, callbacks = {}) {
   // Throttled mouse move event handler to avoid 60fps React state updates during navigation
   let lastCoordsThrottleTime = 0;
   let lastHoverPickTime = 0;
-  const COORDS_THROTTLE_MS = 80;
-  const HOVER_THROTTLE_MS = 60;
+  const COORDS_THROTTLE_MS = 100;
+  const HOVER_THROTTLE_MS = 140;
+  let pointerIsDown = false;
 
   handler.setInputAction((movement) => {
+    // Skip all picking while dragging the camera and on touch devices (no hover there)
+    if (pointerIsDown || isMobile) return;
     const now = performance.now();
 
     // 1. Raycast on Moon globe surface to calculate Selenographic Longitude / Latitude (throttled)
     if (now - lastCoordsThrottleTime >= COORDS_THROTTLE_MS) {
       lastCoordsThrottleTime = now;
-      const ray = viewer.camera.getPickRay(movement.endPosition);
-      if (ray) {
-        const cartesian = scene.globe.pick(ray, scene);
-        if (cartesian) {
-          const cartographic = Cesium.Ellipsoid.MOON.cartesianToCartographic(cartesian);
-          const lon = Cesium.Math.toDegrees(cartographic.longitude);
-          const lat = Cesium.Math.toDegrees(cartographic.latitude);
-          callbacks.onPointerCoordinates?.(lon, lat);
-        }
+      // Analytic ray/ellipsoid intersection: far cheaper than globe.pick against tile geometry
+      const cartesian = viewer.camera.pickEllipsoid(movement.endPosition, Cesium.Ellipsoid.MOON);
+      if (cartesian) {
+        const cartographic = Cesium.Ellipsoid.MOON.cartesianToCartographic(cartesian);
+        callbacks.onPointerCoordinates?.(
+          Cesium.Math.toDegrees(cartographic.longitude),
+          Cesium.Math.toDegrees(cartographic.latitude)
+        );
       }
     }
 
@@ -761,6 +776,7 @@ export function createCesiumMoon(container, callbacks = {}) {
           hoveredEntity.billboard.image = getLunarMarkerDataUrl(markerType, true);
         }
 
+        scene.requestRender();
         callbacks.onFeatureHover?.(feature, movement.endPosition.x, movement.endPosition.y);
       } else {
         container.style.cursor = 'default';
@@ -770,6 +786,7 @@ export function createCesiumMoon(container, callbacks = {}) {
           hoveredEntity.billboard.scale = prevBase;
           hoveredEntity.billboard.image = getLunarMarkerDataUrl(prevType, false);
           hoveredEntity = null;
+          scene.requestRender();
         }
         callbacks.onFeatureHover?.(null, 0, 0);
       }
@@ -779,7 +796,12 @@ export function createCesiumMoon(container, callbacks = {}) {
   // Track pointer down to avoid triggering pin drops during camera orbit drags
   handler.setInputAction((down) => {
     clickStartPosition = Cesium.Cartesian2.clone(down.position);
+    pointerIsDown = true;
   }, Cesium.ScreenSpaceEventType.LEFT_DOWN);
+
+  handler.setInputAction(() => {
+    pointerIsDown = false;
+  }, Cesium.ScreenSpaceEventType.LEFT_UP);
 
   handler.setInputAction((click) => {
     // If pointer was dragged more than 6 pixels, ignore as orbit drag
@@ -809,7 +831,7 @@ export function createCesiumMoon(container, callbacks = {}) {
     // User clicked on the 3D Moon surface itself -> Drop custom pin!
     const ray = viewer.camera.getPickRay(click.position);
     if (ray) {
-      const cartesian = scene.globe.pick(ray, scene);
+      const cartesian = viewer.camera.pickEllipsoid(click.position, Cesium.Ellipsoid.MOON);
       if (cartesian) {
         const cartographic = Cesium.Ellipsoid.MOON.cartesianToCartographic(cartesian);
         const lon = Cesium.Math.toDegrees(cartographic.longitude);
@@ -912,6 +934,7 @@ export function createCesiumMoon(container, callbacks = {}) {
     if (isAutoRotating) {
       removeRotationListener = scene.postUpdate.addEventListener(() => {
         scene.camera.rotate(Cesium.Cartesian3.UNIT_Z, -0.0012);
+        scene.requestRender();
       });
     } else if (removeRotationListener) {
       removeRotationListener();
@@ -925,6 +948,7 @@ export function createCesiumMoon(container, callbacks = {}) {
   const toggleLighting = () => {
     isLightingEnabled = !isLightingEnabled;
     scene.globe.enableLighting = isLightingEnabled;
+    scene.requestRender();
     return isLightingEnabled;
   };
 

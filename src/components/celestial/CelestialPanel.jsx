@@ -132,11 +132,11 @@ export default function CelestialPanel({
 
   // Live mode: follow the wall clock
   useEffect(() => {
-    if (!isActive || !live) return undefined;
+    if (!isActive || !live || !isOpen) return undefined;
     applyTime(Date.now(), { force: true });
     const id = setInterval(() => applyTime(Date.now(), { force: true }), 1000);
     return () => clearInterval(id);
-  }, [isActive, live, applyTime]);
+  }, [isActive, live, isOpen, applyTime]);
 
   // Time-lapse
   useEffect(() => {
@@ -146,6 +146,10 @@ export default function CelestialPanel({
     const tick = (now) => {
       if (last === null) {
         last = now; // seed from the frame clock itself
+        raf = requestAnimationFrame(tick);
+        return;
+      }
+      if (now - last < 33) { // cap time-lapse updates at ~30 Hz
         raf = requestAnimationFrame(tick);
         return;
       }

@@ -225,3 +225,34 @@ export function solarElevationDeg(state, latDeg, lonDeg) {
   const up = [Math.cos(lat) * Math.cos(lon), Math.cos(lat) * Math.sin(lon), Math.sin(lat)];
   return Math.asin(Math.max(-1, Math.min(1, dot(up, state.sun.dir)))) * RAD;
 }
+
+/**
+ * Sun azimuth/elevation at a selenographic point, plus a sunlit/blocked/night status.
+ *
+ * @param {ReturnType<typeof computeCelestialState>} state
+ * @param {number} latDeg
+ * @param {number} lonDeg
+ * @param {number} [horizonDeg=0] Terrain horizon angle toward the Sun (Phase 2 plugs in here)
+ * @returns {{ elevationDeg: number, azimuthDeg: number, status: 'sunlit'|'blocked'|'night' }}
+ */
+export function solarPosition(state, latDeg, lonDeg, horizonDeg = 0) {
+  const lat = latDeg * DEG;
+  const lon = lonDeg * DEG;
+  const s = state.sun.dir;
+
+  // Local ENU basis in the Moon body-fixed frame
+  const up = [Math.cos(lat) * Math.cos(lon), Math.cos(lat) * Math.sin(lon), Math.sin(lat)];
+  const east = [-Math.sin(lon), Math.cos(lon), 0];
+  const north = [-Math.sin(lat) * Math.cos(lon), -Math.sin(lat) * Math.sin(lon), Math.cos(lat)];
+
+  const elevationDeg = Math.asin(Math.max(-1, Math.min(1, dot(up, s)))) * RAD;
+  let azimuthDeg = Math.atan2(dot(east, s), dot(north, s)) * RAD;
+  if (azimuthDeg < 0) azimuthDeg += 360;
+
+  // Use the Sun's upper limb, not its centre
+  const topLimbDeg = elevationDeg + state.sun.angularDiameterDeg / 2;
+  let status = 'sunlit';
+  if (topLimbDeg <= horizonDeg) status = elevationDeg <= 0 ? 'night' : 'blocked';
+
+  return { elevationDeg, azimuthDeg, status };
+}

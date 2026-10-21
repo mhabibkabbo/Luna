@@ -18,6 +18,7 @@ import { CLPS_MISSIONS } from './data/clpsMissions.js';
 import { LUNAR_LAYERS_CATALOG } from './services/nasa/layers.js';
 import { Layers, Ruler, Globe, Map as MapIcon, Moon, Sun, ArrowLeft } from 'lucide-react';
 
+import { pointerStore, mapViewStore } from './utils/pointerStore.js';
 export default function App() {
   const mapRef = useRef(null);
   const globeRef = useRef(null);
@@ -71,9 +72,6 @@ export default function App() {
   const [activePlanet, setActivePlanet] = useState('moon');
 
   // Selenographic coordinates under cursor
-  const [pointerCoords, setPointerCoords] = useState({ lon: 0.0, lat: 0.0 });
-  const [currentZoom, setCurrentZoom] = useState(2.5);
-  const [currentResolution, setCurrentResolution] = useState(0.24859);
 
   // Selected feature for detail inspection
   const [selectedFeature, setSelectedFeature] = useState(null);
@@ -107,7 +105,7 @@ export default function App() {
 
   // Callbacks from Map / Globe
   const handlePointerCoordinates = useCallback((lon, lat) => {
-    setPointerCoords({ lon, lat });
+    pointerStore.set({ lon, lat });
   }, []);
 
   const handleFeatureSelect = useCallback((featureProps) => {
@@ -135,13 +133,11 @@ export default function App() {
   }, []);
 
   const handleResolutionChange = useCallback((res) => {
-    setCurrentResolution(res);
-    if (mapRef.current) {
-      const mapInst = mapRef.current.getMapInstance?.();
-      if (mapInst) {
-        setCurrentZoom(mapInst.getView().getZoom());
-      }
-    }
+    const mapInst = mapRef.current?.getMapInstance?.();
+    mapViewStore.set({
+      resolution: res,
+      zoom: mapInst ? mapInst.getView().getZoom() : mapViewStore.get().zoom,
+    });
   }, []);
 
   // Controls actions
@@ -638,11 +634,7 @@ export default function App() {
       {/* DISCREET STATUS BAR AT BOTTOM EDGE */}
       {/* ========================================================================= */}
       <TelemetryStatusBar
-        longitude={pointerCoords.lon}
-        latitude={pointerCoords.lat}
-        zoom={viewMode === '3d' ? 3.0 : currentZoom}
         viewMode={viewMode}
-        resolution={currentResolution}
         selectedFeature={selectedFeature}
       />
     </div>

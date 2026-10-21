@@ -76,13 +76,13 @@ const LunarGlobe3D = forwardRef(function LunarGlobe3D(
 
         onFeatureHover: (feature, x, y) => {
           if (feature) {
-            setHoveredInfo({
-              feature,
-              x,
-              y,
-            });
+            setHoveredInfo((prev) =>
+              prev && prev.feature?.id === feature.id && Math.abs(prev.x - x) < 4 && Math.abs(prev.y - y) < 4
+                ? prev
+                : { feature, x, y }
+            );
           } else {
-            setHoveredInfo(null);
+            setHoveredInfo((prev) => (prev === null ? prev : null));
           }
         },
       }

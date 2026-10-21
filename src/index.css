@@ -82,3 +82,17 @@ code, kbd, samp, pre {
     font-family: 'Orbitron', sans-serif;
   }
 }
+
+/* Performance: backdrop-filter over an animating WebGL canvas forces a full-screen
+   re-blur every frame. Drop it on touch / small screens and on persistent chrome. */
+@media (max-width: 1024px), (pointer: coarse) {
+  [class*="backdrop-blur"] {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+}
+#telemetry-status-bar,
+#lunar-scale-control {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}

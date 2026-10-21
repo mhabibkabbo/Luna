@@ -66,9 +66,21 @@ const LunarMap = forwardRef(function LunarMap(
 
     // Listen to resolution changes for the scale bar
     const view = mapController.view;
+    let lastResUpdate = 0;
+    let resTimer = null;
     const updateResolution = () => {
-      if (onResolutionChange) {
+      if (!onResolutionChange) return;
+      const now = performance.now();
+      if (now - lastResUpdate >= 100) {
+        lastResUpdate = now;
         onResolutionChange(view.getResolution());
+      } else if (!resTimer) {
+        // trailing update so the final value is always reported
+        resTimer = setTimeout(() => {
+          resTimer = null;
+          lastResUpdate = performance.now();
+          onResolutionChange(view.getResolution());
+        }, 100);
       }
     };
     view.on('change:resolution', updateResolution);

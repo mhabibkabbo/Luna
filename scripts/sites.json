@@ -1,0 +1,188 @@
+[
+  {
+    "id": "clps-im2-athena",
+    "name": "IM-2 (Athena / PRIME-1)",
+    "lat": -89.7,
+    "lon": 120
+  },
+  {
+    "id": "landing-artemis3-shackleton",
+    "name": "Artemis III Candidate: Shackleton Ridge",
+    "lat": -89.7,
+    "lon": 120
+  },
+  {
+    "id": "landing-artemis3-malapert",
+    "name": "Artemis III Candidate: Malapert Massif",
+    "lat": -85.9,
+    "lon": 0
+  },
+  {
+    "id": "clps-blueorigin-cp22",
+    "name": "Blue Moon Pathfinder (CP-22)",
+    "lat": -85,
+    "lon": 0
+  },
+  {
+    "id": "landing-lcross",
+    "name": "LCROSS Impact (Cabeus Crater)",
+    "lat": -84.675,
+    "lon": -48.72500000000002
+  },
+  {
+    "id": "clps-griffin-gm1",
+    "name": "Griffin Mission 1 (GM1)",
+    "lat": -84.5,
+    "lon": 31.700000000000045
+  },
+  {
+    "id": "landing-artemis3-mouton",
+    "name": "Artemis III Candidate: Mons Mouton",
+    "lat": -84.5,
+    "lon": 31.700000000000045
+  },
+  {
+    "id": "clps-im1-odysseus",
+    "name": "IM-1 (Odysseus / Nova-C)",
+    "lat": -80.13,
+    "lon": 1.4400000000000546
+  },
+  {
+    "id": "landing-odysseus",
+    "name": "Odysseus (IM-1 Nova-C)",
+    "lat": -80.13,
+    "lon": 1.4400000000000546
+  },
+  {
+    "id": "clps-draper-cp12",
+    "name": "Draper CP-12 (APEX 1.0)",
+    "lat": -75,
+    "lon": 132.39999999999998
+  },
+  {
+    "id": "landing-chandrayaan-3",
+    "name": "Chandrayaan-3 (Vikram / Pragyan)",
+    "lat": -69.37,
+    "lon": 32.35000000000002
+  },
+  {
+    "id": "landing-change-4",
+    "name": "Chang'e 4 (Yutu-2)",
+    "lat": -45.44,
+    "lon": 177.60000000000002
+  },
+  {
+    "id": "clps-firefly-cp21",
+    "name": "Blue Ghost Mission 2 (LuSEE-Night)",
+    "lat": -45,
+    "lon": 160
+  },
+  {
+    "id": "landing-change-6",
+    "name": "Chang'e 6",
+    "lat": -41.64,
+    "lon": -153.99
+  },
+  {
+    "id": "landing-slim",
+    "name": "SLIM (Smart Lander for Investigating Moon)",
+    "lat": -13.31,
+    "lon": 25.25
+  },
+  {
+    "id": "landing-apollo-16",
+    "name": "Apollo 16 (Descartes Highlands)",
+    "lat": -8.973,
+    "lon": 15.50019999999995
+  },
+  {
+    "id": "landing-apollo-14",
+    "name": "Apollo 14 (Fra Mauro)",
+    "lat": -3.6453,
+    "lon": -17.471400000000017
+  },
+  {
+    "id": "landing-surveyor-3",
+    "name": "Surveyor 3",
+    "lat": -3.016,
+    "lon": -23.418000000000006
+  },
+  {
+    "id": "landing-apollo-12",
+    "name": "Apollo 12 (Ocean of Storms)",
+    "lat": -3.0124,
+    "lon": -23.421600000000012
+  },
+  {
+    "id": "landing-surveyor-1",
+    "name": "Surveyor 1",
+    "lat": -2.474,
+    "lon": -43.339
+  },
+  {
+    "id": "landing-luna-16",
+    "name": "Luna 16",
+    "lat": -0.68,
+    "lon": 56.299999999999955
+  },
+  {
+    "id": "landing-apollo-11",
+    "name": "Apollo 11 (Tranquility Base)",
+    "lat": 0.6741,
+    "lon": 23.472999999999956
+  },
+  {
+    "id": "landing-luna-9",
+    "name": "Luna 9",
+    "lat": 7.08,
+    "lon": -64.37
+  },
+  {
+    "id": "clps-im3-vertex",
+    "name": "IM-3 (Nova-C / Lunar Vertex)",
+    "lat": 7.5,
+    "lon": -59
+  },
+  {
+    "id": "clps-firefly-bgm1",
+    "name": "Blue Ghost Mission 1",
+    "lat": 18.56,
+    "lon": 61.809999999999945
+  },
+  {
+    "id": "landing-apollo-17",
+    "name": "Apollo 17 (Taurus-Littrow)",
+    "lat": 20.1908,
+    "lon": 30.77170000000001
+  },
+  {
+    "id": "landing-apollo-15",
+    "name": "Apollo 15 (Hadley-Apennine)",
+    "lat": 26.1322,
+    "lon": 3.6339000000000397
+  },
+  {
+    "id": "landing-luna-2",
+    "name": "Luna 2",
+    "lat": 29.1,
+    "lon": 0
+  },
+  {
+    "id": "clps-peregrine-pm1",
+    "name": "Peregrine Mission 1 (PM-1)",
+    "lat": 35.25,
+    "lon": -40.99000000000001
+  },
+  {
+    "id": "landing-change-5",
+    "name": "Chang'e 5",
+    "lat": 43.06,
+    "lon": -51.920000000000016
+  },
+  {
+    "id": "landing-change-3",
+    "name": "Chang'e 3 (Yutu)",
+    "lat": 44.12,
+    "lon": -19.50999999999999
+  }
+]

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { formatLunarCoordinates } from '../../utils/coordinates.js';
 import { calculateLunarPhase } from '../../utils/lunarPhase.js';
+import { pointerStore, mapViewStore } from '../../utils/pointerStore.js';
 import ScaleControl from './ScaleControl.jsx';
 import { Compass, Clock, Radio, Copy, Check } from 'lucide-react';
 
@@ -9,14 +10,22 @@ import { Compass, Clock, Radio, Copy, Check } from 'lucide-react';
  * Displays selenographic coordinates with copy function, zoom, scale, mission source, and live UTC clock.
  */
 export default function TelemetryStatusBar({
-  longitude,
-  latitude,
-  zoom = 2.5,
   viewMode = '3d',
-  resolution,
   selectedFeature,
 }) {
   const [copied, setCopied] = useState(false);
+  // Subscribe to high-frequency stores locally so App does not re-render on every pointer move.
+  const [pointer, setPointer] = useState(pointerStore.get());
+  const [mapView, setMapView] = useState(mapViewStore.get());
+  useEffect(() => {
+    const u1 = pointerStore.subscribe(setPointer);
+    const u2 = mapViewStore.subscribe(setMapView);
+    return () => { u1(); u2(); };
+  }, []);
+  const longitude = pointer.lon;
+  const latitude = pointer.lat;
+  const resolution = mapView.resolution;
+  const zoom = viewMode === '3d' ? 3.0 : mapView.zoom;
   const targetLon = selectedFeature ? selectedFeature.longitude : longitude;
   const targetLat = selectedFeature ? selectedFeature.latitude : latitude;
   const { latStr, lonStr } = formatLunarCoordinates(targetLon, targetLat, 2);

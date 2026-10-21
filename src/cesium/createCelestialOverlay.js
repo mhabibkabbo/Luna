@@ -255,7 +255,7 @@ export function createCelestialOverlay(viewer, options = {}) {
     scene.sun = new Cesium.Sun();
   }
   scene.sun.show = true;
-  scene.sunBloom = true;
+  scene.sunBloom = false; // full-screen bloom post-process is very costly on GPUs
   scene.light = new Cesium.SunLight();
 
   const previousLight = scene.light;

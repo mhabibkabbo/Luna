@@ -28,6 +28,7 @@ import {
   getLunarRegionInfo,
 } from '../../utils/coordinates.js';
 import { getClpsMission } from '../../data/clpsMissions.js';
+import SolarConditionsCard from './SolarConditionsCard.jsx';
 
 /**
  * Collapsible side panel (desktop) / bottom sheet (mobile) for selected mission or feature.
@@ -364,6 +365,8 @@ export default function FeaturePanel({
             </div>
           </div>
         )}
+
+        <SolarConditionsCard siteId={feature.id} latitude={featLat} longitude={featLon} />
 
         {/* Scientific Payloads Section for CLPS missions */}
         {isClps && payloadsList.length > 0 && (
