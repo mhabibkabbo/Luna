@@ -120,6 +120,10 @@ const PlanetViewport = forwardRef(function PlanetViewport(
   // Expose API via ref
   useImperativeHandle(ref, () => ({
     getViewer: () => planetManagerRef.current?.planet('moon').getViewer(),
+    getCelestialState: () =>
+      planetManagerRef.current?.planet('moon').extras.celestial.getState(),
+    getLightingEnabled: () =>
+      planetManagerRef.current?.active.getLightingEnabled?.() ?? false,
 
     switchPlanet: (planetName) => {
       planetManagerRef.current?.switchTo(planetName);
@@ -148,11 +152,11 @@ const PlanetViewport = forwardRef(function PlanetViewport(
     },
 
     dropCustomPin: (lon, lat, name) => {
-      return planetManagerRef.current?.planet('moon').extras.features.dropCustomPin(lon, lat, name);
+      return planetManagerRef.current?.active.extras.features.dropCustomPin(lon, lat, name);
     },
 
-    clearCustomPin: () => {
-      planetManagerRef.current?.planet('moon').extras.features.clearCustomPin();
+    clearCustomPin: (planetId = planetManagerRef.current?.activeId) => {
+      planetManagerRef.current?.planet(planetId).extras.features.clearCustomPin();
     },
 
     toggleAutoRotate: () => {
@@ -195,7 +199,7 @@ const PlanetViewport = forwardRef(function PlanetViewport(
     },
 
     selectFeaturePin: (featureId) => {
-      planetManagerRef.current?.planet('moon').extras.features.selectFeaturePin(featureId);
+      planetManagerRef.current?.active.extras.features.selectFeaturePin(featureId);
     },
 
     setLayerVisibility: (layerId, isVisible) => {
@@ -203,9 +207,6 @@ const PlanetViewport = forwardRef(function PlanetViewport(
     },
 
     // Earth & Sun celestial animation
-    setCelestialTime: (date) =>
-      planetManagerRef.current?.planet('moon').extras.celestial.setCelestialTime(date),
-
     setCelestialVisible: (visible) =>
       planetManagerRef.current?.planet('moon').extras.celestial.setCelestialVisible(visible),
 

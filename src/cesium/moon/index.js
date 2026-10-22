@@ -8,6 +8,7 @@ import 'cesium/Build/Cesium/Widgets/widgets.css';
 import { createCelestialOverlay } from './moonCelestial.js';
 import { createMoonGlobe } from './moonGlobe.js';
 import { createMoonFeatures } from './moonFeatures.js';
+import { celestialTimeStore } from '../../utils/celestialTime.js';
 
 // Ensure no Cesium Ion authentication prompt
 Cesium.Ion.defaultAccessToken = '';
@@ -325,9 +326,8 @@ export function createMoon(container, callbacks = {}) {
   scene.globe.lambertDiffuseMultiplier = 1.0;
   scene.globe.vertexShadowDarkness = 2.0;
 
-  // Start with flat solar shading for instantaneous scene appearance,
-  // user can toggle dynamic solar terminator lighting smoothly on demand
-  scene.globe.enableLighting = false;
+  // Start with solar illumination enabled; the toolbar can still toggle it.
+  scene.globe.enableLighting = true;
 
   // Gradual adaptive resolution controller:
   // Monitors actual frame times over a 40-frame window with hysteresis cooldown to avoid thrashing
@@ -399,7 +399,14 @@ export function createMoon(container, callbacks = {}) {
   scene.sun.show = true;
 
   // Real-time Earth & Sun overlay (synchronizes Cesium built-in Sun, Moon & Earth ephemeris)
-  const celestial = createCelestialOverlay(viewer, { showVectors: false, syncLighting: true });
+  const celestial = createCelestialOverlay(viewer, {
+    initialDate: celestialTimeStore.get().ms,
+    showVectors: false,
+    syncLighting: true,
+  });
+  const removeTimeListener = celestialTimeStore.subscribe(({ ms }) => {
+    celestial.setCelestialTime(ms);
+  });
 
 
   /**
@@ -489,7 +496,7 @@ export function createMoon(container, callbacks = {}) {
   };
 
   // Lighting toggle
-  let isLightingEnabled = false;
+  let isLightingEnabled = true;
   const toggleLighting = () => {
     isLightingEnabled = !isLightingEnabled;
     scene.globe.enableLighting = isLightingEnabled;
@@ -506,6 +513,7 @@ export function createMoon(container, callbacks = {}) {
     }
     if (celestial) {
       try {
+        removeTimeListener();
         celestial.destroy();
       } catch {}
     }
@@ -543,6 +551,7 @@ export function createMoon(container, callbacks = {}) {
     zoomOut,
     toggleAutoRotate,
     toggleLighting,
+    getLightingEnabled: () => isLightingEnabled,
     extras: {
       features: {
         pinEntities: features.pinEntities,

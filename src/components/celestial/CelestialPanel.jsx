@@ -1,3 +1,8 @@
+/**
+ * @file CelestialPanel.jsx
+ * Controls the shared UTC clock and displays Earth, Sun, and Moon ephemeris data.
+ */
+
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Sun,
@@ -14,10 +19,15 @@ import {
   Navigation,
 } from 'lucide-react';
 import { formatLunarCoordinates } from '../../utils/coordinates.js';
+import {
+  celestialTimeStore,
+  MIN_CELESTIAL_TIME_MS,
+  MAX_CELESTIAL_TIME_MS,
+} from '../../utils/celestialTime.js';
 
 // The ephemeris models are validated for these years; the date input enforces the same range.
-const MIN_MS = Date.UTC(1900, 0, 1);
-const MAX_MS = Date.UTC(2100, 11, 31, 23, 59);
+const MIN_MS = MIN_CELESTIAL_TIME_MS;
+const MAX_MS = MAX_CELESTIAL_TIME_MS;
 
 const RATES = [
   { label: '1 min/s', value: 60 },
@@ -98,10 +108,10 @@ export default function CelestialPanel({
   const [live, setLive] = useState(true);
   const [playing, setPlaying] = useState(false);
   const [rate, setRate] = useState(3600);
-  const [shownTime, setShownTime] = useState(() => Date.now());
+  const [shownTime, setShownTime] = useState(() => celestialTimeStore.get().ms);
   const [state, setState] = useState(null);
 
-  const timeRef = useRef(Date.now());
+  const timeRef = useRef(celestialTimeStore.get().ms);
   const lastPublishRef = useRef(0);
 
   /** Applies a time to the globe; publishes to React state at most ~4 times a second. */
@@ -109,7 +119,8 @@ export default function CelestialPanel({
     (ms, { force = false } = {}) => {
       const clamped = Math.min(MAX_MS, Math.max(MIN_MS, ms));
       timeRef.current = clamped;
-      const next = globeRef.current?.setCelestialTime?.(new Date(clamped));
+      celestialTimeStore.setTime(clamped);
+      const next = globeRef.current?.getCelestialState?.();
       const now = performance.now();
       if (force || now - lastPublishRef.current >= 250) {
         lastPublishRef.current = now;
@@ -121,7 +132,19 @@ export default function CelestialPanel({
     [globeRef]
   );
 
-  // The globe is destroyed and rebuilt when switching 2D/3D, so re-apply everything on return
+  // Subscribe separately from the local controls so other time publishers stay in sync.
+  useEffect(() => celestialTimeStore.subscribe(({ ms }) => {
+    timeRef.current = ms;
+    const now = performance.now();
+    if (now - lastPublishRef.current >= 250) {
+      lastPublishRef.current = now;
+      setShownTime(ms);
+      const next = globeRef.current?.getCelestialState?.();
+      if (next) setState(next);
+    }
+  }), [globeRef]);
+
+  // The globe may be recreated while the shared clock is paused at a chosen date.
   useEffect(() => {
     if (!isActive) return;
     globeRef.current?.setCelestialVisible?.(overlayVisible);
@@ -130,17 +153,17 @@ export default function CelestialPanel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isActive]);
 
-  // Live mode: follow the wall clock
+  // Keep the shared clock current even when the panel is closed or the app is in 2D mode.
   useEffect(() => {
-    if (!isActive || !live || !isOpen) return undefined;
+    if (!live) return undefined;
     applyTime(Date.now(), { force: true });
     const id = setInterval(() => applyTime(Date.now(), { force: true }), 1000);
     return () => clearInterval(id);
-  }, [isActive, live, isOpen, applyTime]);
+  }, [live, applyTime]);
 
   // Time-lapse
   useEffect(() => {
-    if (!isActive || !playing) return undefined;
+    if (!playing) return undefined;
     let raf = 0;
     let last = null;
     const tick = (now) => {

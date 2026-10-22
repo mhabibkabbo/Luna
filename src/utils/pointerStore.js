@@ -1,9 +1,14 @@
 /**
+ * @file pointerStore.js
+ * Lightweight pub/sub stores for high-frequency UI and map state.
+ */
+
+/**
  * Tiny external pub/sub stores so high-frequency values (pointer coordinates,
  * map zoom/resolution) update only the components that display them, instead of
  * re-rendering the whole <App /> tree on every pointer move or zoom frame.
  */
-function createStore(initial) {
+export function createStore(initial) {
   let value = initial;
   const subs = new Set();
   return {

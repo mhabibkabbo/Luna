@@ -105,6 +105,14 @@ export default function App() {
   // Active controller selector helper
   const getActiveController = () => (viewMode === '3d' ? globeRef.current : mapRef.current);
 
+  useEffect(() => {
+    if (viewMode !== '3d') return;
+    const lightingEnabled = globeRef.current?.getLightingEnabled?.();
+    if (lightingEnabled !== undefined) {
+      setIsSolarLighting(lightingEnabled);
+    }
+  }, [activePlanet, viewMode]);
+
   // Custom user-dropped pin state
   const [customPin, setCustomPin] = useState(null);
 
@@ -127,11 +135,11 @@ export default function App() {
   }, []);
 
   // Clear custom pin
-  const handleClearCustomPin = useCallback(() => {
+  const handleClearCustomPin = useCallback((planetId = activePlanet) => {
     setCustomPin(null);
-    globeRef.current?.clearCustomPin();
+    globeRef.current?.clearCustomPin(planetId);
     setSelectedFeature((prev) => (prev?.isCustomPin ? null : prev));
-  }, []);
+  }, [activePlanet]);
 
   const handleMeasurementUpdate = useCallback((measureData) => {
     setMeasurement(measureData);
@@ -278,6 +286,10 @@ export default function App() {
 
   // Fly to feature from panel
   const handleZoomHere = (lon, lat) => {
+    if (viewMode === '3d' && activePlanet === 'earth') {
+      getActiveController()?.flyTo(lon, lat, 500_000);
+      return;
+    }
     const zoom = selectedFeature?.type === 'mare' ? 2.5 : 5.0;
     getActiveController()?.flyTo(lon, lat, zoom);
   };

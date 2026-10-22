@@ -14,6 +14,7 @@ export function createEarthGlobe() {
       tileWidth: 256, 
       tileHeight: 256,
       rectangle: Cesium.Rectangle.MAX_VALUE,
+      ellipsoid: Cesium.Ellipsoid.WGS84,
     });
 
   const baseLayer = new Cesium.ImageryLayer(
@@ -33,5 +34,5 @@ export function createEarthGlobe() {
 
   globe.showGroundAtmosphere = true;
 
-  return globe;
+  return { globe, fallbackImageryLayer: baseLayer };
 }

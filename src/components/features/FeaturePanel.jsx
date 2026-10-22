@@ -1,3 +1,8 @@
+/**
+ * @file FeaturePanel.jsx
+ * Displays details and actions for a selected Moon or Earth feature.
+ */
+
 import React, { useState } from 'react';
 import {
   X,
@@ -78,7 +83,10 @@ export default function FeaturePanel({
     precision
   );
 
-  const regionInfo = feature.regionInfo || getLunarRegionInfo(featLon, featLat);
+  const regionInfo =
+    feature.body === 'earth'
+      ? null
+      : feature.regionInfo || getLunarRegionInfo(featLon, featLat);
 
   const handleCopyCoords = () => {
     const textToCopy = `${latStr}, ${lonStr} (${featLat.toFixed(4)}°, ${featLon.toFixed(4)}°)`;
@@ -186,10 +194,75 @@ export default function FeaturePanel({
     }
     return (
       <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-slate-900 text-slate-400 border border-slate-800">
-        GEOGRAPHIC COORDINATES
+        {feature.body === 'earth' ? 'GEOGRAPHIC COORDINATES' : 'SELENOGRAPHIC COORDINATES'}
       </span>
     );
   };
+
+  if (feature.body === 'earth' && isCustomPin) {
+    return (
+      <aside
+        id="earth-point-panel"
+        className="absolute bottom-7 sm:bottom-auto sm:top-14 right-0 sm:right-4 left-0 sm:left-auto z-30 sm:w-80 flex flex-col bg-[#060b14]/96 backdrop-blur-2xl border-t sm:border border-slate-800 rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden pointer-events-auto select-none animate-in fade-in duration-150"
+      >
+        <div className="flex items-start justify-between gap-3 p-4">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-wider text-cyan-300">
+              <MapPin className="w-3.5 h-3.5" />
+              Earth point
+            </div>
+            <h2 className="mt-1 text-base font-semibold text-white truncate">
+              {feature.name || 'Dropped point'}
+            </h2>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-1 text-slate-400 hover:text-white rounded hover:bg-slate-800"
+            aria-label="Close Earth point"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3 mx-4 p-3 rounded-xl bg-slate-900/70 border border-slate-800 font-mono">
+          <div>
+            <div className="text-[9px] uppercase text-slate-500">Latitude</div>
+            <div className="text-sm text-white">{featLat.toFixed(4)}°</div>
+          </div>
+          <div>
+            <div className="text-[9px] uppercase text-slate-500">Longitude</div>
+            <div className="text-sm text-white">{featLon.toFixed(4)}°</div>
+          </div>
+        </div>
+
+        <div className="flex gap-2 p-4">
+          <button
+            type="button"
+            onClick={() => onZoomHere(featLon, featLat)}
+            className="flex-1 flex items-center justify-center gap-2 h-9 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-sm font-medium transition-colors"
+          >
+            <Navigation className="w-4 h-4" />
+            Fly to
+          </button>
+          {onClearCustomPin && (
+            <button
+              type="button"
+              onClick={() => {
+                onClearCustomPin('earth');
+                onClose();
+              }}
+              className="flex items-center justify-center gap-2 h-9 px-3 rounded-lg bg-slate-900 hover:bg-rose-950 border border-slate-800 text-slate-300 hover:text-rose-300 text-sm transition-colors"
+              title="Remove point"
+              aria-label="Remove Earth point"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+      </aside>
+    );
+  }
 
   // Minimized state pill docked on side
   if (isCollapsed) {
@@ -319,7 +392,7 @@ export default function FeaturePanel({
         {/* Coordinates card */}
         <div className="bg-slate-900/60 p-2.5 rounded-xl border border-slate-800/80 space-y-1.5">
           <div className="flex items-center justify-between text-[10px] font-mono text-slate-400 uppercase tracking-wider">
-            <span>Selenographic Coordinates</span>
+            <span>{feature.body === 'earth' ? 'Geographic Coordinates' : 'Selenographic Coordinates'}</span>
             <button
               type="button"
               onClick={handleCopyCoords}
@@ -366,7 +439,9 @@ export default function FeaturePanel({
           </div>
         )}
 
-        <SolarConditionsCard siteId={feature.id} latitude={featLat} longitude={featLon} />
+        {feature.body !== 'earth' && (
+          <SolarConditionsCard siteId={feature.id} latitude={featLat} longitude={featLon} />
+        )}
 
         {/* Scientific Payloads Section for CLPS missions */}
         {isClps && payloadsList.length > 0 && (
@@ -538,7 +613,7 @@ export default function FeaturePanel({
             id="btn-feature-clear-pin"
             type="button"
             onClick={() => {
-              onClearCustomPin();
+              onClearCustomPin(feature.body === 'earth' ? 'earth' : 'moon');
               onClose();
             }}
             className="flex items-center justify-center gap-1 px-2.5 h-8.5 bg-slate-900 hover:bg-rose-950 text-slate-400 hover:text-rose-300 rounded-xl border border-slate-800 transition-colors"

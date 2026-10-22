@@ -52,11 +52,7 @@ export function createPlanetManager({
       }
 
       const createController = PLANET_FACTORIES[id];
-      const controller = withDefaults(
-        id === 'moon'
-          ? createController(container, callbacks)
-          : createController(container)
-      );
+      const controller = withDefaults(createController(container, callbacks));
       controllers.set(id, controller);
       try {
         controller.setActive(false);

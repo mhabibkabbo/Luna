@@ -39,6 +39,25 @@ const COLORS = {
   earthFallback: '#2563eb',
 };
 
+// The shared scene light is synchronized to the ephemeris Sun direction below.
+const EARTH_DAY_NIGHT_SHADER = `
+czm_material czm_getMaterial(czm_materialInput materialInput)
+{
+  czm_material material = czm_getDefaultMaterial(materialInput);
+  vec4 surfaceColor = texture(image, materialInput.st);
+  float sunFacing = dot(
+    normalize(materialInput.normalEC),
+    normalize(czm_lightDirectionEC)
+  );
+  float daylight = smoothstep(-0.04, 0.08, sunFacing);
+
+  // Emission avoids MaterialAppearance's view-dependent ambient fill washing out the night side.
+  material.diffuse = vec3(0.0);
+  material.emission = surfaceColor.rgb * mix(0.025, 1.0, daylight);
+  material.alpha = surfaceColor.a;
+  return material;
+}`;
+
 // Same package and version the app already pulls its textures from.
 const EARTH_TEXTURE_URLS = [
   // Local asset (served by Vite from public/ at /assets/...)
@@ -173,6 +192,34 @@ export function createCelestialOverlay(viewer, options = {}) {
 
   group.add(earthSphere);
 
+  // A translucent outer shell gives the distant Earth a soft atmospheric limb.
+  const earthAtmosphereAppearance = new Cesium.MaterialAppearance({
+    material: Cesium.Material.fromType('RimLighting', {
+      color: new Cesium.Color(0.08, 0.28, 0.72, 0.015),
+      rimColor: new Cesium.Color(0.16, 0.62, 1.0, 0.42),
+      width: 0.72,
+    }),
+    translucent: true,
+    closed: true,
+  });
+  const earthAtmosphere = new Cesium.Primitive({
+    geometryInstances: new Cesium.GeometryInstance({
+      geometry: new Cesium.EllipsoidGeometry({
+        radii: new Cesium.Cartesian3(
+          LAYOUT.earthRadius * 1.025,
+          LAYOUT.earthRadius * 1.025,
+          LAYOUT.earthRadius * 1.025
+        ),
+        vertexFormat: earthAtmosphereAppearance.vertexFormat,
+      }),
+    }),
+    appearance: earthAtmosphereAppearance,
+    cull: false,
+    asynchronous: false,
+  });
+
+  group.add(earthAtmosphere);
+
   firstLoadableImage(EARTH_TEXTURE_URLS).then((url) => {
     if (!url || destroyed || scene.isDestroyed?.() || viewer.isDestroyed?.()) {
       return;
@@ -180,10 +227,13 @@ export function createCelestialOverlay(viewer, options = {}) {
 
     try {
       if (earthAppearance && !earthSphere.isDestroyed?.()) {
-        earthAppearance.material =
-          Cesium.Material.fromType('Image', {
-            image: url,
-          });
+        earthAppearance.material = new Cesium.Material({
+          fabric: {
+            uniforms: { image: url },
+            source: EARTH_DAY_NIGHT_SHADER,
+          },
+          translucent: false,
+        });
       }
 
       if (!scene.isDestroyed?.() && !viewer.isDestroyed?.()) {
@@ -368,6 +418,7 @@ export function createCelestialOverlay(viewer, options = {}) {
       Cesium.Transforms.rotationMatrixFromPositionVelocity(earthPos, earthDirWC, Cesium.Ellipsoid.WGS84, rotation);
     }
     Cesium.Matrix4.fromRotationTranslation(rotation, earthPos, earthSphere.modelMatrix);
+    Cesium.Matrix4.clone(earthSphere.modelMatrix, earthAtmosphere.modelMatrix);
 
     earthVector.positions = [
       Cesium.Cartesian3.multiplyByScalar(earthDirWC, R_MOON + LAYOUT.surfaceLift, new Cesium.Cartesian3()),
