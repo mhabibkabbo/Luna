@@ -1,22 +1,18 @@
-/* 
-  File: LunarGlobe3D.js
-*/
+/**
+ * @file PlanetViewport.jsx
+ * React viewport that mounts and coordinates the Moon and Earth Cesium viewers.
+ */
 
 import React, { useEffect, useRef, useState, useImperativeHandle, forwardRef } from 'react';
-import { createCesiumMoon } from '../../cesium/createCesiumMoon.js';
 import { RotateCw, Sun, Globe, Plus, Minus, Compass, Target, MapPin, Moon } from 'lucide-react';
 import { LUNAR_FEATURES } from '../../data/lunarFeatures.js';
 import { LANDING_SITES } from '../../data/landingSites.js';
-// Import Earth and planet manager
-import { createEarthViewer } from '../../cesium/createEarthViewer.js';
-import { createPlanetManager } from '../../cesium/createPlanetManager.js';
+import { createPlanetManager } from '../../cesium/planetManager.js';
 
 /**
- * 3D Interactive Cesium Moon component using CesiumJS and Cesium.Ellipsoid.MOON.
- * Features realistic NASA Moon Trek WMTS streaming tiles, spherical camera flight,
- * buttery-smooth zoom scaling, and persistent, depth-tested feature markers.
+ * Hosts the interactive Cesium planet viewers and bridges their controls to React.
  */
-const LunarGlobe3D = forwardRef(function LunarGlobe3D(
+const PlanetViewport = forwardRef(function PlanetViewport(
   {
     onPointerCoordinates,
     onFeatureSelect,
@@ -29,10 +25,8 @@ const LunarGlobe3D = forwardRef(function LunarGlobe3D(
   },
   ref
 ) {
-  const globeContainerRef = useRef(null);
   const moonContainerRef = useRef(null);
   const earthContainerRef = useRef(null);
-  const moonControllerRef = useRef(null);
   const planetManagerRef = useRef(null);
   const [currentPlanet, setCurrentPlanet] = useState(activePlanet || 'moon');
 
@@ -43,23 +37,16 @@ const LunarGlobe3D = forwardRef(function LunarGlobe3D(
   // Sync external activePlanet prop
   useEffect(() => {
     if (planetManagerRef.current && activePlanet) {
-      if (planetManagerRef.current.getActivePlanet() !== activePlanet) {
+      if (planetManagerRef.current.activeId !== activePlanet) {
         planetManagerRef.current.switchTo(activePlanet);
         setCurrentPlanet(activePlanet);
       }
     }
   }, [activePlanet]);
 
-  // Pause render loop when hidden (e.g. in 2D mode) to save 100% GPU/CPU, and resume smoothly when active
+  // Pause every initialized planet viewer while this viewport is hidden.
   useEffect(() => {
-    const viewer = moonControllerRef.current?.getViewer?.();
-    if (viewer && !viewer.isDestroyed()) {
-      viewer.useDefaultRenderLoop = isVisible;
-      if (isVisible) {
-        viewer.resize?.();
-        viewer.scene?.requestRender?.();
-      }
-    }
+    planetManagerRef.current?.setVisible(isVisible);
   }, [isVisible]);
 
   useEffect(() => {
@@ -67,9 +54,12 @@ const LunarGlobe3D = forwardRef(function LunarGlobe3D(
       return;
     }
 
-    const moonController = createCesiumMoon(
-      moonContainerRef.current,
-      {
+    const planetManager = createPlanetManager({
+      containers: {
+        moon: moonContainerRef.current,
+        earth: earthContainerRef.current,
+      },
+      callbacks: {
         onPointerCoordinates,
         onFeatureSelect,
         onDropCustomPin,
@@ -85,28 +75,14 @@ const LunarGlobe3D = forwardRef(function LunarGlobe3D(
             setHoveredInfo((prev) => (prev === null ? prev : null));
           }
         },
-      }
-    );
-
-    moonControllerRef.current = moonController;
-
-    // Lazily instantiate Earth Viewer on demand only if the user explicitly switches to Earth
-    const planetManager = createPlanetManager({
-      moonController,
-      getEarthController: () => {
-        if (!earthContainerRef.current) return null;
-        return createEarthViewer(earthContainerRef.current);
       },
+      initialPlanet: activePlanet || 'moon',
+      isVisible,
     });
 
     planetManagerRef.current = planetManager;
 
-    const initialPlanet = planetManager.getActivePlanet();
-    setCurrentPlanet(initialPlanet);
-    if (activePlanet && activePlanet !== initialPlanet) {
-      planetManager.switchTo(activePlanet);
-      setCurrentPlanet(activePlanet);
-    }
+    setCurrentPlanet(planetManager.activeId);
 
     // Window test hooks
     window.testEarth = () => {
@@ -118,15 +94,15 @@ const LunarGlobe3D = forwardRef(function LunarGlobe3D(
     };
 
     window.testZoomIn = () => {
-      planetManagerRef.current?.zoomIn();
+      planetManagerRef.current?.active.zoomIn();
     };
 
     window.testZoomOut = () => {
-      planetManagerRef.current?.zoomOut();
+      planetManagerRef.current?.active.zoomOut();
     };
 
     window.testReset = () => {
-      planetManagerRef.current?.resetOverview();
+      planetManagerRef.current?.active.resetOverview();
     };
 
     return () => {
@@ -138,13 +114,12 @@ const LunarGlobe3D = forwardRef(function LunarGlobe3D(
 
       planetManager.destroy();
       planetManagerRef.current = null;
-      moonControllerRef.current = null;
     };
   }, []);
 
   // Expose API via ref
   useImperativeHandle(ref, () => ({
-    getViewer: () => moonControllerRef.current?.getViewer?.(),
+    getViewer: () => planetManagerRef.current?.planet('moon').getViewer(),
 
     switchPlanet: (planetName) => {
       planetManagerRef.current?.switchTo(planetName);
@@ -153,44 +128,35 @@ const LunarGlobe3D = forwardRef(function LunarGlobe3D(
     },
 
     getActivePlanet: () => {
-      return planetManagerRef.current?.getActivePlanet() || currentPlanet;
+      return planetManagerRef.current?.activeId || currentPlanet;
     },
 
     resetOverview: () => {
-      planetManagerRef.current?.resetOverview();
+      planetManagerRef.current?.active.resetOverview();
     },
 
     zoomIn: () => {
-      planetManagerRef.current?.zoomIn();
+      planetManagerRef.current?.active.zoomIn();
     },
 
     zoomOut: () => {
-      planetManagerRef.current?.zoomOut();
+      planetManagerRef.current?.active.zoomOut();
     },
 
     flyTo: (lon, lat) => {
-      planetManagerRef.current?.flyToCoordinate(
-        lon,
-        lat,
-        1400000
-      );
+      planetManagerRef.current?.active.flyTo(lon, lat, 1400000);
     },
 
     dropCustomPin: (lon, lat, name) => {
-      return planetManagerRef.current?.dropCustomPin(
-        lon,
-        lat,
-        name
-      );
+      return planetManagerRef.current?.planet('moon').extras.features.dropCustomPin(lon, lat, name);
     },
 
     clearCustomPin: () => {
-      planetManagerRef.current?.clearCustomPin();
+      planetManagerRef.current?.planet('moon').extras.features.clearCustomPin();
     },
 
     toggleAutoRotate: () => {
-      const state =
-        planetManagerRef.current?.toggleAutoRotate();
+      const state = planetManagerRef.current?.active.toggleAutoRotate();
 
       if (state !== undefined) {
         setIsAutoRotating(state);
@@ -200,8 +166,7 @@ const LunarGlobe3D = forwardRef(function LunarGlobe3D(
     },
 
     toggleLighting: () => {
-      const state =
-        planetManagerRef.current?.toggleLighting();
+      const state = planetManagerRef.current?.active.toggleLighting();
 
       if (state !== undefined) {
         setIsSolarLighting(state);
@@ -211,7 +176,7 @@ const LunarGlobe3D = forwardRef(function LunarGlobe3D(
     },
 
     selectFeature: (featureId) => {
-      planetManagerRef.current?.selectFeaturePin(featureId);
+      planetManagerRef.current?.planet('moon').extras.features.selectFeaturePin(featureId);
       const feat =
         LUNAR_FEATURES.find(
           (f) => f.id === featureId
@@ -221,42 +186,37 @@ const LunarGlobe3D = forwardRef(function LunarGlobe3D(
         );
 
       if (feat) {
-        planetManagerRef.current?.flyToCoordinate(
+        planetManagerRef.current?.active.flyTo(
           feat.longitude,
           feat.latitude,
-          feat.type === 'mare'
-            ? 2600000
-            : 900000
+          feat.type === 'mare' ? 2600000 : 900000
         );
       }
     },
 
     selectFeaturePin: (featureId) => {
-      planetManagerRef.current?.selectFeaturePin(featureId);
+      planetManagerRef.current?.planet('moon').extras.features.selectFeaturePin(featureId);
     },
 
     setLayerVisibility: (layerId, isVisible) => {
-      planetManagerRef.current?.setLayerVisibility(
-        layerId,
-        isVisible
-      );
+      planetManagerRef.current?.active.setLayerVisibility(layerId, isVisible);
     },
 
     // Earth & Sun celestial animation
     setCelestialTime: (date) =>
-      planetManagerRef.current?.setCelestialTime(date),
+      planetManagerRef.current?.planet('moon').extras.celestial.setCelestialTime(date),
 
     setCelestialVisible: (visible) =>
-      planetManagerRef.current?.setCelestialVisible(visible),
+      planetManagerRef.current?.planet('moon').extras.celestial.setCelestialVisible(visible),
 
     setCelestialVectorsVisible: (visible) =>
-      planetManagerRef.current?.setCelestialVectorsVisible(visible),
+      planetManagerRef.current?.planet('moon').extras.celestial.setVectorsVisible(visible),
 
     areCelestialVectorsVisible: () =>
-      planetManagerRef.current?.areCelestialVectorsVisible?.() ?? false,
+      planetManagerRef.current?.planet('moon').extras.celestial.areVectorsVisible() ?? false,
 
     flyToCelestialOverview: () =>
-      planetManagerRef.current?.flyToCelestialOverview(),
+      planetManagerRef.current?.planet('moon').extras.celestial.flyToCelestialOverview(),
   }));
 
   return (
@@ -333,4 +293,4 @@ const LunarGlobe3D = forwardRef(function LunarGlobe3D(
 });
 
 
-export default LunarGlobe3D;
+export default PlanetViewport;

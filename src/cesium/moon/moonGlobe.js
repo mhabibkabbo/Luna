@@ -1,5 +1,5 @@
 /**
- * @file createMoonGlobe.js
+ * @file moonGlobe.js
  * Creates and configures the Cesium Globe used for the Moon.
  */
 

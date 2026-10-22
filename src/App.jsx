@@ -1,6 +1,11 @@
+/**
+ * @file App.jsx
+ * Root application component that coordinates the map, planet viewport, and panels.
+ */
+
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import LunarMap from './components/map/LunarMap.jsx';
-import LunarGlobe3D from './components/globe/LunarGlobe3D.jsx';
+import PlanetViewport from './components/globe/PlanetViewport.jsx';
 import SearchBox from './components/search/SearchBox.jsx';
 import MapControls from './components/map/MapControls.jsx';
 import LayerPanel from './components/layers/LayerPanel.jsx';
@@ -519,7 +524,7 @@ export default function App() {
             viewMode === '3d' ? 'block' : 'hidden'
           }`}
         >
-          <LunarGlobe3D
+          <PlanetViewport
             ref={globeRef}
             onPointerCoordinates={handlePointerCoordinates}
             onFeatureSelect={handleFeatureSelect}

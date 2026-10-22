@@ -1,12 +1,12 @@
 /**
- * @file createEarthViewer.js
+ * @file earth/index.js
  * Creates the Cesium Viewer used for the Earth.
  */
 
 import * as Cesium from 'cesium';
-import { createEarthGlobe } from './createEarthGlobe.js';
+import { createEarthGlobe } from './earthGlobe.js';
 
-export function createEarthViewer(container) {
+export function createEarth(container) {
     const earthGlobe = createEarthGlobe();
 
     const viewer = new Cesium.Viewer(container, {
@@ -16,9 +16,7 @@ export function createEarthViewer(container) {
         mapProjection:
             new Cesium.GeographicProjection(Cesium.Ellipsoid.WGS84),
 
-        skyAtmosphere: new Cesium.SkyAtmosphere(
-            Cesium.Ellipsoid.WGS84
-        ),
+        skyAtmosphere: new Cesium.SkyAtmosphere(Cesium.Ellipsoid.WGS84),
 
         baseLayerPicker: false,
         geocoder: false,
@@ -87,14 +85,10 @@ export function createEarthViewer(container) {
     cameraController.zoomFactor = 2.0;
 
     cameraController.minimumZoomDistance = 100.0;
-    cameraController.maximumZoomDistance = 500*1000*1000.0;
+    cameraController.maximumZoomDistance = 500 * 1000 * 1000.0;
 
     viewer.camera.setView({
-    destination: Cesium.Cartesian3.fromDegrees(
-        15,
-        20,
-        18_000_000
-    ),
+        destination: Cesium.Cartesian3.fromDegrees(15, 20, 18_000_000),
     });
 
 
@@ -114,7 +108,7 @@ export function createEarthViewer(container) {
         );
     }
 
-    function flyToCoordinate(longitude, latitude, height = 2_000_000) {
+    function flyTo(longitude, latitude, height = 2_000_000) {
         viewer.camera.flyTo({
             destination: Cesium.Cartesian3.fromDegrees(
                 longitude,
@@ -128,13 +122,25 @@ export function createEarthViewer(container) {
 
 
     return {
+        id: 'earth',
         viewer,
         globe: earthGlobe,
+        getViewer: () => viewer,
 
         resetOverview,
         zoomIn,
         zoomOut,
-        flyToCoordinate,
+        flyTo,
+        setActive(active) {
+            viewer.useDefaultRenderLoop = active;
+            if (viewer.container) {
+                viewer.container.style.display = active ? 'block' : 'none';
+            }
+            if (active) {
+                viewer.resize?.();
+                viewer.scene?.requestRender?.();
+            }
+        },
 
         destroy() {
             if (viewer && !viewer.isDestroyed()) {

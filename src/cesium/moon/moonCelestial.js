@@ -1,5 +1,5 @@
 /**
- * @file createCelestialOverlay.js
+ * @file moonCelestial.js
  * Real-time Earth and Sun visualisation for the CesiumJS Moon viewer.
  *
  * The Moon stays at the origin of Cesium's world frame, which for a globe built on
@@ -17,8 +17,8 @@
  */
 
 import * as Cesium from 'cesium';
-import { computeCelestialState, MOON_RADIUS_KM } from '../utils/lunarEphemeris.js';
-import { formatLunarCoordinates } from '../utils/coordinates.js';
+import { computeCelestialState, MOON_RADIUS_KM } from '../../utils/lunarEphemeris.js';
+import { formatLunarCoordinates } from '../../utils/coordinates.js';
 
 const R_MOON = MOON_RADIUS_KM * 1000; // metres, equals Ellipsoid.MOON.maximumRadius
 

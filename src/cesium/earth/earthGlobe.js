@@ -1,5 +1,5 @@
 /**
- * @file createEarthGlobe.js
+ * @file earthGlobe.js
  * Creates and configures the Cesium Globe used for Earth.
  */
 
