@@ -28,6 +28,7 @@ const PlanetViewport = forwardRef(function PlanetViewport(
   const moonContainerRef = useRef(null);
   const earthContainerRef = useRef(null);
   const planetManagerRef = useRef(null);
+  const communicationLinkRef = useRef(null);
   const [currentPlanet, setCurrentPlanet] = useState(activePlanet || 'moon');
 
   const [isAutoRotating, setIsAutoRotating] = useState(false);
@@ -180,7 +181,9 @@ const PlanetViewport = forwardRef(function PlanetViewport(
     },
 
     selectFeature: (featureId) => {
-      planetManagerRef.current?.planet('moon').extras.features.selectFeaturePin(featureId);
+      planetManagerRef.current?.switchTo('moon');
+      const moon = planetManagerRef.current?.planet('moon');
+      moon?.extras.features.selectFeaturePin(featureId);
       const feat =
         LUNAR_FEATURES.find(
           (f) => f.id === featureId
@@ -190,7 +193,7 @@ const PlanetViewport = forwardRef(function PlanetViewport(
         );
 
       if (feat) {
-        planetManagerRef.current?.active.flyTo(
+        moon?.flyTo(
           feat.longitude,
           feat.latitude,
           feat.type === 'mare' ? 2600000 : 900000
@@ -198,8 +201,17 @@ const PlanetViewport = forwardRef(function PlanetViewport(
       }
     },
 
-    selectFeaturePin: (featureId) => {
-      planetManagerRef.current?.active.extras.features.selectFeaturePin(featureId);
+    selectFeaturePin: (featureId, planetId = currentPlanet) => {
+      planetManagerRef.current?.planet(planetId).extras.features.selectFeaturePin(featureId);
+    },
+
+    setCommunicationLink: (link) => {
+      const previousLink = communicationLinkRef.current;
+      communicationLinkRef.current = link;
+      if (!link && !previousLink) return;
+      for (const planetId of ['moon', 'earth']) {
+        planetManagerRef.current?.planet(planetId).setCommunicationLink(link);
+      }
     },
 
     setLayerVisibility: (layerId, isVisible) => {

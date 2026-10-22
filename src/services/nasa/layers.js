@@ -143,4 +143,14 @@ export const LUNAR_LAYERS_CATALOG = [
     opacity: 1.0,
     attribution: 'NASA History / NSSDC Master Catalog',
   },
+  {
+    id: 'earth-communication-sites',
+    name: 'Earth Communication Sites',
+    description: 'Deep-space communication complexes, spacecraft tracking stations, relay facilities and mission operations centers.',
+    type: 'vector',
+    category: 'FEATURES',
+    visible: true,
+    opacity: 1.0,
+    attribution: 'NASA / JPL / ESA / ISRO / JAXA',
+  },
 ];

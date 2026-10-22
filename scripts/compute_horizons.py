@@ -4,7 +4,9 @@ Precompute terrain horizon profiles for lunar sites from NASA LRO/LOLA DEMs.
 
 For each site, casts 360 rays (1 degree azimuth steps) across the DEM and records the
 highest terrain elevation angle seen from the site, including the Moon's curvature.
-The app compares the Sun's elevation against this profile.
+The output is terrain metadata for future terrain-aware sunlight and communication
+calculations. Current runtime visibility calculations use geometric horizons only.
+Coverage is included per azimuth so a nodata gap can be handled directionally later.
 
 Typical use (run from <repo>/scripts, after `node export_sites.mjs`):
 
@@ -132,8 +134,7 @@ class Dem:
         row_ok = (rows >= 0) & (rows < self.H)
         col_ok = np.ones_like(row_ok) if self.wrap else ((cols >= 0) & (cols < self.W))
         ok = row_ok & col_ok
-        coverage = float(ok.mean())
-        if coverage == 0.0:
+        if not ok.any():
             return None
 
         c_all = np.concatenate([cols[ok], [ocol]])
@@ -148,6 +149,7 @@ class Dem:
         heights = raw.astype(np.float64) * scale + offset
         if self.nodata is not None:
             heights[raw == self.nodata] = np.nan
+        heights[~np.isfinite(heights)] = np.nan
 
         if not self._warned_units and np.isfinite(heights).any():
             if np.nanmax(np.abs(heights)) > 30000:
@@ -160,11 +162,15 @@ class Dem:
                 )
 
         h0 = heights[orow - r0, ocol - c0]
-        if np.isnan(h0):
+        if not np.isfinite(h0):
             return None
 
         hs = np.full(cols.shape, np.nan, dtype=np.float64)
         hs[ok] = heights[rows[ok] - r0, cols[ok] - c0]
+        coverage_by_azimuth = np.isfinite(hs).mean(axis=1)
+        coverage = float(coverage_by_azimuth.mean())
+        if coverage == 0.0:
+            return None
 
         theta = d / R
         ang = np.degrees(
@@ -173,9 +179,15 @@ class Dem:
                 (R + hs) * np.sin(theta),
             )
         )
-        ang[np.isnan(hs)] = -90.0  # off-raster or nodata never blocks
-        profile = np.round(ang.max(axis=1), 1).tolist()
-        return {"profile": profile, "coverage": coverage, "dem": self.name}
+        ang[~np.isfinite(hs)] = -np.inf
+        profile = np.max(ang, axis=1)
+        profile[coverage_by_azimuth == 0.0] = -90.0
+        return {
+            "profile": np.round(profile, 1).tolist(),
+            "coverage": coverage,
+            "coverage_by_azimuth": coverage_by_azimuth.tolist(),
+            "dem": self.name,
+        }
 
 
 def best_profile(dems, lat, lon, dists, scale, offset):
@@ -250,6 +262,7 @@ def main():
             "step_deg": 1,
             "maxDistKm": args.max_km,
             "horizon": profile,
+            "horizon_coverage": [round(value, 3) for value in res["coverage_by_azimuth"]],
             "dem": res["dem"],
             "coverage": round(res["coverage"], 3),
             "quality": quality,

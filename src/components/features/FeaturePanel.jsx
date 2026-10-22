@@ -46,6 +46,8 @@ export default function FeaturePanel({
   onMeasureFromHere,
   onClearCustomPin,
   onCompareMission,
+  onSelectOtherBody,
+  timelineVisible = false,
 }) {
   const [isCopied, setIsCopied] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -61,6 +63,7 @@ export default function FeaturePanel({
 
   const isCustomPin = feature.isCustomPin || feature.type === 'custom_pin';
   const isClps = Boolean(clpsData || feature.isClps || feature.type === 'clps-mission');
+  const otherBody = feature.body === 'earth' ? 'moon' : 'earth';
 
   const featLat =
     typeof feature.latitude === 'number'
@@ -102,6 +105,16 @@ export default function FeaturePanel({
     switch (type) {
       case 'custom_pin':
         return 'Custom Waypoint';
+      case 'deep-space-communication':
+        return 'Deep-Space Communications';
+      case 'spacecraft-tracking':
+        return 'Spacecraft Tracking';
+      case 'launch-tracking':
+        return 'Launch Tracking';
+      case 'relay-communications':
+        return 'Relay Communications';
+      case 'mission-operations':
+        return 'Mission Operations';
       case 'south_pole':
         return 'Lunar Polar Target';
       case 'landing-site':
@@ -192,6 +205,13 @@ export default function FeaturePanel({
         </span>
       );
     }
+    if (feature.body === 'earth' && !isCustomPin) {
+      return (
+        <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-slate-900 text-slate-400 border border-slate-800">
+          APPROXIMATE FACILITY LOCATION
+        </span>
+      );
+    }
     return (
       <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-slate-900 text-slate-400 border border-slate-800">
         {feature.body === 'earth' ? 'GEOGRAPHIC COORDINATES' : 'SELENOGRAPHIC COORDINATES'}
@@ -203,7 +223,9 @@ export default function FeaturePanel({
     return (
       <aside
         id="earth-point-panel"
-        className="absolute bottom-7 sm:bottom-auto sm:top-14 right-0 sm:right-4 left-0 sm:left-auto z-30 sm:w-80 flex flex-col bg-[#060b14]/96 backdrop-blur-2xl border-t sm:border border-slate-800 rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden pointer-events-auto select-none animate-in fade-in duration-150"
+        className={`absolute ${
+          timelineVisible ? 'bottom-[110px]' : 'bottom-7'
+        } sm:bottom-auto sm:top-14 right-0 sm:right-4 left-0 sm:left-auto z-50 sm:w-80 flex flex-col bg-[#060b14]/96 backdrop-blur-2xl border-t sm:border border-slate-800 rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden pointer-events-auto select-none animate-in fade-in duration-150`}
       >
         <div className="flex items-start justify-between gap-3 p-4">
           <div className="min-w-0">
@@ -237,14 +259,26 @@ export default function FeaturePanel({
         </div>
 
         <div className="flex gap-2 p-4">
-          <button
-            type="button"
-            onClick={() => onZoomHere(featLon, featLat)}
-            className="flex-1 flex items-center justify-center gap-2 h-9 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-sm font-medium transition-colors"
-          >
-            <Navigation className="w-4 h-4" />
-            Fly to
-          </button>
+          <div className="flex flex-1 flex-col gap-2">
+            <button
+              type="button"
+              onClick={() => onZoomHere(featLon, featLat)}
+              className="flex h-9 items-center justify-center gap-2 rounded-lg bg-cyan-600 text-sm font-medium text-white transition-colors hover:bg-cyan-500"
+            >
+              <Navigation className="w-4 h-4" />
+              Fly to
+            </button>
+            {onSelectOtherBody && (
+              <button
+                type="button"
+                onClick={() => onSelectOtherBody(otherBody)}
+                className="flex h-8 items-center justify-center gap-1.5 rounded-lg border border-slate-700 bg-slate-900/80 text-[11px] font-medium text-slate-200 transition-colors hover:border-cyan-500/50 hover:text-cyan-200"
+              >
+                <Globe2 className="h-3.5 w-3.5" />
+                Select from {otherBody === 'earth' ? 'Earth' : 'Moon'}
+              </button>
+            )}
+          </div>
           {onClearCustomPin && (
             <button
               type="button"
@@ -252,7 +286,7 @@ export default function FeaturePanel({
                 onClearCustomPin('earth');
                 onClose();
               }}
-              className="flex items-center justify-center gap-2 h-9 px-3 rounded-lg bg-slate-900 hover:bg-rose-950 border border-slate-800 text-slate-300 hover:text-rose-300 text-sm transition-colors"
+              className="flex h-9 items-center justify-center gap-2 self-start rounded-lg border border-slate-800 bg-slate-900 px-3 text-sm text-slate-300 transition-colors hover:bg-rose-950 hover:text-rose-300"
               title="Remove point"
               aria-label="Remove Earth point"
             >
@@ -269,7 +303,7 @@ export default function FeaturePanel({
     return (
       <div
         id="feature-panel-collapsed"
-        className="absolute top-14 right-3 sm:right-4 z-30 flex items-center gap-2 p-2 bg-[#060b14]/95 backdrop-blur-xl border border-slate-800 rounded-xl shadow-2xl pointer-events-auto animate-in fade-in select-none"
+        className="absolute top-14 right-3 sm:right-4 z-50 flex items-center gap-2 p-2 bg-[#060b14]/95 backdrop-blur-xl border border-slate-800 rounded-xl shadow-2xl pointer-events-auto animate-in fade-in select-none"
       >
         <button
           type="button"
@@ -299,7 +333,13 @@ export default function FeaturePanel({
   return (
     <aside
       id="lunar-feature-panel"
-      className="absolute bottom-7 sm:bottom-auto sm:top-14 right-0 sm:right-4 left-0 sm:left-auto z-30 sm:w-96 max-h-[72vh] sm:max-h-[calc(100vh-6rem)] flex flex-col bg-[#060b14]/96 backdrop-blur-2xl border-t sm:border border-slate-800 rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden pointer-events-auto select-none transition-all animate-in fade-in duration-150"
+      className={`absolute ${
+        timelineVisible ? 'bottom-[110px]' : 'bottom-7'
+      } sm:bottom-auto sm:top-14 right-0 sm:right-4 left-0 sm:left-auto z-50 sm:w-96 max-h-[72vh] ${
+        timelineVisible
+          ? 'sm:max-h-[calc(100vh-12rem)]'
+          : 'sm:max-h-[calc(100vh-6rem)]'
+      } flex flex-col bg-[#060b14]/96 backdrop-blur-2xl border-t sm:border border-slate-800 rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden pointer-events-auto select-none transition-all animate-in fade-in duration-150`}
     >
       {/* Mobile drag bar */}
       <div className="w-10 h-1 bg-slate-700 rounded-full mx-auto mt-2 sm:hidden" />
@@ -389,7 +429,30 @@ export default function FeaturePanel({
           </div>
         )}
 
-        {/* Coordinates card */}
+        {feature.body === 'earth' && !isCustomPin && (
+          <div className="grid grid-cols-2 gap-2 bg-slate-900/60 p-2.5 rounded-xl border border-slate-800/70">
+            {feature.agency && (
+              <div>
+                <div className="text-[9.5px] text-slate-500 font-sans">Agency</div>
+                <div className="text-white mt-0.5">{feature.agency}</div>
+              </div>
+            )}
+            {feature.country && (
+              <div>
+                <div className="text-[9.5px] text-slate-500 font-sans">Country</div>
+                <div className="text-white mt-0.5">{feature.country}</div>
+              </div>
+            )}
+            {feature.network && (
+              <div className="col-span-2">
+                <div className="text-[9.5px] text-slate-500 font-sans">Network</div>
+                <div className="text-cyan-300 mt-0.5">{feature.network}</div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Coordinates  card */}
         <div className="bg-slate-900/60 p-2.5 rounded-xl border border-slate-800/80 space-y-1.5">
           <div className="flex items-center justify-between text-[10px] font-mono text-slate-400 uppercase tracking-wider">
             <span>{feature.body === 'earth' ? 'Geographic Coordinates' : 'Selenographic Coordinates'}</span>
@@ -560,7 +623,7 @@ export default function FeaturePanel({
               rel="noopener noreferrer"
               className="flex items-center gap-1 text-cyan-400 hover:text-cyan-300 font-mono shrink-0 ml-2"
             >
-              <span>NASA Doc</span>
+              <span>{feature.body === 'earth' ? 'Source' : 'NASA Doc'}</span>
               <ExternalLink className="w-3 h-3" />
             </a>
           )}
@@ -569,19 +632,31 @@ export default function FeaturePanel({
 
       {/* Action buttons */}
       <div className="p-3 border-t border-slate-800 bg-[#040711] flex items-center gap-2">
-        <button
-          id="btn-feature-zoom-here"
-          type="button"
-          onClick={() => onZoomHere(featLon, featLat)}
-          className={`flex-1 flex items-center justify-center gap-1.5 h-8.5 font-medium text-xs rounded-xl transition-all shadow-md ${
-            isCustomPin
-              ? 'bg-rose-600 hover:bg-rose-500 text-white'
-              : 'bg-gradient-to-r from-cyan-600 to-blue-600 hover:brightness-110 text-white'
-          }`}
-        >
-          <Navigation className="w-3.5 h-3.5" />
-          Fly To Target
-        </button>
+        <div className="flex flex-1 flex-col gap-1.5">
+          <button
+            id="btn-feature-zoom-here"
+            type="button"
+            onClick={() => onZoomHere(featLon, featLat)}
+            className={`flex h-8.5 w-full items-center justify-center gap-1.5 font-medium text-xs rounded-xl transition-all shadow-md ${
+              isCustomPin
+                ? 'bg-rose-600 hover:bg-rose-500 text-white'
+                : 'bg-gradient-to-r from-cyan-600 to-blue-600 hover:brightness-110 text-white'
+            }`}
+          >
+            <Navigation className="w-3.5 h-3.5" />
+            Fly To Target
+          </button>
+          {onSelectOtherBody && (
+            <button
+              type="button"
+              onClick={() => onSelectOtherBody(otherBody)}
+              className="flex h-7 w-full items-center justify-center gap-1 rounded-lg border border-slate-700 bg-slate-900/80 text-[10px] font-medium text-slate-300 transition-colors hover:border-cyan-500/50 hover:text-cyan-200"
+            >
+              <Globe2 className="h-3 w-3" />
+              Select from {otherBody === 'earth' ? 'Earth' : 'Moon'}
+            </button>
+          )}
+        </div>
 
         {isClps && onCompareMission && (
           <button

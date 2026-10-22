@@ -116,10 +116,10 @@ export default function CelestialPanel({
 
   /** Applies a time to the globe; publishes to React state at most ~4 times a second. */
   const applyTime = useCallback(
-    (ms, { force = false } = {}) => {
+    (ms, { force = false, source = 'ephemeris' } = {}) => {
       const clamped = Math.min(MAX_MS, Math.max(MIN_MS, ms));
       timeRef.current = clamped;
-      celestialTimeStore.setTime(clamped);
+      celestialTimeStore.setTime(clamped, source);
       const next = globeRef.current?.getCelestialState?.();
       const now = performance.now();
       if (force || now - lastPublishRef.current >= 250) {
@@ -133,8 +133,12 @@ export default function CelestialPanel({
   );
 
   // Subscribe separately from the local controls so other time publishers stay in sync.
-  useEffect(() => celestialTimeStore.subscribe(({ ms }) => {
+  useEffect(() => celestialTimeStore.subscribe(({ ms, source }) => {
     timeRef.current = ms;
+    if (source === 'timeline') {
+      setLive(false);
+      setPlaying(false);
+    }
     const now = performance.now();
     if (now - lastPublishRef.current >= 250) {
       lastPublishRef.current = now;
@@ -156,8 +160,11 @@ export default function CelestialPanel({
   // Keep the shared clock current even when the panel is closed or the app is in 2D mode.
   useEffect(() => {
     if (!live) return undefined;
-    applyTime(Date.now(), { force: true });
-    const id = setInterval(() => applyTime(Date.now(), { force: true }), 1000);
+    applyTime(Date.now(), { force: true, source: 'live' });
+    const id = setInterval(
+      () => applyTime(Date.now(), { force: true, source: 'live' }),
+      1000
+    );
     return () => clearInterval(id);
   }, [live, applyTime]);
 
@@ -179,10 +186,10 @@ export default function CelestialPanel({
       const dt = Math.max(0, Math.min(0.1, (now - last) / 1000)); // ignore long gaps (hidden tab)
       last = now;
       const target = timeRef.current + dt * rate * 1000;
-      const applied = applyTime(target);
+      const applied = applyTime(target, { source: 'playback' });
       if (applied !== target) {
         setPlaying(false); // reached the end of the supported range
-        applyTime(applied, { force: true });
+        applyTime(applied, { force: true, source: 'playback' });
         return;
       }
       raf = requestAnimationFrame(tick);
@@ -207,6 +214,7 @@ export default function CelestialPanel({
 
   const handleNow = () => {
     setPlaying(false);
+    applyTime(Date.now(), { force: true, source: 'ephemeris' });
     setLive(true);
   };
 

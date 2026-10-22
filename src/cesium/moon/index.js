@@ -422,6 +422,49 @@ export function createMoon(container, callbacks = {}) {
 
   // Create pins and input handlers after camera actions exist, since pin clicks fly the camera.
   const features = createMoonFeatures({ viewer, container, callbacks, isMobile, flyToCoordinate, getLunarMarkerDataUrl });
+  let communicationEntity = null;
+
+  const setCommunicationLink = (link) => {
+    if (!link) {
+      if (communicationEntity) {
+        viewer.entities.remove(communicationEntity);
+        communicationEntity = null;
+      }
+      scene.requestRender();
+      return;
+    }
+
+    const statusColor = {
+      clear: '#22c55e',
+      doubtful: '#facc15',
+      blocked: '#ef4444',
+    }[link.status];
+    if (!statusColor) {
+      throw new TypeError(`Unknown communication-link status: ${link.status}`);
+    }
+
+    const positions = [
+      Cesium.Cartesian3.fromArray(link.moonPositionMoonFixedMeters),
+      Cesium.Cartesian3.fromArray(link.earthPositionMoonFixedMeters),
+    ];
+    const color = Cesium.Color.fromCssColorString(statusColor);
+    if (!communicationEntity) {
+      communicationEntity = viewer.entities.add({
+        id: 'earth-moon-communication-link',
+        polyline: {
+          positions,
+          width: 3,
+          material: color,
+          arcType: Cesium.ArcType.NONE,
+          clampToGround: false,
+        },
+      });
+    } else {
+      communicationEntity.polyline.positions = positions;
+      communicationEntity.polyline.material = color;
+    }
+    scene.requestRender();
+  };
 
   /**
    * Flies camera directly to South Pole (90°S).
@@ -522,6 +565,10 @@ export function createMoon(container, callbacks = {}) {
       removeRotationListener = null;
     }
     features.destroy();
+    if (communicationEntity) {
+      viewer.entities.remove(communicationEntity);
+      communicationEntity = null;
+    }
     if (viewer && !viewer.isDestroyed()) {
       viewer.destroy();
     }
@@ -544,6 +591,7 @@ export function createMoon(container, callbacks = {}) {
     },
 
     flyTo: flyToCoordinate,
+    setCommunicationLink,
     flyToSouthPole,
     resetOverview,
     setLayerVisibility: features.setLayerVisibility,

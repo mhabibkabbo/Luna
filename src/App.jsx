@@ -10,6 +10,7 @@ import SearchBox from './components/search/SearchBox.jsx';
 import MapControls from './components/map/MapControls.jsx';
 import LayerPanel from './components/layers/LayerPanel.jsx';
 import FeaturePanel from './components/features/FeaturePanel.jsx';
+import LunarSunlightTimeline from './components/features/LunarSunlightTimeline.jsx';
 import MeasurementToolbar from './components/measurements/MeasurementToolbar.jsx';
 import CelestialPanel from './components/celestial/CelestialPanel.jsx';
 import UnifiedToolbar from './components/navigation/UnifiedToolbar.jsx';
@@ -24,6 +25,8 @@ import { LUNAR_LAYERS_CATALOG } from './services/nasa/layers.js';
 import { Layers, Ruler, Globe, Map as MapIcon, Moon, Sun, ArrowLeft } from 'lucide-react';
 
 import { pointerStore, mapViewStore } from './utils/pointerStore.js';
+import { celestialTimeStore } from './utils/celestialTime.js';
+import { computeCommunicationLink } from './utils/communication.js';
 export default function App() {
   const mapRef = useRef(null);
   const globeRef = useRef(null);
@@ -80,6 +83,8 @@ export default function App() {
 
   // Selected feature for detail inspection
   const [selectedFeature, setSelectedFeature] = useState(null);
+  const [selectedMoonFeature, setSelectedMoonFeature] = useState(null);
+  const [selectedEarthFeature, setSelectedEarthFeature] = useState(null);
 
   // Layer & Tool drawers
   const [layers, setLayers] = useState(LUNAR_LAYERS_CATALOG);
@@ -116,30 +121,89 @@ export default function App() {
   // Custom user-dropped pin state
   const [customPin, setCustomPin] = useState(null);
 
+  const setFeatureSelection = useCallback((feature, body = 'moon') => {
+    if (!feature) return;
+    const normalized = feature.body === body ? feature : { ...feature, body };
+    setSelectedFeature(normalized);
+    if (body === 'earth') {
+      setSelectedEarthFeature(normalized);
+    } else {
+      setSelectedMoonFeature(normalized);
+    }
+  }, []);
+
   // Callbacks from Map / Globe
   const handlePointerCoordinates = useCallback((lon, lat) => {
     pointerStore.set({ lon, lat });
   }, []);
 
   const handleFeatureSelect = useCallback((featureProps) => {
-    setSelectedFeature(featureProps);
+    const body = featureProps?.body === 'earth' ? 'earth' : 'moon';
+    setFeatureSelection(featureProps, body);
     if (viewMode === '3d' && featureProps?.id) {
-      globeRef.current?.selectFeaturePin?.(featureProps.id);
+      globeRef.current?.selectFeaturePin?.(featureProps.id, body);
     }
-  }, [viewMode]);
+  }, [setFeatureSelection, viewMode]);
 
   // Dropped custom pin on 3D globe
   const handleDropCustomPin = useCallback((pinData) => {
-    setCustomPin(pinData);
-    setSelectedFeature(pinData);
-  }, []);
+    const body = pinData?.body === 'earth' ? 'earth' : 'moon';
+    const normalized = pinData?.body === body ? pinData : { ...pinData, body };
+    setCustomPin(normalized);
+    setFeatureSelection(normalized, body);
+  }, [setFeatureSelection]);
 
   // Clear custom pin
   const handleClearCustomPin = useCallback((planetId = activePlanet) => {
-    setCustomPin(null);
-    globeRef.current?.clearCustomPin(planetId);
-    setSelectedFeature((prev) => (prev?.isCustomPin ? null : prev));
+    const body = planetId === 'earth' ? 'earth' : 'moon';
+    setCustomPin((pin) => (pin?.body === body ? null : pin));
+    globeRef.current?.clearCustomPin(body);
+    if (body === 'earth') {
+      setSelectedEarthFeature((feature) => (feature?.isCustomPin ? null : feature));
+    } else {
+      setSelectedMoonFeature((feature) => (feature?.isCustomPin ? null : feature));
+    }
+    setSelectedFeature((feature) =>
+      feature?.isCustomPin && feature.body === body ? null : feature
+    );
   }, [activePlanet]);
+
+  useEffect(() => {
+    if (
+      viewMode !== '3d' ||
+      !selectedMoonFeature ||
+      !selectedEarthFeature
+    ) {
+      globeRef.current?.setCommunicationLink?.(null);
+      return undefined;
+    }
+
+    let alive = true;
+    let unsubscribe = null;
+    const updateLink = (timeMs) => {
+      if (!alive) return;
+      try {
+        const link = computeCommunicationLink({
+          moonFeature: selectedMoonFeature,
+          earthFeature: selectedEarthFeature,
+          when: timeMs,
+        });
+        globeRef.current?.setCommunicationLink?.(link);
+      } catch (error) {
+        console.error('Failed to update the Earth-Moon communication line.', error);
+        globeRef.current?.setCommunicationLink?.(null);
+      }
+    };
+
+    updateLink(celestialTimeStore.get().ms);
+    unsubscribe = celestialTimeStore.subscribe(({ ms }) => updateLink(ms));
+
+    return () => {
+      alive = false;
+      unsubscribe?.();
+      globeRef.current?.setCommunicationLink?.(null);
+    };
+  }, [selectedMoonFeature, selectedEarthFeature, viewMode]);
 
   const handleMeasurementUpdate = useCallback((measureData) => {
     setMeasurement(measureData);
@@ -192,24 +256,27 @@ export default function App() {
 
   // Search feature selection
   const handleSearchSelect = (feature) => {
-    setSelectedFeature(feature);
+    setFeatureSelection(feature, 'moon');
     if (viewMode === '3d' && activePlanet !== 'moon') {
       setActivePlanet('moon');
     }
     if (viewMode === '3d') {
-      globeRef.current?.selectFeaturePin?.(feature.id);
+      globeRef.current?.switchPlanet?.('moon');
+      globeRef.current?.selectFeature?.(feature.id);
+    } else {
+      getActiveController()?.selectFeature(feature.id, true);
     }
-    getActiveController()?.selectFeature(feature.id, true);
   };
 
   // Quick Expedition Selection
   const handleSelectExpedition = (feature, lon, lat, zoom = 5.0) => {
-    setSelectedFeature(feature);
+    setFeatureSelection(feature, 'moon');
     if (viewMode === '3d' && activePlanet !== 'moon') {
       setActivePlanet('moon');
     }
     if (viewMode === '3d') {
-      globeRef.current?.selectFeaturePin?.(feature.id);
+      globeRef.current?.switchPlanet?.('moon');
+      globeRef.current?.selectFeaturePin?.(feature.id, 'moon');
     }
     getActiveController()?.flyTo(lon, lat, zoom);
   };
@@ -294,6 +361,12 @@ export default function App() {
     getActiveController()?.flyTo(lon, lat, zoom);
   };
 
+  const handleSelectOtherBody = (body) => {
+    setViewMode('3d');
+    setActivePlanet(body);
+    globeRef.current?.switchPlanet?.(body);
+  };
+
   // Start measurement from feature
   const handleMeasureFromFeature = (lon, lat) => {
     if (viewMode === '3d') setViewMode('2d');
@@ -356,6 +429,21 @@ export default function App() {
     setCurrentView('landing');
     window.location.hash = '#';
   };
+
+  const otherBody = selectedFeature?.body === 'earth' ? 'moon' : 'earth';
+  const canSelectOtherBody =
+    selectedFeature &&
+    (otherBody === 'moon' ? !selectedMoonFeature : !selectedEarthFeature);
+  const hasMoonCoordinates =
+    Number.isFinite(selectedMoonFeature?.latitude) &&
+    Number.isFinite(selectedMoonFeature?.longitude);
+  const showLunarTimeline =
+    hasMoonCoordinates &&
+    (viewMode === '2d' ||
+      activePlanet === 'moon' ||
+      Boolean(selectedEarthFeature));
+  const selectedCommunicationEarthFeature =
+    selectedMoonFeature && selectedEarthFeature ? selectedEarthFeature : null;
 
   // Render Landing Page if currentView is 'landing'
   if (currentView === 'landing') {
@@ -503,7 +591,7 @@ export default function App() {
                 ? 'bg-cyan-950/80 text-cyan-300 border-cyan-500/40 shadow-sm'
                 : 'bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-white border-slate-800'
             }`}
-            title="Toggle Map Layers & NASA Datasets"
+            title={activePlanet === 'earth' ? 'Toggle Earth Layers' : 'Toggle Map Layers & NASA Datasets'}
           >
             <Layers className="w-3.5 h-3.5 text-cyan-400" />
             <span className="hidden sm:inline">Layers</span>
@@ -576,7 +664,11 @@ export default function App() {
         />
 
         {/* Single Compact Floating Control Cluster */}
-        <div className="absolute bottom-9 right-3 sm:right-4 z-20">
+        <div
+          className={`absolute right-3 sm:right-4 z-20 ${
+            showLunarTimeline ? 'bottom-[110px]' : 'bottom-9'
+          }`}
+        >
           <MapControls
             viewMode={viewMode}
             onZoomIn={handleZoomIn}
@@ -601,17 +693,29 @@ export default function App() {
           layers={layers}
           onToggleLayer={handleToggleLayer}
           onChangeOpacity={handleChangeOpacity}
+          activePlanet={activePlanet}
         />
 
         {/* Collapsible Mission / Feature Details Side Panel & Mobile Bottom Sheet */}
         <FeaturePanel
           feature={selectedFeature}
+          timelineVisible={showLunarTimeline}
           onClose={() => setSelectedFeature(null)}
           onZoomHere={handleZoomHere}
           onMeasureFromHere={handleMeasureFromFeature}
           onClearCustomPin={handleClearCustomPin}
           onCompareMission={(mission) => handleOpenComparison(mission)}
+          onSelectOtherBody={
+            canSelectOtherBody ? handleSelectOtherBody : undefined
+          }
         />
+
+        {showLunarTimeline && (
+          <LunarSunlightTimeline
+            feature={selectedMoonFeature}
+            earthFeature={selectedCommunicationEarthFeature}
+          />
+        )}
 
         {/* 2D Geodesic Measurement Status Ribbon */}
         {viewMode === '2d' && (

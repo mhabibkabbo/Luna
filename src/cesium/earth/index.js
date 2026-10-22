@@ -208,6 +208,77 @@ export function createEarth(container, callbacks = {}) {
     }
 
     const features = createEarthFeatures({ viewer, container, callbacks });
+    let communicationEntity = null;
+    let communicationPositions = null;
+    let latestCommunicationLink = null;
+
+    // Use Cesium's rendered Moon transform so the Earth-view endpoint lands on the visible Moon.
+    const updateRenderedMoonEndpoint = () => {
+        const moonModelMatrix = scene.moon?._ellipsoidPrimitive?.modelMatrix;
+        if (!communicationEntity || !latestCommunicationLink || !moonModelMatrix) {
+            return;
+        }
+
+        const moonSitePosition = Cesium.Matrix4.multiplyByPoint(
+            moonModelMatrix,
+            Cesium.Cartesian3.fromArray(latestCommunicationLink.moonPositionMoonFixedMeters),
+            new Cesium.Cartesian3()
+        );
+        if (Cesium.Cartesian3.distance(communicationPositions[1], moonSitePosition) < 0.1) {
+            return;
+        }
+
+        communicationPositions = [communicationPositions[0], moonSitePosition];
+        communicationEntity.polyline.positions = communicationPositions;
+        scene.requestRender();
+    };
+    const removePostRenderListener = scene.postRender.addEventListener(
+        updateRenderedMoonEndpoint
+    );
+
+    function setCommunicationLink(link) {
+        latestCommunicationLink = link;
+        if (!link) {
+            if (communicationEntity) {
+                viewer.entities.remove(communicationEntity);
+                communicationEntity = null;
+            }
+            communicationPositions = null;
+            scene.requestRender();
+            return;
+        }
+
+        const statusColor = {
+            clear: '#22c55e',
+            doubtful: '#facc15',
+            blocked: '#ef4444',
+        }[link.status];
+        if (!statusColor) {
+            throw new TypeError(`Unknown communication-link status: ${link.status}`);
+        }
+
+        communicationPositions = [
+            Cesium.Cartesian3.fromArray(link.earthPositionEarthFixedMeters),
+            Cesium.Cartesian3.fromArray(link.moonPositionEarthFixedMeters),
+        ];
+        const color = Cesium.Color.fromCssColorString(statusColor);
+        if (!communicationEntity) {
+            communicationEntity = viewer.entities.add({
+                id: 'earth-moon-communication-link',
+                polyline: {
+                    positions: communicationPositions,
+                    width: 3,
+                    material: color,
+                    arcType: Cesium.ArcType.NONE,
+                    clampToGround: false,
+                },
+            });
+        } else {
+            communicationEntity.polyline.positions = communicationPositions;
+            communicationEntity.polyline.material = color;
+        }
+        scene.requestRender();
+    }
 
     function resetOverview() {
         viewer.camera.flyTo({
@@ -267,7 +338,7 @@ export function createEarth(container, callbacks = {}) {
             destination: Cesium.Cartesian3.fromDegrees(
                 longitude,
                 latitude,
-                height,
+                Math.max(height, EARTH_CAMERA_SETTINGS.minimumZoomDistance),
                 Cesium.Ellipsoid.WGS84
             ),
             duration: 1.2,
@@ -285,6 +356,7 @@ export function createEarth(container, callbacks = {}) {
         zoomIn,
         zoomOut,
         flyTo,
+        setCommunicationLink,
         setLayerVisibility: features.setLayerVisibility,
         toggleLighting,
         getLightingEnabled: () => lightingEnabled,
@@ -307,8 +379,15 @@ export function createEarth(container, callbacks = {}) {
             if (isDestroyed) return;
             isDestroyed = true;
             removeTimeListener();
+            removePostRenderListener();
             viewer.camera.changed.removeEventListener(updateTerrainDetail);
             features.destroy();
+            if (communicationEntity) {
+                viewer.entities.remove(communicationEntity);
+                communicationEntity = null;
+            }
+            communicationPositions = null;
+            latestCommunicationLink = null;
             if (viewer && !viewer.isDestroyed()) {
                 viewer.destroy();
             }

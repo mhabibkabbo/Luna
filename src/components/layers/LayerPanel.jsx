@@ -3,8 +3,7 @@ import { Layers, X } from 'lucide-react';
 import LayerToggle from './LayerToggle.jsx';
 
 /**
- * Layer Management Drawer / Panel.
- * Organizes NASA WMTS rasters and lunar vector feature layers by category.
+ * Layer Management Drawer / Panel for the active planet's overlays.
  * 
  * @param {{
  *   isOpen: boolean,
@@ -20,17 +19,21 @@ export default function LayerPanel({
   layers,
   onToggleLayer,
   onChangeOpacity,
+  activePlanet = 'moon',
 }) {
   if (!isOpen) return null;
 
-  const baseLayers = layers.filter((l) => l.category === 'BASE');
-  const terrainLayers = layers.filter((l) => l.category === 'TERRAIN');
-  const featureLayers = layers.filter((l) => l.category === 'FEATURES');
-  const missionLayers = layers.filter((l) => l.category === 'MISSIONS');
+  const earthLayers = layers.filter((l) => l.id === 'earth-communication-sites');
+  const visibleLayers =
+    activePlanet === 'earth' ? earthLayers : layers.filter((l) => l.id !== 'earth-communication-sites');
+  const baseLayers = visibleLayers.filter((l) => l.category === 'BASE');
+  const terrainLayers = visibleLayers.filter((l) => l.category === 'TERRAIN');
+  const featureLayers = visibleLayers.filter((l) => l.category === 'FEATURES');
+  const missionLayers = visibleLayers.filter((l) => l.category === 'MISSIONS');
 
   return (
     <div
-      id="lunar-layer-panel"
+      id={activePlanet === 'earth' ? 'earth-layer-panel' : 'lunar-layer-panel'}
       className="absolute top-14 right-3 sm:right-4 z-30 w-80 max-h-[calc(100vh-5rem)] flex flex-col bg-[#060b14]/96 backdrop-blur-2xl border border-slate-800 rounded-xl shadow-2xl overflow-hidden pointer-events-auto transition-all animate-in fade-in select-none"
     >
       {/* Header */}
@@ -38,7 +41,7 @@ export default function LayerPanel({
         <div className="flex items-center gap-2">
           <Layers className="w-4 h-4 text-cyan-400" />
           <h2 className="text-sm font-semibold text-slate-100 tracking-wide">
-            Lunar Map Layers
+            {activePlanet === 'earth' ? 'Earth Layers' : 'Lunar Map Layers'}
           </h2>
         </div>
         <button
@@ -55,21 +58,23 @@ export default function LayerPanel({
       {/* Layer groups scrollable content */}
       <div className="overflow-y-auto px-2 py-3 space-y-4 custom-scrollbar text-slate-200">
         {/* BASE MAP */}
-        <div>
-          <div className="px-2.5 mb-1 text-[10px] font-bold uppercase tracking-wider text-cyan-400/90 font-sans">
-            Base Map
+        {baseLayers.length > 0 && (
+          <div>
+            <div className="px-2.5 mb-1 text-[10px] font-bold uppercase tracking-wider text-cyan-400/90 font-sans">
+              Base Map
+            </div>
+            <div className="space-y-0.5">
+              {baseLayers.map((layer) => (
+                <LayerToggle
+                  key={layer.id}
+                  layer={layer}
+                  onToggle={onToggleLayer}
+                  onChangeOpacity={onChangeOpacity}
+                />
+              ))}
+            </div>
           </div>
-          <div className="space-y-0.5">
-            {baseLayers.map((layer) => (
-              <LayerToggle
-                key={layer.id}
-                layer={layer}
-                onToggle={onToggleLayer}
-                onChangeOpacity={onChangeOpacity}
-              />
-            ))}
-          </div>
-        </div>
+        )}
 
         {/* TERRAIN */}
         {terrainLayers.length > 0 && (
@@ -91,44 +96,57 @@ export default function LayerPanel({
         )}
 
         {/* FEATURES */}
-        <div>
-          <div className="px-2.5 mb-1 text-[10px] font-bold uppercase tracking-wider text-emerald-400/90 font-sans">
-            Planetary Features
+        {featureLayers.length > 0 && (
+          <div>
+            <div className="px-2.5 mb-1 text-[10px] font-bold uppercase tracking-wider text-emerald-400/90 font-sans">
+              {activePlanet === 'earth' ? 'Communication Network' : 'Planetary Features'}
+            </div>
+            <div className="space-y-0.5">
+              {featureLayers.map((layer) => (
+                <LayerToggle
+                  key={layer.id}
+                  layer={layer}
+                  onToggle={onToggleLayer}
+                  onChangeOpacity={onChangeOpacity}
+                />
+              ))}
+            </div>
           </div>
-          <div className="space-y-0.5">
-            {featureLayers.map((layer) => (
-              <LayerToggle
-                key={layer.id}
-                layer={layer}
-                onToggle={onToggleLayer}
-                onChangeOpacity={onChangeOpacity}
-              />
-            ))}
-          </div>
-        </div>
+        )}
 
         {/* MISSIONS */}
-        <div>
-          <div className="px-2.5 mb-1 text-[10px] font-bold uppercase tracking-wider text-purple-400/90 font-sans">
-            Surface Exploration
+        {missionLayers.length > 0 && (
+          <div>
+            <div className="px-2.5 mb-1 text-[10px] font-bold uppercase tracking-wider text-purple-400/90 font-sans">
+              Surface Exploration
+            </div>
+            <div className="space-y-0.5">
+              {missionLayers.map((layer) => (
+                <LayerToggle
+                  key={layer.id}
+                  layer={layer}
+                  onToggle={onToggleLayer}
+                  onChangeOpacity={onChangeOpacity}
+                />
+              ))}
+            </div>
           </div>
-          <div className="space-y-0.5">
-            {missionLayers.map((layer) => (
-              <LayerToggle
-                key={layer.id}
-                layer={layer}
-                onToggle={onToggleLayer}
-                onChangeOpacity={onChangeOpacity}
-              />
-            ))}
-          </div>
-        </div>
+        )}
       </div>
 
       {/* Footer info */}
       <div className="px-4 py-2 border-t border-slate-800/80 bg-slate-950/40 text-[10px] text-slate-500 flex items-center justify-between">
-        <span>NASA Moon Trek WMTS</span>
-        <span className="font-mono">IAU 2000 Moon</span>
+        {activePlanet === 'earth' ? (
+          <>
+            <span>Earth communication locations</span>
+            <span className="font-mono">NASA / ESA / ISRO / JAXA</span>
+          </>
+        ) : (
+          <>
+            <span>NASA Moon Trek WMTS</span>
+            <span className="font-mono">IAU 2000 Moon</span>
+          </>
+        )}
       </div>
     </div>
   );
