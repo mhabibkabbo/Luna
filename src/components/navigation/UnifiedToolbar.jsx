@@ -486,7 +486,7 @@ export default function UnifiedToolbar({
           </button>
 
           {isMissionsOpen && (
-            <div className="absolute top-full left-0 mt-1.5 w-84 max-h-[70vh] overflow-y-auto bg-[#060b14]/98 backdrop-blur-2xl border border-slate-800 rounded-xl shadow-2xl p-2 space-y-3 z-50 custom-scrollbar animate-in fade-in zoom-in-95 duration-100">
+            <div id="missions-dropdown-menu" className="absolute top-full left-0 mt-1.5 w-84 max-h-[70vh] overflow-y-auto bg-[#060b14]/55 backdrop-blur-2xl border border-slate-800 rounded-xl shadow-2xl p-2 space-y-3 z-50 custom-scrollbar animate-in fade-in zoom-in-95 duration-100">
               <div className="px-2 pt-1 pb-1 text-[10px] font-mono uppercase tracking-wider text-cyan-400 border-b border-slate-800 flex items-center justify-between">
                 <span>Featured Lunar Missions</span>
                 {onOpenMissionExplorer && (
@@ -593,7 +593,7 @@ export default function UnifiedToolbar({
           </button>
 
           {isFeaturesOpen && (
-            <div className="absolute top-full left-0 mt-1.5 w-72 bg-[#060b14]/98 backdrop-blur-2xl border border-slate-800 rounded-xl shadow-2xl p-2.5 z-50 animate-in fade-in zoom-in-95 duration-100">
+            <div id="features-dropdown-menu" className="absolute top-full left-0 mt-1.5 w-72 bg-[#060b14]/55 backdrop-blur-2xl border border-slate-800 rounded-xl shadow-2xl p-2.5 z-50 animate-in fade-in zoom-in-95 duration-100">
               <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-800 text-[11px]">
                 <span className="font-semibold text-slate-200">Surface Features</span>
                 <button

@@ -11,6 +11,7 @@ const EARTH_PIN_STYLE = {
   baseScale: 0.17,
   selectedScale: 0.24,
   nearDistance: 100_000,
+  overviewDistance: 100_000_000,
   farDistance: 250_000_000,
   labelFarDistance: 50_000_000,
   surfaceClearance: 40,
@@ -151,6 +152,13 @@ export function createEarthFeatures({ viewer, container, callbacks }) {
           ? EARTH_PIN_STYLE.selectedScale
           : baseScale * (entity === selectedEntity ? 1.4 : 1.2)
         : baseScale;
+      entity.billboard.distanceDisplayCondition =
+        new Cesium.DistanceDisplayCondition(
+          0,
+          entity === selectedEntity
+            ? EARTH_PIN_STYLE.farDistance
+            : EARTH_PIN_STYLE.overviewDistance
+        );
       entity.billboard.image =
         feature?.isCustomPin
           ? createPinImage(selected)
@@ -164,7 +172,7 @@ export function createEarthFeatures({ viewer, container, callbacks }) {
         0,
         entity === selectedEntity
           ? EARTH_PIN_STYLE.farDistance
-          : maxLabelDistance
+          : Math.min(maxLabelDistance, EARTH_PIN_STYLE.overviewDistance)
       );
       entity.label.fillColor = selected
         ? Cesium.Color.fromCssColorString(
@@ -246,6 +254,7 @@ export function createEarthFeatures({ viewer, container, callbacks }) {
     });
 
     sitePinEntities.push(entity);
+    updatePinStyle(entity);
   });
 
   const getSurfaceCartesian = (position) => {

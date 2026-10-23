@@ -17,6 +17,7 @@ export function createMoonFeatures({ viewer, container, callbacks, isMobile, fly
   const ALL_CATALOG_FEATURES = [...LUNAR_FEATURES, ...LANDING_SITES];
   const pinEntities = [];
   let selectedEntity = null;
+  let customPinEntity = null;
 
   /**
    * Helper to add an entity pin with LOD distance culling and categorized vector icons.
@@ -89,6 +90,7 @@ export function createMoonFeatures({ viewer, container, callbacks, isMobile, fly
         markerType,
         tier,
         baseScale,
+        maxBillboardDist,
         maxLabelDist,
       },
     });
@@ -110,6 +112,10 @@ export function createMoonFeatures({ viewer, container, callbacks, isMobile, fly
         if (selectedEntity.billboard) {
           selectedEntity.billboard.scale = prevScale;
           selectedEntity.billboard.image = getLunarMarkerDataUrl(prevType, false);
+          const maxBillboardDist =
+            prevProps.maxBillboardDist?.getValue() ?? 2.8e6;
+          selectedEntity.billboard.distanceDisplayCondition =
+            new Cesium.DistanceDisplayCondition(0.0, maxBillboardDist);
         }
         if (selectedEntity.label) {
           selectedEntity.label.distanceDisplayCondition = new Cesium.DistanceDisplayCondition(0.0, prevMaxDist);
@@ -121,7 +127,7 @@ export function createMoonFeatures({ viewer, container, callbacks, isMobile, fly
 
     if (!featureId) return;
 
-    const target = pinEntities.find((e) => {
+    const target = [...pinEntities, customPinEntity].find((e) => {
       const f = e.properties?.feature?.getValue();
       return f?.id === featureId;
     });
@@ -134,6 +140,8 @@ export function createMoonFeatures({ viewer, container, callbacks, isMobile, fly
         if (target.billboard) {
           target.billboard.scale = base * 1.4;
           target.billboard.image = getLunarMarkerDataUrl(markerType, true);
+          target.billboard.distanceDisplayCondition =
+            new Cesium.DistanceDisplayCondition(0.0, 1.0e9);
         }
         if (target.label) {
           // Force selected label visible across orbital zooms
@@ -217,7 +225,6 @@ export function createMoonFeatures({ viewer, container, callbacks, isMobile, fly
 
   let hoveredEntity = null;
   let clickStartPosition = null;
-  let customPinEntity = null;
 
   /**
    * Drops or moves the custom user pin on the 3D Moon surface.
@@ -289,9 +296,11 @@ export function createMoonFeatures({ viewer, container, callbacks, isMobile, fly
         category: 'custom-pin',
         markerType: 'custom_pin',
         baseScale: 0.35,
+        maxBillboardDist: 2.8e6,
       },
     });
 
+    selectFeaturePin(customPinData.id);
     return customPinData;
   };
 

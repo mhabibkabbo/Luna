@@ -83,16 +83,23 @@ code, kbd, samp, pre {
   }
 }
 
-/* Performance: backdrop-filter over an animating WebGL canvas forces a full-screen
-   re-blur every frame. Drop it on touch / small screens and on persistent chrome. */
+/* Avoid re-blurring the WebGL canvas on touch / small screens, except for the
+   primary chrome and requested dropdown surfaces. */
 @media (max-width: 1024px), (pointer: coarse) {
-  [class*="backdrop-blur"] {
+  [class*="backdrop-blur"]:not(#app-header):not(#telemetry-status-bar):not(#missions-dropdown-menu):not(#features-dropdown-menu) {
     -webkit-backdrop-filter: none !important;
     backdrop-filter: none !important;
   }
 }
-#telemetry-status-bar,
 #lunar-scale-control {
   -webkit-backdrop-filter: none !important;
   backdrop-filter: none !important;
+}
+
+#app-header,
+#telemetry-status-bar,
+#missions-dropdown-menu,
+#features-dropdown-menu {
+  -webkit-backdrop-filter: blur(24px) !important;
+  backdrop-filter: blur(24px) !important;
 }

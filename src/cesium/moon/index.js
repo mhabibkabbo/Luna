@@ -423,6 +423,80 @@ export function createMoon(container, callbacks = {}) {
   // Create pins and input handlers after camera actions exist, since pin clicks fly the camera.
   const features = createMoonFeatures({ viewer, container, callbacks, isMobile, flyToCoordinate, getLunarMarkerDataUrl });
   let communicationEntity = null;
+  let communicationPositions = null;
+
+  function getCommunicationTubeRadius() {
+    const cameraHeight = viewer.camera.positionCartographic.height;
+
+    // Scale the tube with camera altitude.
+    return Cesium.Math.clamp(cameraHeight * 0.001,100,10_000);
+  }
+
+  function getCommunicationOrientation(start, end) {
+    const direction = Cesium.Cartesian3.normalize(
+      Cesium.Cartesian3.subtract(
+        end,
+        start,
+        new Cesium.Cartesian3()
+      ),
+      new Cesium.Cartesian3()
+    );
+
+    const zAxis = Cesium.Cartesian3.UNIT_Z;
+    const axis = Cesium.Cartesian3.cross(
+      zAxis,
+      direction,
+      new Cesium.Cartesian3()
+    );
+
+    const axisLength = Cesium.Cartesian3.magnitude(axis);
+    const dot = Cesium.Cartesian3.dot(zAxis, direction);
+
+    if (axisLength < 1e-8) {
+      return dot >= 0
+        ? Cesium.Quaternion.IDENTITY
+        : Cesium.Quaternion.fromAxisAngle(
+            Cesium.Cartesian3.UNIT_X,
+            Math.PI
+          );
+    }
+
+    Cesium.Cartesian3.normalize(axis, axis);
+
+    return Cesium.Quaternion.fromAxisAngle(
+      axis,
+      Math.acos(Cesium.Math.clamp(dot, -1, 1))
+    );
+  }
+
+  function updateCommunicationTube() {
+    if (!communicationEntity || !communicationPositions) return;
+
+    const [start, end] = communicationPositions;
+    const radius = getCommunicationTubeRadius();
+
+    communicationEntity.position = Cesium.Cartesian3.midpoint(
+      start,
+      end,
+      new Cesium.Cartesian3()
+    );
+
+    communicationEntity.orientation =
+      getCommunicationOrientation(start, end);
+
+    communicationEntity.cylinder.topRadius = radius;
+    communicationEntity.cylinder.bottomRadius = radius;
+    communicationEntity.cylinder.length =
+      Cesium.Cartesian3.distance(start, end);
+  }
+
+  const updateCommunicationTubeOnCameraChange = () => {
+    updateCommunicationTube();
+  };
+
+  viewer.camera.changed.addEventListener(
+    updateCommunicationTubeOnCameraChange
+  );
 
   const setCommunicationLink = (link) => {
     if (!link) {
@@ -430,39 +504,65 @@ export function createMoon(container, callbacks = {}) {
         viewer.entities.remove(communicationEntity);
         communicationEntity = null;
       }
+
+      communicationPositions = null;
       scene.requestRender();
       return;
     }
 
     const statusColor = {
-      clear: '#22c55e',
+      clear: '#1dffac',
       doubtful: '#facc15',
-      blocked: '#ef4444',
+      blocked: '#f43f5e',
     }[link.status];
+
     if (!statusColor) {
-      throw new TypeError(`Unknown communication-link status: ${link.status}`);
+      throw new TypeError(
+        `Unknown communication-link status: ${link.status}`
+      );
     }
 
-    const positions = [
+    communicationPositions = [
       Cesium.Cartesian3.fromArray(link.moonPositionMoonFixedMeters),
       Cesium.Cartesian3.fromArray(link.earthPositionMoonFixedMeters),
     ];
-    const color = Cesium.Color.fromCssColorString(statusColor);
+
+    const color = Cesium.Color
+      .fromCssColorString(statusColor)
+      .withAlpha(0.75);
+
     if (!communicationEntity) {
       communicationEntity = viewer.entities.add({
         id: 'earth-moon-communication-link',
-        polyline: {
-          positions,
-          width: 3,
+
+        position: Cesium.Cartesian3.midpoint(
+          communicationPositions[0],
+          communicationPositions[1],
+          new Cesium.Cartesian3()
+        ),
+
+        orientation: getCommunicationOrientation(
+          communicationPositions[0],
+          communicationPositions[1]
+        ),
+
+        cylinder: {
+          length: Cesium.Cartesian3.distance(
+            communicationPositions[0],
+            communicationPositions[1]
+          ),
+          topRadius: getCommunicationTubeRadius(),
+          bottomRadius: getCommunicationTubeRadius(),
+          slices: 12,
           material: color,
-          arcType: Cesium.ArcType.NONE,
-          clampToGround: false,
+          outline: false,
         },
       });
     } else {
-      communicationEntity.polyline.positions = positions;
-      communicationEntity.polyline.material = color;
+      communicationEntity.cylinder.material = color;
     }
+
+    updateCommunicationTube();
     scene.requestRender();
   };
 
@@ -551,6 +651,8 @@ export function createMoon(container, callbacks = {}) {
   const destroy = () => {
     if (destroyed) return;
     destroyed = true;
+
+    
     if (removeAdaptiveResolutionListener) {
       removeAdaptiveResolutionListener();
     }
@@ -569,7 +671,9 @@ export function createMoon(container, callbacks = {}) {
       viewer.entities.remove(communicationEntity);
       communicationEntity = null;
     }
+    communicationPositions = null;
     if (viewer && !viewer.isDestroyed()) {
+      viewer.camera.changed.removeEventListener(updateCommunicationTubeOnCameraChange);
       viewer.destroy();
     }
   };

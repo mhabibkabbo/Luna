@@ -221,6 +221,7 @@ export default function CelestialPanel({
   const handleTogglePlay = () => {
     if (playing) {
       setPlaying(false);
+      applyTime(timeRef.current, { force: true, source: 'ephemeris' });
     } else {
       setLive(false);
       setPlaying(true);

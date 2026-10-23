@@ -10,11 +10,11 @@ import { celestialTimeStore } from '../../utils/celestialTime.js';
 
 const EARTH_CAMERA_SETTINGS = {
     overviewHeight: 20_000_000,
-    minimumZoomDistance: 5_000_000,
+    minimumZoomDistance: 4_644_000,
     maximumZoomDistance: 100_000_000,
-    zoomFactor: 2.0,
-    zoomInFactor: 0.52,
-    zoomOutFactor: 1.65,
+    zoomFactor: 1.2,
+    zoomInFactor: 0.8,
+    zoomOutFactor: 1.25,
     desktopInertiaSpin: 0.88,
     mobileInertiaSpin: 0.82,
     desktopInertiaTranslate: 0.85,
@@ -22,6 +22,9 @@ const EARTH_CAMERA_SETTINGS = {
     desktopInertiaZoom: 0.80,
     mobileInertiaZoom: 0.76,
 };
+
+// Switch from Blue Marble to tiled satellite imagery near the surface.
+const IMAGERY_SWITCH_HEIGHT = 2_500_000; // 5,000 km above the ellipsoid
 
 export function createEarth(container, callbacks = {}) {
     const isMobile = typeof window !== 'undefined' && (
@@ -76,6 +79,24 @@ export function createEarth(container, callbacks = {}) {
     viewer.useBrowserRecommendedResolution = false;
 
     const scene = viewer.scene;
+
+    let tiledImageryLayer = null;
+    const updateImageryDetail = () => {
+        const height = viewer.camera.positionCartographic.height;
+        const useTiledImagery =
+            Boolean(tiledImageryLayer) &&
+            height < IMAGERY_SWITCH_HEIGHT;
+
+        fallbackImageryLayer.show = !useTiledImagery;
+
+        if (tiledImageryLayer) {
+            tiledImageryLayer.show = useTiledImagery;
+        }
+
+        scene.requestRender();
+    };
+
+    viewer.camera.changed.addEventListener(updateImageryDetail);
 
     scene.backgroundColor =
         Cesium.Color.fromCssColorString('#050811');
@@ -141,10 +162,20 @@ export function createEarth(container, callbacks = {}) {
 
     // Lower screen-space error requests finer terrain only as the camera approaches the surface.
     const updateTerrainDetail = () => {
-        const height = viewer.camera.positionCartographic.height;
-        scene.globe.maximumScreenSpaceError =
-            height < 1_000_000 ? 1.0 : height < 5_000_000 ? 1.5 : 2.0;
+    const height = viewer.camera.positionCartographic.height;
+
+    scene.globe.maximumScreenSpaceError =
+        height < 100_000 ? 0.5 :
+        height < 500_000 ? 1.0 :
+        height < 2_000_000 ? 1.5 :
+        2.0;
     };
+    
+    const updateCameraEffects = () => {
+        updateTerrainDetail();
+        updateCommunicationTube();
+    };
+
     viewer.camera.changed.addEventListener(updateTerrainDetail);
     updateTerrainDetail();
 
@@ -156,6 +187,8 @@ export function createEarth(container, callbacks = {}) {
             Cesium.Ellipsoid.WGS84
         ),
     });
+
+    updateImageryDetail();
 
     let isActive = false;
     let isDestroyed = false;
@@ -172,10 +205,11 @@ export function createEarth(container, callbacks = {}) {
             .then((provider) => {
                 if (isDestroyed || viewer.isDestroyed()) return;
 
-                const layers = scene.globe.imageryLayers;
-                layers.add(new Cesium.ImageryLayer(provider), 0);
-                layers.remove(fallbackImageryLayer, true);
-                scene.requestRender();
+                tiledImageryLayer = new Cesium.ImageryLayer(provider);
+                scene.globe.imageryLayers.add(tiledImageryLayer);
+
+                // Choose the correct layer for the current camera height.
+                updateImageryDetail();
             })
             .catch((error) => {
                 if (!isDestroyed) {
@@ -229,11 +263,86 @@ export function createEarth(container, callbacks = {}) {
         }
 
         communicationPositions = [communicationPositions[0], moonSitePosition];
-        communicationEntity.polyline.positions = communicationPositions;
+        // communicationEntity.polyline.positions = communicationPositions;
+        updateCommunicationTube();
         scene.requestRender();
     };
     const removePostRenderListener = scene.postRender.addEventListener(
         updateRenderedMoonEndpoint
+    );
+
+
+    function getCommunicationOrientation(start, end) {
+        const direction = Cesium.Cartesian3.subtract(
+            end,
+            start,
+            new Cesium.Cartesian3()
+        );
+
+        Cesium.Cartesian3.normalize(direction, direction);
+
+        const zAxis = Cesium.Cartesian3.UNIT_Z;
+        const axis = Cesium.Cartesian3.cross(
+            zAxis,
+            direction,
+            new Cesium.Cartesian3()
+        );
+
+        const axisLength = Cesium.Cartesian3.magnitude(axis);
+        const dot = Cesium.Cartesian3.dot(zAxis, direction);
+
+        if (axisLength < 1e-8) {
+            return dot >= 0
+                ? Cesium.Quaternion.IDENTITY
+                : Cesium.Quaternion.fromAxisAngle(Cesium.Cartesian3.UNIT_X,Math.PI);
+        }
+
+        Cesium.Cartesian3.normalize(axis, axis);
+
+        const angle = Math.acos(
+            Cesium.Math.clamp(dot, -1, 1)
+        );
+
+        return Cesium.Quaternion.fromAxisAngle(axis, angle);
+    }
+
+    function getCommunicationTubeRadius() {
+        const cameraHeight =
+            viewer.camera.positionCartographic.height;
+
+        // Thicker at high altitude, thinner when zoomed in.
+        return Cesium.Math.clamp(cameraHeight * 0.001,100,10_000);
+    }
+
+    function updateCommunicationTube() {
+        if (!communicationEntity || !communicationPositions) {
+            return;
+        }
+
+        const [start, end] = communicationPositions;
+
+        const length = Cesium.Cartesian3.distance(start, end);
+
+        const radius = getCommunicationTubeRadius();
+
+        communicationEntity.cylinder.topRadius = radius;
+        communicationEntity.cylinder.bottomRadius = radius;
+
+        communicationEntity.position =
+            Cesium.Cartesian3.midpoint(start,end,new Cesium.Cartesian3());
+
+        communicationEntity.orientation =
+            getCommunicationOrientation(start, end);
+
+        communicationEntity.cylinder.length = length;
+    }
+
+    const updateCommunicationTubeOnCameraChange = () => {
+        updateCommunicationTube();
+    };
+
+    viewer.camera.changed.addEventListener(
+        updateCommunicationTubeOnCameraChange
     );
 
     function setCommunicationLink(link) {
@@ -249,9 +358,9 @@ export function createEarth(container, callbacks = {}) {
         }
 
         const statusColor = {
-            clear: '#22c55e',
+            clear: '#1dffac',
             doubtful: '#facc15',
-            blocked: '#ef4444',
+            blocked: '#f43f5e',
         }[link.status];
         if (!statusColor) {
             throw new TypeError(`Unknown communication-link status: ${link.status}`);
@@ -261,22 +370,29 @@ export function createEarth(container, callbacks = {}) {
             Cesium.Cartesian3.fromArray(link.earthPositionEarthFixedMeters),
             Cesium.Cartesian3.fromArray(link.moonPositionEarthFixedMeters),
         ];
-        const color = Cesium.Color.fromCssColorString(statusColor);
+        const color = Cesium.Color.fromCssColorString(statusColor).withAlpha(0.6);
+
         if (!communicationEntity) {
             communicationEntity = viewer.entities.add({
                 id: 'earth-moon-communication-link',
-                polyline: {
-                    positions: communicationPositions,
-                    width: 3,
+
+                position: Cesium.Cartesian3.midpoint(communicationPositions[0],communicationPositions[1],new Cesium.Cartesian3()),
+                orientation: getCommunicationOrientation(communicationPositions[0],communicationPositions[1]),
+
+                cylinder: {
+                    length: Cesium.Cartesian3.distance(communicationPositions[0],communicationPositions[1]),
+                    topRadius: 10_000,
+                    bottomRadius: 10_000,
+                    slices: 12,
                     material: color,
-                    arcType: Cesium.ArcType.NONE,
-                    clampToGround: false,
+                    outline: false,
                 },
             });
         } else {
-            communicationEntity.polyline.positions = communicationPositions;
-            communicationEntity.polyline.material = color;
+            communicationEntity.cylinder.material = color;
         }
+
+        updateCommunicationTube();
         scene.requestRender();
     }
 
@@ -381,6 +497,8 @@ export function createEarth(container, callbacks = {}) {
             removeTimeListener();
             removePostRenderListener();
             viewer.camera.changed.removeEventListener(updateTerrainDetail);
+            viewer.camera.changed.removeEventListener(updateCommunicationTubeOnCameraChange);
+            viewer.camera.changed.removeEventListener(updateImageryDetail);
             features.destroy();
             if (communicationEntity) {
                 viewer.entities.remove(communicationEntity);

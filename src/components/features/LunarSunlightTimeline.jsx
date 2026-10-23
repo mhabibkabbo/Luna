@@ -10,17 +10,17 @@ const STEP_MIN = 30;
 const MAX_ZOOM_LEVEL = 5;
 
 export const SUNLIGHT_TIMELINE_COLORS = {
-  sunlit: '#84cc16',
-  blocked: '#facc15',
+  sunlit: '#19cc16',
+  blocked: '#fa5215',
   night: '#475569',
   pending: '#1e293b',
   playhead: '#f8fafc',
 };
 
 export const COMMUNICATION_TIMELINE_COLORS = {
-  clear: '#22c55e',
+  clear: '#1dffac',
   doubtful: '#facc15',
-  blocked: '#ef4444',
+  blocked: '#f43f5e',
   pending: '#1e293b',
 };
 
@@ -46,6 +46,16 @@ function windowStartForTime(timeMs, days, centered) {
   );
 }
 
+function windowStartForPosition(timeMs, days, position) {
+  const durationMs = days * DAY_MS;
+  const latestStartMs = MAX_CELESTIAL_TIME_MS - durationMs;
+  const desiredStartMs = timeMs - durationMs * position;
+  return Math.max(
+    MIN_CELESTIAL_TIME_MS,
+    Math.min(latestStartMs, desiredStartMs)
+  );
+}
+
 /**
  * Zoomable sunlight and communication forecasts for a selected lunar location.
  * Scrubbing the timeline publishes time to the shared ephemeris clock.
@@ -64,7 +74,7 @@ export default function LunarSunlightTimeline({ feature, earthFeature = null }) 
   const [zoomLevel, setZoomLevel] = useState(0);
   const dragging = useRef(false);
   const currentTimeRef = useRef(currentMs);
-  const centerWindowRef = useRef(false);
+  const zoomStartMsRef = useRef(null);
   const rangeDays = DAYS / (2 ** zoomLevel);
   const durationMs = rangeDays * DAY_MS;
   const durationMin = durationMs / 60000;
@@ -132,9 +142,11 @@ export default function LunarSunlightTimeline({ feature, earthFeature = null }) 
     };
 
     const currentMs = celestialTimeStore.get().ms;
-    const centered = centerWindowRef.current || zoomLevel > 0;
-    centerWindowRef.current = false;
-    calculate(windowStartForTime(currentMs, rangeDays, centered));
+    const requestedStartMs = zoomStartMsRef.current;
+    zoomStartMsRef.current = null;
+    const startMs =
+      requestedStartMs ?? windowStartForTime(currentMs, rangeDays, zoomLevel > 0);
+    calculate(startMs);
 
     const unsubscribe = celestialTimeStore.subscribe(({ ms, source }) => {
       currentTimeRef.current = ms;
@@ -233,7 +245,15 @@ export default function LunarSunlightTimeline({ feature, earthFeature = null }) 
       Math.min(MAX_ZOOM_LEVEL, zoomLevel + delta)
     );
     if (nextZoomLevel === zoomLevel) return;
-    centerWindowRef.current = true;
+    const currentPosition = Math.max(
+      0,
+      Math.min(1, currentOffsetMin / durationMin)
+    );
+    zoomStartMsRef.current = windowStartForPosition(
+      currentMs,
+      DAYS / (2 ** nextZoomLevel),
+      currentPosition
+    );
     setPlaying(false);
     setZoomLevel(nextZoomLevel);
   };

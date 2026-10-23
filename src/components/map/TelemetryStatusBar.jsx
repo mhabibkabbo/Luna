@@ -60,7 +60,7 @@ export default function TelemetryStatusBar({
   return (
     <footer
       id="telemetry-status-bar"
-      className="absolute bottom-0 left-0 right-0 z-20 h-7 px-3 sm:px-4 bg-[#040711]/92 backdrop-blur-md border-t border-slate-800/70 flex items-center justify-between text-[11px] font-mono text-slate-400 select-none pointer-events-auto"
+      className="absolute bottom-0 left-0 right-0 z-20 h-7 px-3 sm:px-4 bg-[#040711]/45 backdrop-blur-xl border-t border-slate-800/70 flex items-center justify-between text-[11px] font-mono text-slate-400 select-none pointer-events-auto"
     >
       {/* Left: Coordinates & Zoom */}
       <div className="flex items-center gap-2 sm:gap-3">

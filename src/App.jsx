@@ -132,6 +132,11 @@ export default function App() {
     }
   }, []);
 
+  const handlePlanetChange = (body) => {
+    setActivePlanet(body);
+    setSelectedFeature(body === 'earth' ? selectedEarthFeature : selectedMoonFeature);
+  };
+
   // Callbacks from Map / Globe
   const handlePointerCoordinates = useCallback((lon, lat) => {
     pointerStore.set({ lon, lat });
@@ -223,7 +228,7 @@ export default function App() {
   const handleResetOverview = () => getActiveController()?.resetOverview();
   const handleGoToSouthPole = () => {
     if (viewMode === '3d' && activePlanet !== 'moon') {
-      setActivePlanet('moon');
+      handlePlanetChange('moon');
     }
     if (getActiveController()?.goToSouthPole) {
       getActiveController()?.goToSouthPole(4.8);
@@ -256,24 +261,26 @@ export default function App() {
 
   // Search feature selection
   const handleSearchSelect = (feature) => {
-    setFeatureSelection(feature, 'moon');
-    if (viewMode === '3d' && activePlanet !== 'moon') {
-      setActivePlanet('moon');
+    const body = feature.body === 'earth' ? 'earth' : 'moon';
+    if (viewMode === '3d' && activePlanet !== body) {
+      handlePlanetChange(body);
     }
     if (viewMode === '3d') {
-      globeRef.current?.switchPlanet?.('moon');
-      globeRef.current?.selectFeature?.(feature.id);
+      globeRef.current?.switchPlanet?.(body);
+      globeRef.current?.selectFeaturePin?.(feature.id, body);
+      globeRef.current?.flyTo?.(feature.longitude, feature.latitude);
     } else {
       getActiveController()?.selectFeature(feature.id, true);
     }
+    setFeatureSelection(feature, body);
   };
 
   // Quick Expedition Selection
   const handleSelectExpedition = (feature, lon, lat, zoom = 5.0) => {
-    setFeatureSelection(feature, 'moon');
     if (viewMode === '3d' && activePlanet !== 'moon') {
-      setActivePlanet('moon');
+      handlePlanetChange('moon');
     }
+    setFeatureSelection(feature, 'moon');
     if (viewMode === '3d') {
       globeRef.current?.switchPlanet?.('moon');
       globeRef.current?.selectFeaturePin?.(feature.id, 'moon');
@@ -363,7 +370,7 @@ export default function App() {
 
   const handleSelectOtherBody = (body) => {
     setViewMode('3d');
-    setActivePlanet(body);
+    handlePlanetChange(body);
     globeRef.current?.switchPlanet?.(body);
   };
 
@@ -457,7 +464,7 @@ export default function App() {
       {/* ========================================================================= */}
       <header
         id="app-header"
-        className="absolute top-0 left-0 right-0 z-30 h-12 px-3 sm:px-4 flex items-center justify-between gap-2.5 bg-transparent border-none shadow-none pointer-events-auto"
+        className="absolute top-0 left-0 right-0 z-30 h-12 px-3 sm:px-4 flex items-center justify-between gap-2.5 bg-[#040711]/55 backdrop-blur-xl border-b border-slate-800/50 shadow-none pointer-events-auto"
       >
         {/* Unified Luna Brand Logo & Quick Back to Home indicator */}
         <div className="flex items-center gap-2 shrink-0">
@@ -474,6 +481,7 @@ export default function App() {
         <div className="flex items-center gap-2 sm:gap-3 flex-1 max-w-lg justify-center">
           <div className="w-full max-w-xs sm:max-w-sm">
             <SearchBox
+              body={viewMode === '3d' ? activePlanet : 'moon'}
               onSelectFeature={handleSearchSelect}
               onCoordinateSearch={([lon, lat]) => getActiveController()?.flyTo(lon, lat, 4)}
             />
@@ -516,7 +524,7 @@ export default function App() {
             <div className="hidden xl:flex items-center p-0.5 rounded-lg bg-slate-900/90 border border-slate-800/90 shrink-0">
               <button
                 type="button"
-                onClick={() => setActivePlanet('moon')}
+                onClick={() => handlePlanetChange('moon')}
                 className={`px-2 py-0.5 rounded text-[11px] font-medium transition-all ${
                   activePlanet === 'moon'
                     ? 'bg-slate-800 text-cyan-300 font-semibold'
@@ -527,7 +535,7 @@ export default function App() {
               </button>
               <button
                 type="button"
-                onClick={() => setActivePlanet('earth')}
+                onClick={() => handlePlanetChange('earth')}
                 className={`px-2 py-0.5 rounded text-[11px] font-medium transition-all ${
                   activePlanet === 'earth'
                     ? 'bg-slate-800 text-blue-300 font-semibold'
@@ -632,7 +640,7 @@ export default function App() {
             hasCustomPin={!!customPin}
             onClearCustomPin={handleClearCustomPin}
             activePlanet={activePlanet}
-            onPlanetChange={setActivePlanet}
+            onPlanetChange={handlePlanetChange}
             isVisible={viewMode === '3d'}
           />
         </div>

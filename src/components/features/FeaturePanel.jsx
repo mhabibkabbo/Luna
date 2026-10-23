@@ -105,6 +105,8 @@ export default function FeaturePanel({
     switch (type) {
       case 'custom_pin':
         return 'Custom Waypoint';
+      case 'coordinate':
+        return 'Coordinate Target';
       case 'deep-space-communication':
         return 'Deep-Space Communications';
       case 'spacecraft-tracking':
@@ -218,85 +220,6 @@ export default function FeaturePanel({
       </span>
     );
   };
-
-  if (feature.body === 'earth' && isCustomPin) {
-    return (
-      <aside
-        id="earth-point-panel"
-        className={`absolute ${
-          timelineVisible ? 'bottom-[110px]' : 'bottom-7'
-        } sm:bottom-auto sm:top-14 right-0 sm:right-4 left-0 sm:left-auto z-50 sm:w-80 flex flex-col bg-[#060b14]/96 backdrop-blur-2xl border-t sm:border border-slate-800 rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden pointer-events-auto select-none animate-in fade-in duration-150`}
-      >
-        <div className="flex items-start justify-between gap-3 p-4">
-          <div className="min-w-0">
-            <div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-wider text-cyan-300">
-              <MapPin className="w-3.5 h-3.5" />
-              Earth point
-            </div>
-            <h2 className="mt-1 text-base font-semibold text-white truncate">
-              {feature.name || 'Dropped point'}
-            </h2>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-1 text-slate-400 hover:text-white rounded hover:bg-slate-800"
-            aria-label="Close Earth point"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3 mx-4 p-3 rounded-xl bg-slate-900/70 border border-slate-800 font-mono">
-          <div>
-            <div className="text-[9px] uppercase text-slate-500">Latitude</div>
-            <div className="text-sm text-white">{featLat.toFixed(4)}°</div>
-          </div>
-          <div>
-            <div className="text-[9px] uppercase text-slate-500">Longitude</div>
-            <div className="text-sm text-white">{featLon.toFixed(4)}°</div>
-          </div>
-        </div>
-
-        <div className="flex gap-2 p-4">
-          <div className="flex flex-1 flex-col gap-2">
-            <button
-              type="button"
-              onClick={() => onZoomHere(featLon, featLat)}
-              className="flex h-9 items-center justify-center gap-2 rounded-lg bg-cyan-600 text-sm font-medium text-white transition-colors hover:bg-cyan-500"
-            >
-              <Navigation className="w-4 h-4" />
-              Fly to
-            </button>
-            {onSelectOtherBody && (
-              <button
-                type="button"
-                onClick={() => onSelectOtherBody(otherBody)}
-                className="flex h-8 items-center justify-center gap-1.5 rounded-lg border border-slate-700 bg-slate-900/80 text-[11px] font-medium text-slate-200 transition-colors hover:border-cyan-500/50 hover:text-cyan-200"
-              >
-                <Globe2 className="h-3.5 w-3.5" />
-                Select from {otherBody === 'earth' ? 'Earth' : 'Moon'}
-              </button>
-            )}
-          </div>
-          {onClearCustomPin && (
-            <button
-              type="button"
-              onClick={() => {
-                onClearCustomPin('earth');
-                onClose();
-              }}
-              className="flex h-9 items-center justify-center gap-2 self-start rounded-lg border border-slate-800 bg-slate-900 px-3 text-sm text-slate-300 transition-colors hover:bg-rose-950 hover:text-rose-300"
-              title="Remove point"
-              aria-label="Remove Earth point"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
-          )}
-        </div>
-      </aside>
-    );
-  }
 
   // Minimized state pill docked on side
   if (isCollapsed) {
