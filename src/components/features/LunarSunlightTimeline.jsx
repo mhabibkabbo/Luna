@@ -3,6 +3,7 @@ import { Pause, Play, Radio, Sun, ZoomIn, ZoomOut } from 'lucide-react';
 import { celestialTimeStore, MAX_CELESTIAL_TIME_MS, MIN_CELESTIAL_TIME_MS } from '../../utils/celestialTime.js';
 import { sweepIllumination } from '../../utils/illumination.js';
 import { sweepCommunication } from '../../utils/communication.js';
+import { HORIZON_TABLE, horizonAt } from "../../utils/horizons.js";
 
 const DAYS = 30;
 const DAY_MS = 86400000;
@@ -108,7 +109,7 @@ export default function LunarSunlightTimeline({ feature, earthFeature = null }) 
             lat: latitude,
             lon: longitude,
             ...calculationOptions,
-            horizonFn: () => 0,
+            horizonFn: () => (az) => horizonAt(HORIZON_TABLE, siteId, az) ?? 0,
           });
           if (alive && id === sequence && result) setForecast(result);
         } catch (calculationError) {
