@@ -34,6 +34,7 @@ import {
 } from '../../utils/coordinates.js';
 import { getClpsMission } from '../../data/clpsMissions.js';
 import SolarConditionsCard from './SolarConditionsCard.jsx';
+import EarthLinkCard from './EarthLinkCard.jsx';
 
 /**
  * Collapsible side panel (desktop) / bottom sheet (mobile) for selected mission or feature.
@@ -48,6 +49,7 @@ export default function FeaturePanel({
   onCompareMission,
   onSelectOtherBody,
   timelineVisible = false,
+  communicationEarthFeature = null,
 }) {
   const [isCopied, setIsCopied] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -427,6 +429,10 @@ export default function FeaturePanel({
 
         {feature.body !== 'earth' && (
           <SolarConditionsCard siteId={feature.id} latitude={featLat} longitude={featLon} />
+        )}
+
+        {feature.body !== 'earth' && (
+          <EarthLinkCard moonFeature={feature} earthFeature={communicationEarthFeature} />
         )}
 
         {/* Scientific Payloads Section for CLPS missions */}

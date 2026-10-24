@@ -708,6 +708,7 @@ export default function App() {
         <FeaturePanel
           feature={selectedFeature}
           timelineVisible={showLunarTimeline}
+          communicationEarthFeature={selectedCommunicationEarthFeature}
           onClose={() => setSelectedFeature(null)}
           onZoomHere={handleZoomHere}
           onMeasureFromHere={handleMeasureFromFeature}
