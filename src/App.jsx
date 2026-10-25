@@ -27,6 +27,9 @@ import { Layers, Ruler, Globe, Map as MapIcon, Moon, Sun, ArrowLeft } from 'luci
 import { pointerStore, mapViewStore } from './utils/pointerStore.js';
 import { celestialTimeStore } from './utils/celestialTime.js';
 import { computeCommunicationLink } from './utils/communication.js';
+import { computeCelestialState } from './utils/lunarEphemeris.js';
+import { DEFAULT_DTE_CONSTRAINTS, evaluateEarthLink } from './utils/earthLink.js';
+import { HORIZON_TABLE, horizonAt } from './utils/horizons.js';
 export default function App() {
   const mapRef = useRef(null);
   const globeRef = useRef(null);
@@ -188,12 +191,21 @@ export default function App() {
     const updateLink = (timeMs) => {
       if (!alive) return;
       try {
+        const state = computeCelestialState(timeMs);
         const link = computeCommunicationLink({
           moonFeature: selectedMoonFeature,
           earthFeature: selectedEarthFeature,
-          when: timeMs,
+          state,
         });
-        globeRef.current?.setCommunicationLink?.(link);
+        const dte = evaluateEarthLink({
+          state,
+          moonFeature: selectedMoonFeature,
+          earthFeature: selectedEarthFeature,
+          constraints: DEFAULT_DTE_CONSTRAINTS,
+          terrainFn: (azimuthDeg) =>
+            horizonAt(HORIZON_TABLE, selectedMoonFeature.id, azimuthDeg),
+        });
+        globeRef.current?.setCommunicationLink?.({ ...link, status: dte.status });
       } catch (error) {
         console.error('Failed to update the Earth-Moon communication line.', error);
         globeRef.current?.setCommunicationLink?.(null);

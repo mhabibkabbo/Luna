@@ -10,7 +10,7 @@ import { celestialTimeStore } from '../../utils/celestialTime.js';
 
 const EARTH_CAMERA_SETTINGS = {
     overviewHeight: 20_000_000,
-    minimumZoomDistance: 4_644_000,
+    minimumZoomDistance: 4_640_125,
     maximumZoomDistance: 100_000_000,
     zoomFactor: 1.2,
     zoomInFactor: 0.8,

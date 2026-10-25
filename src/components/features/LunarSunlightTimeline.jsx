@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Pause, Play, Radio, Sun, ZoomIn, ZoomOut } from 'lucide-react';
 import { celestialTimeStore, MAX_CELESTIAL_TIME_MS, MIN_CELESTIAL_TIME_MS } from '../../utils/celestialTime.js';
 import { sweepIllumination } from '../../utils/illumination.js';
-import { sweepEarthLink } from '../../utils/earthLink.js';
+import { DEFAULT_DTE_CONSTRAINTS, sweepEarthLink } from '../../utils/earthLink.js';
 import { HORIZON_TABLE, horizonAt } from "../../utils/horizons.js";
 
 const DAYS = 30;
@@ -125,6 +125,7 @@ export default function LunarSunlightTimeline({ feature, earthFeature = null }) 
           const result = await sweepEarthLink({
             moonFeature: feature,
             earthFeature,
+            constraints: DEFAULT_DTE_CONSTRAINTS,
             terrainFn: (az) => horizonAt(HORIZON_TABLE, siteId, az),
             ...calculationOptions,
           });

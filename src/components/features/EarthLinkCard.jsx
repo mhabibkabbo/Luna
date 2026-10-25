@@ -27,10 +27,10 @@ const hhmm = (ms) =>
 /** Side view along Earth's azimuth: ground, terrain horizon, antenna minimum and the ray to Earth. */
 function EarthElevationDiagram({ look, constraints }) {
   const W = 240;
-  const H = 96;
+  const H = 180;
   const gx = 34;
-  const gy = 78;
-  const len = 150;
+  const gy = 146;
+  const len = 120;
   const el = Math.max(-12, Math.min(80, look.elevationDeg));
   const point = (deg, l = len) => [
     gx + l * Math.cos((deg * Math.PI) / 180),

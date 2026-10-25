@@ -38,6 +38,7 @@ export const LINK_REASON_LABELS = {
   'terrain-partial': 'Earth disc grazes terrain',
   'min-elevation': 'Below antenna minimum elevation',
   station: 'Below station mask',
+  'earth-facing-away': 'Selected site faces away from Earth',
   keyhole: 'Antenna zenith keyhole',
   slew: 'Antenna slew limit exceeded',
 };
@@ -127,8 +128,16 @@ export function evaluateEarthLink({
   };
 
   if (elevationDeg + radius <= 0) block('below-horizon');
-  else if (stationElevationDeg !== null && stationElevationDeg < c.stationMinElevationDeg) block('station');
-  else if (elevationDeg + radius <= terrain) block('terrain');
+  else if (
+    stationElevationDeg !== null &&
+    stationElevationDeg < c.stationMinElevationDeg
+  ) {
+    block(
+      stationElevationDeg < 0 && look.elevationDeg >= c.minEarthElevationDeg
+        ? 'earth-facing-away'
+        : 'station'
+    );
+  } else if (elevationDeg + radius <= terrain) block('terrain');
   else if (elevationDeg < c.minEarthElevationDeg) block('min-elevation');
   else if (elevationDeg > c.antennaMaxElevationDeg) block('keyhole');
   else if (slewDegPerHour !== null && slewDegPerHour > c.maxSlewDegPerHour) block('slew');
