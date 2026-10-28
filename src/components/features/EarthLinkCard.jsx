@@ -154,7 +154,6 @@ export default function EarthLinkCard({ moonFeature, earthFeature = null }) {
   const earthTransition = useMemo(() => {
     return calculateEarthTransition(timeMs, moonFeature, earthFeature, constraints);
   }, [timeMs, moonFeature, earthFeature, constraints]);
-
   if (!look) return null;
   const badge = STATUS_STYLE[look.status];
   const target = earthFeature ? earthFeature.name : "Earth (centre)";
@@ -208,7 +207,6 @@ export default function EarthLinkCard({ moonFeature, earthFeature = null }) {
           </span>
         </div>
       </div>
-
       <div className="grid grid-cols-3 gap-2 pt-1 border-t border-slate-800/80 font-mono">
         <div>
           <div className="text-[9.5px] text-slate-500 font-sans">Earth elevation</div>
