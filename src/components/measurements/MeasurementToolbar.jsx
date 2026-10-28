@@ -1,6 +1,7 @@
 import React from 'react';
 import { Ruler, Trash2, X, Info } from 'lucide-react';
 import MeasurementResult from './MeasurementResult.jsx';
+import { notifyInfo } from '../../utils/feedbackStore.js';
 
 /**
  * Floating toolbar for geodesic distance measurement on the Moon.
@@ -20,6 +21,13 @@ export default function MeasurementToolbar({
 }) {
   if (!isActive) return null;
 
+  const handleClear = () => {
+    onClear();
+    notifyInfo('Measurement Cleared', 'Distance nodes reset. Click anywhere to start a new measurement.');
+  };
+
+  const pointCount = measurement?.coordinates?.length || 0;
+
   return (
     <div
       id="measurement-floating-toolbar"
@@ -31,16 +39,25 @@ export default function MeasurementToolbar({
           <div className="p-1 bg-amber-500/20 text-amber-400 rounded-lg">
             <Ruler className="w-4 h-4" />
           </div>
-          <span className="text-xs font-bold text-slate-100 uppercase tracking-wide font-sans">
-            Lunar Distance Tool
-          </span>
+          <div>
+            <span className="text-xs font-bold text-slate-100 uppercase tracking-wide font-sans block">
+              Lunar Distance Tool
+            </span>
+            <span className="text-[10px] text-amber-300/80 font-mono">
+              {pointCount === 0
+                ? 'Step 1: Click Moon to set start point'
+                : pointCount === 1
+                ? 'Step 2: Click next point to measure'
+                : `${pointCount} waypoints recorded`}
+            </span>
+          </div>
         </div>
 
         <div className="flex items-center gap-1.5">
           <button
             id="btn-clear-measurement"
             type="button"
-            onClick={onClear}
+            onClick={handleClear}
             className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700/80 rounded-lg transition-colors"
             title="Clear measurement points"
           >

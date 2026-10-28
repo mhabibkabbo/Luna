@@ -4,6 +4,7 @@ import { calculateLunarPhase } from '../../utils/lunarPhase.js';
 import { pointerStore, mapViewStore } from '../../utils/pointerStore.js';
 import ScaleControl from './ScaleControl.jsx';
 import { Compass, Clock, Radio, Copy, Check } from 'lucide-react';
+import { notifySuccess } from '../../utils/feedbackStore.js';
 
 /**
  * Discreet status bar along the bottom edge.
@@ -52,6 +53,7 @@ export default function TelemetryStatusBar({
     if (navigator.clipboard) {
       navigator.clipboard.writeText(text).then(() => {
         setCopied(true);
+        notifySuccess('Coordinates Copied', `${latStr}, ${lonStr} copied to clipboard`);
         setTimeout(() => setCopied(false), 2000);
       });
     }

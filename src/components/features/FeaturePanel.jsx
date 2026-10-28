@@ -34,6 +34,8 @@ import {
 } from '../../utils/coordinates.js';
 import { getClpsMission } from '../../data/clpsMissions.js';
 import SolarConditionsCard from './SolarConditionsCard.jsx';
+import EarthLinkCard from './EarthLinkCard.jsx';
+import { notifySuccess, notifyNavigation, notifyInfo } from '../../utils/feedbackStore.js';
 
 /**
  * Collapsible side panel (desktop) / bottom sheet (mobile) for selected mission or feature.
@@ -48,6 +50,7 @@ export default function FeaturePanel({
   onCompareMission,
   onSelectOtherBody,
   timelineVisible = false,
+  communicationEarthFeature = null,
 }) {
   const [isCopied, setIsCopied] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -96,6 +99,7 @@ export default function FeaturePanel({
     if (navigator.clipboard) {
       navigator.clipboard.writeText(textToCopy);
       setIsCopied(true);
+      notifySuccess('Coordinates Copied', `${latStr}, ${lonStr} copied to clipboard`);
       setTimeout(() => setIsCopied(false), 2000);
     }
   };
@@ -290,12 +294,12 @@ export default function FeaturePanel({
         </div>
 
         <div className="flex items-center gap-1 shrink-0">
-          {isClps && onCompareMission && (
+          {onCompareMission && (
             <button
               type="button"
               onClick={() => onCompareMission(clpsData || feature)}
               className="p-1 text-cyan-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
-              title="Compare this mission with another CLPS mission"
+              title="Compare this site/mission in the Landing Site Navigator"
             >
               <GitCompare className="w-3.5 h-3.5" />
             </button>
@@ -429,6 +433,10 @@ export default function FeaturePanel({
           <SolarConditionsCard siteId={feature.id} latitude={featLat} longitude={featLon} />
         )}
 
+        {feature.body !== 'earth' && (
+          <EarthLinkCard moonFeature={feature} earthFeature={communicationEarthFeature} />
+        )}
+
         {/* Scientific Payloads Section for CLPS missions */}
         {isClps && payloadsList.length > 0 && (
           <div className="bg-slate-900/60 rounded-xl border border-slate-800 overflow-hidden">
@@ -559,7 +567,10 @@ export default function FeaturePanel({
           <button
             id="btn-feature-zoom-here"
             type="button"
-            onClick={() => onZoomHere(featLon, featLat)}
+            onClick={() => {
+              notifyNavigation(`Aligning with ${feature.name || 'target'}`, `${latStr}, ${lonStr}`);
+              onZoomHere(featLon, featLat);
+            }}
             className={`flex h-8.5 w-full items-center justify-center gap-1.5 font-medium text-xs rounded-xl transition-all shadow-md ${
               isCustomPin
                 ? 'bg-rose-600 hover:bg-rose-500 text-white'
@@ -572,7 +583,10 @@ export default function FeaturePanel({
           {onSelectOtherBody && (
             <button
               type="button"
-              onClick={() => onSelectOtherBody(otherBody)}
+              onClick={() => {
+                notifyInfo(`Switched to ${otherBody === 'earth' ? 'Earth' : 'Moon'} View`, 'Planetary view changed for cross-body communication analysis.');
+                onSelectOtherBody(otherBody);
+              }}
               className="flex h-7 w-full items-center justify-center gap-1 rounded-lg border border-slate-700 bg-slate-900/80 text-[10px] font-medium text-slate-300 transition-colors hover:border-cyan-500/50 hover:text-cyan-200"
             >
               <Globe2 className="h-3 w-3" />
@@ -581,12 +595,15 @@ export default function FeaturePanel({
           )}
         </div>
 
-        {isClps && onCompareMission && (
+        {onCompareMission && feature.body !== 'earth' && (
           <button
             type="button"
-            onClick={() => onCompareMission(clpsData || feature)}
+            onClick={() => {
+              notifyInfo('Opening Site Navigator', `Comparing ${feature.name || 'target site'} in trade-off analyzer.`);
+              onCompareMission(clpsData || feature);
+            }}
             className="flex items-center justify-center gap-1.5 px-3 h-8.5 bg-slate-900 hover:bg-slate-800 text-cyan-300 font-medium text-xs rounded-xl border border-slate-800 hover:border-cyan-500/40 transition-colors"
-            title="Compare with another mission"
+            title="Compare this landing site & date in the Scenario Navigator"
           >
             <GitCompare className="w-3.5 h-3.5" />
             Compare
@@ -597,7 +614,10 @@ export default function FeaturePanel({
           <button
             id="btn-feature-measure-from-here"
             type="button"
-            onClick={() => onMeasureFromHere(featLon, featLat)}
+            onClick={() => {
+              notifyInfo('Measurement Active', `Started geodesic ruler at ${feature.name || 'target'}. Click on the Moon to measure distance.`);
+              onMeasureFromHere(featLon, featLat);
+            }}
             className="flex items-center justify-center gap-1.5 px-3 h-8.5 bg-slate-900 hover:bg-slate-800 text-slate-200 font-medium text-xs rounded-xl border border-slate-800 transition-colors"
             title="Start measurement from this point"
           >
@@ -611,6 +631,7 @@ export default function FeaturePanel({
             id="btn-feature-clear-pin"
             type="button"
             onClick={() => {
+              notifyInfo('Waypoint Removed', 'Custom landing pin cleared from lunar surface.');
               onClearCustomPin(feature.body === 'earth' ? 'earth' : 'moon');
               onClose();
             }}

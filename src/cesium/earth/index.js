@@ -10,7 +10,7 @@ import { celestialTimeStore } from '../../utils/celestialTime.js';
 
 const EARTH_CAMERA_SETTINGS = {
     overviewHeight: 20_000_000,
-    minimumZoomDistance: 4_644_000,
+    minimumZoomDistance: 4_640_125,
     maximumZoomDistance: 100_000_000,
     zoomFactor: 1.2,
     zoomInFactor: 0.8,
@@ -33,8 +33,16 @@ export function createEarth(container, callbacks = {}) {
         /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
     );
     const ionToken = import.meta.env.VITE_CESIUM_ION_TOKEN?.trim();
-    if (ionToken) {
+    const hasValidIonToken = Boolean(
+        ionToken &&
+        ionToken.length > 50 &&
+        ionToken.startsWith('eyJ') &&
+        ionToken.split('.').length === 3
+    );
+    if (hasValidIonToken) {
         Cesium.Ion.defaultAccessToken = ionToken;
+    } else {
+        Cesium.Ion.defaultAccessToken = '';
     }
 
     const { globe: earthGlobe, fallbackImageryLayer } = createEarthGlobe();
@@ -200,7 +208,7 @@ export function createEarth(container, callbacks = {}) {
         }
     });
 
-    if (ionToken) {
+    if (hasValidIonToken) {
         Cesium.IonImageryProvider.fromAssetId(2)
             .then((provider) => {
                 if (isDestroyed || viewer.isDestroyed()) return;
@@ -213,9 +221,9 @@ export function createEarth(container, callbacks = {}) {
             })
             .catch((error) => {
                 if (!isDestroyed) {
-                    console.error(
-                        'Cesium ion Earth imagery failed to load; keeping the local Earth texture.',
-                        error
+                    console.info(
+                        'Cesium ion Earth imagery unavailable; retaining local Earth texture.',
+                        error?.message || error
                     );
                 }
             });
@@ -233,15 +241,18 @@ export function createEarth(container, callbacks = {}) {
             })
             .catch((error) => {
                 if (!isDestroyed) {
-                    console.error(
-                        'Cesium ion Earth terrain failed to load; keeping ellipsoid terrain.',
-                        error
+                    console.info(
+                        'Cesium ion Earth terrain unavailable; retaining standard ellipsoid terrain.',
+                        error?.message || error
                     );
                 }
             });
     }
 
     const features = createEarthFeatures({ viewer, container, callbacks });
+    const removeTileLoadListener = scene.globe.tileLoadProgressEvent.addEventListener((queuedCount) => {
+        callbacks.onTileLoadProgress?.(queuedCount);
+    });
     let communicationEntity = null;
     let communicationPositions = null;
     let latestCommunicationLink = null;
@@ -499,6 +510,9 @@ export function createEarth(container, callbacks = {}) {
             viewer.camera.changed.removeEventListener(updateTerrainDetail);
             viewer.camera.changed.removeEventListener(updateCommunicationTubeOnCameraChange);
             viewer.camera.changed.removeEventListener(updateImageryDetail);
+            if (removeTileLoadListener) {
+                removeTileLoadListener();
+            }
             features.destroy();
             if (communicationEntity) {
                 viewer.entities.remove(communicationEntity);

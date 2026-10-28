@@ -9,6 +9,9 @@ const ALIASES = {
 
 const resolveId = (id) => ALIASES[id] || id;
 
+/** Synchronous access to the bundled table (the JSON is imported, so no fetch is needed). */
+export const HORIZON_TABLE = horizonData;
+
 export function loadHorizons() {
   return Promise.resolve(horizonData);
 }
@@ -44,4 +47,9 @@ export function horizonAt(table, siteId, azDeg) {
     }
   }
   return h[i0] * (1 - f) + h[i1] * f;
+}
+
+/** Convenience for sweeps: terrain horizon toward azDeg, falling back to the flat 0° horizon. */
+export function horizonOrFlat(table, siteId, azDeg) {
+  return horizonAt(table, siteId, azDeg) ?? 0;
 }

@@ -92,39 +92,48 @@ export default function LandingPage({ onLaunchExplorer }) {
           {/* Main Text Content: Headline, Description & CTAs */}
           <div className="lg:col-span-6 flex flex-col items-start text-left order-2 lg:order-1">
             {/* Small Eyebrow Text */}
-            <div className="text-[11px] font-mono tracking-[0.22em] text-cyan-400/90 uppercase mb-4">
-              LUNAR EXPLORATION PLATFORM
+            <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-cyan-950/70 border border-cyan-500/30 text-[10px] font-mono tracking-[0.18em] text-cyan-300 uppercase mb-4">
+              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+              <span>NASA Space Apps 2026 · Lunar Landing Site Navigator</span>
             </div>
 
             {/* Preserved Strong Headline */}
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-light text-white tracking-tight leading-[1.12] mb-6 font-sans">
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-light text-white tracking-tight leading-[1.12] mb-5 font-sans">
               The Moon,{' '}
               <span className="font-semibold text-white">
                 explored.
               </span>
             </h1>
 
-            {/* Preserved Concise Description */}
-            <p className="text-sm sm:text-base text-slate-300 font-normal leading-relaxed max-w-lg mb-8">
-              Discover NASA&apos;s Commercial Lunar Payload Services missions, landing sites, and
-              scientific payloads through an interactive lunar map.
+            {/* Preserved & Expanded Description */}
+            <p className="text-sm sm:text-base text-slate-300 font-normal leading-relaxed max-w-lg mb-7">
+              Rapidly evaluate candidate lunar landing sites and dates. Visualize Sun and Earth positions
+              relative to topographic horizons, assess solar power generation windows, and determine direct-to-Earth communication links for NASA CLPS and Artemis missions.
             </p>
 
             {/* Action Buttons */}
-            <div className="flex items-center gap-6">
+            <div className="flex items-center gap-3.5 flex-wrap">
               <button
                 type="button"
                 onClick={() => onLaunchExplorer()}
-                className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-slate-100 hover:bg-white text-slate-950 font-semibold text-sm tracking-wide shadow-lg shadow-black/60 transition-all hover:-translate-y-0.5 active:translate-y-0 active:scale-95"
+                className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-slate-100 hover:bg-white text-slate-950 font-semibold text-sm tracking-wide shadow-lg shadow-black/60 transition-all hover:-translate-y-0.5 active:translate-y-0 active:scale-95"
               >
-                <span>Start Exploring</span>
+                <span>3D Moon Explorer</span>
                 <ArrowRight className="w-4 h-4 text-slate-950" />
               </button>
 
               <button
                 type="button"
+                onClick={() => onLaunchExplorer({ openComparison: true })}
+                className="inline-flex items-center justify-center gap-1.5 px-4 py-3 rounded-xl bg-cyan-950/80 hover:bg-cyan-900 text-cyan-300 border border-cyan-500/40 font-semibold text-sm tracking-wide shadow-md transition-all hover:-translate-y-0.5 active:translate-y-0 active:scale-95"
+              >
+                <span>Site &amp; Date Navigator</span>
+              </button>
+
+              <button
+                type="button"
                 onClick={() => setIsClpsOpen(true)}
-                className="text-1rem font-mono text-slate-400 hover:text-cyan-300 tracking-wider transition-colors underline-offset-4 hover:underline"
+                className="text-xs font-mono text-slate-400 hover:text-cyan-300 tracking-wider transition-colors underline-offset-4 hover:underline px-2 py-1"
               >
                 What is CLPS?
               </button>

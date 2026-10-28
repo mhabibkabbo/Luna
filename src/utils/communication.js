@@ -42,7 +42,7 @@ function earthFixedPositionKm(latitude, longitude, heightKm = 0) {
   ];
 }
 
-function lunarFixedPositionKm(latitude, longitude, elevationKm = 0) {
+export function lunarFixedPositionKm(latitude, longitude, elevationKm = 0) {
   const lat = latitude * DEG;
   const lon = longitude * DEG;
   const radius = MOON_RADIUS_KM + elevationKm;
@@ -63,7 +63,7 @@ function earthSurfaceNormal(latitude, longitude) {
   ];
 }
 
-function lunarLocalCoordinates(latitude, longitude, direction) {
+export function lunarLocalCoordinates(latitude, longitude, direction) {
   const lat = latitude * DEG;
   const lon = longitude * DEG;
   const east = [-Math.sin(lon), Math.cos(lon), 0];
@@ -175,6 +175,7 @@ export function computeCommunicationLink({
   return {
     status,
     moonElevationDeg: moonLook.elevationDeg,
+    moonAzimuthDeg: moonLook.azimuthDeg,
     earthElevationDeg: earthLookElevationDeg,
     moonPositionMoonFixedMeters,
     earthPositionMoonFixedMeters,

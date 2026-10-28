@@ -254,7 +254,9 @@ export function createMoon(container, callbacks = {}) {
   );
 
   // 1. Initialize Cesium.Viewer with Moon Ellipsoid and custom baseLayer (disabling Ion)
+  callbacks.onLoadingStageChange?.('Initializing WebGL 3D Planetary Canvas...');
   const moonGlobe = createMoonGlobe();
+  callbacks.onLoadingStageChange?.('Connecting to NASA Moon Trek WMTS Basemap...');
 
   const viewer = new Cesium.Viewer(container, {
     globe: moonGlobe,
@@ -421,7 +423,19 @@ export function createMoon(container, callbacks = {}) {
   };
 
   // Create pins and input handlers after camera actions exist, since pin clicks fly the camera.
+  callbacks.onLoadingStageChange?.('Loading Catalog Landmarks & Ephemeris...');
   const features = createMoonFeatures({ viewer, container, callbacks, isMobile, flyToCoordinate, getLunarMarkerDataUrl });
+
+  // Listen to Cesium globe tile load progress
+  const removeTileLoadListener = scene.globe.tileLoadProgressEvent.addEventListener((queuedCount) => {
+    callbacks.onTileLoadProgress?.(queuedCount);
+  });
+
+  // Signal that Cesium Moon is initialized
+  setTimeout(() => {
+    callbacks.onInitialized?.();
+  }, 400);
+
   let communicationEntity = null;
   let communicationPositions = null;
 
@@ -665,6 +679,9 @@ export function createMoon(container, callbacks = {}) {
     if (removeRotationListener) {
       removeRotationListener();
       removeRotationListener = null;
+    }
+    if (removeTileLoadListener) {
+      removeTileLoadListener();
     }
     features.destroy();
     if (communicationEntity) {

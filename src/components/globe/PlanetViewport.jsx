@@ -8,6 +8,7 @@ import { RotateCw, Sun, Globe, Plus, Minus, Compass, Target, MapPin, Moon } from
 import { LUNAR_FEATURES } from '../../data/lunarFeatures.js';
 import { LANDING_SITES } from '../../data/landingSites.js';
 import { createPlanetManager } from '../../cesium/planetManager.js';
+import CesiumLoadingOverlay from '../common/CesiumLoadingOverlay.jsx';
 
 /**
  * Hosts the interactive Cesium planet viewers and bridges their controls to React.
@@ -31,9 +32,21 @@ const PlanetViewport = forwardRef(function PlanetViewport(
   const communicationLinkRef = useRef(null);
   const [currentPlanet, setCurrentPlanet] = useState(activePlanet || 'moon');
 
+  const [isCesiumLoading, setIsCesiumLoading] = useState(true);
+  const [loadingStage, setLoadingStage] = useState('Initializing 3D Planetary Canvas...');
+  const [pendingTiles, setPendingTiles] = useState(0);
+
   const [isAutoRotating, setIsAutoRotating] = useState(false);
   const [isSolarLighting, setIsSolarLighting] = useState(false);
   const [hoveredInfo, setHoveredInfo] = useState(null); // { feature, x, y }
+
+  // Safety timer ensuring perceived performance even on slow network
+  useEffect(() => {
+    const safetyTimer = setTimeout(() => {
+      setIsCesiumLoading(false);
+    }, 2800);
+    return () => clearTimeout(safetyTimer);
+  }, []);
 
   // Sync external activePlanet prop
   useEffect(() => {
@@ -64,6 +77,21 @@ const PlanetViewport = forwardRef(function PlanetViewport(
         onPointerCoordinates,
         onFeatureSelect,
         onDropCustomPin,
+
+        onLoadingStageChange: (stage) => {
+          setLoadingStage(stage);
+        },
+
+        onTileLoadProgress: (queuedCount) => {
+          setPendingTiles(queuedCount);
+          if (queuedCount === 0) {
+            setIsCesiumLoading(false);
+          }
+        },
+
+        onInitialized: () => {
+          setIsCesiumLoading(false);
+        },
 
         onFeatureHover: (feature, x, y) => {
           if (feature) {
@@ -262,6 +290,14 @@ const PlanetViewport = forwardRef(function PlanetViewport(
         ref={earthContainerRef}
         className="absolute inset-0"
         style={{ display: "none" }}
+      />
+
+      {/* Global Cesium Initialization Overlay & Data Fetching Tile HUD */}
+      <CesiumLoadingOverlay
+        isInitializing={isCesiumLoading}
+        stage={loadingStage}
+        pendingTiles={pendingTiles}
+        planet={currentPlanet}
       />
 
       {/* Floating Hover Feature Tooltip */}

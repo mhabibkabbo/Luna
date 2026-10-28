@@ -2,7 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Pause, Play, Radio, Sun, ZoomIn, ZoomOut } from 'lucide-react';
 import { celestialTimeStore, MAX_CELESTIAL_TIME_MS, MIN_CELESTIAL_TIME_MS } from '../../utils/celestialTime.js';
 import { sweepIllumination } from '../../utils/illumination.js';
-import { sweepCommunication } from '../../utils/communication.js';
+import { DEFAULT_DTE_CONSTRAINTS, sweepEarthLink } from '../../utils/earthLink.js';
+import { HORIZON_TABLE, horizonAt } from "../../utils/horizons.js";
 
 const DAYS = 30;
 const DAY_MS = 86400000;
@@ -108,7 +109,7 @@ export default function LunarSunlightTimeline({ feature, earthFeature = null }) 
             lat: latitude,
             lon: longitude,
             ...calculationOptions,
-            horizonFn: () => 0,
+            horizonFn: (az) => horizonAt(HORIZON_TABLE, siteId, az) ?? 0,
           });
           if (alive && id === sequence && result) setForecast(result);
         } catch (calculationError) {
@@ -121,9 +122,11 @@ export default function LunarSunlightTimeline({ feature, earthFeature = null }) 
       const calculateCommunication = async () => {
         if (!earthFeature) return;
         try {
-          const result = await sweepCommunication({
+          const result = await sweepEarthLink({
             moonFeature: feature,
             earthFeature,
+            constraints: DEFAULT_DTE_CONSTRAINTS,
+            terrainFn: (az) => horizonAt(HORIZON_TABLE, siteId, az),
             ...calculationOptions,
           });
           if (alive && id === sequence && result) {
@@ -277,7 +280,7 @@ export default function LunarSunlightTimeline({ feature, earthFeature = null }) 
               <i className="h-2 w-2 rounded-sm bg-lime-500" /> Sunlit
             </span>
             <span className="inline-flex items-center gap-1">
-              <i className="h-2 w-2 rounded-sm bg-yellow-400" /> Horizon
+              <i className="h-2 w-2 rounded-sm" style={{ backgroundColor: SUNLIGHT_TIMELINE_COLORS.blocked }} /> Terrain
             </span>
             <span className="inline-flex items-center gap-1">
               <i className="h-2 w-2 rounded-sm bg-slate-600" /> Night
@@ -289,13 +292,13 @@ export default function LunarSunlightTimeline({ feature, earthFeature = null }) 
                   <Radio className="h-3 w-3" /> LOS
                 </span>
                 <span className="inline-flex items-center gap-1">
-                  <i className="h-2 w-2 rounded-sm bg-green-500" /> Link
+                  <i className="h-2 w-2 rounded-sm" style={{ backgroundColor: COMMUNICATION_TIMELINE_COLORS.clear }} /> Link
                 </span>
                 <span className="inline-flex items-center gap-1">
-                  <i className="h-2 w-2 rounded-sm bg-yellow-400" /> Doubtful
+                  <i className="h-2 w-2 rounded-sm" style={{ backgroundColor: COMMUNICATION_TIMELINE_COLORS.doubtful }} /> Marginal
                 </span>
                 <span className="inline-flex items-center gap-1">
-                  <i className="h-2 w-2 rounded-sm bg-red-500" /> Blocked
+                  <i className="h-2 w-2 rounded-sm" style={{ backgroundColor: COMMUNICATION_TIMELINE_COLORS.blocked }} /> No link
                 </span>
               </>
             )}

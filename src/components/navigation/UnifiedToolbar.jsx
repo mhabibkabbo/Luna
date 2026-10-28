@@ -20,10 +20,12 @@ import {
   GitCompare,
   Navigation,
   AlertTriangle,
+  HelpCircle,
 } from 'lucide-react';
 import { LANDING_SITES } from '../../data/landingSites.js';
 import { LUNAR_FEATURES } from '../../data/lunarFeatures.js';
 import { parseLunarCoordinates, clampLatitude, normalizeLongitude } from '../../utils/coordinates.js';
+import { notifyNavigation, notifyInfo } from '../../utils/feedbackStore.js';
 
 export const FEATURED_MISSIONS = [
   {
@@ -292,6 +294,7 @@ export default function UnifiedToolbar({
   onOpenMissionExplorer,
   onOpenComparison,
   onNavigateCoordinates,
+  onOpenGuide,
   isSouthPoleMode = false,
 }) {
   const [isMissionsOpen, setIsMissionsOpen] = useState(false);
@@ -360,6 +363,7 @@ export default function UnifiedToolbar({
         source: 'NASA Planetary Data System',
       };
 
+    notifyNavigation(`Orienting to ${item.name}`, item.sublabel || 'Planetary exploration target');
     onSelectExpedition(feature, item.lon, item.lat, item.zoom);
   };
 
@@ -375,6 +379,7 @@ export default function UnifiedToolbar({
       // Try parsing single combined string if entered in lat
       const parsed = parseLunarCoordinates(coordInputLat);
       if (parsed) {
+        notifyNavigation('Flying to Coordinates', `${parsed[1].toFixed(2)}°, ${parsed[0].toFixed(2)}°`);
         onNavigateCoordinates?.(parsed[0], parsed[1]);
         setIsCoordsOpen(false);
         setCoordInputLat('');
@@ -388,6 +393,7 @@ export default function UnifiedToolbar({
     const clampedLat = clampLatitude(latNum);
     const normLon = normalizeLongitude(lonNum);
 
+    notifyNavigation('Flying to Coordinates', `${clampedLat.toFixed(2)}°, ${normLon.toFixed(2)}°`);
     onNavigateCoordinates?.(normLon, clampedLat);
     setIsCoordsOpen(false);
     setCoordInputLat('');
@@ -557,17 +563,17 @@ export default function UnifiedToolbar({
           </button>
         )}
 
-        {/* 4. Compare Missions Button */}
+        {/* 4. Compare Missions & Landing Sites Button */}
         {onOpenComparison && (
           <button
             type="button"
             id="btn-open-comparison-dialog"
             onClick={onOpenComparison}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-900/60 hover:bg-slate-800 text-slate-200 border border-slate-800 hover:border-slate-700 transition-colors"
-            title="Compare two NASA CLPS missions side-by-side"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-cyan-950/50 hover:bg-cyan-900/60 text-cyan-200 border border-cyan-500/30 hover:border-cyan-400/60 transition-colors shadow-sm"
+            title="Lunar Landing Site Navigator · Compare landing sites and dates side-by-side"
           >
             <GitCompare className="w-3.5 h-3.5 text-cyan-400" />
-            <span className="hidden md:inline">Compare</span>
+            <span className="hidden md:inline">Site Navigator</span>
           </button>
         )}
 
@@ -727,6 +733,18 @@ export default function UnifiedToolbar({
         >
           <Info className="w-3.5 h-3.5 text-slate-400" />
         </button>
+
+        {/* 8. User Guide & Keyboard Shortcuts */}
+        {onOpenGuide && (
+          <button
+            type="button"
+            onClick={onOpenGuide}
+            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/70 transition-colors"
+            title="User Guide & Keyboard Shortcuts (?)"
+          >
+            <HelpCircle className="w-3.5 h-3.5 text-cyan-400" />
+          </button>
+        )}
       </div>
 
       {/* ========================================================================= */}
@@ -765,18 +783,32 @@ export default function UnifiedToolbar({
             </div>
 
             {/* Quick Actions Cluster */}
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-4 gap-1.5">
               <button
                 type="button"
                 onClick={() => {
                   onGoToSouthPole();
                   setIsMobileOpen(false);
                 }}
-                className="flex items-center justify-center gap-1.5 p-2.5 rounded-xl bg-cyan-950/80 text-cyan-300 border border-cyan-500/40 text-xs font-bold"
+                className="flex flex-col items-center justify-center gap-1 p-2 rounded-xl bg-cyan-950/80 text-cyan-300 border border-cyan-500/40 text-[10px] font-bold"
               >
                 <Target className="w-4 h-4" />
-                <span>South Pole (90°S)</span>
+                <span>South Pole</span>
               </button>
+
+              {onOpenComparison && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsMobileOpen(false);
+                    onOpenComparison();
+                  }}
+                  className="flex flex-col items-center justify-center gap-1 p-2 rounded-xl bg-slate-900 text-cyan-300 border border-slate-800 text-[10px] font-semibold"
+                >
+                  <GitCompare className="w-4 h-4" />
+                  <span>Navigator</span>
+                </button>
+              )}
 
               {onOpenMissionExplorer && (
                 <button
@@ -785,10 +817,24 @@ export default function UnifiedToolbar({
                     setIsMobileOpen(false);
                     onOpenMissionExplorer();
                   }}
-                  className="flex items-center justify-center gap-1.5 p-2.5 rounded-xl bg-slate-900 text-slate-200 border border-slate-800 text-xs font-semibold"
+                  className="flex flex-col items-center justify-center gap-1 p-2 rounded-xl bg-slate-900 text-slate-200 border border-slate-800 text-[10px] font-semibold"
                 >
                   <Compass className="w-4 h-4 text-cyan-400" />
-                  <span>Full Explorer</span>
+                  <span>Explorer</span>
+                </button>
+              )}
+
+              {onOpenGuide && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsMobileOpen(false);
+                    onOpenGuide();
+                  }}
+                  className="flex flex-col items-center justify-center gap-1 p-2 rounded-xl bg-slate-900 text-slate-200 border border-slate-800 text-[10px] font-semibold"
+                >
+                  <HelpCircle className="w-4 h-4 text-cyan-400" />
+                  <span>Guide</span>
                 </button>
               )}
             </div>
