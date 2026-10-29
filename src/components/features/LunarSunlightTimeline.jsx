@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Pause, Play, Radio, Sun, ZoomIn, ZoomOut } from 'lucide-react';
 import { celestialTimeStore, MAX_CELESTIAL_TIME_MS, MIN_CELESTIAL_TIME_MS } from '../../utils/celestialTime.js';
 import { sweepIllumination } from '../../utils/illumination.js';
@@ -37,6 +37,82 @@ const UTC_FORMAT = new Intl.DateTimeFormat('en-GB', {
 
 const formatUTC = (ms) => `${UTC_FORMAT.format(new Date(ms))} UTC`;
 
+const TimelineTrack = React.memo(function TimelineTrack({
+  kind,
+  statuses,
+  colors,
+  transitions,
+  anchorMs,
+  playheadRef,
+  earthFeatureName,
+}) {
+  const sampleCount = statuses?.length ?? 1;
+  const isSunlightTrack = kind === 'sunlight';
+
+  return (
+    <div
+      className={`relative w-full overflow-visible rounded-sm ${
+        earthFeatureName ? 'h-[9px]' : 'h-3'
+      }`}
+    >
+      <svg
+        className="absolute inset-0 h-full w-full overflow-visible"
+        viewBox={`0 0 ${sampleCount} 1`}
+        preserveAspectRatio="none"
+        aria-hidden="true"
+      >
+        {(statuses ?? [null]).map((status, index) => (
+          <rect
+            key={index}
+            x={index}
+            y="0"
+            width="1.01"
+            height="1"
+            fill={status ? colors[status] : colors.pending}
+          />
+        ))}
+        {transitions.map((transition) => (
+          <rect
+            key={`${transition.index}-${transition.status ?? transition.enteringSunlight}`}
+            x={transition.index - 0.5}
+            y="0"
+            width="1"
+            height="1"
+            fill={
+              isSunlightTrack
+                ? '#f8fafc'
+                : colors[transition.status]
+            }
+          >
+            <title>
+              {formatUTC(anchorMs + transition.index * STEP_MIN * 60000)} ·{' '}
+              {isSunlightTrack
+                ? transition.enteringSunlight
+                  ? 'Sunrise'
+                  : 'Sunset'
+                : transition.status}
+            </title>
+          </rect>
+        ))}
+        <line
+          ref={playheadRef}
+          x1="0"
+          x2="0"
+          y1="-0.45"
+          y2="1.45"
+          stroke={SUNLIGHT_TIMELINE_COLORS.playhead}
+          strokeWidth={Math.max(1, sampleCount / 1200)}
+        />
+      </svg>
+      <span className="sr-only">
+        {isSunlightTrack
+          ? 'Sunlight · transition ticks indicate sunrise or sunset'
+          : `Communication · ${earthFeatureName}`}
+      </span>
+    </div>
+  );
+});
+
 function windowStartForTime(timeMs, days, centered) {
   const durationMs = days * DAY_MS;
   const latestStartMs = MAX_CELESTIAL_TIME_MS - durationMs;
@@ -74,12 +150,23 @@ export default function LunarSunlightTimeline({ feature, earthFeature = null }) 
   const [playing, setPlaying] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(0);
   const dragging = useRef(false);
+  const pointerFrame = useRef(0);
+  const pendingPointerFraction = useRef(null);
+  const lastDragPublishAt = useRef(0);
+  const sunlightPlayheadRef = useRef(null);
+  const communicationPlayheadRef = useRef(null);
   const currentTimeRef = useRef(currentMs);
   const zoomStartMsRef = useRef(null);
   const rangeDays = DAYS / (2 ** zoomLevel);
   const durationMs = rangeDays * DAY_MS;
   const durationMin = durationMs / 60000;
   const endMs = anchorMs + durationMs;
+
+  useEffect(() => () => {
+    if (pointerFrame.current !== 0) {
+      cancelAnimationFrame(pointerFrame.current);
+    }
+  }, []);
 
   useEffect(() => {
     let alive = true;
@@ -193,7 +280,7 @@ export default function LunarSunlightTimeline({ feature, earthFeature = null }) 
       previous = now;
       const nextMs = Math.min(
         endMs,
-        currentTimeRef.current + elapsed * 3600000
+        currentTimeRef.current + elapsed * DAY_MS
       );
       celestialTimeStore.setTime(nextMs, 'timeline');
       if (nextMs >= endMs) {
@@ -206,42 +293,106 @@ export default function LunarSunlightTimeline({ feature, earthFeature = null }) 
     return () => cancelAnimationFrame(frame);
   }, [playing, anchorMs, endMs]);
 
-  const setTimeAtFraction = (fraction) => {
+  const timeAtFraction = (fraction) => {
     const boundedFraction = Math.max(0, Math.min(1, fraction));
-    const timeMs = Math.max(
+    return Math.max(
       MIN_CELESTIAL_TIME_MS,
       Math.min(endMs, anchorMs + boundedFraction * durationMs)
     );
-    celestialTimeStore.setTime(timeMs, 'timeline');
+  };
+
+  const updatePlayhead = (timeMs) => {
+    const position = Math.max(0, Math.min(1, (timeMs - anchorMs) / durationMs));
+    const setPosition = (line, sampleCount) => {
+      if (!line) return;
+      const x = position * sampleCount;
+      line.setAttribute('x1', String(x));
+      line.setAttribute('x2', String(x));
+    };
+    setPosition(sunlightPlayheadRef.current, forecast?.visibility.length ?? 1);
+    setPosition(
+      communicationPlayheadRef.current,
+      communicationForecast?.visibility.length ?? 1
+    );
+  };
+
+  const setTimeAtFraction = (fraction, source = 'timeline') => {
+    const timeMs = timeAtFraction(fraction);
+    currentTimeRef.current = timeMs;
+    setCurrentMs(timeMs);
+    updatePlayhead(timeMs);
+    celestialTimeStore.setTime(timeMs, source);
+  };
+
+  const updateDragTime = (fraction) => {
+    const timeMs = timeAtFraction(fraction);
+    currentTimeRef.current = timeMs;
+    updatePlayhead(timeMs);
+    celestialTimeStore.setTime(timeMs, 'timeline-drag');
+
+    // Keep the text readout responsive without rendering the panel every frame.
+    const now = performance.now();
+    if (now - lastDragPublishAt.current >= 100) {
+      lastDragPublishAt.current = now;
+      setCurrentMs(timeMs);
+    }
   };
 
   const handlePointer = (event) => {
     if (!dragging.current) return;
     const bounds = event.currentTarget.getBoundingClientRect();
-    setTimeAtFraction((event.clientX - bounds.left) / bounds.width);
+    pendingPointerFraction.current =
+      (event.clientX - bounds.left) / bounds.width;
+    if (pointerFrame.current !== 0) return;
+    // Collapse high-frequency pointer events into one playhead update per frame.
+    pointerFrame.current = requestAnimationFrame(() => {
+      pointerFrame.current = 0;
+      const fraction = pendingPointerFraction.current;
+      pendingPointerFraction.current = null;
+      if (dragging.current && fraction !== null) {
+        updateDragTime(fraction);
+      }
+    });
+  };
+
+  const finishPointerDrag = (event) => {
+    const bounds = event.currentTarget.getBoundingClientRect();
+    const fraction = (event.clientX - bounds.left) / bounds.width;
+    if (pointerFrame.current !== 0) {
+      cancelAnimationFrame(pointerFrame.current);
+      pointerFrame.current = 0;
+    }
+    pendingPointerFraction.current = null;
+    dragging.current = false;
+    lastDragPublishAt.current = 0;
+    setTimeAtFraction(fraction, 'timeline-final');
   };
 
   const currentOffsetMin = (currentMs - anchorMs) / 60000;
-  const playheadX = Math.max(
-    0,
-    Math.min(1, currentOffsetMin / durationMin)
-  ) * (forecast?.visibility.length ?? 1);
   const sunlitPct = forecast?.sunlitPct;
   const longestDark = forecast?.longestDarkHours;
-  const sunlightTransitions = (forecast?.visibility ?? []).flatMap((status, index, statuses) => {
-    if (index === 0) return [];
-    const wasSunlit = statuses[index - 1] === 'sunlit';
-    const isSunlit = status === 'sunlit';
-    return wasSunlit === isSunlit
-      ? []
-      : [{ index, enteringSunlight: isSunlit }];
-  });
-  const communicationTransitions = (
-    communicationForecast?.visibility ?? []
-  ).flatMap((status, index, statuses) => {
-    if (index === 0 || statuses[index - 1] === status) return [];
-    return [{ index, status }];
-  });
+  const sunlightTransitions = useMemo(
+    () => (forecast?.visibility ?? []).flatMap((status, index, statuses) => {
+      if (index === 0) return [];
+      const wasSunlit = statuses[index - 1] === 'sunlit';
+      const isSunlit = status === 'sunlit';
+      return wasSunlit === isSunlit
+        ? []
+        : [{ index, enteringSunlight: isSunlit }];
+    }),
+    [forecast?.visibility]
+  );
+  const communicationTransitions = useMemo(
+    () => (communicationForecast?.visibility ?? []).flatMap((status, index, statuses) => {
+      if (index === 0 || statuses[index - 1] === status) return [];
+      return [{ index, status }];
+    }),
+    [communicationForecast?.visibility]
+  );
+
+  useEffect(() => {
+    updatePlayhead(currentMs);
+  }, [currentMs, anchorMs, forecast, communicationForecast]);
   const changeZoom = (delta) => {
     const nextZoomLevel = Math.max(
       0,
@@ -365,18 +516,21 @@ export default function LunarSunlightTimeline({ feature, earthFeature = null }) 
         tabIndex={0}
         onPointerDown={(event) => {
           dragging.current = true;
+          setPlaying(false);
+          lastDragPublishAt.current = performance.now();
+          celestialTimeStore.setTime(currentTimeRef.current, 'timeline-drag');
           event.currentTarget.setPointerCapture(event.pointerId);
           handlePointer(event);
         }}
         onPointerMove={handlePointer}
         onPointerUp={(event) => {
-          dragging.current = false;
+          finishPointerDrag(event);
           if (event.currentTarget.hasPointerCapture(event.pointerId)) {
             event.currentTarget.releasePointerCapture(event.pointerId);
           }
         }}
-        onPointerCancel={() => {
-          dragging.current = false;
+        onPointerCancel={(event) => {
+          finishPointerDrag(event);
         }}
         onKeyDown={(event) => {
           const increments = {
@@ -407,92 +561,26 @@ export default function LunarSunlightTimeline({ feature, earthFeature = null }) 
         }`}
         style={{ touchAction: 'none' }}
       >
-        {[
-          {
-            key: 'sunlight',
-            statuses: forecast?.visibility,
-            colors: SUNLIGHT_TIMELINE_COLORS,
-            transitions: sunlightTransitions,
-            title: 'Sunlight · transition ticks indicate sunrise or sunset',
-            transitionColor: '#f8fafc',
-            transitionTitle: (transition, index) =>
-              `${formatUTC(anchorMs + transition.index * STEP_MIN * 60000)} · ${
-                transition.enteringSunlight ? 'Sunrise' : 'Sunset'
-              }`,
-          },
-          ...(earthFeature
-            ? [
-                {
-                  key: 'communication',
-                  statuses: communicationForecast?.visibility,
-                  colors: COMMUNICATION_TIMELINE_COLORS,
-                  transitions: communicationTransitions,
-                  title: `Communication · ${earthFeature.name}`,
-                  transitionColor: null,
-                  transitionTitle: (transition) =>
-                    `${formatUTC(anchorMs + transition.index * STEP_MIN * 60000)} · ${
-                      transition.status
-                    }`,
-                },
-              ]
-            : []),
-        ].map((track) => {
-          const sampleCount = track.statuses?.length ?? 1;
-          return (
-            <div
-              key={track.key}
-              className={`relative w-full overflow-visible rounded-sm ${
-                earthFeature ? 'h-[9px]' : 'h-3'
-              }`}
-            >
-              <svg
-                className="absolute inset-0 h-full w-full overflow-visible"
-                viewBox={`0 0 ${sampleCount} 1`}
-                preserveAspectRatio="none"
-                aria-hidden="true"
-              >
-                {(track.statuses ?? [null]).map((status, index) => (
-                  <rect
-                    key={index}
-                    x={index}
-                    y="0"
-                    width="1.01"
-                    height="1"
-                    fill={
-                      status
-                        ? track.colors[status]
-                        : track.colors.pending
-                    }
-                  />
-                ))}
-                {track.transitions.map((transition) => (
-                  <rect
-                    key={`${transition.index}-${transition.status ?? transition.enteringSunlight}`}
-                    x={transition.index - 0.5}
-                    y="0"
-                    width="1"
-                    height="1"
-                    fill={
-                      track.transitionColor ??
-                      track.colors[transition.status]
-                    }
-                  >
-                    <title>{track.transitionTitle(transition)}</title>
-                  </rect>
-                ))}
-                <line
-                  x1={playheadX}
-                  x2={playheadX}
-                  y1="-0.45"
-                  y2="1.45"
-                  stroke={SUNLIGHT_TIMELINE_COLORS.playhead}
-                  strokeWidth={Math.max(1, sampleCount / 1200)}
-                />
-              </svg>
-              <span className="sr-only">{track.title}</span>
-            </div>
-          );
-        })}
+        <TimelineTrack
+          kind="sunlight"
+          statuses={forecast?.visibility}
+          colors={SUNLIGHT_TIMELINE_COLORS}
+          transitions={sunlightTransitions}
+          anchorMs={anchorMs}
+          playheadRef={sunlightPlayheadRef}
+          earthFeatureName={earthFeature?.name}
+        />
+        {earthFeature && (
+          <TimelineTrack
+            kind="communication"
+            statuses={communicationForecast?.visibility}
+            colors={COMMUNICATION_TIMELINE_COLORS}
+            transitions={communicationTransitions}
+            anchorMs={anchorMs}
+            playheadRef={communicationPlayheadRef}
+            earthFeatureName={earthFeature.name}
+          />
+        )}
       </div>
 
       <div className="mt-1 flex items-center justify-between gap-2 font-mono text-[7px] text-slate-400 sm:text-[8px]">

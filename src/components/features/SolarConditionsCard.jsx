@@ -30,6 +30,7 @@ const STATUS = {
 
 export default function SolarConditionsCard({ siteId, latitude, longitude }) {
   const [timeMs, setTimeMs] = useState(() => celestialTimeStore.get().ms);
+  const [isCalculating, setIsCalculating] = useState(false);
   // The Sun track is anchored when the site is selected, so scrubbing time moves only the "now" dot.
   const [trackStartMs, setTrackStartMs] = useState(
     () => celestialTimeStore.get().ms,
@@ -40,7 +41,14 @@ export default function SolarConditionsCard({ siteId, latitude, longitude }) {
   }, [siteId, latitude, longitude]);
 
   useEffect(() => {
-    return celestialTimeStore.subscribe(({ ms }) => setTimeMs(ms));
+    return celestialTimeStore.subscribe(({ ms, source }) => {
+      if (source === "timeline-drag") {
+        setIsCalculating(true);
+        return;
+      }
+      setIsCalculating(false);
+      setTimeMs(ms);
+    });
   }, []);
 
   const profile = getHorizonProfile(HORIZON_TABLE, siteId);
@@ -62,6 +70,18 @@ export default function SolarConditionsCard({ siteId, latitude, longitude }) {
 
   const badge = STATUS[sun.status];
   const quality = profile?.quality;
+
+  if (isCalculating) {
+    return (
+      <div className="bg-slate-900/60 p-2.5 rounded-xl border border-slate-800/80 space-y-2.5">
+        <div className="flex items-center gap-1.5 text-[10px] font-mono text-slate-400 uppercase tracking-wider">
+          <Sun className="w-3.5 h-3.5 text-amber-400" />
+          <span>Solar Conditions &amp; Power</span>
+        </div>
+        <p role="status" className="text-xs text-slate-400">Calculating…</p>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-slate-900/60 p-2.5 rounded-xl border border-slate-800/80 space-y-2.5">

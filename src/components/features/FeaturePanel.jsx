@@ -326,6 +326,14 @@ export default function FeaturePanel({
 
       {/* Scrollable details */}
       <div className="overflow-y-auto p-3.5 space-y-3 custom-scrollbar text-xs text-slate-300">
+        {feature.body !== 'earth' && (
+          <SolarConditionsCard siteId={feature.id} latitude={featLat} longitude={featLon} />
+        )}
+
+        {feature.body !== 'earth' && (
+          <EarthLinkCard moonFeature={feature} earthFeature={communicationEarthFeature} />
+        )}
+
         {/* CLPS Provider & Lander Card */}
         {isClps && clpsData && (
           <div className="bg-slate-900/80 p-2.5 rounded-xl border border-slate-800 space-y-1.5">
@@ -427,14 +435,6 @@ export default function FeaturePanel({
               <span className="text-slate-400 text-[10px]">{regionInfo.quadrant}</span>
             </div>
           </div>
-        )}
-
-        {feature.body !== 'earth' && (
-          <SolarConditionsCard siteId={feature.id} latitude={featLat} longitude={featLon} />
-        )}
-
-        {feature.body !== 'earth' && (
-          <EarthLinkCard moonFeature={feature} earthFeature={communicationEarthFeature} />
         )}
 
         {/* Scientific Payloads Section for CLPS missions */}

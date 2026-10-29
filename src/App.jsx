@@ -277,6 +277,9 @@ export default function App() {
 
     let alive = true;
     let unsubscribe = null;
+    let updateTimer = null;
+    let pendingTimeMs = null;
+    let lastTimelineUpdate = 0;
     const updateLink = (timeMs) => {
       if (!alive) return;
       try {
@@ -301,11 +304,50 @@ export default function App() {
       }
     };
 
+    const scheduleTimelineUpdate = (timeMs) => {
+      pendingTimeMs = timeMs;
+      if (updateTimer !== null) return;
+
+      // Limit synchronous link calculations while timeline input is changing rapidly.
+      const delay = Math.max(0, 100 - (performance.now() - lastTimelineUpdate));
+      updateTimer = setTimeout(() => {
+        updateTimer = null;
+        const latestTimeMs = pendingTimeMs;
+        pendingTimeMs = null;
+        if (latestTimeMs === null) return;
+        lastTimelineUpdate = performance.now();
+        updateLink(latestTimeMs);
+      }, delay);
+    };
+
     updateLink(celestialTimeStore.get().ms);
-    unsubscribe = celestialTimeStore.subscribe(({ ms }) => updateLink(ms));
+    lastTimelineUpdate = performance.now();
+    unsubscribe = celestialTimeStore.subscribe(({ ms, source }) => {
+      if (source === 'timeline-drag') {
+        if (updateTimer !== null) {
+          clearTimeout(updateTimer);
+          updateTimer = null;
+        }
+        pendingTimeMs = null;
+        return;
+      }
+
+      if (source === 'timeline') {
+        scheduleTimelineUpdate(ms);
+        return;
+      }
+
+      if (updateTimer !== null) {
+        clearTimeout(updateTimer);
+        updateTimer = null;
+        pendingTimeMs = null;
+      }
+      updateLink(ms);
+    });
 
     return () => {
       alive = false;
+      if (updateTimer !== null) clearTimeout(updateTimer);
       unsubscribe?.();
       globeRef.current?.setCommunicationLink?.(null);
     };

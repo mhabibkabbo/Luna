@@ -84,9 +84,17 @@ export default function EarthLinkCard({ moonFeature, earthFeature = null }) {
   const siteId = moonFeature.id;
   const [timeMs, setTimeMs] = useState(() => celestialTimeStore.get().ms);
   const [outlook, setOutlook] = useState(null);
+  const [isCalculating, setIsCalculating] = useState(false);
   const constraints = DEFAULT_DTE_CONSTRAINTS;
 
-  useEffect(() => celestialTimeStore.subscribe(({ ms }) => setTimeMs(ms)), []);
+  useEffect(() => celestialTimeStore.subscribe(({ ms, source }) => {
+    if (source === "timeline-drag") {
+      setIsCalculating(true);
+      return;
+    }
+    setIsCalculating(false);
+    setTimeMs(ms);
+  }), []);
 
   const terrainFn = useMemo(() => (az) => horizonAt(HORIZON_TABLE, siteId, az), [siteId]);
 
@@ -154,6 +162,19 @@ export default function EarthLinkCard({ moonFeature, earthFeature = null }) {
   const earthTransition = useMemo(() => {
     return calculateEarthTransition(timeMs, moonFeature, earthFeature, constraints);
   }, [timeMs, moonFeature, earthFeature, constraints]);
+
+  if (isCalculating) {
+    return (
+      <div className="bg-slate-900/60 p-2.5 rounded-xl border border-slate-800/80 space-y-2.5">
+        <div className="flex items-center gap-1.5 text-[10px] font-mono text-slate-400 uppercase tracking-wider">
+          <Radio className="w-3.5 h-3.5 text-sky-400" />
+          <span>Direct-To-Earth (DTE) Link</span>
+        </div>
+        <p role="status" className="text-xs text-slate-400">Calculating…</p>
+      </div>
+    );
+  }
+
   if (!look) return null;
   const badge = STATUS_STYLE[look.status];
   const target = earthFeature ? earthFeature.name : "Earth (centre)";

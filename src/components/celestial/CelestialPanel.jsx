@@ -110,6 +110,7 @@ export default function CelestialPanel({
   const [rate, setRate] = useState(3600);
   const [shownTime, setShownTime] = useState(() => celestialTimeStore.get().ms);
   const [state, setState] = useState(null);
+  const [isCalculating, setIsCalculating] = useState(false);
 
   const timeRef = useRef(celestialTimeStore.get().ms);
   const lastPublishRef = useRef(0);
@@ -135,16 +136,28 @@ export default function CelestialPanel({
   // Subscribe separately from the local controls so other time publishers stay in sync.
   useEffect(() => celestialTimeStore.subscribe(({ ms, source }) => {
     timeRef.current = ms;
-    if (source === 'timeline') {
+    if (source === 'timeline-drag') {
+      setLive(false);
+      setPlaying(false);
+      setIsCalculating(true);
+      const now = performance.now();
+      if (now - lastPublishRef.current >= 250) {
+        lastPublishRef.current = now;
+        setShownTime(ms);
+      }
+      return;
+    }
+    if (source === 'timeline' || source === 'timeline-final') {
       setLive(false);
       setPlaying(false);
     }
     const now = performance.now();
-    if (now - lastPublishRef.current >= 250) {
+    if (source === 'timeline-final' || now - lastPublishRef.current >= 250) {
       lastPublishRef.current = now;
       setShownTime(ms);
       const next = globeRef.current?.getCelestialState?.();
       if (next) setState(next);
+      setIsCalculating(false);
     }
   }), [globeRef]);
 
@@ -455,7 +468,9 @@ export default function CelestialPanel({
           </div>
 
           {/* Readouts */}
-          {earth && sun && moon ? (
+          {isCalculating ? (
+            <p role="status" className="text-[11px] text-slate-400">Calculating…</p>
+          ) : earth && sun && moon ? (
             <div className="space-y-2">
               <Readout icon={Globe2} title="Earth" accent="text-sky-300">
                 <Row label="Distance" value={`${fmtInt(earth.distanceKm)} km`} />
