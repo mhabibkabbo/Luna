@@ -304,6 +304,21 @@ export default function App() {
       }
     };
 
+    const updateLineOfSight = (timeMs) => {
+      if (!alive) return;
+      try {
+        const link = computeCommunicationLink({
+          moonFeature: selectedMoonFeature,
+          earthFeature: selectedEarthFeature,
+          when: timeMs,
+        });
+        globeRef.current?.setCommunicationLink?.(link);
+      } catch (error) {
+        console.error('Failed to update the Earth-Moon line of sight.', error);
+        globeRef.current?.setCommunicationLink?.(null);
+      }
+    };
+
     const scheduleTimelineUpdate = (timeMs) => {
       pendingTimeMs = timeMs;
       if (updateTimer !== null) return;
@@ -329,6 +344,7 @@ export default function App() {
           updateTimer = null;
         }
         pendingTimeMs = null;
+        updateLineOfSight(ms);
         return;
       }
 
