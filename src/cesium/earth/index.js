@@ -33,12 +33,13 @@ export function createEarth(container, callbacks = {}) {
         /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
     );
     const ionToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJub25jZSI6IkxMUlNzU3U0Z3o0UlZyUnIiLCJqdGkiOiJiNDE5MzgxZS03ZGQxLTQ0NGItODVmZS01MDhmZTY2MDQ4NTciLCJpZCI6NTA5NDQ1LCJzdWIiOiJ1c2VsZXNzY2hhcDEzOCIsImlzcyI6Imh0dHBzOi8vYXBpLmNlc2l1bS5jb20iLCJhdWQiOiJ1c2VsZXNzY2hhcDEzOF9kZWZhdWx0IiwiaWF0IjoxNzkyNzU0MzgwfQ.JtT5ib_a1K6WUEXGa-__vCl1W4MvZjubFuHJjuO4gI0';
-    const hasValidIonToken = Boolean(
-        ionToken &&
-        ionToken.length > 50 &&
-        ionToken.startsWith('eyJ') &&
-        ionToken.split('.').length === 3
-    );
+    const hasValidIonToken = true;
+    // Boolean(
+    //     ionToken &&
+    //     ionToken.length > 50 &&
+    //     ionToken.startsWith('eyJ') &&
+    //     ionToken.split('.').length === 3
+    // );
     if (hasValidIonToken) {
         Cesium.Ion.defaultAccessToken = ionToken;
     } else {
