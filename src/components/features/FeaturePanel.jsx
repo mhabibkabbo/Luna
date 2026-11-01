@@ -27,12 +27,16 @@ import {
   ShieldCheck,
   Clock,
   Sparkles,
+  Thermometer,
+  Sun,
+  Compass,
 } from 'lucide-react';
 import {
   formatLunarCoordinates,
   getLunarRegionInfo,
 } from '../../utils/coordinates.js';
 import { getClpsMission } from '../../data/clpsMissions.js';
+import { getLunarTemperature } from '../../utils/lunarThermal.js';
 import SolarConditionsCard from './SolarConditionsCard.jsx';
 import EarthLinkCard from './EarthLinkCard.jsx';
 import { notifySuccess, notifyNavigation, notifyInfo } from '../../utils/feedbackStore.js';
@@ -89,6 +93,7 @@ export default function FeaturePanel({
     precision
   );
 
+  const localThermal = feature.body !== 'earth' && typeof featLat === 'number' && typeof featLon === 'number' ? getLunarTemperature(featLat, featLon) : null;
   const regionInfo =
     feature.body === 'earth'
       ? null
@@ -142,6 +147,17 @@ export default function FeaturePanel({
   };
 
   const getStatusBadge = () => {
+    if (isCustomPin) {
+      return (
+        <span className="inline-flex items-center gap-1.5 text-[10px] font-mono px-2 py-0.5 rounded-full bg-rose-950/60 text-rose-300 border border-rose-500/40">
+          <span className="relative flex h-1.5 w-1.5">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75" />
+            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-rose-500" />
+          </span>
+          Active Lunar Waypoint
+        </span>
+      );
+    }
     if (isClps && clpsData) {
       switch (clpsData.missionStatus) {
         case 'completed':
@@ -196,6 +212,13 @@ export default function FeaturePanel({
   };
 
   const getLocationTypeBadge = () => {
+    if (isCustomPin) {
+      return (
+        <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-rose-950/40 text-rose-300 border border-rose-500/30">
+          USER WAYPOINT
+        </span>
+      );
+    }
     const locType = clpsData?.locationType || (feature.type === 'landing-site' ? 'confirmed' : 'approximate');
     if (locType === 'confirmed') {
       return (
@@ -266,7 +289,7 @@ export default function FeaturePanel({
         timelineVisible
           ? 'sm:max-h-[calc(100vh-12rem)]'
           : 'sm:max-h-[calc(100vh-6rem)]'
-      } flex flex-col bg-[#060b14]/96 backdrop-blur-2xl border-t sm:border border-slate-800 rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden pointer-events-auto select-none transition-all animate-in fade-in duration-150`}
+      } flex flex-col bg-[#060b14]/96 backdrop-blur-2xl border-t sm:border border-slate-800 rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden pointer-events-auto select-none transition-all animate-in fade-in slide-in-from-top-2 duration-150`}
     >
       {/* Mobile drag bar */}
       <div className="w-10 h-1 bg-slate-700 rounded-full mx-auto mt-2 sm:hidden" />
@@ -280,6 +303,8 @@ export default function FeaturePanel({
               className={`text-[9.5px] font-mono font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded border ${
                 isClps
                   ? 'text-cyan-300 bg-cyan-950/60 border-cyan-500/30'
+                  : isCustomPin
+                  ? 'text-rose-300 bg-rose-950/70 border-rose-500/40 shadow-sm'
                   : 'text-slate-300 bg-slate-900 border-slate-700'
               }`}
             >
@@ -332,6 +357,24 @@ export default function FeaturePanel({
 
         {feature.body !== 'earth' && (
           <EarthLinkCard moonFeature={feature} earthFeature={communicationEarthFeature} />
+        )}
+
+        {/* Nearest cataloged landmark for custom pin */}
+        {isCustomPin && feature.nearestFeature && (
+          <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-900/60 border border-slate-800/80 text-xs">
+            <div className="flex items-center gap-2 min-w-0">
+              <Compass className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+              <div className="min-w-0">
+                <span className="text-[9.5px] font-mono uppercase text-slate-500 block">Nearest Lunar Landmark</span>
+                <span className="font-semibold text-slate-200 truncate block">{feature.nearestFeature}</span>
+              </div>
+            </div>
+            {feature.nearestFeatureDistanceKm != null && (
+              <span className="font-mono text-cyan-300 text-[10px] font-medium px-2 py-0.5 rounded bg-cyan-950/60 border border-cyan-500/30 shrink-0 ml-2">
+                {feature.nearestFeatureDistanceKm} km away
+              </span>
+            )}
+          </div>
         )}
 
         {/* CLPS Provider & Lander Card */}
@@ -424,6 +467,51 @@ export default function FeaturePanel({
             </div>
           </div>
         </div>
+
+        
+        {/* Real-time Surface Thermal & Solar Insolation Telemetry */}
+        {localThermal && (
+          <div className="bg-slate-900/60 p-2.5 rounded-xl border border-slate-800/80 space-y-1.5">
+            <div className="flex items-center justify-between text-[10px] font-mono text-slate-400 uppercase tracking-wider">
+              <div className="flex items-center gap-1.5 text-cyan-400 font-semibold">
+                <Thermometer className="w-3.5 h-3.5" />
+                <span>Surface Temperature & Insolation</span>
+              </div>
+              <span
+                className={`text-[9.5px] font-mono px-1.5 py-0.5 rounded border ${
+                  localThermal.isPSR
+                    ? 'bg-purple-950/80 text-purple-300 border-purple-500/40'
+                    : localThermal.isDaylight
+                    ? 'bg-amber-950/80 text-amber-300 border-amber-500/40'
+                    : 'bg-blue-950/80 text-blue-300 border-blue-500/40'
+                }`}
+              >
+                {localThermal.isPSR ? 'PSR Permanent Shadow' : localThermal.isDaylight ? 'Sunlit Daylight' : 'Lunar Night'}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 pt-1 border-t border-slate-800/80 font-mono">
+              <div>
+                <div className="text-[9.5px] text-slate-500 font-sans">Equilibrium Temp</div>
+                <div className="text-white font-bold text-sm">
+                  {localThermal.tempC > 0 ? `+${localThermal.tempC}` : localThermal.tempC}°C
+                </div>
+                <div className="text-[9.5px] text-slate-400">
+                  {localThermal.tempK} K · {localThermal.tempF > 0 ? `+${localThermal.tempF}` : localThermal.tempF}°F
+                </div>
+              </div>
+              <div>
+                <div className="text-[9.5px] text-slate-500 font-sans">Solar Elevation / Zenith</div>
+                <div className="text-cyan-300 font-bold text-sm">
+                  {localThermal.solarElevationDeg > 0 ? `+${localThermal.solarElevationDeg}` : localThermal.solarElevationDeg}°
+                </div>
+                <div className="text-[9.5px] text-slate-400">
+                  {localThermal.isDaylight ? 'Radiative Heating' : 'Radiative Cooling'}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Region & Hemisphere info */}
         {regionInfo && (
@@ -561,9 +649,10 @@ export default function FeaturePanel({
         </div>
       </div>
 
-      {/* Action buttons */}
-      <div className="p-3 border-t border-slate-800 bg-[#040711] flex items-center gap-2">
-        <div className="flex flex-1 flex-col gap-1.5">
+      {/* Action buttons footer */}
+      <div className="p-3 border-t border-slate-800/80 bg-[#040711]/90 backdrop-blur-md flex flex-col gap-2">
+        {/* Row 1: Primary Action Buttons */}
+        <div className="flex items-center gap-2">
           <button
             id="btn-feature-zoom-here"
             type="button"
@@ -571,76 +660,81 @@ export default function FeaturePanel({
               notifyNavigation(`Aligning with ${feature.name || 'target'}`, `${latStr}, ${lonStr}`);
               onZoomHere(featLon, featLat);
             }}
-            className={`flex h-8.5 w-full items-center justify-center gap-1.5 font-medium text-xs rounded-xl transition-all shadow-md ${
+            className={`flex-1 h-9 px-3 flex items-center justify-center gap-1.5 font-semibold text-xs rounded-xl shadow-md transition-all duration-150 active:scale-95 ${
               isCustomPin
-                ? 'bg-rose-600 hover:bg-rose-500 text-white'
-                : 'bg-gradient-to-r from-cyan-600 to-blue-600 hover:brightness-110 text-white'
+                ? 'bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-500 hover:to-rose-600 text-white shadow-rose-950/50'
+                : 'bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white shadow-cyan-950/50'
             }`}
           >
             <Navigation className="w-3.5 h-3.5" />
-            Fly To Target
+            <span>Center View</span>
           </button>
-          {onSelectOtherBody && (
+
+          {onCompareMission && feature.body !== 'earth' && (
+            <button
+              type="button"
+              onClick={() => {
+                notifyInfo('Opening Site Navigator', `Comparing ${feature.name || 'target site'} in trade-off analyzer.`);
+                onCompareMission(clpsData || feature);
+              }}
+              className="flex-1 h-9 px-3 flex items-center justify-center gap-1.5 bg-slate-900/90 hover:bg-slate-850 text-cyan-300 font-semibold text-xs rounded-xl border border-cyan-500/30 hover:border-cyan-400/60 shadow-sm transition-all duration-150 active:scale-95"
+              title="Compare this landing site in Site Navigator"
+            >
+              <GitCompare className="w-3.5 h-3.5 text-cyan-400" />
+              <span>Analyze Site</span>
+            </button>
+          )}
+        </div>
+
+        {/* Row 2: Secondary Tool Buttons */}
+        <div className="flex items-center gap-2">
+          {onMeasureFromHere && (
+            <button
+              id="btn-feature-measure-from-here"
+              type="button"
+              onClick={() => {
+                notifyInfo('Measurement Active', `Started geodesic ruler at ${feature.name || 'target'}. Click on the Moon to measure distance.`);
+                onMeasureFromHere(featLon, featLat);
+              }}
+              className="flex-1 h-8 px-2.5 flex items-center justify-center gap-1.5 bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-white font-medium text-xs rounded-lg border border-slate-800 hover:border-slate-700 transition-all duration-150 active:scale-95 shadow-sm"
+              title="Start geodesic distance measurement from this waypoint"
+            >
+              <Ruler className="w-3.5 h-3.5 text-amber-400" />
+              <span>Measure Distance</span>
+            </button>
+          )}
+
+          {isCustomPin && onClearCustomPin && (
+            <button
+              id="btn-feature-clear-pin"
+              type="button"
+              onClick={() => {
+                notifyInfo('Waypoint Removed', 'Custom landing pin cleared from lunar surface.');
+                onClearCustomPin(feature.body === 'earth' ? 'earth' : 'moon');
+                onClose();
+              }}
+              className="h-8 px-3 flex items-center justify-center gap-1.5 bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 hover:text-rose-100 font-medium text-xs rounded-lg border border-rose-500/40 hover:border-rose-400 transition-all duration-150 active:scale-95 shadow-sm"
+              title="Remove this custom waypoint from map"
+            >
+              <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+              <span>Clear Pin</span>
+            </button>
+          )}
+
+          {onSelectOtherBody && !isCustomPin && (
             <button
               type="button"
               onClick={() => {
                 notifyInfo(`Switched to ${otherBody === 'earth' ? 'Earth' : 'Moon'} View`, 'Planetary view changed for cross-body communication analysis.');
                 onSelectOtherBody(otherBody);
               }}
-              className="flex h-7 w-full items-center justify-center gap-1 rounded-lg border border-slate-700 bg-slate-900/80 text-[10px] font-medium text-slate-300 transition-colors hover:border-cyan-500/50 hover:text-cyan-200"
+              className="flex-1 h-8 px-2.5 flex items-center justify-center gap-1 rounded-lg border border-slate-700 bg-slate-900/80 text-[11px] font-medium text-slate-300 transition-colors hover:border-cyan-500/50 hover:text-cyan-200"
             >
               <Globe2 className="h-3 w-3" />
-              Select from {otherBody === 'earth' ? 'Earth' : 'Moon'}
+              <span>Select {otherBody === 'earth' ? 'Earth' : 'Moon'}</span>
             </button>
           )}
         </div>
-
-        {onCompareMission && feature.body !== 'earth' && (
-          <button
-            type="button"
-            onClick={() => {
-              notifyInfo('Opening Site Navigator', `Comparing ${feature.name || 'target site'} in trade-off analyzer.`);
-              onCompareMission(clpsData || feature);
-            }}
-            className="flex items-center justify-center gap-1.5 px-3 h-8.5 bg-slate-900 hover:bg-slate-800 text-cyan-300 font-medium text-xs rounded-xl border border-slate-800 hover:border-cyan-500/40 transition-colors"
-            title="Compare this landing site & date in the Scenario Navigator"
-          >
-            <GitCompare className="w-3.5 h-3.5" />
-            Compare
-          </button>
-        )}
-
-        {onMeasureFromHere && (
-          <button
-            id="btn-feature-measure-from-here"
-            type="button"
-            onClick={() => {
-              notifyInfo('Measurement Active', `Started geodesic ruler at ${feature.name || 'target'}. Click on the Moon to measure distance.`);
-              onMeasureFromHere(featLon, featLat);
-            }}
-            className="flex items-center justify-center gap-1.5 px-3 h-8.5 bg-slate-900 hover:bg-slate-800 text-slate-200 font-medium text-xs rounded-xl border border-slate-800 transition-colors"
-            title="Start measurement from this point"
-          >
-            <Ruler className="w-3.5 h-3.5 text-amber-400" />
-            Measure
-          </button>
-        )}
-
-        {isCustomPin && onClearCustomPin && (
-          <button
-            id="btn-feature-clear-pin"
-            type="button"
-            onClick={() => {
-              notifyInfo('Waypoint Removed', 'Custom landing pin cleared from lunar surface.');
-              onClearCustomPin(feature.body === 'earth' ? 'earth' : 'moon');
-              onClose();
-            }}
-            className="flex items-center justify-center gap-1 px-2.5 h-8.5 bg-slate-900 hover:bg-rose-950 text-slate-400 hover:text-rose-300 rounded-xl border border-slate-800 transition-colors"
-            title="Remove waypoint"
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-          </button>
-        )}
       </div>
     </aside>
   );

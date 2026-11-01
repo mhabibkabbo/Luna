@@ -34,7 +34,7 @@ export default function LayerPanel({
   return (
     <div
       id={activePlanet === 'earth' ? 'earth-layer-panel' : 'lunar-layer-panel'}
-      className="absolute top-14 right-3 sm:right-4 z-30 w-80 max-h-[calc(100vh-5rem)] flex flex-col bg-[#060b14]/96 backdrop-blur-2xl border border-slate-800 rounded-xl shadow-2xl overflow-hidden pointer-events-auto transition-all animate-in fade-in select-none"
+      className="absolute top-14 right-3 sm:right-4 z-30 w-80 max-h-[calc(100vh-5rem)] flex flex-col bg-[#060b14]/96 backdrop-blur-2xl border border-slate-800 rounded-xl shadow-2xl overflow-hidden pointer-events-auto transition-all animate-in fade-in slide-in-from-top-2 duration-150 select-none"
     >
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800 bg-slate-950/50">
@@ -48,7 +48,7 @@ export default function LayerPanel({
           id="btn-close-layers"
           type="button"
           onClick={onClose}
-          className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+          className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-all duration-150 active:scale-95"
           aria-label="Close layer panel"
         >
           <X className="w-4 h-4" />

@@ -13,8 +13,8 @@ export function createEarthGlobe() {
 
     const earthImageryProvider = new Cesium.SingleTileImageryProvider({
         url: EARTH_TEXTURE_URL,
-        tileWidth: 2048,
-        tileHeight: 1024,
+        tileWidth: 4096,
+        tileHeight: 2048,
         rectangle: Cesium.Rectangle.MAX_VALUE,
     });
 
@@ -23,7 +23,7 @@ export function createEarthGlobe() {
     );
 
     globe.terrainProvider = new Cesium.EllipsoidTerrainProvider();
-    globe.showGroundAtmosphere = true;
+    globe.showGroundAtmosphere = false;
 
     return { globe, fallbackImageryLayer };
 }

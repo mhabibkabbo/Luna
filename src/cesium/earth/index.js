@@ -10,21 +10,20 @@ import { celestialTimeStore } from '../../utils/celestialTime.js';
 
 const EARTH_CAMERA_SETTINGS = {
     overviewHeight: 20_000_000,
-    minimumZoomDistance: 4_640_125,
+    minimumZoomDistance: 50_000, // 50 km altitude (previously locked at 4,640 km!)
     maximumZoomDistance: 100_000_000,
-    zoomFactor: 1.2,
-    zoomInFactor: 0.8,
-    zoomOutFactor: 1.25,
+    zoomFactor: 2.2, // Responsive wheel zoom matching Moon
+    zoomInFactor: 0.5,
+    zoomOutFactor: 2.0,
     desktopInertiaSpin: 0.88,
     mobileInertiaSpin: 0.82,
     desktopInertiaTranslate: 0.85,
     mobileInertiaTranslate: 0.80,
-    desktopInertiaZoom: 0.80,
-    mobileInertiaZoom: 0.76,
+    desktopInertiaZoom: 0.70, // Crisp responsive stop without drag
+    mobileInertiaZoom: 0.65,
 };
 
 // Switch from Blue Marble to tiled satellite imagery near the surface.
-const IMAGERY_SWITCH_HEIGHT = 2_500_000; // 5,000 km above the ellipsoid
 
 export function createEarth(container, callbacks = {}) {
     const isMobile = typeof window !== 'undefined' && (
@@ -89,32 +88,23 @@ export function createEarth(container, callbacks = {}) {
 
     const scene = viewer.scene;
 
-    let tiledImageryLayer = null;
-    const updateImageryDetail = () => {
-        const height = viewer.camera.positionCartographic.height;
-        const useTiledImagery =
-            Boolean(tiledImageryLayer) &&
-            height < IMAGERY_SWITCH_HEIGHT;
-
-        fallbackImageryLayer.show = !useTiledImagery;
-
-        if (tiledImageryLayer) {
-            tiledImageryLayer.show = useTiledImagery;
-        }
-
-        scene.requestRender();
-    };
-
-    viewer.camera.changed.addEventListener(updateImageryDetail);
+// High-resolution tiled Earth imagery loaded below
 
     scene.backgroundColor =
         Cesium.Color.fromCssColorString('#050811');
 
     scene.globe.depthTestAgainstTerrain = true;
 
-    scene.highDynamicRange = true;
-    scene.globe.enableLighting = true;
-    scene.globe.dynamicAtmosphereLighting = true;
+    scene.highDynamicRange = false;
+    scene.msaaSamples = isMobile ? 1 : 2;
+    scene.fog.enabled = false;
+    scene.globe.maximumScreenSpaceError = isMobile ? 2.0 : 1.5;
+    scene.globe.tileCacheSize = isMobile ? 250 : 500;
+    scene.globe.preloadAncestors = true;
+    scene.globe.preloadSiblings = true;
+    scene.globe.loadingDescendantLimit = 20;
+    scene.globe.enableLighting = false;
+    scene.globe.dynamicAtmosphereLighting = false;
     scene.light = new Cesium.SunLight();
 
     viewer.clock.shouldAnimate = false;
@@ -122,10 +112,11 @@ export function createEarth(container, callbacks = {}) {
         new Date(celestialTimeStore.get().ms)
     );
 
-    let lightingEnabled = true;
+    let lightingEnabled = false;
     const toggleLighting = () => {
         lightingEnabled = !lightingEnabled;
         scene.globe.enableLighting = lightingEnabled;
+        scene.globe.dynamicAtmosphereLighting = lightingEnabled;
         scene.requestRender();
         return lightingEnabled;
     };
@@ -185,7 +176,7 @@ export function createEarth(container, callbacks = {}) {
         updateCommunicationTube();
     };
 
-    viewer.camera.changed.addEventListener(updateTerrainDetail);
+    // viewer.camera.changed.addEventListener(updateTerrainDetail); // Removed: caused severe tile thrashing during zoom
     updateTerrainDetail();
 
     viewer.camera.setView({
@@ -197,8 +188,7 @@ export function createEarth(container, callbacks = {}) {
         ),
     });
 
-    updateImageryDetail();
-
+    
     let isActive = false;
     let isDestroyed = false;
     const removeTimeListener = celestialTimeStore.subscribe(({ ms }) => {
@@ -209,25 +199,63 @@ export function createEarth(container, callbacks = {}) {
         }
     });
 
-    if (hasValidIonToken) {
-        Cesium.IonImageryProvider.fromAssetId(2)
-            .then((provider) => {
+    // High-resolution multi-LOD global satellite imagery
+    let tiledImageryLayer = null;
+    const loadHighResEarthTiles = async () => {
+        // 1. Primary: ESRI ArcGIS World Imagery (sub-meter high-resolution worldwide satellite photography)
+        try {
+            const arcGisProvider = await Cesium.ArcGisMapServerImageryProvider.fromUrl(
+                'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer',
+                {
+                    enablePickFeatures: false,
+                }
+            );
+            if (isDestroyed || viewer.isDestroyed()) return;
+
+            tiledImageryLayer = new Cesium.ImageryLayer(arcGisProvider);
+            scene.globe.imageryLayers.add(tiledImageryLayer);
+            scene.requestRender();
+            return;
+        } catch (e) {
+            console.warn('ArcGIS World Imagery MapServer unavailable, trying UrlTemplate fallback:', e?.message || e);
+        }
+
+        // 2. Direct XYZ Tile Fallback: ESRI ArcGIS World Imagery
+        try {
+            const urlProvider = new Cesium.UrlTemplateImageryProvider({
+                url: 'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+                maximumLevel: 19,
+                hasAlphaChannel: false,
+                credit: 'Esri, Maxar, Earthstar Geographics, USDA, USGS, AeroGRID, IGN, and the GIS User Community',
+            });
+            if (isDestroyed || viewer.isDestroyed()) return;
+
+            tiledImageryLayer = new Cesium.ImageryLayer(urlProvider);
+            scene.globe.imageryLayers.add(tiledImageryLayer);
+            scene.requestRender();
+            return;
+        } catch (e) {
+            console.warn('UrlTemplate fallback failed, trying Sentinel-2:', e?.message || e);
+        }
+
+        // 3. Fallback: Cesium Ion Asset 3954 (Sentinel-2 Cloudless 10m true-color global mosaic)
+        if (hasValidIonToken) {
+            try {
+                const s2Provider = await Cesium.IonImageryProvider.fromAssetId(3954);
                 if (isDestroyed || viewer.isDestroyed()) return;
 
-                tiledImageryLayer = new Cesium.ImageryLayer(provider);
+                tiledImageryLayer = new Cesium.ImageryLayer(s2Provider);
                 scene.globe.imageryLayers.add(tiledImageryLayer);
+                scene.requestRender();
+                return;
+            } catch (s2Err) {
+                console.warn('Sentinel-2 imagery unavailable, retaining local Blue Marble texture.', s2Err?.message || s2Err);
+            }
+        }
+    };
+    loadHighResEarthTiles();
 
-                // Choose the correct layer for the current camera height.
-                updateImageryDetail();
-            })
-            .catch((error) => {
-                if (!isDestroyed) {
-                    console.info(
-                        'Cesium ion Earth imagery unavailable; retaining local Earth texture.',
-                        error?.message || error
-                    );
-                }
-            });
+    if (hasValidIonToken) {
 
         Cesium.CesiumTerrainProvider.fromIonAssetId(1, {
             ellipsoid: Cesium.Ellipsoid.WGS84,
@@ -236,7 +264,7 @@ export function createEarth(container, callbacks = {}) {
             .then((terrainProvider) => {
                 if (isDestroyed || viewer.isDestroyed()) return;
                 scene.globe.terrainProvider = terrainProvider;
-                scene.globe.tileCacheSize = 256;
+                scene.globe.tileCacheSize = isMobile ? 200 : 400;
                 updateTerrainDetail();
                 scene.requestRender();
             })
@@ -436,7 +464,7 @@ export function createEarth(container, callbacks = {}) {
                 targetHeight,
                 Cesium.Ellipsoid.WGS84
             ),
-            duration: 0.45,
+            duration: 0.32,
             easingFunction: Cesium.EasingFunction.QUADRATIC_OUT,
         });
     }
@@ -456,7 +484,7 @@ export function createEarth(container, callbacks = {}) {
                 targetHeight,
                 Cesium.Ellipsoid.WGS84
             ),
-            duration: 0.45,
+            duration: 0.32,
             easingFunction: Cesium.EasingFunction.QUADRATIC_OUT,
         });
     }
@@ -510,8 +538,7 @@ export function createEarth(container, callbacks = {}) {
             removePostRenderListener();
             viewer.camera.changed.removeEventListener(updateTerrainDetail);
             viewer.camera.changed.removeEventListener(updateCommunicationTubeOnCameraChange);
-            viewer.camera.changed.removeEventListener(updateImageryDetail);
-            if (removeTileLoadListener) {
+                        if (removeTileLoadListener) {
                 removeTileLoadListener();
             }
             features.destroy();

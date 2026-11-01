@@ -31,7 +31,7 @@ export default function MeasurementToolbar({
   return (
     <div
       id="measurement-floating-toolbar"
-      className="absolute top-14 left-1/2 -translate-x-1/2 z-30 w-11/12 max-w-md bg-[#060b14]/96 backdrop-blur-2xl border border-amber-500/50 rounded-xl shadow-2xl p-3 pointer-events-auto transition-all animate-in fade-in text-slate-100"
+      className="absolute top-14 left-1/2 -translate-x-1/2 z-30 w-11/12 max-w-md bg-[#060b14]/96 backdrop-blur-2xl border border-amber-500/50 rounded-xl shadow-2xl p-3 pointer-events-auto transition-all animate-in fade-in slide-in-from-top-2 duration-150 text-slate-100"
     >
       {/* Top action row */}
       <div className="flex items-center justify-between gap-3 pb-2.5 border-b border-slate-800">
@@ -58,7 +58,7 @@ export default function MeasurementToolbar({
             id="btn-clear-measurement"
             type="button"
             onClick={handleClear}
-            className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700/80 rounded-lg transition-colors"
+            className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700/80 rounded-lg transition-all duration-150 active:scale-95"
             title="Clear measurement points"
           >
             <Trash2 className="w-3 h-3" />
@@ -69,7 +69,7 @@ export default function MeasurementToolbar({
             id="btn-exit-measurement"
             type="button"
             onClick={onToggleActive}
-            className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+            className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-all duration-150 active:scale-95"
             aria-label="Exit measurement mode"
           >
             <X className="w-4 h-4" />

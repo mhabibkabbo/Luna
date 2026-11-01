@@ -257,7 +257,10 @@ export function createEarthFeatures({ viewer, container, callbacks }) {
     updatePinStyle(entity);
   });
 
-  const getSurfaceCartesian = (position) => {
+  const getSurfaceCartesian = (position, precise = false) => {
+    if (!precise) {
+      return viewer.camera.pickEllipsoid(position, Cesium.Ellipsoid.WGS84);
+    }
     const ray = viewer.camera.getPickRay(position);
     return (
       (ray && scene.globe.pick(ray, scene)) ||
@@ -265,8 +268,8 @@ export function createEarthFeatures({ viewer, container, callbacks }) {
     );
   };
 
-  const getSurfacePosition = (position) => {
-    const cartesian = getSurfaceCartesian(position);
+  const getSurfacePosition = (position, precise = false) => {
+    const cartesian = getSurfaceCartesian(position, precise);
     if (!cartesian) return null;
     return Cesium.Cartographic.fromCartesian(
       cartesian,
@@ -593,7 +596,7 @@ export function createEarthFeatures({ viewer, container, callbacks }) {
       return;
     }
 
-    const cartographic = getSurfacePosition(click.position);
+    const cartographic = getSurfacePosition(click.position, true);
     if (!cartographic) return;
     const pin = dropCustomPin(
       Cesium.Math.toDegrees(cartographic.longitude),
