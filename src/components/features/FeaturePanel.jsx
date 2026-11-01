@@ -33,9 +33,11 @@ import {
   getLunarRegionInfo,
 } from '../../utils/coordinates.js';
 import { getClpsMission } from '../../data/clpsMissions.js';
-import SolarConditionsCard from './SolarConditionsCard.jsx';
-import EarthLinkCard from './EarthLinkCard.jsx';
+import HorizonViewCard from './HorizonViewCard.jsx';
 import { notifySuccess, notifyNavigation, notifyInfo } from '../../utils/feedbackStore.js';
+
+// Adjust this value to experiment with desktop feature-panel width; mobile remains full-width.
+const FEATURE_PANEL_WIDTH_REM = 31.2;
 
 /**
  * Collapsible side panel (desktop) / bottom sheet (mobile) for selected mission or feature.
@@ -262,11 +264,12 @@ export default function FeaturePanel({
       id="lunar-feature-panel"
       className={`absolute ${
         timelineVisible ? 'bottom-[110px]' : 'bottom-7'
-      } sm:bottom-auto sm:top-14 right-0 sm:right-4 left-0 sm:left-auto z-50 sm:w-96 max-h-[72vh] ${
+      } sm:bottom-auto sm:top-14 right-0 sm:right-4 left-0 sm:left-auto z-50 sm:w-[min(var(--feature-panel-width),calc(100vw-2rem))] max-h-[72vh] ${
         timelineVisible
           ? 'sm:max-h-[calc(100vh-12rem)]'
           : 'sm:max-h-[calc(100vh-6rem)]'
       } flex flex-col bg-[#060b14]/96 backdrop-blur-2xl border-t sm:border border-slate-800 rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden pointer-events-auto select-none transition-all animate-in fade-in duration-150`}
+      style={{ '--feature-panel-width': `${FEATURE_PANEL_WIDTH_REM}rem` }}
     >
       {/* Mobile drag bar */}
       <div className="w-10 h-1 bg-slate-700 rounded-full mx-auto mt-2 sm:hidden" />
@@ -327,11 +330,13 @@ export default function FeaturePanel({
       {/* Scrollable details */}
       <div className="overflow-y-auto p-3.5 space-y-3 custom-scrollbar text-xs text-slate-300">
         {feature.body !== 'earth' && (
-          <SolarConditionsCard siteId={feature.id} latitude={featLat} longitude={featLon} />
-        )}
-
-        {feature.body !== 'earth' && (
-          <EarthLinkCard moonFeature={feature} earthFeature={communicationEarthFeature} />
+          <HorizonViewCard
+            siteId={feature.id}
+            latitude={featLat}
+            longitude={featLon}
+            moonFeature={feature}
+            earthFeature={communicationEarthFeature}
+          />
         )}
 
         {/* CLPS Provider & Lander Card */}

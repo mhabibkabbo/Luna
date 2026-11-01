@@ -23,8 +23,8 @@ const EARTH_CAMERA_SETTINGS = {
     mobileInertiaZoom: 0.76,
 };
 
-// Switch from Blue Marble to tiled satellite imagery near the surface.
-const IMAGERY_SWITCH_HEIGHT = 2_500_000; // 5,000 km above the ellipsoid
+// Switch from the global Blue Marble texture to tiled imagery near the surface.
+const IMAGERY_SWITCH_HEIGHT = 2_500_000;
 
 export function createEarth(container, callbacks = {}) {
     const isMobile = typeof window !== 'undefined' && (
@@ -217,7 +217,7 @@ export function createEarth(container, callbacks = {}) {
                 tiledImageryLayer = new Cesium.ImageryLayer(provider);
                 scene.globe.imageryLayers.add(tiledImageryLayer);
 
-                // Choose the correct layer for the current camera height.
+                // Choose between Blue Marble and tiled imagery using the current camera height.
                 updateImageryDetail();
             })
             .catch((error) => {

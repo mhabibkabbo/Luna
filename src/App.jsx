@@ -20,7 +20,6 @@ import MissionExplorerModal from './components/missions/MissionExplorerModal.jsx
 import MissionComparisonModal from './components/missions/MissionComparisonModal.jsx';
 import LandingPage from './components/landing/LandingPage.jsx';
 import LunaBrandLogo from './components/common/LunaBrandLogo.jsx';
-import ToastFeedback from './components/common/ToastFeedback.jsx';
 import UserGuideModal from './components/common/UserGuideModal.jsx';
 import { CLPS_MISSIONS } from './data/clpsMissions.js';
 import { LUNAR_LAYERS_CATALOG } from './services/nasa/layers.js';
@@ -1017,8 +1016,7 @@ export default function App() {
         selectedFeature={selectedFeature}
       />
 
-      {/* Floating System-Wide Toast Feedback Notifications */}
-      <ToastFeedback />
+      {/* Routine action feedback is not mounted here to avoid transient top-right popups. */}
 
       {/* Interactive User Guide & Keyboard Shortcuts Dialog */}
       <UserGuideModal

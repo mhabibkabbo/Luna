@@ -7,7 +7,11 @@
  */
 
 import { computeCelestialState, solarPosition } from './lunarEphemeris.js';
-import { evaluateEarthLink, DEFAULT_DTE_CONSTRAINTS } from './earthLink.js';
+import {
+  earthLookFromMoon,
+  evaluateEarthLink,
+  DEFAULT_DTE_CONSTRAINTS,
+} from './earthLink.js';
 import { horizonAt, HORIZON_TABLE } from './horizons.js';
 
 const MINUTE_MS = 60000;
@@ -282,5 +286,65 @@ export function calculateEarthTransition(
     terrainHorizonDeg: currentLink.terrainHorizonDeg,
     linkMarginDeg: currentLink.marginDeg,
     reason: currentLink.reason,
+  };
+}
+
+/**
+ * Calculates geometric Earth-disc rise/set, independent of ground stations,
+ * terrain masks, and DTE link constraints.
+ */
+export function calculateEarthPositionTransition(currentTimeMs, moonFeature) {
+  const isAboveHorizonAt = (whenMs) => {
+    const position = earthLookFromMoon(computeCelestialState(whenMs), moonFeature);
+    return position.elevationDeg + position.radiusDeg > 0;
+  };
+  const isCurrentlyAboveHorizon = isAboveHorizonAt(currentTimeMs);
+  const stepMin = 30;
+  const stepMs = stepMin * MINUTE_MS;
+  const maxSteps = Math.round((35 * DAY_MS) / stepMs);
+  let transitionBracket = null;
+  let previousState = isCurrentlyAboveHorizon;
+
+  for (let step = 1; step <= maxSteps; step += 1) {
+    const whenMs = currentTimeMs + step * stepMs;
+    const isAboveHorizon = isAboveHorizonAt(whenMs);
+    if (isAboveHorizon !== previousState) {
+      transitionBracket = [whenMs - stepMs, whenMs];
+      break;
+    }
+    previousState = isAboveHorizon;
+  }
+
+  let transitionTimeMs = null;
+  if (transitionBracket) {
+    let [startMs, endMs] = transitionBracket;
+    for (let iteration = 0; iteration < 8; iteration += 1) {
+      const midpointMs = (startMs + endMs) / 2;
+      if (isAboveHorizonAt(midpointMs) === isCurrentlyAboveHorizon) {
+        startMs = midpointMs;
+      } else {
+        endMs = midpointMs;
+      }
+    }
+    transitionTimeMs = (startMs + endMs) / 2;
+  }
+
+  const timeUntilMs =
+    transitionTimeMs === null
+      ? null
+      : Math.max(0, transitionTimeMs - currentTimeMs);
+
+  return {
+    isAboveHorizon: isCurrentlyAboveHorizon,
+    nextEvent: isCurrentlyAboveHorizon ? 'earthset' : 'earthrise',
+    timeUntilMs,
+    formattedDuration:
+      timeUntilMs === null
+        ? isCurrentlyAboveHorizon
+          ? 'Continuous (35d+)'
+          : 'No Rise (35d+)'
+        : formatDuration(timeUntilMs),
+    transitionDate:
+      transitionTimeMs === null ? null : new Date(transitionTimeMs),
   };
 }

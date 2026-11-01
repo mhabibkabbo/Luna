@@ -3,8 +3,8 @@
  * Earth as seen from a lunar site, and the direct-to-Earth (DTE) link built on it.
  *
  * Extends the purely geometric line of sight in communication.js with the constraints a
- * real link has: minimum Earth elevation, terrain at the Earth's azimuth, the ground
- * station's own elevation mask, the antenna's zenith keyhole and its slew rate.
+ * real link has: terrain at the Earth's azimuth, the ground station's own elevation
+ * mask, the antenna's zenith keyhole and its slew rate.
  */
 
 import { computeCelestialState, EARTH_MEAN_RADIUS_KM } from './lunarEphemeris.js';
@@ -17,12 +17,10 @@ import {
 const RAD = 180 / Math.PI;
 
 /**
- * Assumed link constraints. They are generic mission-design values, not those of any
- * specific lander, so the UI states them next to the results.
+ * Assumed station and antenna constraints. Earth visibility itself is determined by
+ * the apparent Earth disc and local terrain, not by an arbitrary elevation cutoff.
  */
 export const DEFAULT_DTE_CONSTRAINTS = Object.freeze({
-  /** Lander antenna: Earth centre must be at least this high (mounting/field-of-view mask). */
-  minEarthElevationDeg: 5,
   /** Ground station elevation mask toward the Moon. */
   stationMinElevationDeg: 10,
   /** Az/el gimbals lose azimuth authority near zenith (keyhole). */
@@ -36,7 +34,6 @@ export const LINK_REASON_LABELS = {
   'below-horizon': 'Earth below horizon',
   terrain: 'Blocked by terrain',
   'terrain-partial': 'Earth disc grazes terrain',
-  'min-elevation': 'Below antenna minimum elevation',
   station: 'Below station mask',
   'earth-facing-away': 'Selected site faces away from Earth',
   keyhole: 'Antenna zenith keyhole',
@@ -118,6 +115,7 @@ export function evaluateEarthLink({
   const radius = look.radiusDeg;
   const terrainHorizonDeg = terrainFn ? terrainFn(azimuthDeg) : null;
   const terrain = terrainHorizonDeg ?? 0;
+  const isEarthStationTarget = earthFeature !== null;
   const c = constraints;
 
   let status = 'clear';
@@ -127,21 +125,36 @@ export function evaluateEarthLink({
     reason = why;
   };
 
-  if (elevationDeg + radius <= 0) block('below-horizon');
+  // A station target is a point; Earth-centre views use the apparent disc and its limbs.
+  if (
+    isEarthStationTarget
+      ? elevationDeg <= 0
+      : elevationDeg + radius <= 0
+  ) {
+    block('below-horizon');
+  }
   else if (
     stationElevationDeg !== null &&
     stationElevationDeg < c.stationMinElevationDeg
   ) {
     block(
-      stationElevationDeg < 0 && look.elevationDeg >= c.minEarthElevationDeg
+      stationElevationDeg < 0 && look.elevationDeg + radius > 0
         ? 'earth-facing-away'
         : 'station'
     );
-  } else if (elevationDeg + radius <= terrain) block('terrain');
-  else if (elevationDeg < c.minEarthElevationDeg) block('min-elevation');
+  } else if (
+    isEarthStationTarget
+      ? elevationDeg <= terrain
+      : elevationDeg + radius <= terrain
+  ) {
+    block('terrain');
+  }
   else if (elevationDeg > c.antennaMaxElevationDeg) block('keyhole');
   else if (slewDegPerHour !== null && slewDegPerHour > c.maxSlewDegPerHour) block('slew');
-  else if (elevationDeg - radius < terrain) {
+  else if (
+    !isEarthStationTarget &&
+    elevationDeg - radius < terrain
+  ) {
     status = 'doubtful';
     reason = 'terrain-partial';
   }
@@ -154,7 +167,7 @@ export function evaluateEarthLink({
     radiusDeg: radius,
     terrainHorizonDeg,
     stationElevationDeg,
-    marginDeg: elevationDeg - Math.max(terrain, c.minEarthElevationDeg),
+    marginDeg: elevationDeg - terrain,
   };
 }
 

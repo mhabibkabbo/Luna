@@ -11,6 +11,7 @@ const EARTH_TEXTURE_URL = '/assets/earth-blue-marble.jpg';
 export function createEarthGlobe() {
     const globe = new Cesium.Globe(Cesium.Ellipsoid.WGS84);
 
+    // Use Blue Marble for global views, then let the viewer switch to detailed Cesium tiles near the surface.
     const earthImageryProvider = new Cesium.SingleTileImageryProvider({
         url: EARTH_TEXTURE_URL,
         tileWidth: 2048,
