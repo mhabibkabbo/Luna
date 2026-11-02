@@ -35,7 +35,7 @@ export const LINK_REASON_LABELS = {
   terrain: 'Blocked by terrain',
   'terrain-partial': 'Earth disc grazes terrain',
   station: 'Below station mask',
-  'earth-facing-away': 'Selected site faces away from Earth',
+  'earth-facing-away': 'Selected site faces away from the Moon',
   keyhole: 'Antenna zenith keyhole',
   slew: 'Antenna slew limit exceeded',
 };
@@ -88,7 +88,7 @@ export function earthSlewRates(moonFeature, whenMs, halfSpanMin = 15) {
  * @param {object} [options.constraints]
  * @param {(azDeg:number)=>number|null} [options.terrainFn] - terrain horizon, null = not modeled
  * @param {number} [options.slewDegPerHour] - required antenna slew rate, if known
- * @returns {{status:'clear'|'doubtful'|'blocked', reason:string, elevationDeg:number,
+ * @returns {{status:'clear'|'doubtful'|'blocked'|'away', reason:string, elevationDeg:number,
  *   azimuthDeg:number, radiusDeg:number, terrainHorizonDeg:number|null,
  *   stationElevationDeg:number|null, marginDeg:number}}
  */
@@ -116,6 +116,9 @@ export function evaluateEarthLink({
   const terrainHorizonDeg = terrainFn ? terrainFn(azimuthDeg) : null;
   const terrain = terrainHorizonDeg ?? 0;
   const isEarthStationTarget = earthFeature !== null;
+  const earthTerrainHorizonDeg = terrainFn ? terrainFn(look.azimuthDeg) : null;
+  const earthDiscClearsHorizon =
+    look.elevationDeg + radius > Math.max(0, earthTerrainHorizonDeg ?? 0);
   const c = constraints;
 
   let status = 'clear';
@@ -127,6 +130,13 @@ export function evaluateEarthLink({
 
   // A station target is a point; Earth-centre views use the apparent disc and its limbs.
   if (
+    isEarthStationTarget &&
+    stationElevationDeg < 0 &&
+    earthDiscClearsHorizon
+  ) {
+    status = 'away';
+    reason = 'earth-facing-away';
+  } else if (
     isEarthStationTarget
       ? elevationDeg <= 0
       : elevationDeg + radius <= 0
@@ -137,11 +147,7 @@ export function evaluateEarthLink({
     stationElevationDeg !== null &&
     stationElevationDeg < c.stationMinElevationDeg
   ) {
-    block(
-      stationElevationDeg < 0 && look.elevationDeg + radius > 0
-        ? 'earth-facing-away'
-        : 'station'
-    );
+    block('station');
   } else if (
     isEarthStationTarget
       ? elevationDeg <= terrain

@@ -373,6 +373,7 @@ export function createEarth(container, callbacks = {}) {
             clear: '#1dffac',
             doubtful: '#facc15',
             blocked: '#f43f5e',
+            away: '#f43f5e',
         }[link.status];
         if (!statusColor) {
             throw new TypeError(`Unknown communication-link status: ${link.status}`);

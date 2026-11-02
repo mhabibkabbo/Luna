@@ -415,6 +415,10 @@ export default function HorizonViewChart({
           DTE marginal
         </span>
         <span className="inline-flex items-center gap-1">
+          <i className="h-2 w-2 rounded-full" style={{ backgroundColor: COMMUNICATION_TIMELINE_COLORS.away }} />
+          DTE site facing away
+        </span>
+        <span className="inline-flex items-center gap-1">
           <i className="h-2 w-2 rounded-full" style={{ backgroundColor: COMMUNICATION_TIMELINE_COLORS.blocked }} />
           DTE blocked
         </span>

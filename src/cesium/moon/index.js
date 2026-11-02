@@ -528,6 +528,7 @@ export function createMoon(container, callbacks = {}) {
       clear: '#1dffac',
       doubtful: '#facc15',
       blocked: '#f43f5e',
+      away: '#f43f5e',
     }[link.status];
 
     if (!statusColor) {
