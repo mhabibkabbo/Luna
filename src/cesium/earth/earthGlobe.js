@@ -14,8 +14,8 @@ export function createEarthGlobe() {
     // Use Blue Marble for global views, then let the viewer switch to detailed Cesium tiles near the surface.
     const earthImageryProvider = new Cesium.SingleTileImageryProvider({
         url: EARTH_TEXTURE_URL,
-        tileWidth: 4096,
-        tileHeight: 2048,
+        tileWidth: 2048,
+        tileHeight: 1024,
         rectangle: Cesium.Rectangle.MAX_VALUE,
     });
 
@@ -24,7 +24,7 @@ export function createEarthGlobe() {
     );
 
     globe.terrainProvider = new Cesium.EllipsoidTerrainProvider();
-    globe.showGroundAtmosphere = false;
+    globe.showGroundAtmosphere = true;
 
     return { globe, fallbackImageryLayer };
 }
