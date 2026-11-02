@@ -168,11 +168,11 @@ export default function SearchBox({ onSelectFeature, onCoordinateSearch, body = 
       className="relative w-full max-w-sm sm:max-w-md pointer-events-auto select-none"
     >
       <div className="relative flex items-center">
-        <div className="absolute left-3.5 flex items-center pointer-events-none text-slate-400">
+        <div className="absolute left-2.5 z-10 flex items-center pointer-events-none text-cyan-400">
           {isSearching ? (
-            <Loader2 className="w-4 h-4 text-cyan-400 animate-spin" />
+            <Loader2 className="w-3.5 h-3.5 text-cyan-400 animate-spin" />
           ) : (
-            <Search className="w-4 h-4 text-slate-400" />
+            <Search className="w-3.5 h-3.5 text-cyan-400 drop-shadow-[0_0_6px_rgba(6,182,212,0.4)]" />
           )}
         </div>
 
@@ -188,8 +188,8 @@ export default function SearchBox({ onSelectFeature, onCoordinateSearch, body = 
           onKeyDown={handleKeyDown}
           placeholder={
             body === 'earth'
-              ? 'Search Earth stations, networks, coordinates...'
-              : 'Search missions, craters, maria, coordinates...'
+              ? 'Search Earth stations, networks...'
+              : 'Search missions, craters, maria...'
           }
           aria-label={
             body === 'earth'
@@ -198,7 +198,7 @@ export default function SearchBox({ onSelectFeature, onCoordinateSearch, body = 
           }
           autoComplete="off"
           spellCheck="false"
-          className="w-full h-8.5 pl-9 pr-8 bg-slate-900/90 backdrop-blur-xl border border-slate-800/90 focus:border-cyan-500/80 rounded-lg text-xs text-slate-100 placeholder-slate-500 shadow-inner focus:outline-none focus:ring-1 focus:ring-cyan-500/40 transition-all font-sans"
+          className="w-full h-8 pl-8 pr-7 bg-slate-900/90 backdrop-blur-xl border border-slate-800/90 focus:border-cyan-500/80 rounded-lg text-xs text-slate-100 placeholder-slate-500 shadow-inner focus:outline-none focus:ring-1 focus:ring-cyan-500/40 transition-all font-sans"
         />
 
         {query && (
@@ -206,10 +206,10 @@ export default function SearchBox({ onSelectFeature, onCoordinateSearch, body = 
             id="btn-clear-search"
             type="button"
             onClick={handleClear}
-            className="absolute right-3 p-1 text-slate-400 hover:text-slate-200 rounded-md hover:bg-slate-800 transition-colors"
+            className="absolute right-2 p-0.5 text-slate-400 hover:text-slate-200 rounded hover:bg-slate-800 transition-all duration-150 active:scale-90"
             aria-label="Clear search input"
           >
-            <X className="w-4 h-4" />
+            <X className="w-3.5 h-3.5" />
           </button>
         )}
       </div>

@@ -269,14 +269,14 @@ export default function CelestialPanel({
 
   const { earth, sun, moon } = state || {};
   const iconButton =
-    'p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/70';
+    'p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-all duration-150 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/70';
   const chipButton =
-    'px-2 py-1 rounded-lg text-[11px] font-medium text-slate-300 bg-slate-900 hover:bg-slate-800 hover:text-white border border-slate-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/70';
+    'px-2 py-1 rounded-lg text-[11px] font-medium text-slate-300 bg-slate-900 hover:bg-slate-800 hover:text-white border border-slate-800 transition-all duration-150 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/70';
 
   return (
     <div
       id="celestial-panel"
-      className="absolute top-14 right-3 sm:right-4 z-30 w-[min(22rem,calc(100vw-2rem))] max-h-[calc(100vh-5rem)] flex flex-col bg-[#060b14]/96 backdrop-blur-2xl border border-slate-800 rounded-xl shadow-2xl shadow-black/80 overflow-hidden pointer-events-auto transition-all animate-in fade-in select-none"
+      className="absolute top-14 right-3 sm:right-4 z-30 w-[min(22rem,calc(100vw-2rem))] max-h-[calc(100vh-5rem)] flex flex-col bg-[#060b14]/96 backdrop-blur-2xl border border-slate-800 rounded-xl shadow-2xl shadow-black/80 overflow-hidden pointer-events-auto transition-all animate-in fade-in slide-in-from-top-2 duration-150 select-none"
     >
       {/* Header */}
       <div className="flex items-center justify-between gap-2 px-3.5 py-2.5 border-b border-slate-800 bg-slate-900/60">

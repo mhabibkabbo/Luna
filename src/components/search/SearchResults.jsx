@@ -58,7 +58,7 @@ export default function SearchResults({ results, onSelect, activeIndex }) {
     <ul
       id="search-results-dropdown"
       role="listbox"
-      className="absolute top-full left-0 right-0 mt-1.5 bg-slate-900/95 backdrop-blur-xl border border-slate-800 rounded-xl shadow-2xl overflow-hidden divide-y divide-slate-800/60 max-h-80 overflow-y-auto custom-scrollbar z-50 pointer-events-auto"
+      className="absolute top-full left-0 right-0 mt-1.5 bg-slate-900/95 backdrop-blur-xl border border-slate-800 rounded-xl shadow-2xl overflow-hidden divide-y divide-slate-800/60 max-h-80 overflow-y-auto custom-scrollbar z-50 pointer-events-auto animate-in fade-in slide-in-from-top-1 duration-150"
     >
       {results.map((feature, idx) => {
         const isFocused = idx === activeIndex;

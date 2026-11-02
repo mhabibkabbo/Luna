@@ -6,6 +6,11 @@ export default {
   ],
   theme: {
     extend: {
+      opacity: {
+        '85': '0.85',
+        '96': '0.96',
+        '98': '0.98',
+      },
       colors: {
         lunar: {
           dark: '#0b0f19',

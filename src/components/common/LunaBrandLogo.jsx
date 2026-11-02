@@ -1,5 +1,5 @@
 import React from 'react';
-import { Moon, ArrowLeft } from 'lucide-react';
+import { Moon } from 'lucide-react';
 
 /**
  * Standardized Luna Brand Emblem and Wordmark component.
@@ -9,8 +9,6 @@ import { Moon, ArrowLeft } from 'lucide-react';
 export default function LunaBrandLogo({
   asButton = false,
   onClick,
-  showBackIndicator = false,
-  backLabel = 'Home',
   className = '',
   title = 'Luna — CLPS Lunar Mission Browser',
 }) {
@@ -66,11 +64,9 @@ export default function LunaBrandLogo({
       <span className="text-[1.2rem] font-semibold tracking-wider text-white uppercase font-orbitron group-hover:text-cyan-200 transition-colors">
         LUNA
       </span>
-      {!showBackIndicator &&
-<span className="text-[8px] font-mono text-cyan-400/80 tracking-widest uppercase hidden sm:inline">
+      <span className="text-[8px] font-mono text-cyan-400/80 tracking-widest uppercase hidden sm:inline">
         CLPS BROWSER
       </span>
-      }
 
     </div>
 
@@ -83,7 +79,7 @@ export default function LunaBrandLogo({
         type="button"
         onClick={onClick}
         title={title}
-        className="group flex items-center focus:outline-none focus-visible:ring-1 focus-visible:ring-cyan-400 rounded-lg p-0.5 transition-opacity hover:opacity-90 active:scale-[0.98]"
+        className="group flex items-center h-8 px-1.5 rounded-lg border border-transparent hover:border-slate-800/80 hover:bg-slate-900/60 focus:outline-none focus-visible:ring-1 focus-visible:ring-cyan-400 transition-all active:scale-[0.98]"
       >
         {content}
       </button>

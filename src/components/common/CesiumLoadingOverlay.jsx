@@ -168,7 +168,7 @@ export default function CesiumLoadingOverlay({
           role="status"
           aria-live="polite"
           aria-label="Streaming planetary tiles"
-          className="absolute top-14 left-4 z-20 flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#07090e]/85 backdrop-blur-md border border-slate-800 text-[11px] font-mono text-slate-300 shadow-xl pointer-events-none animate-in fade-in duration-150"
+          className="absolute bottom-9 left-3 sm:left-4 z-20 flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-[#07090e]/90 backdrop-blur-md border border-slate-800 text-[11px] font-mono text-slate-300 shadow-xl pointer-events-none animate-in fade-in duration-150"
         >
           <Loader2 className="w-3 h-3 text-cyan-400 animate-spin shrink-0" />
           <span className="text-slate-200">
