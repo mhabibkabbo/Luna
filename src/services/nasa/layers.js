@@ -153,4 +153,14 @@ export const LUNAR_LAYERS_CATALOG = [
     opacity: 1.0,
     attribution: 'NASA / JPL / ESA / ISRO / JAXA',
   },
+  {
+    id: 'earth-launch-sites',
+    name: 'Rocket Launch Sites & Spaceports',
+    description: 'Global orbital launch complexes, pads, and spaceports supporting lunar, planetary, and commercial space missions.',
+    type: 'vector',
+    category: 'FEATURES',
+    visible: true,
+    opacity: 1.0,
+    attribution: 'The Space Devs / Launch Library 2 / NASA / ESA / Roscosmos / CNSA'
+  },
 ];

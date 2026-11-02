@@ -114,6 +114,10 @@ export default function FeaturePanel({
   const getTypeLabel = (type) => {
     if (isClps) return `NASA CLPS · ${clpsData?.taskOrder || 'Commercial Mission'}`;
     switch (type) {
+      case 'launch-site':
+        return 'Rocket Launch Complex / Spaceport';
+      case 'launch-pad':
+        return 'Orbital Launch Pad';
       case 'custom_pin':
         return 'Custom Waypoint';
       case 'coordinate':
