@@ -44,9 +44,9 @@ export function notify({
     action,
   };
 
-  // Keep up to 3 notifications on screen, newest first
+  // Keep up to 2 notifications on screen, newest first
   const current = feedbackStore.get();
-  feedbackStore.set([newItem, ...current.slice(0, 2)]);
+  feedbackStore.set([newItem, ...current.slice(0, 1)]);
 
   if (durationMs > 0) {
     setTimeout(() => {

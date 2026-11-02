@@ -100,7 +100,7 @@ export default function MoonPhaseWidget({ className = '' }) {
         type="button"
         id="btn-moon-phase-widget"
         onClick={() => setIsOpen((prev) => !prev)}
-        className={`group flex items-center gap-2 px-2.5 py-1 rounded-lg border backdrop-blur-xl transition-all shadow-md ${
+        className={`group flex items-center h-8 gap-2 px-2.5 rounded-lg border backdrop-blur-xl transition-all duration-150 active:scale-95 shadow-sm ${
           isOpen
             ? 'bg-slate-900 text-white border-cyan-500/60 shadow-cyan-950/50'
             : 'bg-slate-900/90 hover:bg-slate-850 text-slate-200 border-slate-800/80 hover:border-slate-700'
@@ -120,7 +120,7 @@ export default function MoonPhaseWidget({ className = '' }) {
         </div>
 
         <div className="text-slate-400 group-hover:text-white transition-colors ml-0.5">
-          {isOpen ? <ChevronDown className="w-3 h-3" /> : <ChevronUp className="w-3 h-3" />}
+          <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
         </div>
       </button>
 
@@ -128,7 +128,7 @@ export default function MoonPhaseWidget({ className = '' }) {
       {isOpen && (
         <div
           id="moon-phase-details-popover"
-          className="absolute top-full right-0 mt-2 w-80 bg-[#060b14]/98 backdrop-blur-2xl border border-slate-800 rounded-xl p-4 shadow-2xl shadow-black/80 z-50 flex flex-col gap-3.5 animate-in fade-in slide-in-from-top-2 duration-150"
+          className="absolute top-full right-0 mt-2 w-80 bg-[#060b14] backdrop-blur-2xl border border-slate-800/90 rounded-xl p-4 shadow-2xl shadow-black/90 z-50 flex flex-col gap-3.5 animate-in fade-in slide-in-from-top-2 duration-150"
         >
           {/* Header */}
           <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
@@ -151,7 +151,7 @@ export default function MoonPhaseWidget({ className = '' }) {
           </div>
 
           {/* Hero Visual Display */}
-          <div className="flex items-center justify-between gap-4 p-3.5 rounded-xl bg-slate-900/80 border border-slate-800/90 shadow-inner">
+          <div className="flex items-center justify-between gap-4 p-3.5 rounded-xl bg-slate-900/95 border border-slate-800/90 shadow-inner">
             <MoonPhaseGraphic phaseIndex={phaseData.phaseIndex} size={64} />
             <div className="flex-1 flex flex-col gap-1">
               <span className="text-base font-bold text-white tracking-tight">
@@ -176,14 +176,14 @@ export default function MoonPhaseWidget({ className = '' }) {
 
           {/* Scientific Metrics Grid */}
           <div className="grid grid-cols-2 gap-2 text-xs">
-            <div className="flex flex-col gap-0.5 p-2.5 rounded-xl bg-slate-900/60 border border-slate-800/80">
+            <div className="flex flex-col gap-0.5 p-2.5 rounded-xl bg-slate-900/85 border border-slate-800/80">
               <span className="text-[10px] font-mono uppercase text-slate-500">Lunar Cycle Age</span>
               <span className="font-semibold text-slate-200 font-mono">
                 {phaseData.ageDays} <span className="text-slate-500 text-[10px]">/ 29.53 d</span>
               </span>
             </div>
 
-            <div className="flex flex-col gap-0.5 p-2.5 rounded-xl bg-slate-900/60 border border-slate-800/80">
+            <div className="flex flex-col gap-0.5 p-2.5 rounded-xl bg-slate-900/85 border border-slate-800/80">
               <span className="text-[10px] font-mono uppercase text-slate-500">Earth Distance</span>
               <span className="font-semibold text-slate-200 font-mono">
                 {phaseData.distanceKm.toLocaleString()}{' '}
@@ -191,14 +191,14 @@ export default function MoonPhaseWidget({ className = '' }) {
               </span>
             </div>
 
-            <div className="flex flex-col gap-0.5 p-2.5 rounded-xl bg-slate-900/60 border border-slate-800/80">
+            <div className="flex flex-col gap-0.5 p-2.5 rounded-xl bg-slate-900/85 border border-slate-800/80">
               <span className="text-[10px] font-mono uppercase text-slate-500">Subsolar Longitude</span>
               <span className="font-semibold text-cyan-300 font-mono">
                 {Math.abs(phaseData.subsolarLon)}°{phaseData.subsolarLon >= 0 ? 'E' : 'W'}
               </span>
             </div>
 
-            <div className="flex flex-col gap-0.5 p-2.5 rounded-xl bg-slate-900/60 border border-slate-800/80">
+            <div className="flex flex-col gap-0.5 p-2.5 rounded-xl bg-slate-900/85 border border-slate-800/80">
               <span className="text-[10px] font-mono uppercase text-slate-500">Next Major Event</span>
               <span className="font-semibold text-amber-300 font-mono text-[11px] truncate">
                 {phaseData.nextPhase.name}
