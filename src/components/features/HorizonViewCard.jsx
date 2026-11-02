@@ -281,7 +281,7 @@ export default function HorizonViewCard({
         currentEarth={currentEarth}
       />
       {!profile?.horizon && (
-        <p className="text-[12.5px] text-amber-300">
+        <p className="text-[11px] text-amber-300">
           Terrain data currently not available for this site
         </p>
       )}
