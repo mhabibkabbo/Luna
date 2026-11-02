@@ -355,13 +355,6 @@ export default function FeaturePanel({
       {/* Scrollable details */}
       <div className="overflow-y-auto p-3.5 space-y-3 custom-scrollbar text-xs text-slate-300">
         {feature.body !== 'earth' && (
-          <SolarConditionsCard siteId={feature.id} latitude={featLat} longitude={featLon} />
-        )}
-
-        {feature.body !== 'earth' && (
-          <EarthLinkCard moonFeature={feature} earthFeature={communicationEarthFeature} />
-        )}
-{feature.body !== 'earth' && (
           <HorizonViewCard
             siteId={feature.id}
             latitude={featLat}

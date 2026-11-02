@@ -21,6 +21,7 @@ import MissionComparisonModal from './components/missions/MissionComparisonModal
 import LandingPage from './components/landing/LandingPage.jsx';
 import LunaBrandLogo from './components/common/LunaBrandLogo.jsx';
 import UserGuideModal from './components/common/UserGuideModal.jsx';
+import ToastFeedback from './components/common/ToastFeedback.jsx';
 import { CLPS_MISSIONS } from './data/clpsMissions.js';
 import { LUNAR_LAYERS_CATALOG } from './services/nasa/layers.js';
 import { Layers, Ruler, Globe, Map as MapIcon, Moon, Sun, ArrowLeft, HelpCircle } from 'lucide-react';
