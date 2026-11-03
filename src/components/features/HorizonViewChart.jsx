@@ -34,9 +34,9 @@ const HOURS_PER_DAY = 24;
 const AZIMUTH_TICKS = [0, 90, 180, 270, 360];
 const AZIMUTH_LABELS = { 0: "N", 90: "E", 180: "S", 270: "W", 360: "N" };
 
-const sunColor = (status) => SUNLIGHT_TIMELINE_COLORS[status];
-const earthColor = (status) => COMMUNICATION_TIMELINE_COLORS[status];
-const earthTrackColor = (status) => COMMUNICATION_TIMELINE_COLORS[status];
+const sunColor = (status) => SUNLIGHT_TIMELINE_COLORS[status] || '#fde68a';
+const earthColor = (status) => COMMUNICATION_TIMELINE_COLORS[status] || '#60a5fa';
+const earthTrackColor = (status) => COMMUNICATION_TIMELINE_COLORS[status] || '#60a5fa';
 
 function smoothTrackSegments(track, x, y, colorFor) {
   return track.slice(1).flatMap((point, index) => {
@@ -154,7 +154,7 @@ export default function HorizonViewChart({
     }
 
     return { terrain, sunTrack, earthTrack };
-  }, [startMs, latitude, longitude, moonFeature, siteId]);
+  }, [startMs, latitude, longitude, moonFeature, siteId, profile, effectiveProfile]);
 
   const y = (elevation) => {
     const fraction =
@@ -185,6 +185,17 @@ export default function HorizonViewChart({
   const earthAngle = Math.round(currentEarth.elevationDeg);
   const sunLabelX = sunX < W * 0.52 ? sunX + 13 : sunX - 13;
   const earthLabelX = earthX < W * 0.52 ? earthX + 13 : earthX - 13;
+  let sunLabelY = Math.max(PAD_TOP + 3, sunIconY - 12);
+  let earthLabelY = Math.max(PAD_TOP + 3, earthIconY - 12);
+  if (Math.abs(sunX - earthX) < 55 && Math.abs(sunLabelY - earthLabelY) < 16) {
+    if (sunLabelY <= earthLabelY) {
+      sunLabelY = Math.max(PAD_TOP + 2, sunLabelY - 7);
+      earthLabelY = Math.min(HORIZON_Y - 4, earthLabelY + 9);
+    } else {
+      earthLabelY = Math.max(PAD_TOP + 2, earthLabelY - 7);
+      sunLabelY = Math.min(HORIZON_Y - 4, sunLabelY + 9);
+    }
+  }
 
   return (
     <div className="w-full space-y-1">
@@ -378,7 +389,7 @@ export default function HorizonViewChart({
 
           <text
             x={sunLabelX}
-            y={Math.max(PAD_TOP + 3, sunIconY - 12)}
+            y={sunLabelY}
             fontSize="9"
             fontWeight="600"
             fill="#fde68a"
@@ -392,7 +403,7 @@ export default function HorizonViewChart({
           </text>
           <text
             x={earthLabelX}
-            y={Math.max(PAD_TOP + 3, earthIconY - 12)}
+            y={earthLabelY}
             fontSize="9"
             fontWeight="600"
             fill="#bfdbfe"
