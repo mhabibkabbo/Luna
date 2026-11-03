@@ -440,6 +440,9 @@ export default function LunarSunlightTimeline({ feature, earthFeature = null }) 
                   <i className="h-2 w-2 rounded-sm" style={{ backgroundColor: COMMUNICATION_TIMELINE_COLORS.doubtful }} /> Marginal
                 </span>
                 <span className="inline-flex items-center gap-1">
+                  <i className="h-2 w-2 rounded-sm" style={{ backgroundColor: COMMUNICATION_TIMELINE_COLORS.away }} /> Facing away
+                </span>
+                <span className="inline-flex items-center gap-1">
                   <i className="h-2 w-2 rounded-sm" style={{ backgroundColor: COMMUNICATION_TIMELINE_COLORS.blocked }} /> No link
                 </span>
               </>

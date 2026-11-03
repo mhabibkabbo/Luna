@@ -102,8 +102,8 @@ function getFeatureCoordinates(feature, body) {
 export function computeCommunicationLink({
   moonFeature,
   earthFeature,
-  when,
-  state: suppliedState,
+  when = undefined,
+  state: suppliedState = undefined,
 }) {
   const moonCoordinates = getFeatureCoordinates(moonFeature, 'Moon');
   const earthCoordinates = getFeatureCoordinates(earthFeature, 'Earth');

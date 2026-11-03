@@ -42,6 +42,7 @@ const EARTH_STATUS = {
   clear: { label: "Link", color: COMMUNICATION_TIMELINE_COLORS.clear },
   doubtful: { label: "Marginal", color: COMMUNICATION_TIMELINE_COLORS.doubtful },
   blocked: { label: "No link", color: COMMUNICATION_TIMELINE_COLORS.blocked },
+  away: { label: "Facing away", color: "#fb923c" },
 };
 
 const hhmm = (ms) => new Date(ms).toISOString().slice(11, 16);
@@ -225,7 +226,9 @@ export default function HorizonViewCard({
     earthTransition.nextEvent === "earthset"
       ? "Time until Earthset"
       : "Time until Earthrise";
-  const earthSecondary = link.status !== "blocked"
+  const earthSecondary = link.status === "away"
+    ? `DTE: ${EARTH_STATUS.away.label}`
+    : link.status !== "blocked"
     ? `DTE: ${EARTH_STATUS[link.status].label} · margin ${link.marginDeg > 0 ? "+" : ""}${link.marginDeg.toFixed(1)}°`
     : `DTE: No link · ${LINK_REASON_LABELS[link.reason]}`;
 
@@ -277,6 +280,11 @@ export default function HorizonViewCard({
         currentSun={currentSun}
         currentEarth={currentEarth}
       />
+      {!profile?.horizon && (
+        <p className="text-[11px] text-amber-300">
+          Terrain data currently not available for this site
+        </p>
+      )}
 
       <div className="border-t border-slate-800/80 pt-1.5">
         <div className="mb-1 text-[9.5px] font-mono uppercase tracking-wider text-slate-400">
@@ -348,9 +356,7 @@ export default function HorizonViewCard({
               {profile.maxDistKm ?? 40} km. Sun's upper limb determines sunlight.
             </p>
           </>
-        ) : (
-          <p>No terrain profile for this site; the horizon plot and visibility calculations use 0° terrain.</p>
-        )}
+        ) : null}
         <p>
           Earth visibility uses the apparent disc and local terrain. DTE assumptions: station mask{" "}
           {constraints.stationMinElevationDeg}°, zenith keyhole above {constraints.antennaMaxElevationDeg}°, slew ≤{" "}

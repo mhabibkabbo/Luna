@@ -16,7 +16,8 @@ const COMBINED_SEARCH_DATA = [...LUNAR_FEATURES, ...LANDING_SITES];
  * 
  * @param {{
  *   onSelectFeature: (feature: import('../../types/lunar.js').LunarFeature) => void,
- *   onCoordinateSearch?: (coord: [number, number]) => void
+ *   onCoordinateSearch?: (coord: [number, number]) => void,
+ *   body?: 'moon' | 'earth'
  * }} props
  */
 export default function SearchBox({ onSelectFeature, onCoordinateSearch, body = 'moon' }) {

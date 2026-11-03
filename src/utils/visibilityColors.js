@@ -10,5 +10,6 @@ export const COMMUNICATION_TIMELINE_COLORS = {
   clear: "#1dffac",
   doubtful: "#facc15",
   blocked: "#f43f5e",
+  away: "#f43f5e",
   pending: "#1e293b",
 };

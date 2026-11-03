@@ -268,7 +268,7 @@ export function calculateEarthTransition(
   const nextEvent = isCurrentlyLinked ? 'earthset' : 'earthrise';
 
   return {
-    status: currentLink.status, // 'clear' | 'doubtful' | 'blocked'
+    status: currentLink.status, // 'clear' | 'doubtful' | 'blocked' | 'away'
     isLinked: isCurrentlyLinked,
     isPermanent: transitionTimeMs === null,
     nextEvent,
