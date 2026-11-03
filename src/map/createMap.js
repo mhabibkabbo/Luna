@@ -265,20 +265,18 @@ export function createLunarMap(targetElement, callbacks = {}) {
     }
   };
 
-  // Quick preset terrain mode switcher (Photographic, Shaded Relief, Elevation, Blended)
+  // Quick preset terrain mode switcher (Photographic, Shaded Relief, Elevation Topo, Blended)
   const setTerrainMode = (mode) => {
     const wac = rasterLayersMap.get('lro-wac-morphology');
     const shade = rasterLayersMap.get('lola-shaded-relief');
-    const clrShade = rasterLayersMap.get('lola-color-hillshade');
-    const dem = rasterLayersMap.get('lola-dem-elevation');
-
-    if (!wac) return;
+    const dem = rasterLayersMap.get('lola-color-dem');
 
     if (mode === 'photographic') {
-      wac.setVisible(true);
-      wac.setOpacity(1.0);
+      if (wac) {
+        wac.setVisible(true);
+        wac.setOpacity(1.0);
+      }
       if (shade) shade.setVisible(false);
-      if (clrShade) clrShade.setVisible(false);
       if (dem) dem.setVisible(false);
     } else if (mode === 'terrain') {
       // 3D Shaded Relief
@@ -286,28 +284,33 @@ export function createLunarMap(targetElement, callbacks = {}) {
         shade.setVisible(true);
         shade.setOpacity(1.0);
       }
-      wac.setVisible(false);
-      if (clrShade) clrShade.setVisible(false);
+      if (wac) wac.setVisible(false);
       if (dem) dem.setVisible(false);
-    } else if (mode === 'elevation') {
-      // Color Hillshade Topography
-      if (clrShade) {
-        clrShade.setVisible(true);
-        clrShade.setOpacity(0.9);
+    } else if (mode === 'elevation' || mode === 'topo') {
+      // Color Hillshade Topography DEM
+      if (dem) {
+        dem.setVisible(true);
+        dem.setOpacity(1.0);
       }
-      wac.setVisible(false);
-      if (shade) shade.setVisible(false);
-      if (dem) dem.setVisible(false);
-    } else if (mode === 'blended') {
-      // Real photographic surface + 3D Shaded Relief overlay
-      wac.setVisible(true);
-      wac.setOpacity(1.0);
       if (shade) {
         shade.setVisible(true);
-        shade.setOpacity(0.55);
+        shade.setOpacity(0.35); // Light shaded relief overlay for crisp topographic ridge definition
       }
-      if (clrShade) clrShade.setVisible(false);
-      if (dem) dem.setVisible(false);
+      if (wac) wac.setVisible(false);
+    } else if (mode === 'blended') {
+      // Real photographic surface + Topographic DEM overlay
+      if (wac) {
+        wac.setVisible(true);
+        wac.setOpacity(1.0);
+      }
+      if (dem) {
+        dem.setVisible(true);
+        dem.setOpacity(0.65);
+      }
+      if (shade) {
+        shade.setVisible(true);
+        shade.setOpacity(0.3);
+      }
     }
   };
 

@@ -1,9 +1,10 @@
 import React, { useEffect, useRef, useState, useImperativeHandle, forwardRef } from 'react';
 import { createLunarMap } from '../../map/createMap.js';
+import TopographicalControlBar from './TopographicalControlBar.jsx';
 import { Loader2, AlertTriangle, RefreshCw } from 'lucide-react';
 
 /**
- * LunarMap component hosting the OpenLayers 2D map viewport.
+ * LunarMap component hosting the OpenLayers 2D Topographical map viewport.
  * Encapsulates the OpenLayers lifecycle, keeping React renders separate from map renders.
  */
 const LunarMap = forwardRef(function LunarMap(
@@ -12,6 +13,7 @@ const LunarMap = forwardRef(function LunarMap(
     onFeatureSelect,
     onMeasurementUpdate,
     onResolutionChange,
+    selectedFeature,
     isVisible = true,
   },
   ref
@@ -21,6 +23,12 @@ const LunarMap = forwardRef(function LunarMap(
 
   const [isLoadingTiles, setIsLoadingTiles] = useState(true);
   const [loadError, setLoadError] = useState(null);
+  const [terrainMode, setTerrainMode] = useState('topo');
+
+  const handleTerrainModeChange = (mode) => {
+    setTerrainMode(mode);
+    mapInstanceRef.current?.setTerrainMode(mode);
+  };
 
   // Sync OpenLayers viewport size when visibility changes
   useEffect(() => {
@@ -63,6 +71,9 @@ const LunarMap = forwardRef(function LunarMap(
     });
 
     mapInstanceRef.current = mapController;
+
+    // Default to Topographical Elevation mode on init
+    mapController.setTerrainMode('topo');
 
     // Listen to resolution changes for the scale bar
     const view = mapController.view;
@@ -139,6 +150,7 @@ const LunarMap = forwardRef(function LunarMap(
       }
     },
     setTerrainMode: (mode) => {
+      setTerrainMode(mode);
       if (mapInstanceRef.current) {
         mapInstanceRef.current.setTerrainMode(mode);
       }
@@ -178,6 +190,15 @@ const LunarMap = forwardRef(function LunarMap(
         className="w-full h-full cursor-grab active:cursor-grabbing"
       />
 
+      {/* Topographical Map Legend & Basemap Mode Switcher HUD */}
+      {isVisible && (
+        <TopographicalControlBar
+          currentMode={terrainMode}
+          onChangeMode={handleTerrainModeChange}
+          selectedFeature={selectedFeature}
+        />
+      )}
+
       {/* Subtle Tile Loading Status Indicator */}
       {isLoadingTiles && (
         <div
@@ -185,7 +206,7 @@ const LunarMap = forwardRef(function LunarMap(
           className="absolute top-20 right-4 z-10 flex items-center gap-2 bg-slate-900/80 backdrop-blur-md border border-slate-800 px-3 py-1.5 rounded-full text-xs text-slate-300 shadow-md animate-fade-in pointer-events-none"
         >
           <Loader2 className="w-3.5 h-3.5 text-cyan-400 animate-spin" />
-          <span className="text-[11px] font-medium">Loading NASA tiles...</span>
+          <span className="text-[11px] font-medium">Loading NASA Topo tiles...</span>
         </div>
       )}
 

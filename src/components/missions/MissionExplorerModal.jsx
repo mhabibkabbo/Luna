@@ -16,6 +16,7 @@ import {
   MapPin,
 } from 'lucide-react';
 import { CLPS_MISSIONS } from '../../data/clpsMissions.js';
+import { getPhotoForFeature } from '../../utils/photoMap.js';
 
 /**
  * Dedicated Mission Explorer dialog with search, filtering, and sort capabilities.
@@ -227,6 +228,8 @@ export default function MissionExplorerModal({
           ) : (
             filteredMissions.map((mission) => {
               const isSelected = currentSelectedId === mission.id;
+              const photo = getPhotoForFeature(mission);
+
               return (
                 <div
                   key={mission.id}
@@ -236,6 +239,21 @@ export default function MissionExplorerModal({
                       : 'bg-[#060b14]/90 border-slate-800 hover:border-slate-700 hover:bg-slate-900/50'
                   }`}
                 >
+                  {/* Optional Photo Hero Thumbnail */}
+                  {photo && (
+                    <div className="relative h-24 w-full rounded-lg overflow-hidden border border-slate-800 mb-3">
+                      <img
+                        src={photo.src}
+                        alt={photo.title}
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#060b14] via-transparent to-black/20" />
+                      <div className="absolute bottom-1.5 left-2.5 text-[9.5px] font-mono text-cyan-300">
+                        {photo.credit}
+                      </div>
+                    </div>
+                  )}
+
                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 pb-2 border-b border-slate-800/80">
                     <div className="flex items-center gap-2 min-w-0">
                       <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-cyan-950/80 text-cyan-300 border border-cyan-500/30">

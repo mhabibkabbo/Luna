@@ -1,60 +1,62 @@
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400..900&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-  --space-bg: #020409;
-  --space-surface: #050813;
-  --space-card: #080d1a;
-  --space-border: #151d2f;
-  --space-border-subtle: rgba(255, 255, 255, 0.08);
-  --cyan-accent: #22d3ee;
-  --cyan-accent-dim: rgba(34, 211, 238, 0.15);
-  --cyan-accent-border: rgba(34, 211, 238, 0.35);
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --space-bg: #060B13;
+  --space-surface: #0A1220;
+  --space-card: #0E1A2C;
+  --space-border: #16283C;
+  --space-border-subtle: rgba(0, 210, 196, 0.15);
+  --cyan-accent: #00D2C4;
+  --terracotta-accent: #00D2C4; /* Backwards compatibility alias mapped to greenish-blue */
+  --sage-accent: #34D399;
+  --cream-text: #F1F5F9;
+  --muted-stone: #94A3B8;
+}
+
+body {
+  background-color: #060B13;
+  color: #F1F5F9;
 }
 
 code, kbd, samp, pre {
   font-family: 'Space Mono', monospace;
+  font-variant-numeric: tabular-nums;
 }
 
-/* Custom scrollbar for deep space telemetry view */
+/* Custom scrollbar for greenish-blue / deep space theme */
 ::-webkit-scrollbar {
   width: 5px;
   height: 5px;
 }
 ::-webkit-scrollbar-track {
-  background: #040711;
+  background: #060B13;
 }
 ::-webkit-scrollbar-thumb {
-  background: #1e293b;
+  background: #16283C;
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #334155;
+  background: #00D2C4;
 }
 
-/* Shared Design System Utility Classes */
 @layer components {
-  /* Primary high-contrast action button (e.g. Start Exploring) */
   .luna-btn-primary {
-    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-white text-slate-950 font-semibold text-xs tracking-wide shadow-md transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none;
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full bg-[#00D2C4] hover:bg-[#22E7D9] text-[#060B13] font-bold text-xs tracking-wide shadow-[0_0_20px_rgba(0,210,196,0.35)] transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none;
   }
 
-  /* Secondary dark glass action button (e.g. Open Explorer, utility actions) */
   .luna-btn-secondary {
-    @apply inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900/80 hover:bg-slate-800 text-slate-200 hover:text-white border border-slate-800/80 hover:border-slate-700 text-xs font-medium tracking-wide transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none;
+    @apply inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#0E1A2C]/90 hover:bg-[#15273F] text-[#F1F5F9] border border-[#16283C] hover:border-[#00D2C4]/60 text-xs font-medium tracking-wide transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none;
   }
 
-  /* Active selected state for buttons/toggles */
   .luna-btn-active {
-    @apply bg-cyan-950/70 text-cyan-300 border-cyan-500/40 shadow-sm;
+    @apply bg-[#00D2C4]/20 text-[#00D2C4] border-[#00D2C4]/50 shadow-[0_0_12px_rgba(0,210,196,0.25)];
   }
 
-  /* Dark glass panel container */
   .luna-panel {
-    @apply bg-[#050813]/95 backdrop-blur-xl border border-slate-800/80 rounded-2xl shadow-2xl;
+    @apply bg-[#0A1220]/95 backdrop-blur-xl border border-[#16283C] rounded-2xl shadow-[0_16px_40px_rgba(0,0,0,0.85)];
   }
 }
 
@@ -65,7 +67,7 @@ code, kbd, samp, pre {
   touch-action: none;
 }
 .cesium-viewer-bottom {
-  display: none !important; /* Hide Cesium default bottom container since we provide NASA attribution in footer */
+  display: none !important;
 }
 
 /* Respect reduced motion */
@@ -78,35 +80,15 @@ code, kbd, samp, pre {
 }
 
 @layer utilities {
-  .font-orbitron {
-    font-family: 'Orbitron', sans-serif;
+  .font-editorial {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+  }
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
   }
 }
 
-/* Avoid re-blurring the WebGL canvas on touch / small screens, except for the
-   primary chrome and requested dropdown surfaces. */
-@media (max-width: 1024px), (pointer: coarse) {
-  [class*="backdrop-blur"]:not(#app-header):not(#telemetry-status-bar):not(#missions-dropdown-menu):not(#features-dropdown-menu) {
-    -webkit-backdrop-filter: none !important;
-    backdrop-filter: none !important;
-  }
-}
-#lunar-scale-control {
-  -webkit-backdrop-filter: none !important;
-  backdrop-filter: none !important;
-}
-
-#app-header,
-#telemetry-status-bar,
-#missions-dropdown-menu,
-#features-dropdown-menu {
-  -webkit-backdrop-filter: blur(24px) !important;
-  backdrop-filter: blur(24px) !important;
-}
-
-/* ========================================================================= */
-/* Discrete Micro-Animation & Hardware-Accelerated Transitions */
-/* ========================================================================= */
+/* Hardware-Accelerated Micro-Transitions */
 @keyframes enterAnimation {
   from {
     opacity: var(--tw-enter-opacity, 1);
@@ -141,43 +123,6 @@ code, kbd, samp, pre {
   --tw-enter-translate-y: -8px;
 }
 
-.slide-in-from-top {
-  --tw-enter-translate-y: -12px;
-}
-
 .slide-in-from-bottom-2 {
   --tw-enter-translate-y: 8px;
-}
-
-.slide-in-from-left-4 {
-  --tw-enter-translate-x: -16px;
-}
-
-.slide-in-from-right-4 {
-  --tw-enter-translate-x: 16px;
-}
-
-.duration-100 {
-  animation-duration: 100ms;
-}
-
-.duration-150 {
-  animation-duration: 150ms;
-}
-
-.duration-200 {
-  animation-duration: 200ms;
-}
-
-.duration-300 {
-  animation-duration: 300ms;
-}
-
-/* Discrete tactile interaction utility for functional controls */
-.luna-function-btn {
-  transition: all 150ms cubic-bezier(0.16, 1, 0.3, 1);
-  user-select: none;
-}
-.luna-function-btn:active {
-  transform: scale(0.97);
 }
