@@ -105,3 +105,5 @@ export default function ToastFeedback({ maxItems = 2, className = '' }) {
     </aside>
   );
 }
+
+export { ToastFeedback };
