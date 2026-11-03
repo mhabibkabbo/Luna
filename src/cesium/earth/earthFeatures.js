@@ -5,16 +5,17 @@
 
 import * as Cesium from 'cesium';
 import { EARTH_COMMUNICATION_SITES } from '../../data/earthCommunicationSites.js';
+import { EARTH_LAUNCH_SITES } from '../../data/earthLaunchSites.js';
 import { formatLunarCoordinates } from '../../utils/coordinates.js';
 
 const EARTH_PIN_STYLE = {
-  baseScale: 0.17,
-  selectedScale: 0.24,
+  baseScale: 0.22,
+  selectedScale: 0.30,
   nearDistance: 100_000,
-  overviewDistance: 100_000_000,
-  farDistance: 250_000_000,
-  labelFarDistance: 50_000_000,
-  surfaceClearance: 40,
+  overviewDistance: 120_000_000,
+  farDistance: 260_000_000,
+  labelFarDistance: 60_000_000,
+  surfaceClearance: 1200,
 };
 
 const SITE_MARKER_COLORS = {
@@ -23,6 +24,8 @@ const SITE_MARKER_COLORS = {
   'launch-tracking': '#c084fc',
   'relay-communications': '#fbbf24',
   'mission-operations': '#34d399',
+  'launch-site': '#f97316',
+  'launch-pad': '#fb923c',
 };
 
 const EARTH_DRAG_SENSITIVITY = 1.0;
@@ -41,7 +44,7 @@ function createSitePinImage(type, selected) {
     throw new Error('Unable to create the Earth communication-site marker canvas.');
   }
 
-  const color = selected ? '#e0f2fe' : SITE_MARKER_COLORS[type] || '#38bdf8';
+  const color = selected ? '#FFFFFF' : SITE_MARKER_COLORS[type] || '#00D2C4';
   context.clearRect(0, 0, canvas.width, canvas.height);
   context.save();
   context.shadowColor = color;
@@ -49,7 +52,7 @@ function createSitePinImage(type, selected) {
 
   context.beginPath();
   context.arc(56, 56, 35, 0, Math.PI * 2);
-  context.fillStyle = 'rgba(2, 6, 23, 0.94)';
+  context.fillStyle = 'rgba(18, 17, 13, 0.94)';
   context.fill();
   context.lineWidth = selected ? 7 : 6;
   context.strokeStyle = color;
@@ -61,22 +64,48 @@ function createSitePinImage(type, selected) {
   context.fill();
   context.restore();
 
-  context.strokeStyle = '#ffffff';
-  context.lineWidth = 5;
-  context.lineCap = 'round';
-  context.beginPath();
-  context.moveTo(44, 62);
-  context.lineTo(56, 48);
-  context.lineTo(68, 62);
-  context.moveTo(56, 48);
-  context.lineTo(56, 72);
-  context.moveTo(47, 72);
-  context.lineTo(65, 72);
-  context.stroke();
+  if (type === 'launch-site' || type === 'launch-pad') {
+    context.fillStyle = '#ffffff';
+    context.beginPath();
+    context.moveTo(56, 38);
+    context.bezierCurveTo(63, 48, 63, 60, 63, 64);
+    context.lineTo(49, 64);
+    context.bezierCurveTo(49, 60, 49, 48, 56, 38);
+    context.fill();
 
-  context.beginPath();
-  context.arc(56, 43, 7, Math.PI, Math.PI * 2);
-  context.stroke();
+    context.beginPath();
+    context.moveTo(49, 58);
+    context.lineTo(43, 67);
+    context.lineTo(49, 65);
+    context.moveTo(63, 58);
+    context.lineTo(69, 67);
+    context.lineTo(63, 65);
+    context.fill();
+
+    context.strokeStyle = selected ? '#fde047' : '#f97316';
+    context.lineWidth = 3;
+    context.beginPath();
+    context.moveTo(56, 65);
+    context.lineTo(56, 73);
+    context.stroke();
+  } else {
+    context.strokeStyle = '#ffffff';
+    context.lineWidth = 5;
+    context.lineCap = 'round';
+    context.beginPath();
+    context.moveTo(44, 62);
+    context.lineTo(56, 48);
+    context.lineTo(68, 62);
+    context.moveTo(56, 48);
+    context.lineTo(56, 72);
+    context.moveTo(47, 72);
+    context.lineTo(65, 72);
+    context.stroke();
+
+    context.beginPath();
+    context.arc(56, 43, 7, Math.PI, Math.PI * 2);
+    context.stroke();
+  }
 
   const image = canvas.toDataURL('image/png');
   sitePinImages.set(cacheKey, image);
@@ -94,10 +123,10 @@ function createPinImage(selected) {
   }
 
   const cx = canvas.width / 2;
-  const primaryColor = selected ? '#fda4af' : '#f43f5e';
+  const primaryColor = selected ? '#FFFFFF' : '#00D2C4';
 
   context.save();
-  context.shadowColor = 'rgba(244, 63, 94, 0.75)';
+  context.shadowColor = 'rgba(0, 210, 196, 0.75)';
   context.shadowBlur = selected ? 20 : 12;
 
   context.beginPath();
@@ -112,13 +141,13 @@ function createPinImage(selected) {
   context.fillStyle = primaryColor;
   context.fill();
   context.lineWidth = 4;
-  context.strokeStyle = '#ffffff';
+  context.strokeStyle = '#060B13';
   context.stroke();
   context.restore();
 
   context.beginPath();
   context.arc(cx, 36, 10, 0, Math.PI * 2);
-  context.fillStyle = '#ffffff';
+  context.fillStyle = '#060B13';
   context.fill();
 
   return canvas.toDataURL('image/png');
@@ -128,6 +157,7 @@ export function createEarthFeatures({ viewer, container, callbacks }) {
   const scene = viewer.scene;
   const handler = new Cesium.ScreenSpaceEventHandler(scene.canvas);
   const sitePinEntities = [];
+  const launchSitePinEntities = [];
   let customPinEntity = null;
   let selectedEntity = null;
   let hoveredEntity = null;
@@ -150,7 +180,7 @@ export function createEarthFeatures({ viewer, container, callbacks }) {
       entity.billboard.scale = selected
         ? feature?.isCustomPin && entity === selectedEntity
           ? EARTH_PIN_STYLE.selectedScale
-          : baseScale * (entity === selectedEntity ? 1.4 : 1.2)
+          : baseScale * (entity === selectedEntity ? 1.38 : 1.2)
         : baseScale;
       entity.billboard.distanceDisplayCondition =
         new Cesium.DistanceDisplayCondition(
@@ -175,23 +205,24 @@ export function createEarthFeatures({ viewer, container, callbacks }) {
           : Math.min(maxLabelDistance, EARTH_PIN_STYLE.overviewDistance)
       );
       entity.label.fillColor = selected
-        ? Cesium.Color.fromCssColorString(
-            feature?.isCustomPin ? '#ffe4e6' : '#7dd3fc'
-          )
-        : Cesium.Color.WHITE;
+        ? Cesium.Color.fromCssColorString('#00D2C4')
+        : Cesium.Color.fromCssColorString('#FFFFFF');
     }
   };
 
-  EARTH_COMMUNICATION_SITES.forEach((site) => {
+  const addSiteEntity = (site, category) => {
+    const isLaunch = category === 'earth-launch-sites';
     const feature = { ...site, body: 'earth' };
-    const baseScale =
-      site.type === 'deep-space-communication'
-        ? EARTH_PIN_STYLE.baseScale
-        : EARTH_PIN_STYLE.baseScale * 0.88;
-    const maxLabelDistance =
-      site.type === 'deep-space-communication'
-        ? 35_000_000
-        : 18_000_000;
+    const baseScale = isLaunch
+      ? EARTH_PIN_STYLE.baseScale * 0.95
+      : site.type === 'deep-space-communication'
+      ? EARTH_PIN_STYLE.baseScale
+      : EARTH_PIN_STYLE.baseScale * 0.88;
+    const maxLabelDistance = isLaunch
+      ? 28_000_000
+      : site.type === 'deep-space-communication'
+      ? 35_000_000
+      : 18_000_000;
 
     const entity = viewer.entities.add({
       name: feature.name,
@@ -205,39 +236,33 @@ export function createEarthFeatures({ viewer, container, callbacks }) {
         image: createSitePinImage(feature.type, false),
         verticalOrigin: Cesium.VerticalOrigin.CENTER,
         horizontalOrigin: Cesium.HorizontalOrigin.CENTER,
-        heightReference: Cesium.HeightReference.RELATIVE_TO_GROUND,
         scale: baseScale,
+        eyeOffset: new Cesium.Cartesian3(0, 0, -2500),
         scaleByDistance: new Cesium.NearFarScalar(
           EARTH_PIN_STYLE.nearDistance,
           1.0,
           EARTH_PIN_STYLE.farDistance,
-          0.68
-        ),
-        translucencyByDistance: new Cesium.NearFarScalar(
-          EARTH_PIN_STYLE.farDistance * 0.7,
-          1.0,
-          EARTH_PIN_STYLE.farDistance,
-          0.65
+          0.72
         ),
       },
       label: {
         text: feature.name,
-        font: '600 11px system-ui, sans-serif',
+        font: '600 11px "Plus Jakarta Sans", system-ui, sans-serif',
         style: Cesium.LabelStyle.FILL_AND_OUTLINE,
-        fillColor: Cesium.Color.WHITE,
-        outlineColor: Cesium.Color.fromCssColorString('#020617'),
+        fillColor: Cesium.Color.fromCssColorString('#F8FAFC'),
+        outlineColor: Cesium.Color.fromCssColorString('#060B13'),
         outlineWidth: 3,
         showBackground: true,
-        backgroundColor: Cesium.Color.fromCssColorString('rgba(6, 11, 22, 0.9)'),
+        backgroundColor: Cesium.Color.fromCssColorString('rgba(6, 11, 19, 0.9)'),
         backgroundPadding: new Cesium.Cartesian2(7, 4),
         verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
         pixelOffset: new Cesium.Cartesian2(0, -24),
-        heightReference: Cesium.HeightReference.RELATIVE_TO_GROUND,
+        eyeOffset: new Cesium.Cartesian3(0, 0, -3500),
         scaleByDistance: new Cesium.NearFarScalar(
           EARTH_PIN_STYLE.nearDistance,
           1.0,
           EARTH_PIN_STYLE.farDistance,
-          0.8
+          0.82
         ),
         distanceDisplayCondition: new Cesium.DistanceDisplayCondition(
           0,
@@ -246,30 +271,30 @@ export function createEarthFeatures({ viewer, container, callbacks }) {
       },
       properties: {
         feature,
-        category: 'earth-communication-sites',
+        category,
         markerType: feature.type,
         baseScale,
         maxLabelDistance,
       },
     });
 
-    sitePinEntities.push(entity);
-    updatePinStyle(entity);
-  });
-
-  const getSurfaceCartesian = (position, precise = false) => {
-    if (!precise) {
-      return viewer.camera.pickEllipsoid(position, Cesium.Ellipsoid.WGS84);
+    if (isLaunch) {
+      launchSitePinEntities.push(entity);
+    } else {
+      sitePinEntities.push(entity);
     }
-    const ray = viewer.camera.getPickRay(position);
-    return (
-      (ray && scene.globe.pick(ray, scene)) ||
-      viewer.camera.pickEllipsoid(position, Cesium.Ellipsoid.WGS84)
-    );
+    updatePinStyle(entity);
   };
 
-  const getSurfacePosition = (position, precise = false) => {
-    const cartesian = getSurfaceCartesian(position, precise);
+  EARTH_COMMUNICATION_SITES.forEach((site) => addSiteEntity(site, 'earth-communication-sites'));
+  EARTH_LAUNCH_SITES.forEach((site) => addSiteEntity(site, 'earth-launch-sites'));
+
+  const getSurfaceCartesian = (position) => {
+    return viewer.camera.pickEllipsoid(position, Cesium.Ellipsoid.WGS84);
+  };
+
+  const getSurfacePosition = (position) => {
+    const cartesian = getSurfaceCartesian(position);
     if (!cartesian) return null;
     return Cesium.Cartographic.fromCartesian(
       cartesian,
@@ -345,7 +370,6 @@ export function createEarthFeatures({ viewer, container, callbacks }) {
     const angle =
       Math.atan2(axisMagnitude, dot) * EARTH_DRAG_SENSITIVITY;
 
-    // Inverse camera rotation makes the picked surface point follow the cursor.
     viewer.camera.rotate(axis, angle);
     scene.requestRender();
     return true;
@@ -354,8 +378,7 @@ export function createEarthFeatures({ viewer, container, callbacks }) {
   const dropCustomPin = (longitude, latitude, customName, terrainHeight = 0) => {
     if (
       !Number.isFinite(longitude) ||
-      !Number.isFinite(latitude) ||
-      !Number.isFinite(terrainHeight)
+      !Number.isFinite(latitude)
     ) {
       throw new TypeError('Earth pin coordinates must be finite numbers.');
     }
@@ -363,7 +386,7 @@ export function createEarthFeatures({ viewer, container, callbacks }) {
     const normalizedLongitude =
       ((((longitude + 180) % 360) + 360) % 360) - 180;
     const normalizedLatitude = Cesium.Math.clamp(latitude, -90, 90);
-    const pinTitle = customName || 'Earth Waypoint';
+    const pinTitle = customName || 'Custom Earth Station';
     const pinHeight = EARTH_PIN_STYLE.surfaceClearance;
     const { latStr, lonStr } = formatLunarCoordinates(
       normalizedLongitude,
@@ -376,13 +399,13 @@ export function createEarthFeatures({ viewer, container, callbacks }) {
       type: 'custom_pin',
       latitude: normalizedLatitude,
       longitude: normalizedLongitude,
-      height: terrainHeight,
+      height: Number.isFinite(terrainHeight) ? terrainHeight : 0,
       isCustomPin: true,
       body: 'earth',
       latStr,
       lonStr,
       combinedCoordinates: `${latStr}, ${lonStr}`,
-      description: `Earth waypoint at ${latStr}, ${lonStr}.`,
+      description: `Custom Earth ground station waypoint at ${latStr}, ${lonStr}. Ready for direct-to-Earth (DTE) lunar line-of-sight link evaluation.`,
       source: 'User Earth Waypoint',
     };
 
@@ -409,37 +432,29 @@ export function createEarthFeatures({ viewer, container, callbacks }) {
         image: createPinImage(true),
         verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
         horizontalOrigin: Cesium.HorizontalOrigin.CENTER,
-        heightReference: Cesium.HeightReference.RELATIVE_TO_GROUND,
-        scale: EARTH_PIN_STYLE.baseScale,
+        scale: EARTH_PIN_STYLE.selectedScale,
+        eyeOffset: new Cesium.Cartesian3(0, 0, -3000),
         scaleByDistance: new Cesium.NearFarScalar(
           EARTH_PIN_STYLE.nearDistance,
           1.0,
           EARTH_PIN_STYLE.farDistance,
-          0.68
+          0.75
         ),
-        translucencyByDistance: new Cesium.NearFarScalar(
-          EARTH_PIN_STYLE.farDistance * 0.7,
-          1.0,
-          EARTH_PIN_STYLE.farDistance,
-          0.65
-        ),
-        disableDepthTestDistance: 0,
       },
       label: {
         text: `${pinTitle}\n${latStr}, ${lonStr}`,
         font: 'bold 12px "Space Mono", monospace',
         style: Cesium.LabelStyle.FILL_AND_OUTLINE,
-        fillColor: Cesium.Color.fromCssColorString('#ffe4e6'),
-        outlineColor: Cesium.Color.fromCssColorString('#881337'),
+        fillColor: Cesium.Color.fromCssColorString('#F8FAFC'),
+        outlineColor: Cesium.Color.fromCssColorString('#060B13'),
         outlineWidth: 2,
         showBackground: true,
-        backgroundColor: Cesium.Color.fromCssColorString('rgba(15, 23, 42, 0.94)'),
+        backgroundColor: Cesium.Color.fromCssColorString('rgba(6, 11, 19, 0.94)'),
         backgroundPadding: new Cesium.Cartesian2(7, 4),
         verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
         pixelOffset: new Cesium.Cartesian2(0, -42),
-        eyeOffset: new Cesium.Cartesian3(0, 0, -30),
+        eyeOffset: new Cesium.Cartesian3(0, 0, -4000),
         scale: 1.0,
-        heightReference: Cesium.HeightReference.RELATIVE_TO_GROUND,
         scaleByDistance: new Cesium.NearFarScalar(
           EARTH_PIN_STYLE.nearDistance,
           1.0,
@@ -450,7 +465,6 @@ export function createEarthFeatures({ viewer, container, callbacks }) {
           0,
           EARTH_PIN_STYLE.farDistance
         ),
-        disableDepthTestDistance: 0,
       },
       properties: {
         feature,
@@ -581,7 +595,7 @@ export function createEarthFeatures({ viewer, container, callbacks }) {
       selectFeaturePin(feature.id);
       callbacks.onFeatureSelect?.(feature);
       const targetHeight = Math.max(
-        500_000,
+        3_500_000,
         scene.screenSpaceCameraController.minimumZoomDistance
       );
       viewer.camera.flyTo({
@@ -591,12 +605,12 @@ export function createEarthFeatures({ viewer, container, callbacks }) {
           targetHeight,
           Cesium.Ellipsoid.WGS84
         ),
-        duration: 0.8,
+        duration: 0.9,
       });
       return;
     }
 
-    const cartographic = getSurfacePosition(click.position, true);
+    const cartographic = getSurfacePosition(click.position);
     if (!cartographic) return;
     const pin = dropCustomPin(
       Cesium.Math.toDegrees(cartographic.longitude),
@@ -615,6 +629,12 @@ export function createEarthFeatures({ viewer, container, callbacks }) {
     setLayerVisibility(layerId, visible) {
       if (layerId === 'earth-communication-sites') {
         sitePinEntities.forEach((entity) => {
+          entity.show = visible;
+        });
+        scene.requestRender();
+      }
+      if (layerId === 'earth-launch-sites') {
+        launchSitePinEntities.forEach((entity) => {
           entity.show = visible;
         });
         scene.requestRender();

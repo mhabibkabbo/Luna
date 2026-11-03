@@ -19,6 +19,10 @@
  * @property {string=} period - Geological epoch (e.g., 'Copernican', 'Imbrian', 'Nectarian')
  * @property {string=} description - Verified scientific / historical description
  * @property {string=} source - Originating catalog (e.g., 'NASA / IAU Gazetteer / LROC')
+ * @property {string=} sourceUrl - Link to the primary source for the coordinates/description (added 2026-11-02)
+ * @property {'confirmed'|'approximate'|'planned'=} locationType - How reliable the coordinates are (added 2026-11-02)
+ * @property {boolean=} horizonEligible - false = display-only placeholder, skip horizon computation (added 2026-11-02)
+ * @property {string=} positionNote - Free-text note about the coordinates (added 2026-11-02)
  * @property {string=} date - Historic landing or mission date (for landing sites)
  * @property {string=} agency - Operating space agency (e.g., 'NASA', 'CNSA', 'ISRO')
  * @property {string=} status - Mission outcome (e.g., 'Successful soft landing')

@@ -24,9 +24,9 @@ export default function LayerPanel({
 }) {
   if (!isOpen) return null;
 
-  const earthLayers = layers.filter((l) => l.id === 'earth-communication-sites');
+  const earthLayers = layers.filter((l) => l.id.startsWith('earth-'));
   const visibleLayers =
-    activePlanet === 'earth' ? earthLayers : layers.filter((l) => l.id !== 'earth-communication-sites');
+    activePlanet === 'earth' ? earthLayers : layers.filter((l) => !l.id.startsWith('earth-'));
   const baseLayers = visibleLayers.filter((l) => l.category === 'BASE');
   const terrainLayers = visibleLayers.filter((l) => l.category === 'TERRAIN');
   const featureLayers = visibleLayers.filter((l) => l.category === 'FEATURES');
