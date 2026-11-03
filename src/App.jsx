@@ -27,10 +27,6 @@ import MissionsPage from './components/missions/MissionsPage.jsx';
 import TransparentLunarSearch from './components/search/TransparentLunarSearch.jsx';
 import LunaBrandLogo from './components/common/LunaBrandLogo.jsx';
 import ToastFeedback from './components/common/ToastFeedback.jsx';
-<<<<<<< HEAD
-import UserGuideModal from './components/common/UserGuideModal.jsx';
-=======
->>>>>>> 66b8661a38360fddf9890f8e655a4868134e6291
 import { CLPS_MISSIONS } from './data/clpsMissions.js';
 import { LUNAR_LAYERS_CATALOG } from './services/nasa/layers.js';
 import { Layers, Ruler, Globe, Map as MapIcon, Moon, Sun, Radio, Compass, Thermometer, Sparkles, ChevronDown } from 'lucide-react';
@@ -855,15 +851,11 @@ export default function App() {
         activePlanet={activePlanet}
       />
 
-<<<<<<< HEAD
-
-=======
       {/* Transparent Top-Centered Lunar Location Search Bar */}
       <TransparentLunarSearch
         onSelectFeature={handleSearchSelect}
         activePlanet={activePlanet}
       />
->>>>>>> 66b8661a38360fddf9890f8e655a4868134e6291
 
       {/* Floating Feedback Notifications */}
       <ToastFeedback
@@ -875,11 +867,6 @@ export default function App() {
       {/* MAIN VIEWPORT: Moon & Terrain occupy 100% of the canvas                   */}
       {/* ========================================================================= */}
       <main className="relative w-full h-full">
-<<<<<<< HEAD
-
-
-=======
->>>>>>> 66b8661a38360fddf9890f8e655a4868134e6291
         {/* 3D Cesium Orbit View */}
         <div
           className={`absolute inset-0 w-full h-full ${
@@ -1088,16 +1075,6 @@ export default function App() {
         viewMode={viewMode}
         selectedFeature={selectedFeature}
       />
-<<<<<<< HEAD
-
-
-      {/* Interactive User Guide & Keyboard Shortcuts Dialog */}
-      <UserGuideModal
-        isOpen={isGuideOpen}
-        onClose={() => setIsGuideOpen(false)}
-      />
-=======
->>>>>>> 66b8661a38360fddf9890f8e655a4868134e6291
     </div>
   );
 }
