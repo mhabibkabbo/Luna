@@ -4,11 +4,12 @@ import {
   Layers,
   Moon,
   Globe2,
-  Play,
-  Pause,
   Hand,
+  Grab,
+  RotateCw,
   Sliders,
   GitCompare,
+  HelpCircle,
 } from 'lucide-react';
 
 /**
@@ -32,16 +33,21 @@ export default function UnifiedToolbar({
   activePlanet = 'moon',
   viewMode = '3d',
   onViewModeChange,
+  onOpenGuide,
+  onToggleCelestial,
+  isCelestialOpen = false,
 }) {
   return (
     <div className="fixed top-1/2 left-3 -translate-y-1/2 z-30 pointer-events-auto select-none">
       <div className="flex flex-col items-center gap-1 p-1 rounded-xl bg-[#080E18]/95 border border-[#16283C] shadow-[0_12px_36px_rgba(0,0,0,0.9)] backdrop-blur-2xl">
-        {/* Home Button (Returns to Landing Page) */}
+        {/* Home Button (Resets Camera View to Overview) */}
         <button
+          id="btn-toolbar-home-reset"
           type="button"
-          onClick={onReturnHome}
+          onClick={onResetOverview || onReturnHome}
           className="w-8 h-8 rounded-lg flex items-center justify-center text-[#F1F5F9] bg-[#0D1726] hover:bg-[#00D2C4] hover:text-[#060B13] transition-all"
-          title="Return to Studio Home"
+          title="Reset View to Overview"
+          aria-label="Reset view to overview"
         >
           <Home className="w-3.5 h-3.5" />
         </button>
@@ -150,38 +156,36 @@ export default function UnifiedToolbar({
 
         <div className="w-4 h-[1px] bg-[#16283C] my-0.5" />
 
-        {/* Orbital Auto-Rotate */}
+        {/* Hand Grab: Celestial Ephemeris & Time Engine */}
         <button
+          id="btn-toolbar-ephemeris"
+          type="button"
+          onClick={onToggleCelestial}
+          className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${
+            isCelestialOpen
+              ? 'bg-[#00D2C4] text-[#060B13] shadow-[0_0_12px_rgba(0,210,196,0.4)] font-semibold'
+              : 'text-[#94A3B8] hover:text-white hover:bg-[#152336]'
+          }`}
+          title={isCelestialOpen ? 'Close Celestial Ephemeris [E]' : 'Open Celestial Ephemeris & Time Engine [E]'}
+          aria-label="Toggle Celestial Ephemeris"
+        >
+          {isCelestialOpen ? <Grab className="w-3.5 h-3.5" /> : <Hand className="w-3.5 h-3.5" />}
+        </button>
+
+        {/* Orbit Auto-Rotation Toggle (Below existing reset button) */}
+        <button
+          id="btn-toolbar-auto-rotate"
           type="button"
           onClick={onToggleAutoRotate}
           className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${
             isAutoRotating
               ? 'bg-[#00D2C4] text-[#060B13] shadow-[0_0_8px_rgba(0,210,196,0.3)]'
-              : 'bg-[#0D1726] text-white hover:bg-[#152336]'
+              : 'text-[#94A3B8] hover:text-white hover:bg-[#152336]'
           }`}
           title={isAutoRotating ? 'Pause Orbit Rotation' : 'Start Orbit Rotation'}
+          aria-label="Toggle orbit rotation"
         >
-          {isAutoRotating ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
-        </button>
-
-        {/* Reset Overview */}
-        <button
-          type="button"
-          onClick={onResetOverview}
-          className="w-8 h-8 rounded-lg flex items-center justify-center text-[#94A3B8] hover:text-white hover:bg-[#152336] transition-colors"
-          title="Reset Global Overview"
-        >
-          <Hand className="w-3.5 h-3.5" />
-        </button>
-
-        {/* South Pole Quick Jump */}
-        <button
-          type="button"
-          onClick={onGoToSouthPole}
-          className="w-8 h-8 rounded-lg flex items-center justify-center font-mono text-[9px] font-bold text-[#F1F5F9] hover:bg-[#152336] hover:text-[#00D2C4] transition-colors"
-          title="Center on Lunar South Pole (90°S)"
-        >
-          90°S
+          <RotateCw className={`w-3.5 h-3.5 ${isAutoRotating ? 'animate-spin' : ''}`} />
         </button>
 
         {/* Lighting Shading Toggle */}
@@ -195,6 +199,18 @@ export default function UnifiedToolbar({
         >
           <Moon className="w-3.5 h-3.5" />
         </button>
+
+        {/* User Guide & Help */}
+        {onOpenGuide && (
+          <button
+            type="button"
+            onClick={onOpenGuide}
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-[#94A3B8] hover:text-[#00D2C4] hover:bg-[#152336] transition-colors"
+            title="User Guide & Keyboard Shortcuts [?]"
+          >
+            <HelpCircle className="w-3.5 h-3.5" />
+          </button>
+        )}
       </div>
     </div>
   );

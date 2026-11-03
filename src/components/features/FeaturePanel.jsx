@@ -9,7 +9,6 @@ import {
   Navigation,
   Award,
   Database,
-  Ruler,
   MapPin,
   Copy,
   Check,
@@ -152,114 +151,14 @@ export default function FeaturePanel({
     }
   };
 
-  const getStatusBadge = () => {
-    if (isCustomPin) {
-      return (
-        <span className="inline-flex items-center gap-1.5 text-[10px] font-mono px-2 py-0.5 rounded-full bg-rose-950/60 text-rose-300 border border-rose-500/40">
-          <span className="relative flex h-1.5 w-1.5">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75" />
-            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-rose-500" />
-          </span>
-          Active Lunar Waypoint
-        </span>
-      );
-    }
-    if (isClps && clpsData) {
-      switch (clpsData.missionStatus) {
-        case 'completed':
-          return (
-            <span className="inline-flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-950/80 text-emerald-300 border border-emerald-500/40">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-              Completed Soft Landing
-            </span>
-          );
-        case 'failed':
-          return (
-            <span className="inline-flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded-full bg-rose-950/80 text-rose-300 border border-rose-500/40">
-              <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
-              Flight Anomaly (Earth Re-entry)
-            </span>
-          );
-        case 'in-progress':
-          return (
-            <span className="inline-flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-950/80 text-amber-300 border border-amber-500/40 animate-pulse">
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-              Mission Active
-            </span>
-          );
-        case 'planned':
-        default:
-          return (
-            <span className="inline-flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-950/80 text-cyan-300 border border-cyan-500/40">
-              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
-              Planned Mission Target
-            </span>
-          );
-      }
-    }
-
-    if (feature.status) {
-      const isApollo = feature.type === 'landing-site';
-      return (
-        <span
-          className={`inline-flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded-full border ${
-            isApollo
-              ? 'bg-amber-950/80 text-amber-300 border-amber-500/40'
-              : 'bg-slate-900 text-slate-300 border-slate-700'
-          }`}
-        >
-          <span className={`w-1.5 h-1.5 rounded-full ${isApollo ? 'bg-amber-400' : 'bg-slate-400'}`} />
-          {feature.status}
-        </span>
-      );
-    }
-
-    return null;
-  };
-
-  const getLocationTypeBadge = () => {
-    if (isCustomPin) {
-      return (
-        <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-rose-950/40 text-rose-300 border border-rose-500/30">
-          USER WAYPOINT
-        </span>
-      );
-    }
-    const locType = clpsData?.locationType || (feature.type === 'landing-site' ? 'confirmed' : 'approximate');
-    if (locType === 'confirmed') {
-      return (
-        <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-emerald-950/60 text-emerald-300 border border-emerald-500/30">
-          CONFIRMED COORDINATES
-        </span>
-      );
-    }
-    if (locType === 'planned') {
-      return (
-        <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-cyan-950/60 text-cyan-300 border border-cyan-500/30">
-          PLANNED LANDING ZONE
-        </span>
-      );
-    }
-    if (feature.body === 'earth' && !isCustomPin) {
-      return (
-        <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-slate-900 text-slate-400 border border-slate-800">
-          APPROXIMATE FACILITY LOCATION
-        </span>
-      );
-    }
-    return (
-      <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-slate-900 text-slate-400 border border-slate-800">
-        {feature.body === 'earth' ? 'GEOGRAPHIC COORDINATES' : 'SELENOGRAPHIC COORDINATES'}
-      </span>
-    );
-  };
-
-  // Minimized state pill docked on side
+  // Minimized state pill docked at bottom right
   if (isCollapsed) {
     return (
       <div
         id="feature-panel-collapsed"
-        className="absolute top-14 right-3 sm:right-4 z-50 flex items-center gap-2 p-2 bg-[#060b14]/95 backdrop-blur-xl border border-slate-800 rounded-xl shadow-2xl pointer-events-auto animate-in fade-in select-none"
+        className={`absolute ${
+          timelineVisible ? 'bottom-[75px]' : 'bottom-3 sm:bottom-4'
+        } right-3 sm:right-4 left-auto z-40 flex items-center gap-2 p-2 bg-[#060b14]/95 backdrop-blur-xl border border-slate-800 rounded-xl shadow-2xl pointer-events-auto animate-in fade-in slide-in-from-right-2 duration-150 select-none`}
       >
         <button
           type="button"
@@ -290,22 +189,18 @@ export default function FeaturePanel({
     <aside
       id="lunar-feature-panel"
       className={`absolute ${
-        timelineVisible ? 'bottom-[110px]' : 'bottom-7'
-      } sm:bottom-auto sm:top-14 right-0 sm:right-4 left-0 sm:left-auto z-50 sm:w-[min(var(--feature-panel-width),calc(100vw-2rem))] max-h-[72vh] ${
-        timelineVisible
-          ? 'sm:max-h-[calc(100vh-12rem)]'
-          : 'sm:max-h-[calc(100vh-6rem)]'
-      } flex flex-col bg-[#060b14]/96 backdrop-blur-2xl border-t sm:border border-slate-800 rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden pointer-events-auto select-none transition-all animate-in fade-in slide-in-from-top-2 duration-150`}
+        timelineVisible ? 'bottom-[76px]' : 'bottom-3 sm:bottom-4'
+      } top-16 right-0 sm:right-3 md:right-4 left-auto z-40 w-full sm:w-[min(var(--feature-panel-width),calc(100vw-2rem))] flex flex-col bg-[#060b14]/96 backdrop-blur-2xl border-t sm:border border-slate-800 rounded-t-2xl sm:rounded-2xl shadow-2xl shadow-black/80 overflow-hidden pointer-events-auto select-none transition-all animate-in fade-in slide-in-from-right-4 duration-200 ease-out`}
       style={{ '--feature-panel-width': `${FEATURE_PANEL_WIDTH_REM}rem` }}
     >
       {/* Mobile drag bar */}
       <div className="w-10 h-1 bg-slate-700 rounded-full mx-auto mt-2 sm:hidden" />
 
-      {/* Header */}
-      <div className="flex items-start justify-between p-3.5 pb-2.5 border-b border-slate-800 bg-[#070d18]/60">
-        <div className="flex flex-col min-w-0 pr-2">
-          <div className="flex items-center gap-1.5 flex-wrap">
-            {isCustomPin && <MapPin className="w-3 h-3 text-rose-400 shrink-0" />}
+      {/* Streamlined Header */}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800/90 bg-[#070d18]/80 shrink-0">
+        <div className="flex items-center gap-2 min-w-0 pr-2">
+          {isCustomPin && <MapPin className="w-4 h-4 text-rose-400 shrink-0" />}
+          <div className="min-w-0">
             <span
               className={`text-[9.5px] font-mono font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded border ${
                 isClps
@@ -317,30 +212,18 @@ export default function FeaturePanel({
             >
               {getTypeLabel(feature.type)}
             </span>
-            {getLocationTypeBadge()}
+            <h2 className="text-base font-bold text-white tracking-tight leading-snug truncate mt-1">
+              {clpsData?.name || feature.name}
+            </h2>
           </div>
-          <h2 className="text-base font-bold text-white tracking-tight leading-snug truncate mt-1">
-            {clpsData?.name || feature.name}
-          </h2>
-          <div className="mt-1">{getStatusBadge()}</div>
         </div>
 
         <div className="flex items-center gap-1 shrink-0">
-          {onCompareMission && (
-            <button
-              type="button"
-              onClick={() => onCompareMission(clpsData || feature)}
-              className="p-1 text-cyan-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
-              title="Compare this site/mission in the Landing Site Navigator"
-            >
-              <GitCompare className="w-3.5 h-3.5" />
-            </button>
-          )}
           <button
             type="button"
             onClick={() => setIsCollapsed(true)}
-            className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
-            title="Collapse panel"
+            className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+            title="Minimize panel"
           >
             <Minimize2 className="w-3.5 h-3.5" />
           </button>
@@ -348,7 +231,7 @@ export default function FeaturePanel({
             id="btn-close-feature-panel"
             type="button"
             onClick={onClose}
-            className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+            className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
             title="Close details"
           >
             <X className="w-4 h-4" />
@@ -658,91 +541,70 @@ export default function FeaturePanel({
       </div>
 
       {/* Action buttons footer */}
-      <div className="p-3 border-t border-slate-800/80 bg-[#040711]/90 backdrop-blur-md flex flex-col gap-2">
-        {/* Row 1: Primary Action Buttons */}
-        <div className="flex items-center gap-2">
+      <div className="p-3 border-t border-slate-800/80 bg-[#040711]/90 backdrop-blur-md flex items-center gap-2 shrink-0">
+        <button
+          id="btn-feature-zoom-here"
+          type="button"
+          onClick={() => {
+            notifyNavigation(`Aligning with ${feature.name || 'target'}`, `${latStr}, ${lonStr}`);
+            onZoomHere(featLon, featLat);
+          }}
+          className={`flex-1 h-9 px-3 flex items-center justify-center gap-1.5 font-semibold text-xs rounded-xl shadow-md transition-all duration-150 active:scale-95 ${
+            isCustomPin
+              ? 'bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-500 hover:to-rose-600 text-white shadow-rose-950/50'
+              : 'bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white shadow-cyan-950/50'
+          }`}
+        >
+          <Navigation className="w-3.5 h-3.5" />
+          <span>Center View</span>
+        </button>
+
+        {onCompareMission && feature.body !== 'earth' && (
           <button
-            id="btn-feature-zoom-here"
             type="button"
             onClick={() => {
-              notifyNavigation(`Aligning with ${feature.name || 'target'}`, `${latStr}, ${lonStr}`);
-              onZoomHere(featLon, featLat);
+              notifyInfo('Opening Site Navigator', `Comparing ${feature.name || 'target site'} in trade-off analyzer.`);
+              onCompareMission(clpsData || feature);
             }}
-            className={`flex-1 h-9 px-3 flex items-center justify-center gap-1.5 font-semibold text-xs rounded-xl shadow-md transition-all duration-150 active:scale-95 ${
-              isCustomPin
-                ? 'bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-500 hover:to-rose-600 text-white shadow-rose-950/50'
-                : 'bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white shadow-cyan-950/50'
-            }`}
+            className="flex-1 h-9 px-3 flex items-center justify-center gap-1.5 bg-slate-900/90 hover:bg-slate-850 text-cyan-300 font-semibold text-xs rounded-xl border border-cyan-500/30 hover:border-cyan-400/60 shadow-sm transition-all duration-150 active:scale-95"
+            title="Compare this landing site in Site Navigator"
           >
-            <Navigation className="w-3.5 h-3.5" />
-            <span>Center View</span>
+            <GitCompare className="w-3.5 h-3.5 text-cyan-400" />
+            <span>Analyze Site</span>
           </button>
+        )}
 
-          {onCompareMission && feature.body !== 'earth' && (
-            <button
-              type="button"
-              onClick={() => {
-                notifyInfo('Opening Site Navigator', `Comparing ${feature.name || 'target site'} in trade-off analyzer.`);
-                onCompareMission(clpsData || feature);
-              }}
-              className="flex-1 h-9 px-3 flex items-center justify-center gap-1.5 bg-slate-900/90 hover:bg-slate-850 text-cyan-300 font-semibold text-xs rounded-xl border border-cyan-500/30 hover:border-cyan-400/60 shadow-sm transition-all duration-150 active:scale-95"
-              title="Compare this landing site in Site Navigator"
-            >
-              <GitCompare className="w-3.5 h-3.5 text-cyan-400" />
-              <span>Analyze Site</span>
-            </button>
-          )}
-        </div>
+        {isCustomPin && onClearCustomPin && (
+          <button
+            id="btn-feature-clear-pin"
+            type="button"
+            onClick={() => {
+              notifyInfo('Waypoint Removed', 'Custom landing pin cleared from lunar surface.');
+              onClearCustomPin(feature.body === 'earth' ? 'earth' : 'moon');
+              onClose();
+            }}
+            className="h-9 px-3 flex items-center justify-center gap-1.5 bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 hover:text-rose-100 font-semibold text-xs rounded-xl border border-rose-500/40 hover:border-rose-400 transition-all duration-150 active:scale-95 shadow-sm"
+            title="Remove this custom waypoint from map"
+          >
+            <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+            <span>Clear Pin</span>
+          </button>
+        )}
 
-        {/* Row 2: Secondary Tool Buttons */}
-        <div className="flex items-center gap-2">
-          {onMeasureFromHere && (
-            <button
-              id="btn-feature-measure-from-here"
-              type="button"
-              onClick={() => {
-                notifyInfo('Measurement Active', `Started geodesic ruler at ${feature.name || 'target'}. Click on the Moon to measure distance.`);
-                onMeasureFromHere(featLon, featLat);
-              }}
-              className="flex-1 h-8 px-2.5 flex items-center justify-center gap-1.5 bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-white font-medium text-xs rounded-lg border border-slate-800 hover:border-slate-700 transition-all duration-150 active:scale-95 shadow-sm"
-              title="Start geodesic distance measurement from this waypoint"
-            >
-              <Ruler className="w-3.5 h-3.5 text-amber-400" />
-              <span>Measure Distance</span>
-            </button>
-          )}
-
-          {isCustomPin && onClearCustomPin && (
-            <button
-              id="btn-feature-clear-pin"
-              type="button"
-              onClick={() => {
-                notifyInfo('Waypoint Removed', 'Custom landing pin cleared from lunar surface.');
-                onClearCustomPin(feature.body === 'earth' ? 'earth' : 'moon');
-                onClose();
-              }}
-              className="h-8 px-3 flex items-center justify-center gap-1.5 bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 hover:text-rose-100 font-medium text-xs rounded-lg border border-rose-500/40 hover:border-rose-400 transition-all duration-150 active:scale-95 shadow-sm"
-              title="Remove this custom waypoint from map"
-            >
-              <Trash2 className="w-3.5 h-3.5 text-rose-400" />
-              <span>Clear Pin</span>
-            </button>
-          )}
-
-          {onSelectOtherBody && !isCustomPin && (
-            <button
-              type="button"
-              onClick={() => {
-                notifyInfo(`Switched to ${otherBody === 'earth' ? 'Earth' : 'Moon'} View`, 'Planetary view changed for cross-body communication analysis.');
-                onSelectOtherBody(otherBody);
-              }}
-              className="flex-1 h-8 px-2.5 flex items-center justify-center gap-1 rounded-lg border border-slate-700 bg-slate-900/80 text-[11px] font-medium text-slate-300 transition-colors hover:border-cyan-500/50 hover:text-cyan-200"
-            >
-              <Globe2 className="h-3 w-3" />
-              <span>Select {otherBody === 'earth' ? 'Earth' : 'Moon'}</span>
-            </button>
-          )}
-        </div>
+        {onSelectOtherBody && !isCustomPin && (
+          <button
+            type="button"
+            onClick={() => {
+              notifyInfo(`Switched to ${otherBody === 'earth' ? 'Earth' : 'Moon'} View`, 'Planetary view changed for cross-body communication analysis.');
+              onSelectOtherBody(otherBody);
+            }}
+            className="h-9 px-3 flex items-center justify-center gap-1.5 rounded-xl border border-slate-700 bg-slate-900/80 text-xs font-semibold text-slate-300 transition-colors hover:border-cyan-500/50 hover:text-cyan-200 active:scale-95 shadow-sm"
+            title={`Switch to ${otherBody === 'earth' ? 'Earth' : 'Moon'} view`}
+          >
+            <Globe2 className="w-3.5 h-3.5 text-cyan-400" />
+            <span className="truncate">View {otherBody === 'earth' ? 'Earth' : 'Moon'}</span>
+          </button>
+        )}
       </div>
     </aside>
   );

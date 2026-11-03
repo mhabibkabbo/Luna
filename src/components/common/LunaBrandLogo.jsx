@@ -9,10 +9,17 @@ export default function LunaBrandLogo({
   onClick,
   className = '',
   title = 'Luna — Spatial Lunar Mission & Site Studio',
+  transparent = true,
 }) {
   const content = (
     <div className={`flex items-center gap-2.5 shrink-0 group ${className}`}>
-      <div className="w-8 h-8 rounded-xl bg-[#0D1726] border border-[#16283C] flex items-center justify-center group-hover:border-[#00D2C4]/60 transition-colors duration-200">
+      <div
+        className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors duration-200 ${
+          transparent
+            ? 'bg-transparent border border-white/15 group-hover:border-[#00D2C4]/60 group-hover:bg-white/5'
+            : 'bg-[#0D1726] border border-[#16283C] group-hover:border-[#00D2C4]/60'
+        }`}
+      >
         <svg
           viewBox="0 0 24 24"
           className="w-4 h-4"
@@ -35,7 +42,7 @@ export default function LunaBrandLogo({
       </div>
 
       <div className="flex flex-col leading-none text-left">
-        <span className="text-lg font-bold tracking-tight text-[#F1F5F9] group-hover:text-white transition-colors whitespace-nowrap">
+        <span className="text-lg font-bold tracking-tight text-[#F1F5F9] group-hover:text-white transition-colors whitespace-nowrap drop-shadow-sm">
           luna<span className="font-editorial italic font-normal text-[#00D2C4] ml-0.5">studio</span>
         </span>
       </div>
@@ -48,7 +55,7 @@ export default function LunaBrandLogo({
         type="button"
         onClick={onClick}
         title={title}
-        className="group flex items-center h-9 px-2 rounded-xl border border-transparent hover:border-[#16283C] hover:bg-[#0D1726]/80 focus:outline-none transition-all active:scale-[0.98]"
+        className="group flex items-center h-9 px-2 rounded-xl bg-transparent hover:bg-white/5 border border-transparent hover:border-white/10 focus:outline-none transition-all active:scale-[0.98]"
       >
         {content}
       </button>

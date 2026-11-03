@@ -69,6 +69,7 @@ const ALIAS_MAP = {
 export default function TransparentLunarSearch({
   onSelectFeature,
   activePlanet = 'moon',
+  className = '',
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [query, setQuery] = useState('');
@@ -238,7 +239,9 @@ export default function TransparentLunarSearch({
     <div
       ref={containerRef}
       id="transparent-lunar-search"
-      className="fixed top-4 left-4 z-40 pointer-events-auto select-none transition-all duration-300"
+      className={`z-40 pointer-events-auto select-none transition-all duration-300 ${
+        className || 'fixed top-3 left-[150px] sm:top-4 sm:left-[160px]'
+      }`}
     >
       {!isExpanded ? (
         /* Collapsed Icon Only - Left Side */
