@@ -15,6 +15,7 @@ import {
   BookOpen,
   Sparkles,
   Target,
+  HelpCircle,
 } from 'lucide-react';
 import LunaBrandLogo from '../common/LunaBrandLogo.jsx';
 
@@ -34,6 +35,7 @@ export default function GlobalHeader({
   onNavigate,
   selectedFeature,
   onStartTour,
+  onOpenGuide,
 }) {
   const normalizedActive =
     activePage === 'comms'
@@ -43,13 +45,13 @@ export default function GlobalHeader({
       : activePage;
 
   return (
-    <header className="relative z-40 w-full h-13 px-4 sm:px-6 flex items-center justify-between gap-4 bg-[#030712]/90 backdrop-blur-xl border-b border-slate-800/80 shrink-0 select-none">
+    <header className="relative z-40 w-full h-[52px] px-4 sm:px-6 flex items-center justify-between gap-4 bg-[#030712]/90 backdrop-blur-xl border-b border-slate-800/80 shrink-0 select-none">
       {/* Zone 1: Brand Wordmark */}
       <div className="flex items-center gap-3 shrink-0">
         <LunaBrandLogo
           asButton
-          onClick={() => onNavigate('mission-control')}
-          title="Return to Mission Control"
+          onClick={() => onNavigate('landing')}
+          title="Return to Studio Home"
         />
         <span className="hidden xl:inline text-xs font-mono text-slate-500 border-l border-slate-800 pl-3">
           Lunar Mission Platform
@@ -97,6 +99,18 @@ export default function GlobalHeader({
             <span className="font-semibold text-slate-200 max-w-[120px] truncate">
               {selectedFeature.name}
             </span>
+          </button>
+        )}
+
+        {onOpenGuide && (
+          <button
+            type="button"
+            onClick={onOpenGuide}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700/60 text-xs font-mono font-medium transition-all duration-150 active:scale-95 shadow-sm"
+            title="User Guide & Keyboard Shortcuts [?]"
+          >
+            <HelpCircle className="w-3.5 h-3.5 text-cyan-400" />
+            <span className="hidden sm:inline">Guide</span>
           </button>
         )}
 

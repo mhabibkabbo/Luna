@@ -12,15 +12,15 @@ const EARTH_CAMERA_SETTINGS = {
   overviewHeight: 20_000_000,
   minimumZoomDistance: 50_000,
   maximumZoomDistance: 100_000_000,
-  zoomFactor: 1.2,
+  zoomFactor: 2.2,
   zoomInFactor: 0.8,
   zoomOutFactor: 1.25,
   desktopInertiaSpin: 0.88,
   mobileInertiaSpin: 0.82,
   desktopInertiaTranslate: 0.85,
   mobileInertiaTranslate: 0.80,
-  desktopInertiaZoom: 0.80,
-  mobileInertiaZoom: 0.76,
+  desktopInertiaZoom: 0.70,
+  mobileInertiaZoom: 0.65,
 };
 
 export function createEarth(container, callbacks = {}) {
@@ -70,8 +70,8 @@ export function createEarth(container, callbacks = {}) {
   scene.backgroundColor = Cesium.Color.fromCssColorString('#060B13');
   scene.globe.depthTestAgainstTerrain = false;
   scene.highDynamicRange = true;
-  scene.globe.enableLighting = true;
-  scene.globe.dynamicAtmosphereLighting = true;
+  scene.globe.enableLighting = false;
+  scene.globe.dynamicAtmosphereLighting = false;
   scene.light = new Cesium.SunLight();
 
   viewer.clock.shouldAnimate = false;
@@ -79,7 +79,7 @@ export function createEarth(container, callbacks = {}) {
     new Date(celestialTimeStore.get().ms)
   );
 
-  let lightingEnabled = true;
+  let lightingEnabled = false;
   const toggleLighting = () => {
     lightingEnabled = !lightingEnabled;
     scene.globe.enableLighting = lightingEnabled;
@@ -152,6 +152,38 @@ export function createEarth(container, callbacks = {}) {
       scene.requestRender();
     }
   });
+
+  
+  // High-resolution multi-LOD global satellite imagery
+  let tiledImageryLayer = null;
+  const loadHighResEarthTiles = async () => {
+    try {
+      const arcGisProvider = await Cesium.ArcGisMapServerImageryProvider.fromUrl(
+        'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer',
+        { enablePickFeatures: false }
+      );
+      if (isDestroyed || viewer.isDestroyed()) return;
+      tiledImageryLayer = new Cesium.ImageryLayer(arcGisProvider);
+      scene.globe.imageryLayers.add(tiledImageryLayer);
+      scene.requestRender();
+    } catch {
+      try {
+        const urlProvider = new Cesium.UrlTemplateImageryProvider({
+          url: 'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+          maximumLevel: 19,
+          hasAlphaChannel: false,
+          credit: 'Esri, Maxar, Earthstar Geographics, USDA, USGS, AeroGRID, IGN, and the GIS User Community',
+        });
+        if (isDestroyed || viewer.isDestroyed()) return;
+        tiledImageryLayer = new Cesium.ImageryLayer(urlProvider);
+        scene.globe.imageryLayers.add(tiledImageryLayer);
+        scene.requestRender();
+      } catch (e) {
+        console.warn('Tiled satellite imagery unavailable, using Blue Marble texture.', e?.message || e);
+      }
+    }
+  };
+  loadHighResEarthTiles();
 
   const features = createEarthFeatures({ viewer, container, callbacks });
   const removeTileLoadListener = scene.globe.tileLoadProgressEvent.addEventListener(
@@ -290,6 +322,7 @@ export function createEarth(container, callbacks = {}) {
   function setCommunicationLink(link) {
     latestCommunicationLink = link;
     if (!link) {
+      if (tiledImageryLayer) { scene.globe.imageryLayers.remove(tiledImageryLayer); tiledImageryLayer = null; }
       if (communicationEntity) {
         viewer.entities.remove(communicationEntity);
         communicationEntity = null;

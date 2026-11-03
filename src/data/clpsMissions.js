@@ -7,6 +7,20 @@
  */
 
 /**
+ * CHANGE LOG (2026-11-02) - every edited/added entry below also carries an inline
+ * "CHANGED" or "ADDED" comment that says why. Sources are listed in docs/lunar-sites-sources.md.
+ *
+ *  CHANGED  clps-im2-athena        landed 2025-03-06 at Mons Mouton (was a planned pin at 89.7 S)
+ *  CHANGED  clps-firefly-bgm1      landed 2025-03-02 (was "planned")
+ *  CHANGED  clps-griffin-gm1       schedule + target wording (Nobile crater region near Mons Mouton)
+ *  CHANGED  clps-im3-vertex        schedule slipped to early 2027
+ *  CHANGED  clps-firefly-cp21      CP-21 is Blue Ghost Mission 3 (Gruithuisen Domes), not the far-side mission
+ *  ADDED    clps-firefly-bgm2      Blue Ghost Mission 2 (CS-3/CS-4, far side); placeholder position only
+ *  CHANGED  clps-blueorigin-cp22   Blue Moon Mark 1 "Endurance" -> Shackleton Connecting Ridge
+ *  REVIEW   clps-draper-cp12       coordinates verified as Schroedinger basin centre; dates not re-verified
+ */
+
+/**
  * @typedef {Object} ClpsPayload
  * @property {string} name - Instrument acronym
  * @property {string} fullName - Full instrument title
@@ -33,6 +47,8 @@
  * @property {string} objectives - Scientific & mission objectives
  * @property {Array<ClpsPayload>} payloads - Manifested NASA & commercial instruments
  * @property {string} sourceUrl - Official NASA reference URL
+ * @property {boolean=} horizonEligible - false when the coordinates are only a display placeholder (skip horizon / Earth-visibility analysis)
+ * @property {string=} positionNote - Free-text note on how reliable the coordinates are
  * @property {string} source - Catalog / Contract reference
  * @property {string} description - Comprehensive verified summary
  */
@@ -104,20 +120,25 @@ export const CLPS_MISSIONS = [
   },
   {
     id: 'clps-im2-athena',
+    // CHANGED 2026-11-02: was a planned pin at (-89.70, 120.00) = "Shackleton Connecting Ridge". That point lies INSIDE Shackleton crater
+    // (horizon came back "enclosed", 17-27 deg everywhere). The mission was re-targeted to Mons Mouton and landed on 2025-03-06.
+    // Coordinates 84 47' 26" S, 29 11' 45" E = (-84.7906, 29.1958) are the actual landing site (Wikipedia IM-2 infobox);
+    // LROC lists the INTENDED site as (-84.78, 29.13), ~250 m away, which matches Intuitive Machines' statement.
+    // Horizon entry for this id in horizons.json was removed because it was computed for the old point - recompute.
     name: 'IM-2 (Athena / PRIME-1)',
     taskOrder: 'TO PRIME-1',
     provider: 'Intuitive Machines',
     lander: 'Nova-C (Athena)',
-    missionStatus: 'planned',
-    locationType: 'planned',
-    latitude: -89.70,
-    longitude: 120.00,
-    landingSiteName: 'Shackleton Connecting Ridge (South Pole)',
+    missionStatus: 'completed',
+    locationType: 'confirmed',
+    latitude: -84.7906,
+    longitude: 29.1958,
+    landingSiteName: 'Mons Mouton (South Pole Plateau)',
     targetRegion: 'South Pole',
-    launchDate: 'Target 2025',
-    landingDate: 'Target 2025',
+    launchDate: '2025-02-27',
+    landingDate: '2025-03-06',
     launchVehicle: 'SpaceX Falcon 9',
-    objectives: 'First subsurface ice drilling mission under NASA Polar Resources Ice Mining Experiment-1 (PRIME-1). Deploys TRIDENT drill down to 1-meter depth to search for water ice and operates the first 4G/LTE cellular communications network on the Moon.',
+    objectives: 'Deliver NASA\'s PRIME-1 (TRIDENT drill and MSolo mass spectrometer) and a Nokia 4G/LTE network demonstration to the south polar region. The lander ended up on its side after touchdown, which sharply limited operations.',
     payloads: [
       {
         name: 'TRIDENT',
@@ -150,26 +171,28 @@ export const CLPS_MISSIONS = [
         purpose: 'Lightweight autonomous rover traversing polar slopes to characterize volatile distribution.',
       },
     ],
-    sourceUrl: 'https://www.nasa.gov/mission/prime-1/',
-    source: 'NASA CLPS Program / Task Order PRIME-1',
-    description: 'IM-2 targets the Shackleton Connecting Ridge, located directly at 89.7°S latitude. This site offers near-continuous solar illumination while providing direct access to permanently shadowed regions harboring water ice deposits. TRIDENT will drill into the frozen regolith and MSolo will detect water vapor in real time.',
+    sourceUrl: 'https://www.lroc.asu.edu/images/1401',
+    source: 'LROC (ASU) IM-2 Landing Region; Intuitive Machines release 2025-03-07; NASA CLPS press kit NP-2025-02-005',
+    description: 'IM-2 (Athena) touched down on 6 March 2025 inside a crater on Mons Mouton, about 250 m from its intended site and roughly 160 km from the south pole - the southernmost landing ever achieved. The lander ended up on its side, so the power and communication geometry of the site mattered a great deal. The original plan was the Shackleton Connecting Ridge near 89.7 S; the target was moved to Mons Mouton before launch.',
   },
   {
     id: 'clps-firefly-bgm1',
+    // CHANGED 2026-11-02: status "planned" -> "completed". Launched 2025-01-15, landed 2025-03-02. Coordinates unchanged (18.56 N, 61.81 E).
+    // LROC places the lander ~4 km from the centre of Mons Latreille.
     name: 'Blue Ghost Mission 1',
     taskOrder: 'TO 19D',
     provider: 'Firefly Aerospace',
     lander: 'Blue Ghost Lander',
-    missionStatus: 'planned',
-    locationType: 'planned',
+    missionStatus: 'completed',
+    locationType: 'confirmed',
     latitude: 18.56,
     longitude: 61.81,
     landingSiteName: 'Mare Crisium Basin',
     targetRegion: 'Nearside Eastern Basin',
-    launchDate: 'Target Q4 2024 / Q1 2025',
-    landingDate: 'Target 2025',
+    launchDate: '2025-01-15',
+    landingDate: '2025-03-02',
     launchVehicle: 'SpaceX Falcon 9',
-    objectives: 'Deliver 10 NASA science and technology payloads to investigate Mare Crisium volcanic geophysics, measure internal thermal heat flow, demonstrate GPS signal reception at lunar distance, and test electrodynamic dust mitigation.',
+    objectives: 'Delivered 10 NASA science and technology payloads to Mare Crisium: volcanic geophysics, lunar heat flow, GPS reception at lunar distance, and electrodynamic dust mitigation.',
     payloads: [
       {
         name: 'LISTER',
@@ -232,9 +255,9 @@ export const CLPS_MISSIONS = [
         purpose: 'Measures electrostatic potential and electric fields that cause natural dust levitation.',
       },
     ],
-    sourceUrl: 'https://www.nasa.gov/commercial-lunar-payload-services/',
-    source: 'NASA CLPS Program / Task Order 19D',
-    description: 'Firefly Aerospace Blue Ghost Mission 1 targets a safe basalt plain inside Mare Crisium (18.56°N, 61.81°E). Operating across a complete lunar daytime cycle (14 Earth days), the lander will perform comprehensive geophysical investigations of lunar crustal formation and test next-generation navigation architectures.',
+    sourceUrl: 'https://lroc.im-ldi.com/image_tags/Robotic%20Spacecraft',
+    source: 'NASA CLPS press kit NP-2025-01-001 (TO 19D); LROC (ASU) Blue Ghost landing region; NASA CLPS tracker',
+    description: 'Firefly Aerospace Blue Ghost Mission 1 soft-landed upright in Mare Crisium on 2 March 2025 (18.56 N, 61.81 E), about 4 km from the centre of the volcanic cone Mons Latreille, and operated through a full lunar day (~14 Earth days). It was the first fully successful CLPS landing.',
   },
   {
     id: 'clps-peregrine-pm1',
@@ -290,20 +313,24 @@ export const CLPS_MISSIONS = [
   },
   {
     id: 'clps-griffin-gm1',
+    // CHANGED 2026-11-02: schedule updated ("Target Late 2025" is stale; now NET Nov 2026) and target wording changed to
+    // "Nobile Crater region near Mons Mouton" as used by NASA/Astrobotic. VIPER's earlier planned site was the WESTERN RIM of Nobile crater, adjacent to Mons Mouton.
+    // Coordinates KEPT at the Mons Mouton feature position (-84.5, 31.7) but flagged "approximate": no published landing coordinates were found.
+    // Same coordinates as mons-mouton / landing-artemis3-mouton, so the horizon is computed once.
     name: 'Griffin Mission 1 (GM1)',
     taskOrder: 'TO 20A',
     provider: 'Astrobotic Technology',
     lander: 'Griffin Lunar Lander',
     missionStatus: 'planned',
-    locationType: 'planned',
+    locationType: 'approximate',
     latitude: -84.50,
     longitude: 31.70,
-    landingSiteName: 'Mons Mouton (South Pole Plateau)',
+    landingSiteName: 'Nobile Crater region near Mons Mouton (South Pole)',
     targetRegion: 'South Pole',
-    launchDate: 'Target Late 2025',
-    landingDate: 'Target Late 2025',
+    launchDate: 'NET November 2026 (NASA, Sep 2026)',
+    landingDate: 'TBD (after NET Nov 2026 launch)',
     launchVehicle: 'SpaceX Falcon Heavy',
-    objectives: 'Qualify Astrobotic heavy-payload Griffin lander (over 625 kg capacity to surface) in the extreme terrain and lighting of the lunar South Pole. Formerly scheduled to deliver NASA VIPER rover; flight continues as an operational commercial lander test.',
+    objectives: 'Deliver Astrolab\'s FLIP rover and payloads to the south polar Nobile region and qualify Astrobotic\'s large Griffin lander. The mission was originally built around NASA\'s VIPER rover.',
     payloads: [
       {
         name: 'LRA',
@@ -318,12 +345,14 @@ export const CLPS_MISSIONS = [
         purpose: 'Optical and lidar terrain-relative navigation for precision touchdowns in high-shadow polar terrain.',
       },
     ],
-    sourceUrl: 'https://www.nasa.gov/commercial-lunar-payload-services/',
-    source: 'NASA CLPS Program / Task Order 20A',
-    description: 'Griffin is Astrobotic medium-class lander capable of delivering large payloads to challenging polar environments. Targeting Mons Mouton (84.5°S, 31.7°E), a prominent plateau near the lunar South Pole with extended periods of sunlight and nearby permanently shadowed craters.',
+    sourceUrl: 'https://www.nasa.gov/moonbase-phases/',
+    source: 'NASA Moon Base phases; NASA CLPS providers page (TO 20A); Astrobotic releases',
+    description: 'Astrobotic\'s Griffin Mission One targets the Nobile Crater region near Mons Mouton at the lunar south pole, carrying Astrolab\'s FLIP rover. NASA schedule sources dated September 2026 list it as no earlier than November 2026. The exact touchdown point has not been published, so the pin marks the Mons Mouton plateau.',
   },
   {
     id: 'clps-im3-vertex',
+    // CHANGED 2026-11-02: "Target 2026" is stale. Sources dated Sep-Oct 2026 place IM-3 in the first part of 2027.
+    // Reiner Gamma (7.5 N, 59.0 W) coordinates unchanged.
     name: 'IM-3 (Nova-C / Lunar Vertex)',
     taskOrder: 'TO CP-11',
     provider: 'Intuitive Machines',
@@ -334,8 +363,8 @@ export const CLPS_MISSIONS = [
     longitude: -59.00,
     landingSiteName: 'Reiner Gamma Lunar Swirl',
     targetRegion: 'Nearside Oceanus Procellarum',
-    launchDate: 'Target 2026',
-    landingDate: 'Target 2026',
+    launchDate: 'NET first half of 2027 (NASA, Sep 2026)',
+    landingDate: 'TBD (2027)',
     launchVehicle: 'SpaceX Falcon 9',
     objectives: 'Investigate the enigmatic Reiner Gamma magnetic swirl. Deploys the Lunar Vertex suite and JPL CADRE autonomous swarm rovers to study miniature magnetosphere dynamics and solar wind deflection.',
     payloads: [
@@ -358,12 +387,14 @@ export const CLPS_MISSIONS = [
         purpose: 'Precision laser-ranging target on the western nearside basalt plain.',
       },
     ],
-    sourceUrl: 'https://www.nasa.gov/commercial-lunar-payload-services/',
-    source: 'NASA CLPS Program / Task Order CP-11',
+    sourceUrl: 'https://www.nasa.gov/moonbase-phases/',
+    source: 'NASA CLPS press kit NP-2025-02-005 (TO CP-11, Reiner Gamma); NASA Moon Base phases; CLPS schedule tracker (Sep 2026)',
     description: 'IM-3 will land on Reiner Gamma (7.5°N, 59.0°W), the most famous lunar swirl. These bright, sinuous markings correspond to localized magnetic anomalies. The Lunar Vertex payload includes a lander suite and a mini-rover that will traverse across magnetic field boundaries.',
   },
   {
     id: 'clps-draper-cp12',
+    // REVIEW 2026-11-02: coordinates (-75.0, 132.4) = Schroedinger basin centre (IAU) - kept. NASA press kit NP-2025-02-005 confirms
+    // Team Draper / ispace-U.S. APEX 1.0 -> Schroedinger Basin (TO CP-12). Launch/landing "Target 2026" could not be re-verified - check NASA CLPS page.
     name: 'Draper CP-12 (APEX 1.0)',
     taskOrder: 'TO CP-12',
     provider: 'Draper Laboratory',
@@ -404,20 +435,51 @@ export const CLPS_MISSIONS = [
   },
   {
     id: 'clps-firefly-cp21',
-    name: 'Blue Ghost Mission 2 (LuSEE-Night)',
+    // CHANGED 2026-11-02: this id used to be "Blue Ghost Mission 2 (LuSEE-Night)" at a far-side placeholder (-45, 160).
+    // NASA's press kit shows CP-21 = Blue Ghost Mission 3 -> Gruithuisen Domes. The far-side mission is now clps-firefly-bgm2.
+    // The id is kept so existing references keep working. Coordinates (36.6 N, 40.5 W) are APPROXIMATE (domes area), not a published landing point.
+    name: 'Blue Ghost Mission 3 (Gruithuisen Domes)',
     taskOrder: 'TO CP-21',
     provider: 'Firefly Aerospace',
     lander: 'Blue Ghost Lander',
     missionStatus: 'planned',
-    locationType: 'planned',
+    locationType: 'approximate',
+    positionNote: 'Approximate centre of the Gruithuisen Domes area (about 36-37 N, 40 W); NASA gives no site coordinates. Verify against the IAU Gazetteer before using for horizon analysis.',
+    latitude: 36.6,
+    longitude: -40.5,
+    landingSiteName: 'Gruithuisen Domes (Nearside)',
+    targetRegion: 'Nearside Oceanus Procellarum',
+    launchDate: '2028 (NASA award, Dec 2024)',
+    landingDate: 'TBD (2028)',
+    launchVehicle: 'SpaceX Falcon 9',
+    objectives: 'Investigate the Gruithuisen Domes, silica-rich volcanic constructs unlike the basaltic maria around them.',
+    payloads: [],  // payload manifest not verified for BGM3
+    sourceUrl: 'https://www.nasa.gov/wp-content/uploads/2025/02/np-2025-02-005-jsc-clps-intuitive-machines-press-kit-508-2-25-25.pdf',
+    source: 'NASA CLPS press kit NP-2025-02-005 (Blue Ghost Mission 3 = TO CP-21, Gruithuisen Domes); NASA CLPS task-order award Dec 2024',
+    description: 'NASA task order CP-21 sends Firefly\'s third Blue Ghost lander to the Gruithuisen Domes on the nearside, silica-rich volcanic features unlike the basaltic maria around them. NASA has not published landing coordinates; the pin marks the general area of the domes.',
+  },
+  {
+    id: 'clps-firefly-bgm2',
+    // ADDED 2026-11-02: Blue Ghost Mission 2 was previously mis-filed under id "clps-firefly-cp21" with a far-side placeholder.
+    // NASA's press kit shows BGM2 = task orders CS-3/CS-4 (far side) and CP-21 = Blue Ghost Mission 3 (Gruithuisen Domes).
+    // The latitude/longitude (-45, 160) is the OLD PLACEHOLDER, kept only so the mission stays visible on the globe.
+    // horizonEligible=false -> export_sites.mjs skips it; do not use it for Sun/Earth analysis.
+    name: 'Blue Ghost Mission 2 (LuSEE-Night)',
+    taskOrder: 'TO CS-3 / CS-4',
+    provider: 'Firefly Aerospace',
+    lander: 'Blue Ghost Lander',
+    missionStatus: 'planned',
+    locationType: 'approximate',
+    horizonEligible: false,
+    positionNote: 'Display placeholder only; the real far-side landing coordinates are not public.',
     latitude: -45.00,
     longitude: 160.00,
-    landingSiteName: 'Lunar Farside Radio-Quiet Zone',
+    landingSiteName: 'Lunar far side (specific site not published)',
     targetRegion: 'Farside SPA Basin',
-    launchDate: 'Target 2026',
-    landingDate: 'Target 2026',
+    launchDate: 'NET later in 2027 (NASA, Sep 2026)',
+    landingDate: 'TBD (2027)',
     launchVehicle: 'SpaceX Falcon 9',
-    objectives: 'Operate the first radio astronomy observatory during the two-week lunar night from the radio-quiet farside of the Moon to observe the 21cm hydrogen line from the Cosmic Dark Ages before first stars ignited.',
+    objectives: 'Deliver NASA/DOE LuSEE-Night, a radio telescope that listens from the radio-quiet far side, plus an Elytra Dark orbiter that relays communications. Far-side sites have no direct line of sight to Earth.',
     payloads: [
       {
         name: 'LuSEE-Night',
@@ -432,26 +494,31 @@ export const CLPS_MISSIONS = [
         purpose: 'Dedicated lunar orbit relay for high-throughput farside telemetry transmissions to Earth.',
       },
     ],
-    sourceUrl: 'https://www.nasa.gov/commercial-lunar-payload-services/',
-    source: 'NASA CLPS Program / Task Order CP-21',
-    description: 'Firefly was awarded CLPS Task Order CP-21 to land on the lunar farside. The primary instrument, LuSEE-Night, is a joint NASA/DOE radio receiver that will survive the freezing -170°C two-week lunar night to observe low-frequency radio emissions without Earth ionospheric and electromagnetic interference.',
+    sourceUrl: 'https://science.nasa.gov/lunar-discovery/deliveries/cs-3',
+    source: 'NASA CLPS press kit NP-2025-02-005 (Blue Ghost Mission 2 = TO CS-3 and CS-4, "Lunar Farside and Orbit"); NASA CS-3 page',
+    description: 'Firefly Blue Ghost Mission 2 will land on the lunar far side and operate LuSEE-Night through the lunar night. Because the far side never faces Earth, all data must flow through the Elytra Dark relay satellite - a clear example of why Earth visibility drives site selection. NASA and Firefly have not published landing coordinates.',
   },
   {
     id: 'clps-blueorigin-cp22',
-    name: 'Blue Moon Pathfinder (CP-22)',
-    taskOrder: 'TO CP-22',
+    // CHANGED 2026-11-02: was (-85.0, 0.0) "South Pole candidate area" (a point on Malapert massif, nowhere near the target).
+    // NASA names the target "Shackleton Connecting Ridge". Coordinates (-89.374, -96.204) are an ESTIMATE: the great-circle mid-point between the
+    // Shackleton crater centre (-89.67, 129.78) and the de Gerlache crater centre (-88.5, -87.1). Replace with the centre of the LOLA 5 m
+    // "Site01 Connecting Ridge" DEM (pgda.gsfc.nasa.gov/data/LOLA_5mpp/) when available. Task order per NASA press kit NP-2025-01-001 is CT-3
+    // (the old "CP-22" label conflicts between sources). Horizon entry for this id in horizons.json was removed - recompute.
+    name: 'Blue Moon Mark 1 "Endurance" (Moon Base I)',
+    taskOrder: 'TO CT-3',
     provider: 'Blue Origin',
-    lander: 'Blue Moon Mark 1 (MK1)',
+    lander: 'Blue Moon Mark 1 (MK1 pathfinder "Endurance")',
     missionStatus: 'planned',
-    locationType: 'planned',
-    latitude: -85.00,
-    longitude: 0.00,
-    landingSiteName: 'Lunar South Pole Candidate Area',
+    locationType: 'approximate',
+    latitude: -89.374,
+    longitude: -96.204,
+    landingSiteName: 'Shackleton Connecting Ridge (South Pole)',
     targetRegion: 'South Pole',
-    launchDate: 'Target 2026+',
-    landingDate: 'Target 2026+',
+    launchDate: 'NET Q1 2027 (NASA lists Jan 2027)',
+    landingDate: 'TBD (2027)',
     launchVehicle: 'Blue Origin New Glenn',
-    objectives: 'Flight qualification of Blue Origin heavy cargo lunar lander, capable of transporting up to 3 metric tons of payload to any location on the lunar surface to build sustainable infrastructure for NASA Artemis.',
+    objectives: 'Demonstrate Blue Origin\'s Blue Moon Mark 1 lander (cryogenic propulsion and precision landing technologies) ahead of crewed Artemis landings, carrying NASA payloads including the SCALPSS cameras.',
     payloads: [
       {
         name: 'NASA Heavy Cargo Demo',
@@ -460,9 +527,9 @@ export const CLPS_MISSIONS = [
         purpose: 'Tests commercial delivery of large utility packages to prepare for sustained crewed Artemis surface missions.',
       },
     ],
-    sourceUrl: 'https://www.nasa.gov/commercial-lunar-payload-services/',
-    source: 'NASA CLPS Program / Task Order CP-22',
-    description: 'Awarded under CLPS Task Order CP-22, Blue Origin Blue Moon MK1 is an uncrewed cargo lander powered by BE-7 cryogenic engines. It will deliver cargo payloads to the lunar South Pole to validate heavy payload handling for the Artemis campaign.',
+    sourceUrl: 'https://www.nasa.gov/event/clps-flight-blue-origins-blue-moon-mark-1/',
+    source: 'NASA Moon Base: Blue Origin Blue Moon Mark 1; NASA CLPS press kit NP-2025-01-001 (MK1 pathfinder, award CT-3); Blue Origin statements',
+    description: 'Blue Origin\'s first Blue Moon Mark 1 lander, named Endurance, targets the Shackleton Connecting Ridge between Shackleton and de Gerlache craters, a ridge known for long periods of sunlight beside permanently shadowed ground. NASA does not publish touchdown coordinates, so the pin sits at an estimated mid-point of the ridge.',
   },
 ];
 

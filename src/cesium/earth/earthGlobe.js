@@ -12,8 +12,8 @@ export function createEarthGlobe() {
 
   const earthImageryProvider = new Cesium.SingleTileImageryProvider({
     url: EARTH_TEXTURE_URL,
-    tileWidth: 2048,
-    tileHeight: 1024,
+    tileWidth: 4096,
+    tileHeight: 2048,
     rectangle: Cesium.Rectangle.MAX_VALUE,
   });
 
@@ -24,7 +24,7 @@ export function createEarthGlobe() {
   globe.terrainProvider = new Cesium.EllipsoidTerrainProvider({
     ellipsoid: Cesium.Ellipsoid.WGS84,
   });
-  globe.showGroundAtmosphere = true;
+  globe.showGroundAtmosphere = false;
   globe.baseColor = Cesium.Color.fromCssColorString('#141A16');
 
   return { globe, fallbackImageryLayer, earthImageryProvider };

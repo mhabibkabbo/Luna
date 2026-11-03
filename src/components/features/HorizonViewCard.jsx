@@ -111,6 +111,9 @@ export default function HorizonViewCard({
     [timeMs, moonFeature]
   );
 
+  const sunStatusMeta = SUN_STATUS[sun?.status] || { label: 'Unknown', color: '#fde68a' };
+  const earthStatusMeta = EARTH_STATUS[link?.status] || { label: 'Unknown', color: '#60a5fa' };
+
   return (
     <section className="space-y-3 rounded-2xl border border-[#16283C] bg-[#060B13] p-4 text-[#F8FAFC]">
       {/* Compact 2-Pill Telemetry Summary */}
@@ -121,16 +124,17 @@ export default function HorizonViewCard({
               <Sun className="h-3.5 w-3.5 text-[#00D2C4]" />
               <span className="font-semibold text-[#F8FAFC]">Sun Position</span>
             </span>
-            <span style={{ color: SUN_STATUS[sun.status].color }} className="font-mono font-bold">
-              {SUN_STATUS[sun.status].label}
+            <span style={{ color: sunStatusMeta.color }} className="font-mono font-bold">
+              {sunStatusMeta.label}
             </span>
           </div>
           <div className="mt-1 font-mono text-sm font-bold text-[#F8FAFC]">
-            {sun.elevationDeg.toFixed(1)}° el
+            {sun?.elevationDeg != null ? `${sun.elevationDeg.toFixed(1)}° el` : '—'}
           </div>
           <div className="text-[10px] font-mono text-[#94A3B8] truncate">
-            {solarTransition.nextEvent === 'sunset' ? 'Sunset' : 'Sunrise'} in{' '}
-            {solarTransition.formattedDuration}
+            {solarTransition.timeUntilMs === null
+              ? (solarTransition.isCurrentlySunlit ? 'Continuous Sunlight' : 'Continuous Shadow')
+              : `${solarTransition.nextEvent === 'sunset' ? 'Sunset' : 'Sunrise'} in ${solarTransition.formattedDuration}`}
           </div>
         </div>
 
@@ -141,18 +145,19 @@ export default function HorizonViewCard({
               <span className="font-semibold text-[#F8FAFC]">Earth Direct</span>
             </span>
             <span
-              style={{ color: EARTH_STATUS[link.status].color }}
+              style={{ color: earthStatusMeta.color }}
               className="font-mono font-bold"
             >
-              {EARTH_STATUS[link.status].label}
+              {earthStatusMeta.label}
             </span>
           </div>
           <div className="mt-1 font-mono text-sm font-bold text-[#F8FAFC]">
-            {earth.elevationDeg.toFixed(1)}° el
+            {earth?.elevationDeg != null ? `${earth.elevationDeg.toFixed(1)}° el` : '—'}
           </div>
           <div className="text-[10px] font-mono text-[#94A3B8] truncate">
-            {earthTransition.nextEvent === 'earthset' ? 'Set' : 'Rise'} in{' '}
-            {earthTransition.formattedDuration}
+            {earthTransition.timeUntilMs === null
+              ? (earthTransition.isAboveHorizon ? 'Continuous Visibility (35d+)' : 'No Earthrise (35d+)')
+              : `${earthTransition.nextEvent === 'earthset' ? 'Set' : 'Rise'} in ${earthTransition.formattedDuration}`}
           </div>
         </div>
       </div>

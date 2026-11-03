@@ -4,6 +4,10 @@
  * Sourced directly from the IAU Gazetteer of Planetary Nomenclature,
  * NASA Lunar Reconnaissance Orbiter Camera (LROC) Science Operations Center,
  * and USGS Astrogeology Science Center.
+ *
+ * CHANGE LOG (2026-11-02): ADDED 13 named craters in or near the south polar region (Malapert, Scott, Wiechert, Slater, Sverdrup, Henson,
+ * Kocher, Idel'son, Hale, Demonax, Boguslawsky, Drygalski, Zeeman) at the end of this array. Each has a sourceUrl and a comment saying why.
+ * Full source list: docs/lunar-sites-sources.md
  */
 
 /**
@@ -699,5 +703,166 @@ export const LUNAR_FEATURES = [
     elevationM: 300,
     description: 'The Straight Wall. A prominent normal geological fault line in eastern Mare Nubium dropping approximately 300 meters along a 7-degree slope.',
     source: 'IAU / NASA LROC',
+  },
+
+  // ==========================================
+  // ADDED 2026-11-02 - SOUTH POLAR REGION CRATERS (named in the IAU Gazetteer)
+  // Coordinates are the IAU/Wikipedia centre points; each entry's comment gives the reason it was added.
+  // ==========================================
+  {
+    // ADDED: the crater itself (mons-malapert already marks the massif). Its Artemis III region "Malapert Massif" is represented by mons-malapert. Coordinates 84 54' S, 12 54' E.
+    id: 'crater-malapert',
+    name: 'Malapert',
+    type: 'crater',
+    latitude: -84.9,
+    longitude: 12.9,
+    diameterKm: 69,
+    description: 'South polar crater about 69 km across. The Malapert massif (Mons Malapert), an Artemis III candidate region, rises on its rim near 0 degrees longitude.',
+    source: 'IAU Gazetteer / Wikipedia (Malapert crater)',
+    sourceUrl: 'https://en.wikipedia.org/wiki/Malapert_(crater)',
+  },
+  {
+    // ADDED: one of the large named craters ringing the south pole. Coordinates 81 54' S, 45 18' E.
+    id: 'crater-scott',
+    name: 'Scott',
+    type: 'crater',
+    latitude: -81.9,
+    longitude: 45.3,
+    diameterKm: 108,
+    description: 'Large crater (about 108 km) close to the south pole, named for polar explorer Robert F. Scott.',
+    source: 'IAU Gazetteer / Wikipedia (Scott crater)',
+    sourceUrl: 'https://en.wikipedia.org/wiki/Scott_(crater)',
+  },
+  {
+    // ADDED: far-side south polar crater near the Schrödinger / Draper CP-12 area (no direct Earth view from here). Coordinates 84 30' S, 165 00' E.
+    id: 'crater-wiechert',
+    name: 'Wiechert',
+    type: 'crater',
+    latitude: -84.5,
+    longitude: 165.0,
+    diameterKm: 41,
+    description: 'Far-side crater about 41 km across, roughly 170 km from the south pole.',
+    source: 'IAU Gazetteer / Wikipedia (Wiechert crater)',
+    sourceUrl: 'https://en.wikipedia.org/wiki/Wiechert_(crater)',
+  },
+  {
+    // ADDED: named crater beside Shackleton; Artemis Site 007 sits between Shackleton and Slater. Coordinates 88 05' S, 111 17' E.
+    id: 'crater-slater',
+    name: 'Slater',
+    type: 'crater',
+    latitude: -88.08,
+    longitude: 111.29,
+    diameterKm: 25.12,
+    description: 'Crater about 25 km across near Shackleton. Named by the IAU in 2015 for planetary scientist David C. Slater.',
+    source: 'IAU WGPSN approval (May 2015); SwRI news release; Wikipedia (Slater crater)',
+    sourceUrl: 'https://www.swri.org/press-release/lunar-crater-named-former-swri-space-scientist-david-c-slater',
+  },
+  {
+    // ADDED: named polar crater; coordinates 88 30' S, 152 00' W.
+    id: 'crater-sverdrup',
+    name: 'Sverdrup',
+    type: 'crater',
+    latitude: -88.5,
+    longitude: -152.0,
+    diameterKm: 35,
+    description: 'Crater about 35 km across near the south pole, between de Gerlache and Shackleton, with permanently shadowed ground.',
+    source: 'IAU Gazetteer / Wikipedia (Sverdrup crater)',
+    sourceUrl: 'https://en.wikipedia.org/wiki/Sverdrup_(crater)',
+  },
+  {
+    // ADDED: named polar crater; centre lat/lon from the IAU approval record (Control Network LOLA 2011).
+    id: 'crater-henson',
+    name: 'Henson',
+    type: 'crater',
+    latitude: -88.57,
+    longitude: -130.63,
+    diameterKm: 43,
+    description: 'Crater about 43 km across near the south pole, named for polar explorer Matthew Henson.',
+    source: 'IAU Task Group for Lunar Nomenclature, Feature ID 16004 (centre -88.57, -130.63)',
+    sourceUrl: 'https://content.presspage.com/uploads/1906/henson-crater-lunar-south-pole-details.pdf?10000',
+  },
+  {
+    // ADDED: gives the "de Gerlache-Kocher Massif" Artemis III region a named anchor. Coordinates 84 28' S, 134 01' W.
+    id: 'crater-kocher',
+    name: 'Kocher',
+    type: 'crater',
+    latitude: -84.47,
+    longitude: -134.02,
+    diameterKm: 24.03,
+    description: 'Crater about 24 km across named in 2009 for Emil Theodor Kocher. The nearby Mons Kocher and de Gerlache give their names to the Artemis III region \\"de Gerlache-Kocher Massif\\".',
+    source: 'IAU Gazetteer of Planetary Nomenclature (Feature 14535)',
+    sourceUrl: 'https://planetarynames.wr.usgs.gov/Feature/14535',
+  },
+  {
+    // ADDED: named far-side south polar crater. Coordinates 81 30' S, 110 54' E.
+    id: 'crater-idelson',
+    name: 'Idel\'son',
+    type: 'crater',
+    latitude: -81.5,
+    longitude: 110.9,
+    diameterKm: 60,
+    description: 'Crater about 60 km across near the south-eastern limb.',
+    source: 'IAU Gazetteer / Wikipedia (Idel\'son crater)',
+    sourceUrl: 'https://en.wikipedia.org/wiki/Idel%CA%B9son_(crater)',
+  },
+  {
+    // ADDED: named high-southern-latitude crater. Coordinates 74 12' S, 90 48' E.
+    id: 'crater-hale',
+    name: 'Hale',
+    type: 'crater',
+    latitude: -74.2,
+    longitude: 90.8,
+    diameterKm: 83,
+    description: 'Crater about 83 km across at high southern latitude, near the south-eastern limb.',
+    source: 'IAU Gazetteer / Wikipedia (Hale crater)',
+    sourceUrl: 'https://en.wikipedia.org/wiki/Hale_(lunar_crater)',
+  },
+  {
+    // ADDED: named high-southern-latitude crater. Coordinates 78 12' S, 59 00' E.
+    id: 'crater-demonax',
+    name: 'Demonax',
+    type: 'crater',
+    latitude: -78.2,
+    longitude: 59.0,
+    diameterKm: 121.93,
+    description: 'Large crater (about 122 km) near the southern limb.',
+    source: 'IAU Gazetteer / Wikipedia (Demonax crater)',
+    sourceUrl: 'https://en.wikipedia.org/wiki/Demonax_(crater)',
+  },
+  {
+    // ADDED: named high-southern-latitude crater (near the Luna 25 intended landing zone). Coordinates 72 54' S, 43 12' E.
+    id: 'crater-boguslawsky',
+    name: 'Boguslawsky',
+    type: 'crater',
+    latitude: -72.9,
+    longitude: 43.2,
+    diameterKm: 94.59,
+    description: 'Large crater (about 95 km) at high southern latitude, strongly foreshortened as seen from Earth.',
+    source: 'IAU Gazetteer / Wikipedia (Boguslawsky crater)',
+    sourceUrl: 'https://en.wikipedia.org/wiki/Boguslawsky_(crater)',
+  },
+  {
+    // ADDED: named polar crater. Diameter 149 km follows the NASA LOLA page (Wikipedia lists 162.49 km). Coordinates 79 18' S, 84 54' W.
+    id: 'crater-drygalski',
+    name: 'Drygalski',
+    type: 'crater',
+    latitude: -79.3,
+    longitude: -84.9,
+    diameterKm: 149,
+    description: 'Large crater on the south-western limb, in the south polar region.',
+    source: 'IAU Gazetteer; NASA LOLA science page',
+    sourceUrl: 'https://science.nasa.gov/?p=301491',
+  },
+  {
+    // ADDED: large far-side crater in the SPA basin (no direct Earth view). Coordinates 75 12' S, 134 48' W.
+    id: 'crater-zeeman',
+    name: 'Zeeman',
+    type: 'crater',
+    latitude: -75.2,
+    longitude: -134.8,
+    diameterKm: 184,
+    description: 'Large far-side crater (about 184 km) inside the South Pole-Aitken basin, not visible from Earth.',
+    source: 'IAU Gazetteer / Wikipedia (Zeeman crater)',
+    sourceUrl: 'https://en.wikipedia.org/wiki/Zeeman_(crater)',
   },
 ];
