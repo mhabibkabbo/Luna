@@ -88,8 +88,8 @@ export function craterStyleFunction(feature, resolution) {
     resolution <= 0.02;
 
   const radius = isSelected ? 8 : (resolution < 0.1 ? 6 : 4.5);
-  const ringColor = isSelected ? '#38bdf8' : (isIconicCrater ? '#94a3b8' : '#64748b');
-  const fillColor = isSelected ? '#0284c7' : 'rgba(15, 23, 42, 0.85)';
+  const ringColor = isSelected ? '#FFFFFF' : '#00D2C4';
+  const fillColor = isSelected ? '#00D2C4' : 'rgba(12, 22, 36, 0.85)';
 
   return new Style({
     image: new CircleStyle({
@@ -105,9 +105,9 @@ export function craterStyleFunction(feature, resolution) {
           text: diameterKm ? `${name} (${Math.round(diameterKm)} km)` : name,
           font: isSelected ? 'bold 12px system-ui, sans-serif' : '500 10.5px system-ui, sans-serif',
           offsetY: -14,
-          fill: new Fill({ color: isSelected ? '#38bdf8' : '#e2e8f0' }),
+          fill: new Fill({ color: isSelected ? '#00D2C4' : '#F1F5F9' }),
           stroke: new Stroke({ color: '#030712', width: 3 }),
-          backgroundFill: new Fill({ color: 'rgba(3, 7, 18, 0.88)' }),
+          backgroundFill: new Fill({ color: 'rgba(6, 11, 19, 0.88)' }),
           padding: [2, 5, 2, 5],
         })
       : undefined,
@@ -122,12 +122,12 @@ export function craterRimStyleFunction(feature) {
   const isSelected = feature.get('isSelected');
   return new Style({
     stroke: new Stroke({
-      color: isSelected ? '#38bdf8' : 'rgba(56, 189, 248, 0.45)',
+      color: isSelected ? '#00D2C4' : 'rgba(0, 210, 196, 0.45)',
       width: isSelected ? 2.5 : 1.2,
       lineDash: isSelected ? undefined : [4, 4],
     }),
     fill: new Fill({
-      color: isSelected ? 'rgba(56, 189, 248, 0.12)' : 'rgba(2, 132, 199, 0.03)',
+      color: isSelected ? 'rgba(0, 210, 196, 0.12)' : 'rgba(0, 210, 196, 0.03)',
     }),
     zIndex: isSelected ? 15 : 5,
   });
@@ -160,9 +160,9 @@ export function mountainStyleFunction(feature, resolution) {
       points: 3,
       radius: peakSize,
       rotation: 0,
-      fill: new Fill({ color: isSelected ? '#fbbf24' : '#f59e0b' }),
+      fill: new Fill({ color: isSelected ? '#F8FAFC' : '#00D2C4' }),
       stroke: new Stroke({
-        color: isSelected ? '#ffffff' : '#451a03',
+        color: isSelected ? '#00D2C4' : '#0A111C',
         width: isSelected ? 2.0 : 1.2,
       }),
     }),
@@ -171,9 +171,9 @@ export function mountainStyleFunction(feature, resolution) {
           text: elevationM ? `${name} (+${elevationM.toLocaleString()}m)` : name,
           font: isSelected ? 'bold 12px system-ui, sans-serif' : '600 10.5px system-ui, sans-serif',
           offsetY: -14,
-          fill: new Fill({ color: isSelected ? '#fde68a' : '#fef3c7' }),
-          stroke: new Stroke({ color: '#1c1917', width: 3.5 }),
-          backgroundFill: new Fill({ color: 'rgba(28, 25, 23, 0.85)' }),
+          fill: new Fill({ color: isSelected ? '#00D2C4' : '#F8FAFC' }),
+          stroke: new Stroke({ color: '#060B13', width: 3.5 }),
+          backgroundFill: new Fill({ color: 'rgba(6, 11, 19, 0.85)' }),
           padding: [2, 4, 2, 4],
         })
       : undefined,
@@ -195,9 +195,9 @@ export function mareStyleFunction(feature, resolution) {
   return new Style({
     image: new CircleStyle({
       radius: isSelected ? 6.5 : 4,
-      fill: new Fill({ color: isSelected ? '#60a5fa' : 'rgba(30, 41, 59, 0.85)' }),
+      fill: new Fill({ color: isSelected ? '#00D2C4' : 'rgba(10, 17, 28, 0.85)' }),
       stroke: new Stroke({
-        color: isSelected ? '#ffffff' : '#93c5fd',
+        color: isSelected ? '#F8FAFC' : '#00D2C4',
         width: isSelected ? 2.0 : 1.0,
       }),
     }),
@@ -206,9 +206,9 @@ export function mareStyleFunction(feature, resolution) {
           text: name.toUpperCase(),
           font: isSelected ? 'bold 12px monospace' : 'bold 10.5px monospace',
           offsetY: -13,
-          fill: new Fill({ color: isSelected ? '#67e8f9' : '#93c5fd' }),
-          stroke: new Stroke({ color: '#030712', width: 4 }),
-          backgroundFill: new Fill({ color: 'rgba(3, 7, 18, 0.85)' }),
+          fill: new Fill({ color: isSelected ? '#00D2C4' : '#F8FAFC' }),
+          stroke: new Stroke({ color: '#060B13', width: 4 }),
+          backgroundFill: new Fill({ color: 'rgba(6, 11, 19, 0.85)' }),
           padding: [2, 5, 2, 5],
         })
       : undefined,
@@ -232,9 +232,9 @@ export function valleyStyleFunction(feature, resolution) {
       points: 4,
       radius: isSelected ? 6.5 : 4,
       rotation: Math.PI / 4, // Diamond
-      fill: new Fill({ color: isSelected ? '#c084fc' : '#a855f7' }),
+      fill: new Fill({ color: isSelected ? '#F8FAFC' : '#00D2C4' }),
       stroke: new Stroke({
-        color: isSelected ? '#ffffff' : '#581c87',
+        color: isSelected ? '#00D2C4' : '#0A111C',
         width: isSelected ? 2.0 : 1.0,
       }),
     }),
@@ -243,9 +243,9 @@ export function valleyStyleFunction(feature, resolution) {
           text: lengthKm ? `${name} (${lengthKm} km)` : name,
           font: isSelected ? 'bold 12px system-ui, sans-serif' : '600 10.5px system-ui, sans-serif',
           offsetY: -14,
-          fill: new Fill({ color: isSelected ? '#e9d5ff' : '#d8b4fe' }),
-          stroke: new Stroke({ color: '#090d16', width: 3.5 }),
-          backgroundFill: new Fill({ color: 'rgba(9, 13, 22, 0.85)' }),
+          fill: new Fill({ color: isSelected ? '#00D2C4' : '#F8FAFC' }),
+          stroke: new Stroke({ color: '#060B13', width: 3.5 }),
+          backgroundFill: new Fill({ color: 'rgba(6, 11, 19, 0.85)' }),
           padding: [2, 4, 2, 4],
         })
       : undefined,
@@ -273,13 +273,13 @@ export function landingSiteStyleFunction(feature, resolution) {
     (resolution <= 0.09 && isApollo) || 
     resolution <= 0.04;
 
-  const fillColor = isApollo ? '#f59e0b' : (isOdysseus ? '#06b6d4' : '#10b981');
-  const strokeColor = isSelected ? '#ffffff' : (isApollo ? '#78350f' : '#064e3b');
+  const fillColor = '#00D2C4';
+  const strokeColor = isSelected ? '#F8FAFC' : '#060B13';
 
   return new Style({
     image: new CircleStyle({
       radius: isSelected ? 8.5 : (isTopMission ? 7 : 5.5),
-      fill: new Fill({ color: isSelected ? '#38bdf8' : fillColor }),
+      fill: new Fill({ color: isSelected ? '#F8FAFC' : fillColor }),
       stroke: new Stroke({
         color: strokeColor,
         width: isSelected ? 2.5 : 1.5,
@@ -290,9 +290,9 @@ export function landingSiteStyleFunction(feature, resolution) {
           text: name.split('(')[0].trim(),
           font: isSelected ? 'bold 12px monospace' : 'bold 10.5px monospace',
           offsetY: -15,
-          fill: new Fill({ color: isApollo ? '#fde68a' : '#a5f3fc' }),
-          stroke: new Stroke({ color: '#090d16', width: 3.5 }),
-          backgroundFill: new Fill({ color: 'rgba(9, 13, 22, 0.88)' }),
+          fill: new Fill({ color: isSelected ? '#00D2C4' : '#F8FAFC' }),
+          stroke: new Stroke({ color: '#060B13', width: 3.5 }),
+          backgroundFill: new Fill({ color: 'rgba(6, 11, 19, 0.88)' }),
           padding: [2, 5, 2, 5],
         })
       : undefined,

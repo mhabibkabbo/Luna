@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import * as THREE from 'three';
-import { ArrowRight, Compass, Orbit, Sparkles } from 'lucide-react';
+import { ArrowUpRight } from 'lucide-react';
 import { CLPS_MISSIONS } from '../../data/clpsMissions.js';
 import { formatLunarCoordinates } from '../../utils/coordinates.js';
 
@@ -17,10 +17,7 @@ const NASA_LUNAR_BUMP_URLS = [
 ];
 
 /**
- * Creates high-precision procedural lunar basemap canvas.
- * Draws volcanic basaltic maria, major crater ray systems, and regolith noise.
- * Ensures the Moon renders instantly with authentic scientific surface features
- * even while high-res textures are loading or offline.
+ * Creates high-precision procedural lunar basemap canvas with warm regolith tone.
  */
 function createScientificLunarCanvas(width = 1024, height = 512) {
   const canvas = document.createElement('canvas');
@@ -29,15 +26,15 @@ function createScientificLunarCanvas(width = 1024, height = 512) {
   const ctx = canvas.getContext('2d');
   if (!ctx) return canvas;
 
-  // 1. Highland anorthosite base (lunar grey)
-  ctx.fillStyle = '#676d79';
+  // 1. Warm highland anorthosite regolith base
+  ctx.fillStyle = '#787266';
   ctx.fillRect(0, 0, width, height);
 
   // 2. Regolith grain noise
   const imgData = ctx.getImageData(0, 0, width, height);
   const data = imgData.data;
   for (let i = 0; i < data.length; i += 4) {
-    const n = (Math.random() - 0.5) * 36;
+    const n = (Math.random() - 0.5) * 34;
     data[i] = Math.min(255, Math.max(0, data[i] + n));
     data[i + 1] = Math.min(255, Math.max(0, data[i + 1] + n));
     data[i + 2] = Math.min(255, Math.max(0, data[i + 2] + n));
@@ -66,10 +63,10 @@ function createScientificLunarCanvas(width = 1024, height = 512) {
   maria.forEach(({ lon, lat, rx, ry }) => {
     const { x, y } = toXY(lon, lat);
     const grad = ctx.createRadialGradient(x, y, 2, x, y, Math.max(rx, ry));
-    grad.addColorStop(0, 'rgba(28, 32, 40, 0.94)');
-    grad.addColorStop(0.65, 'rgba(42, 48, 58, 0.85)');
-    grad.addColorStop(0.9, 'rgba(70, 78, 90, 0.35)');
-    grad.addColorStop(1, 'rgba(103, 109, 121, 0)');
+    grad.addColorStop(0, 'rgba(34, 31, 24, 0.92)');
+    grad.addColorStop(0.65, 'rgba(52, 48, 39, 0.82)');
+    grad.addColorStop(0.9, 'rgba(82, 76, 65, 0.35)');
+    grad.addColorStop(1, 'rgba(120, 114, 102, 0)');
 
     ctx.save();
     ctx.fillStyle = grad;
@@ -79,13 +76,13 @@ function createScientificLunarCanvas(width = 1024, height = 512) {
     ctx.restore();
   });
 
-  // 4. Prominent impact crater ray systems (Tycho, Copernicus, Kepler, Aristarchus)
+  // 4. Prominent impact crater ray systems
   const craters = [
-    { lon: -11.36, lat: -43.31, r: 10, rays: true, rayLen: 160 }, // Tycho (distinctive south rays)
+    { lon: -11.36, lat: -43.31, r: 10, rays: true, rayLen: 160 }, // Tycho
     { lon: -20.08, lat: 9.62, r: 11, rays: true, rayLen: 110 },   // Copernicus
     { lon: -47.49, lat: 23.73, r: 7, rays: true, rayLen: 70 },    // Aristarchus
     { lon: -38.01, lat: 8.12, r: 6, rays: false },                // Kepler
-    { lon: -9.38, lat: 51.62, r: 9, rays: false },                // Plato (dark flooded floor)
+    { lon: -9.38, lat: 51.62, r: 9, rays: false },                // Plato
     { lon: 0.0, lat: -89.4, r: 6, rays: false },                  // Shackleton / South Pole
   ];
 
@@ -94,7 +91,7 @@ function createScientificLunarCanvas(width = 1024, height = 512) {
 
     if (rays && rayLen) {
       ctx.save();
-      ctx.strokeStyle = 'rgba(235, 240, 248, 0.22)';
+      ctx.strokeStyle = 'rgba(244, 239, 230, 0.24)';
       ctx.lineWidth = 1.0;
       for (let angle = 0; angle < Math.PI * 2; angle += Math.PI / 10) {
         ctx.beginPath();
@@ -106,14 +103,13 @@ function createScientificLunarCanvas(width = 1024, height = 512) {
       ctx.restore();
     }
 
-    // Crater Rim
     ctx.save();
-    ctx.fillStyle = 'rgba(18, 22, 28, 0.95)';
+    ctx.fillStyle = 'rgba(24, 22, 17, 0.95)';
     ctx.beginPath();
     ctx.arc(x, y, r, 0, Math.PI * 2);
     ctx.fill();
 
-    ctx.strokeStyle = 'rgba(230, 235, 245, 0.85)';
+    ctx.strokeStyle = 'rgba(244, 239, 230, 0.82)';
     ctx.lineWidth = 1.6;
     ctx.stroke();
     ctx.restore();
@@ -122,14 +118,6 @@ function createScientificLunarCanvas(width = 1024, height = 512) {
   return canvas;
 }
 
-/**
- * Converts selenographic spherical coordinates to 3D Cartesian vectors
- * according to IAU lunar orientation standards.
- * @param {number} lat - Selenographic latitude in degrees (-90 to +90)
- * @param {number} lon - Selenographic longitude in degrees (-180 to +180)
- * @param {number} radius - Sphere radius
- * @returns {THREE.Vector3}
- */
 function selenographicToVector3(lat, lon, radius = 1.0) {
   const phi = (90 - lat) * (Math.PI / 180);
   const theta = (lon + 180) * (Math.PI / 180);
@@ -139,99 +127,117 @@ function selenographicToVector3(lat, lon, radius = 1.0) {
   return new THREE.Vector3(x, y, z);
 }
 
-/**
- * Premium Realistic 3D Lunar Globe for LUNA Landing Hero.
- * Features:
- * - Three.js 3D sphere with crater relief and LOLA bump mapping
- * - Realistic grazing solar terminator directional lighting
- * - Subtle Earthshine backfill on night limb
- * - Delicate Lunar South Pole 80°-90°S target highlight
- * - Sparse, low-contrast orbital arcs (LRO 50 km polar orbit & CLPS transfer ellipse)
- * - Verified NASA CLPS mission markers with interactive annotations
- * - Restrained astronomical starfield & exosphere limb depth
- * - Full reduced-motion and touch accessibility support
- */
-export default function RealisticMoon({ onLaunchExplorer }) {
+export const HERO_ORBITAL_MISSIONS = [
+  {
+    id: 'clps-im1-odysseus',
+    indexLabel: '01',
+    name: 'IM-1 Odysseus',
+    taskOrder: 'TO 2-IM',
+    provider: 'Intuitive Machines',
+    lat: -80.13,
+    lon: 1.44,
+    siteName: 'Malapert A Rim',
+    region: 'Lunar South Pole',
+    status: 'Completed soft landing',
+    color: 0x00d2c4, // Greenish-Blue / Cyan-Teal
+    accentHex: '#00D2C4',
+    payloadCount: 7,
+  },
+  {
+    id: 'clps-firefly-blueghost1',
+    indexLabel: '02',
+    name: 'Blue Ghost 1',
+    taskOrder: 'TO 19D',
+    provider: 'Firefly Aerospace',
+    lat: 18.56,
+    lon: 61.81,
+    siteName: 'Mare Crisium Basin',
+    region: 'Eastern Nearside',
+    status: 'Confirmed surface operations',
+    color: 0x34d399, // Mint Emerald
+    accentHex: '#34D399',
+    payloadCount: 10,
+  },
+  {
+    id: 'clps-im2-prime1',
+    indexLabel: '03',
+    name: 'IM-2 PRIME-1',
+    taskOrder: 'TO PRIME-1',
+    provider: 'Intuitive Machines',
+    lat: -89.4,
+    lon: 0.0,
+    siteName: 'Shackleton Ridge',
+    region: 'Lunar South Pole',
+    status: 'Polar volatile ice drill',
+    color: 0x00d2c4,
+    accentHex: '#00D2C4',
+    payloadCount: 3,
+  },
+  {
+    id: 'apollo-11',
+    indexLabel: '04',
+    name: 'Apollo 11',
+    taskOrder: 'NASA Historic',
+    provider: 'NASA Apollo Program',
+    lat: 0.67,
+    lon: 23.47,
+    siteName: 'Tranquility Base',
+    region: 'Mare Tranquillitatis',
+    status: 'First crewed landing (1969)',
+    color: 0xf4efe6, // Soft Ivory
+    accentHex: '#F4EFE6',
+    payloadCount: 2,
+    isApollo: true,
+  },
+  {
+    id: 'clps-astrobotic-griffin1',
+    indexLabel: '05',
+    name: 'Griffin Mission 1',
+    taskOrder: 'TO 20A',
+    provider: 'Astrobotic',
+    lat: -84.5,
+    lon: 31.7,
+    siteName: 'Mons Mouton Plateau',
+    region: 'Lunar South Pole',
+    status: 'Medium-class polar lander',
+    color: 0x88b38a,
+    accentHex: '#88B38A',
+    payloadCount: 4,
+  },
+];
+
+export default function RealisticMoon({
+  onLaunchExplorer,
+  selectedMissionIndex = 0,
+  onSelectMissionIndex,
+}) {
   const mountRef = useRef(null);
+  const rotationTargetRef = useRef({ y: 0.35, x: 0.14, manualOverride: false });
   const [activePin, setActivePin] = useState(null);
   const [pinScreenCoords, setPinScreenCoords] = useState([]);
-  const [isRotating, setIsRotating] = useState(true);
-  const [subsolarCoordinates, setSubsolarCoordinates] = useState('0.0° N, 0.0° E');
 
-  // Verified Missions Catalog for 3D Globe Pins
-  const verifiedPins = useMemo(
-    () => [
-      {
-        id: 'clps-im1-odysseus',
-        name: 'IM-1 Odysseus',
-        taskOrder: 'TO 2-IM',
-        provider: 'Intuitive Machines',
-        lat: -80.13,
-        lon: 1.44,
-        siteName: 'Malapert A Rim',
-        region: 'Lunar South Pole',
-        status: 'Completed soft landing',
-        color: 0x22d3ee,
-        payloadCount: 7,
-      },
-      {
-        id: 'clps-firefly-blueghost1',
-        name: 'Blue Ghost 1',
-        taskOrder: 'TO 19D',
-        provider: 'Firefly Aerospace',
-        lat: 18.56,
-        lon: 61.81,
-        siteName: 'Mare Crisium Basin',
-        region: 'Eastern Nearside',
-        status: 'Planned landing window',
-        color: 0x38bdf8,
-        payloadCount: 10,
-      },
-      {
-        id: 'clps-im2-prime1',
-        name: 'IM-2 PRIME-1',
-        taskOrder: 'TO PRIME-1',
-        provider: 'Intuitive Machines',
-        lat: -89.4,
-        lon: 0.0,
-        siteName: 'Shackleton Ridge',
-        region: 'Lunar South Pole',
-        status: 'Polar volatile ice drill',
-        color: 0x22d3ee,
-        payloadCount: 3,
-      },
-      {
-        id: 'apollo-11',
-        name: 'Apollo 11',
-        taskOrder: 'NASA Historic',
-        provider: 'NASA Apollo Program',
-        lat: 0.67,
-        lon: 23.47,
-        siteName: 'Tranquility Base',
-        region: 'Mare Tranquillitatis',
-        status: 'Historic crewed soft landing (1969)',
-        color: 0xf59e0b,
-        payloadCount: 2,
-        isApollo: true,
-      },
-      {
-        id: 'clps-astrobotic-griffin1',
-        name: 'Griffin Mission 1',
-        taskOrder: 'TO 20A',
-        provider: 'Astrobotic',
-        lat: -84.5,
-        lon: 31.7,
-        siteName: 'Mons Mouton Plateau',
-        region: 'Lunar South Pole',
-        status: 'Medium-class polar lander',
-        color: 0x38bdf8,
-        payloadCount: 4,
-      },
-    ],
-    []
-  );
+  const verifiedPins = useMemo(() => HERO_ORBITAL_MISSIONS, []);
 
-  const handleLaunchToPin = (pin) => {
+  // Rotate Moon toward the active mission index when user switches via the 01/05 controls
+  useEffect(() => {
+    const activeMission = verifiedPins[selectedMissionIndex];
+    if (!activeMission) return;
+    // Compute approximate target Y/X rotation to bring pin toward front hemisphere
+    const lonRad = (activeMission.lon * Math.PI) / 180;
+    const latRad = (activeMission.lat * Math.PI) / 180;
+    rotationTargetRef.current.y = -lonRad + 0.35;
+    rotationTargetRef.current.x = Math.max(-0.52, Math.min(0.52, -latRad * 0.32));
+    rotationTargetRef.current.manualOverride = true;
+    const timer = setTimeout(() => {
+      rotationTargetRef.current.manualOverride = false;
+    }, 3200);
+    return () => clearTimeout(timer);
+  }, [selectedMissionIndex, verifiedPins]);
+
+  const handleLaunchToPin = (pin, idx) => {
+    if (onSelectMissionIndex && typeof idx === 'number') {
+      onSelectMissionIndex(idx);
+    }
     const mission = CLPS_MISSIONS.find((m) => m.id === pin.id);
     if (mission) {
       onLaunchExplorer({
@@ -255,20 +261,16 @@ export default function RealisticMoon({ onLaunchExplorer }) {
     if (!container) return;
 
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (prefersReducedMotion) {
-      setIsRotating(false);
-    }
-
-    const width = container.clientWidth || 480;
-    const height = container.clientHeight || 480;
+    const width = container.clientWidth || 520;
+    const height = container.clientHeight || 520;
     const isMobile = width < 480;
 
-    // 1. Scene & Camera (calibrated so Moon sphere and orbital arcs float fully within frustum with no clipping)
+    // 1. Scene & Camera
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(40, width / height, 0.1, 100);
-    camera.position.set(0, 0, 3.35);
+    const camera = new THREE.PerspectiveCamera(38, width / height, 0.1, 100);
+    camera.position.set(0, 0.02, 3.25);
 
-    // 2. High-Performance WebGL Renderer
+    // 2. WebGL Renderer
     const renderer = new THREE.WebGLRenderer({
       alpha: true,
       antialias: true,
@@ -277,33 +279,30 @@ export default function RealisticMoon({ onLaunchExplorer }) {
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.08;
+    renderer.toneMappingExposure = 1.12;
     container.appendChild(renderer.domElement);
 
-    // 3. Crisp Astronomical Starfield (750 multi-depth points with spectral tints)
-    const starCount = 750;
+    // 3. Warm Astronomical Starfield
+    const starCount = 620;
     const starGeometry = new THREE.BufferGeometry();
     const starPositions = new Float32Array(starCount * 3);
     const starColors = new Float32Array(starCount * 3);
 
     for (let i = 0; i < starCount * 3; i += 3) {
-      // Distribute widely in background with natural depth
-      const spreadX = (Math.random() - 0.5) * 24;
-      const spreadY = (Math.random() - 0.5) * 24;
-      const spreadZ = -3.5 - Math.random() * 12;
+      starPositions[i] = (Math.random() - 0.5) * 24;
+      starPositions[i + 1] = (Math.random() - 0.5) * 24;
+      starPositions[i + 2] = -3.5 - Math.random() * 12;
 
-      starPositions[i] = spreadX;
-      starPositions[i + 1] = spreadY;
-      starPositions[i + 2] = spreadZ;
-
-      // Realistic stellar spectral temperatures (blue-white, white, warm amber)
       const spectral = Math.random();
-      if (spectral > 0.85) {
-        starColors[i] = 0.75; starColors[i + 1] = 0.88; starColors[i + 2] = 1.0; // Class B/A (cool blue)
-      } else if (spectral < 0.12) {
-        starColors[i] = 1.0; starColors[i + 1] = 0.92; starColors[i + 2] = 0.72; // Class K/G (warm amber)
+      if (spectral > 0.78) {
+        // Warm terracotta tint
+        starColors[i] = 0.90; starColors[i + 1] = 0.65; starColors[i + 2] = 0.48;
+      } else if (spectral < 0.22) {
+        // Soft sage tint
+        starColors[i] = 0.65; starColors[i + 1] = 0.80; starColors[i + 2] = 0.66;
       } else {
-        starColors[i] = 0.96; starColors[i + 1] = 0.97; starColors[i + 2] = 1.0; // Class F (crisp white)
+        // Warm cream starlight
+        starColors[i] = 0.96; starColors[i + 1] = 0.94; starColors[i + 2] = 0.90;
       }
     }
 
@@ -311,18 +310,18 @@ export default function RealisticMoon({ onLaunchExplorer }) {
     starGeometry.setAttribute('color', new THREE.BufferAttribute(starColors, 3));
 
     const starMaterial = new THREE.PointsMaterial({
-      size: 0.032,
+      size: 0.03,
       vertexColors: true,
       transparent: true,
-      opacity: 0.82,
+      opacity: 0.72,
     });
     const starPoints = new THREE.Points(starGeometry, starMaterial);
     scene.add(starPoints);
 
-    // 4. Moon Group (contains sphere, markers, South Pole ring, orbital arcs)
+    // 4. Moon Group
     const moonGroup = new THREE.Group();
-    moonGroup.rotation.x = 0.12; // Slight polar tilt toward camera to emphasize South Pole
-    moonGroup.rotation.y = 0.35; // Default orientation showcasing nearside maria
+    moonGroup.rotation.x = 0.14;
+    moonGroup.rotation.y = 0.35;
     scene.add(moonGroup);
 
     // 5. Lunar Sphere Mesh with Crater Geometry & Bump Relief
@@ -336,14 +335,14 @@ export default function RealisticMoon({ onLaunchExplorer }) {
 
     const moonMaterial = new THREE.MeshStandardMaterial({
       map: proceduralTexture,
-      roughness: 0.94,
-      metalness: 0.02,
+      roughness: 0.91,
+      metalness: 0.04,
+      color: new THREE.Color('#f4efe6'),
     });
 
     const moonMesh = new THREE.Mesh(sphereGeometry, moonMaterial);
     moonGroup.add(moonMesh);
 
-    // Load NASA LRO high-res photographic basemap with fallback cascade
     const textureLoader = new THREE.TextureLoader();
     textureLoader.setCrossOrigin('anonymous');
 
@@ -376,12 +375,11 @@ export default function RealisticMoon({ onLaunchExplorer }) {
 
     tryLoadTexture(NASA_LUNAR_BUMP_URLS, (bumpTex) => {
       moonMaterial.bumpMap = bumpTex;
-      moonMaterial.bumpScale = 0.038;
+      moonMaterial.bumpScale = 0.042;
       moonMaterial.needsUpdate = true;
     });
 
-    // 6. Subtle South-Pole Target Highlight (80°S - 90°S)
-    // Delicate polar latitude targeting ring at 80°S latitude
+    // 6. South-Pole Target Highlight (80°S - 90°S) in Warm Terracotta
     const southPoleRingGeo = new THREE.BufferGeometry();
     const ringPoints = [];
     const polarLatRad = (-80 * Math.PI) / 180;
@@ -400,34 +398,30 @@ export default function RealisticMoon({ onLaunchExplorer }) {
     }
     southPoleRingGeo.setFromPoints(ringPoints);
     const southPoleRingMat = new THREE.LineBasicMaterial({
-      color: 0x22d3ee,
+      color: 0x00d2c4,
       transparent: true,
-      opacity: 0.45,
-      linewidth: 1,
+      opacity: 0.65,
     });
     const southPoleRing = new THREE.Line(southPoleRingGeo, southPoleRingMat);
     moonMesh.add(southPoleRing);
 
     // Polar center crosshair pin (Shackleton South Pole 90°S)
-    const spCenterPos = new THREE.Vector3(0, -1.012, 0);
-    const spCenterGeo = new THREE.SphereGeometry(0.012, 12, 12);
-    const spCenterMat = new THREE.MeshBasicMaterial({ color: 0x22d3ee });
+    const spCenterGeo = new THREE.SphereGeometry(0.014, 12, 12);
+    const spCenterMat = new THREE.MeshBasicMaterial({ color: 0x00d2c4 });
     const spCenterMesh = new THREE.Mesh(spCenterGeo, spCenterMat);
-    spCenterMesh.position.copy(spCenterPos);
+    spCenterMesh.position.set(0, -1.012, 0);
     moonMesh.add(spCenterMesh);
 
-    // 7. Sparse, Low-Contrast Orbital Arcs (Scientific & Minimalist)
-    // Arc A: LRO 50 km Polar Mapping Orbit
+    // 7. Orbital Telemetry Arcs (Aerospace Cyan & Mint Emerald)
     const lroOrbitGeo = new THREE.BufferGeometry();
     const lroPoints = [];
-    const lroRadiusX = 1.22;
-    const lroRadiusY = 1.18;
+    const lroRadiusX = 1.24;
+    const lroRadiusY = 1.19;
     for (let i = 0; i <= 100; i++) {
       const t = (i / 100) * Math.PI * 2;
-      // Ellipse tilted near 90 degrees (polar)
       lroPoints.push(
         new THREE.Vector3(
-          Math.sin(t) * 0.08,
+          Math.sin(t) * 0.09,
           Math.cos(t) * lroRadiusY,
           Math.sin(t) * lroRadiusX
         )
@@ -435,27 +429,25 @@ export default function RealisticMoon({ onLaunchExplorer }) {
     }
     lroOrbitGeo.setFromPoints(lroPoints);
     const lroOrbitMat = new THREE.LineBasicMaterial({
-      color: 0x38bdf8,
+      color: 0x00d2c4,
       transparent: true,
-      opacity: 0.22,
+      opacity: 0.35,
     });
     const lroOrbitLine = new THREE.Line(lroOrbitGeo, lroOrbitMat);
     moonGroup.add(lroOrbitLine);
 
-    // Tiny LRO Spacecraft Beacon
-    const lroBeaconGeo = new THREE.SphereGeometry(0.012, 8, 8);
-    const lroBeaconMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
+    const lroBeaconGeo = new THREE.SphereGeometry(0.014, 10, 10);
+    const lroBeaconMat = new THREE.MeshBasicMaterial({ color: 0x00d2c4 });
     const lroBeacon = new THREE.Mesh(lroBeaconGeo, lroBeaconMat);
     moonGroup.add(lroBeacon);
 
-    // Arc B: Low-Contrast CLPS Translunar Transfer Trajectory
+    // Arc B: CLPS Translunar Transfer Trajectory in Sage Green
     const clpsOrbitGeo = new THREE.BufferGeometry();
     const clpsPoints = [];
-    const clpsSemiA = 1.34;
-    const clpsSemiB = 1.12;
+    const clpsSemiA = 1.36;
+    const clpsSemiB = 1.14;
     for (let i = 0; i <= 90; i++) {
       const t = (i / 90) * Math.PI * 2;
-      // Inclined orbit (~22 degrees)
       const x = Math.cos(t) * clpsSemiA;
       const y = Math.sin(t) * Math.sin(0.38) * clpsSemiB;
       const z = Math.sin(t) * Math.cos(0.38) * clpsSemiB;
@@ -463,67 +455,65 @@ export default function RealisticMoon({ onLaunchExplorer }) {
     }
     clpsOrbitGeo.setFromPoints(clpsPoints);
     const clpsOrbitMat = new THREE.LineBasicMaterial({
-      color: 0x94a3b8,
+      color: 0x88b38a,
       transparent: true,
-      opacity: 0.14,
+      opacity: 0.22,
     });
     const clpsOrbitLine = new THREE.Line(clpsOrbitGeo, clpsOrbitMat);
     moonGroup.add(clpsOrbitLine);
 
     // 8. 3D Verified Mission Markers on Surface
     const markerMeshes = [];
-    verifiedPins.forEach((pin) => {
-      const pos = selenographicToVector3(pin.lat, pin.lon, 1.014);
+    verifiedPins.forEach((pin, idx) => {
+      const pos = selenographicToVector3(pin.lat, pin.lon, 1.016);
 
-      // Core fiducial dot
-      const dotGeo = new THREE.SphereGeometry(0.016, 14, 14);
+      const dotGeo = new THREE.SphereGeometry(0.017, 14, 14);
       const dotMat = new THREE.MeshBasicMaterial({ color: pin.color });
       const dotMesh = new THREE.Mesh(dotGeo, dotMat);
       dotMesh.position.copy(pos);
       moonMesh.add(dotMesh);
 
-      // Target fiducial ring
-      const ringGeo = new THREE.RingGeometry(0.024, 0.032, 24);
+      const ringGeo = new THREE.RingGeometry(0.026, 0.036, 24);
       const ringMat = new THREE.MeshBasicMaterial({
         color: pin.color,
         side: THREE.DoubleSide,
         transparent: true,
-        opacity: 0.65,
+        opacity: 0.72,
       });
       const ringMesh = new THREE.Mesh(ringGeo, ringMat);
-      ringMesh.position.copy(pos.clone().multiplyScalar(1.002));
+      ringMesh.position.copy(pos.clone().multiplyScalar(1.003));
       ringMesh.lookAt(pos.clone().multiplyScalar(2));
       moonMesh.add(ringMesh);
 
       markerMeshes.push({
         pin,
+        idx,
         dotMesh,
         ringMesh,
         worldPosition: pos,
       });
     });
 
-    // 9. Directional Lighting (Grazing Solar Terminator + Earthshine)
-    // Sunlight: Low grazing angle creating deep crater shadow relief along the terminator
-    const sunLight = new THREE.DirectionalLight(0xffffff, 2.9);
-    sunLight.position.set(3.4, 0.9, 2.3);
+    // 9. Warm Grazing Solar Terminator & Sage Earthshine Lighting
+    const sunLight = new THREE.DirectionalLight(0xf4efe6, 3.0);
+    sunLight.position.set(3.4, 0.95, 2.3);
     scene.add(sunLight);
 
-    // Earthshine: Faint cool backfill revealing basalt maria on the dark limb
-    const earthshine = new THREE.DirectionalLight(0x38bdf8, 0.22);
+    const earthshine = new THREE.DirectionalLight(0x88b38a, 0.28);
     earthshine.position.set(-3.4, -0.6, -1.2);
     scene.add(earthshine);
 
-    // Ambient space light: deep cosmic darkness
-    const ambientLight = new THREE.AmbientLight(0x0a0f1d, 0.16);
+    const warmRimLight = new THREE.DirectionalLight(0x00d2c4, 0.22);
+    warmRimLight.position.set(0.5, -2.8, -1.8);
+    scene.add(warmRimLight);
+
+    const ambientLight = new THREE.AmbientLight(0x1c1a14, 0.26);
     scene.add(ambientLight);
 
-    // 10. Interactive Drag & Mouse Controls
+    // 10. Interactive Drag & Touch Controls
     let isDragging = false;
     let prevMouseX = 0;
     let prevMouseY = 0;
-    let targetRotY = 0.35;
-    let targetRotX = 0.12;
 
     const onMouseDown = (e) => {
       isDragging = true;
@@ -538,15 +528,17 @@ export default function RealisticMoon({ onLaunchExplorer }) {
       prevMouseX = e.clientX;
       prevMouseY = e.clientY;
 
-      targetRotY += deltaX * 0.006;
-      targetRotX = Math.max(-0.65, Math.min(0.65, targetRotX + deltaY * 0.005));
+      rotationTargetRef.current.y += deltaX * 0.006;
+      rotationTargetRef.current.x = Math.max(
+        -0.65,
+        Math.min(0.65, rotationTargetRef.current.x + deltaY * 0.005)
+      );
     };
 
     const onMouseUp = () => {
       isDragging = false;
     };
 
-    // Touch events for mobile phones & tablets
     let touchStartX = 0;
     let touchStartY = 0;
 
@@ -564,8 +556,11 @@ export default function RealisticMoon({ onLaunchExplorer }) {
         touchStartX = e.touches[0].clientX;
         touchStartY = e.touches[0].clientY;
 
-        targetRotY += deltaX * 0.007;
-        targetRotX = Math.max(-0.65, Math.min(0.65, targetRotX + deltaY * 0.006));
+        rotationTargetRef.current.y += deltaX * 0.007;
+        rotationTargetRef.current.x = Math.max(
+          -0.65,
+          Math.min(0.65, rotationTargetRef.current.x + deltaY * 0.006)
+        );
       }
     };
 
@@ -576,52 +571,48 @@ export default function RealisticMoon({ onLaunchExplorer }) {
     domElement.addEventListener('touchstart', onTouchStart, { passive: true });
     domElement.addEventListener('touchmove', onTouchMove, { passive: true });
 
-    // 11. Animation Loop & Screen Projection for Interactive Pins
+    // 11. Animation Loop
     let animationFrameId;
     let lroAngle = 0;
-
     const tempV = new THREE.Vector3();
-    const raycaster = new THREE.Raycaster();
-    const mouseVector = new THREE.Vector2();
 
     const animate = () => {
       animationFrameId = requestAnimationFrame(animate);
 
-      // Orbital rotation if enabled and not currently dragging
-      if (!prefersReducedMotion && !isDragging) {
-        targetRotY += 0.0009;
+      if (!prefersReducedMotion && !isDragging && !rotationTargetRef.current.manualOverride) {
+        rotationTargetRef.current.y += 0.00085;
       }
 
-      // Smooth damping interpolation
-      moonMesh.rotation.y += (targetRotY - moonMesh.rotation.y) * 0.08;
-      moonGroup.rotation.x += (targetRotX - moonGroup.rotation.x) * 0.08;
+      moonMesh.rotation.y += (rotationTargetRef.current.y - moonMesh.rotation.y) * 0.075;
+      moonGroup.rotation.x += (rotationTargetRef.current.x - moonGroup.rotation.x) * 0.075;
 
-      // Animate LRO beacon along polar orbit
       lroAngle += 0.004;
       lroBeacon.position.set(
-        Math.sin(lroAngle) * 0.08,
+        Math.sin(lroAngle) * 0.09,
         Math.cos(lroAngle) * lroRadiusY,
         Math.sin(lroAngle) * lroRadiusX
       );
 
-      // Project 3D pins to 2D screen coordinates for crisp HTML annotations
       const screenCoords = [];
       const cameraDir = camera.getWorldDirection(new THREE.Vector3());
+      const curW = container.clientWidth || width;
+      const curH = container.clientHeight || height;
 
-      markerMeshes.forEach(({ pin, dotMesh }) => {
+      markerMeshes.forEach(({ pin, idx, dotMesh }) => {
         dotMesh.getWorldPosition(tempV);
-
-        // Check if marker is on the front-facing hemisphere visible to camera
-        const toMarker = tempV.clone().sub(camera.position).normalize();
-        const normal = tempV.clone().sub(moonMesh.getWorldPosition(new THREE.Vector3())).normalize();
+        const normal = tempV
+          .clone()
+          .sub(moonMesh.getWorldPosition(new THREE.Vector3()))
+          .normalize();
         const isFacing = normal.dot(cameraDir) < -0.05;
 
         tempV.project(camera);
-        const x = ((tempV.x + 1) * width) / 2;
-        const y = ((-tempV.y + 1) * height) / 2;
+        const x = ((tempV.x + 1) * curW) / 2;
+        const y = ((-tempV.y + 1) * curH) / 2;
 
         screenCoords.push({
           pin,
+          idx,
           x,
           y,
           visible: isFacing && tempV.z < 1.0,
@@ -629,13 +620,11 @@ export default function RealisticMoon({ onLaunchExplorer }) {
       });
 
       setPinScreenCoords(screenCoords);
-
       renderer.render(scene, camera);
     };
 
     animate();
 
-    // 12. Resize Handler
     const handleResize = () => {
       if (!container) return;
       const newW = container.clientWidth;
@@ -647,7 +636,6 @@ export default function RealisticMoon({ onLaunchExplorer }) {
 
     window.addEventListener('resize', handleResize);
 
-    // 13. Resource Cleanup on Unmount
     return () => {
       cancelAnimationFrame(animationFrameId);
       domElement.removeEventListener('mousedown', onMouseDown);
@@ -677,29 +665,30 @@ export default function RealisticMoon({ onLaunchExplorer }) {
   }, [verifiedPins]);
 
   return (
-    <div className="relative flex items-center justify-center select-none w-full max-w-[340px] sm:max-w-[460px] lg:max-w-[560px] xl:max-w-[600px] aspect-square mx-auto">
-      {/* 1. Subtle Space Depth & Forward Limb Light (No generic sci-fi glow) */}
+    <div className="relative flex items-center justify-center select-none w-full max-w-[360px] sm:max-w-[480px] lg:max-w-[580px] xl:max-w-[640px] aspect-square mx-auto">
+      {/* Warm Atmospheric Glow */}
       <div
         className="absolute inset-0 rounded-full pointer-events-none -z-10"
         style={{
           background:
-            'radial-gradient(circle at 48% 46%, rgba(34, 211, 238, 0.08) 0%, rgba(15, 23, 42, 0.03) 48%, transparent 70%)',
-          filter: 'blur(36px)',
+            'radial-gradient(circle at 52% 46%, rgba(229, 154, 109, 0.14) 0%, rgba(136, 179, 138, 0.08) 42%, transparent 72%)',
+          filter: 'blur(42px)',
         }}
       />
 
-      {/* 2. WebGL 3D Globe Canvas Container */}
+      {/* WebGL 3D Globe Canvas */}
       <div
         ref={mountRef}
         className="relative w-full h-full cursor-grab active:cursor-grabbing rounded-full overflow-visible"
-        title="Interactive 3D Moon - Drag to rotate, hover markers for telemetry"
+        title="Interactive 3D Moon — Drag to rotate, click orbital nodes to open"
       />
 
-      {/* 3. Screen-Space Scientific Mission Marker Overlays */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden z-20">
-        {pinScreenCoords.map(({ pin, x, y, visible }) => {
+      {/* Screen-Space Orbital Mission Nodes */}
+      <div className="absolute inset-0 pointer-events-none overflow-visible z-20">
+        {pinScreenCoords.map(({ pin, idx, x, y, visible }) => {
           if (!visible) return null;
-          const isHovered = activePin?.id === pin.id;
+          const isSelected = idx === selectedMissionIndex;
+          const isHovered = activePin?.id === pin.id || isSelected;
 
           return (
             <div
@@ -708,51 +697,58 @@ export default function RealisticMoon({ onLaunchExplorer }) {
               className="absolute -translate-x-1/2 -translate-y-1/2 pointer-events-auto cursor-pointer"
               onMouseEnter={() => setActivePin(pin)}
               onMouseLeave={() => setActivePin(null)}
-              onClick={() => handleLaunchToPin(pin)}
+              onClick={() => handleLaunchToPin(pin, idx)}
             >
-              {/* Crisp vector fiducial pin */}
+              {/* Crisp Orbital Fiducial Node */}
               <div className="relative flex items-center justify-center p-2 group">
                 <span
-                  className={`absolute w-3.5 h-3.5 rounded-full animate-ping opacity-60 ${
-                    pin.isApollo ? 'bg-amber-400' : 'bg-cyan-400'
-                  }`}
+                  className="absolute w-4 h-4 rounded-full animate-ping opacity-60"
+                  style={{ backgroundColor: pin.accentHex }}
                 />
                 <span
-                  className={`relative w-2 h-2 rounded-full border border-black shadow-sm ${
-                    pin.isApollo ? 'bg-amber-300' : 'bg-cyan-300'
-                  }`}
+                  className="relative w-2.5 h-2.5 rounded-full border border-[#060B13] shadow-sm transition-transform group-hover:scale-125"
+                  style={{ backgroundColor: pin.accentHex }}
                 />
 
-                {/* Subtle label next to pin */}
-                <span className="hidden sm:inline-block ml-2 px-1.5 py-0.5 rounded bg-[#030611]/85 border border-slate-800 text-[10px] font-mono text-slate-300 whitespace-nowrap opacity-75 group-hover:opacity-100 group-hover:border-cyan-500/40 transition-opacity">
-                  {pin.name}
+                {/* Editorial Node Pill */}
+                <span
+                  className={`hidden sm:inline-flex items-center gap-1.5 ml-2 px-2 py-0.5 rounded-full bg-[#060B13]/90 border text-[10px] font-mono whitespace-nowrap transition-all ${
+                    isSelected
+                      ? 'border-[#00D2C4]/80 text-[#F1F5F9] opacity-100 shadow-[0_0_12px_rgba(0,210,196,0.3)]'
+                      : 'border-[#16283C] text-[#94A3B8] opacity-80 group-hover:opacity-100 group-hover:border-[#00D2C4]/50 group-hover:text-[#F1F5F9]'
+                  }`}
+                >
+                  <span className="text-[#00D2C4]">{pin.indexLabel}</span>
+                  <span>{pin.name}</span>
                 </span>
               </div>
 
-              {/* Scientific Annotation Popover on Hover */}
+              {/* Editorial Telemetry Popover */}
               {isHovered && (
                 <div
-                  className="absolute bottom-6 left-1/2 -translate-x-1/2 w-52 p-3 rounded-xl bg-[#040713]/95 border border-cyan-500/50 backdrop-blur-xl shadow-2xl text-left pointer-events-none z-30 animate-in fade-in zoom-in-95 duration-150"
+                  className="absolute bottom-7 left-1/2 -translate-x-1/2 w-56 p-3.5 rounded-2xl bg-[#0A1220]/95 border border-[#00D2C4]/45 backdrop-blur-xl shadow-2xl text-left pointer-events-none z-30 animate-in fade-in zoom-in-95 duration-150"
                   style={{ transformOrigin: 'bottom center' }}
                 >
                   <div className="flex items-center justify-between text-[10px] font-mono mb-1">
-                    <span className="text-cyan-300 font-semibold">{pin.name}</span>
-                    <span className="text-slate-400 font-mono tabular-nums">
+                    <span className="text-[#00D2C4] font-semibold">
+                      {pin.indexLabel} · {pin.taskOrder}
+                    </span>
+                    <span className="text-[#94A3B8] tabular-nums">
                       {formatLunarCoordinates(pin.lon, pin.lat).combined}
                     </span>
                   </div>
 
-                  <div className="text-[11px] text-white font-medium mb-1">
-                    {pin.siteName}
+                  <div className="font-serif text-base text-[#F1F5F9] leading-tight mb-0.5">
+                    {pin.name}
                   </div>
 
-                  <div className="text-[10px] text-slate-400 leading-tight mb-2">
-                    {pin.provider} · {pin.region}
+                  <div className="text-[11px] text-[#94A3B8] leading-snug mb-2">
+                    {pin.siteName} · {pin.region}
                   </div>
 
-                  <div className="flex items-center justify-between pt-2 border-t border-slate-800 text-[9px] font-mono text-cyan-400">
+                  <div className="flex items-center justify-between pt-2 border-t border-[#16283C] text-[9.5px] font-mono text-[#34D399]">
                     <span>{pin.status}</span>
-                    <ArrowRight className="w-2.5 h-2.5" />
+                    <ArrowUpRight className="w-3 h-3 text-[#00D2C4]" />
                   </div>
                 </div>
               )}
@@ -760,13 +756,6 @@ export default function RealisticMoon({ onLaunchExplorer }) {
           );
         })}
       </div>
-
-      {/* 4. Polar Annotation & Selenographic Datum Indicator */}
-      {/* <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 text-[10px] font-mono text-slate-500 tracking-wider uppercase pointer-events-none whitespace-nowrap">
-        <span>0.00° N, 0.00° E · Subsolar Datum</span>
-        <span className="text-slate-700">•</span>
-        <span className="text-cyan-400/90">South Pole Highlight: 80°–90°S</span>
-      </div> */}
     </div>
   );
 }
