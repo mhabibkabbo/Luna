@@ -5,6 +5,7 @@
 
 import * as Cesium from 'cesium';
 import { EARTH_COMMUNICATION_SITES } from '../../data/earthCommunicationSites.js';
+import { EARTH_LAUNCH_SITES } from '../../data/earthLaunchSites.js';
 import { formatLunarCoordinates } from '../../utils/coordinates.js';
 
 const EARTH_PIN_STYLE = {
@@ -18,11 +19,13 @@ const EARTH_PIN_STYLE = {
 };
 
 const SITE_MARKER_COLORS = {
-  'deep-space-communication': '#00D2C4',
-  'spacecraft-tracking': '#34D399',
-  'launch-tracking': '#38BDF8',
-  'relay-communications': '#22D3EE',
-  'mission-operations': '#6EE7B7',
+  'deep-space-communication': '#22d3ee',
+  'spacecraft-tracking': '#60a5fa',
+  'launch-tracking': '#c084fc',
+  'relay-communications': '#fbbf24',
+  'mission-operations': '#34d399',
+  'launch-site': '#f97316',
+  'launch-pad': '#fb923c',
 };
 
 const EARTH_DRAG_SENSITIVITY = 1.0;
@@ -61,22 +64,48 @@ function createSitePinImage(type, selected) {
   context.fill();
   context.restore();
 
-  context.strokeStyle = '#060B13';
-  context.lineWidth = 5;
-  context.lineCap = 'round';
-  context.beginPath();
-  context.moveTo(44, 62);
-  context.lineTo(56, 48);
-  context.lineTo(68, 62);
-  context.moveTo(56, 48);
-  context.lineTo(56, 72);
-  context.moveTo(47, 72);
-  context.lineTo(65, 72);
-  context.stroke();
+  if (type === 'launch-site' || type === 'launch-pad') {
+    context.fillStyle = '#ffffff';
+    context.beginPath();
+    context.moveTo(56, 38);
+    context.bezierCurveTo(63, 48, 63, 60, 63, 64);
+    context.lineTo(49, 64);
+    context.bezierCurveTo(49, 60, 49, 48, 56, 38);
+    context.fill();
 
-  context.beginPath();
-  context.arc(56, 43, 7, Math.PI, Math.PI * 2);
-  context.stroke();
+    context.beginPath();
+    context.moveTo(49, 58);
+    context.lineTo(43, 67);
+    context.lineTo(49, 65);
+    context.moveTo(63, 58);
+    context.lineTo(69, 67);
+    context.lineTo(63, 65);
+    context.fill();
+
+    context.strokeStyle = selected ? '#fde047' : '#f97316';
+    context.lineWidth = 3;
+    context.beginPath();
+    context.moveTo(56, 65);
+    context.lineTo(56, 73);
+    context.stroke();
+  } else {
+    context.strokeStyle = '#ffffff';
+    context.lineWidth = 5;
+    context.lineCap = 'round';
+    context.beginPath();
+    context.moveTo(44, 62);
+    context.lineTo(56, 48);
+    context.lineTo(68, 62);
+    context.moveTo(56, 48);
+    context.lineTo(56, 72);
+    context.moveTo(47, 72);
+    context.lineTo(65, 72);
+    context.stroke();
+
+    context.beginPath();
+    context.arc(56, 43, 7, Math.PI, Math.PI * 2);
+    context.stroke();
+  }
 
   const image = canvas.toDataURL('image/png');
   sitePinImages.set(cacheKey, image);
@@ -128,6 +157,7 @@ export function createEarthFeatures({ viewer, container, callbacks }) {
   const scene = viewer.scene;
   const handler = new Cesium.ScreenSpaceEventHandler(scene.canvas);
   const sitePinEntities = [];
+  const launchSitePinEntities = [];
   let customPinEntity = null;
   let selectedEntity = null;
   let hoveredEntity = null;
@@ -180,16 +210,19 @@ export function createEarthFeatures({ viewer, container, callbacks }) {
     }
   };
 
-  EARTH_COMMUNICATION_SITES.forEach((site) => {
+  const addSiteEntity = (site, category) => {
+    const isLaunch = category === 'earth-launch-sites';
     const feature = { ...site, body: 'earth' };
-    const baseScale =
-      site.type === 'deep-space-communication'
-        ? EARTH_PIN_STYLE.baseScale
-        : EARTH_PIN_STYLE.baseScale * 0.88;
-    const maxLabelDistance =
-      site.type === 'deep-space-communication'
-        ? 45_000_000
-        : 24_000_000;
+    const baseScale = isLaunch
+      ? EARTH_PIN_STYLE.baseScale * 0.95
+      : site.type === 'deep-space-communication'
+      ? EARTH_PIN_STYLE.baseScale
+      : EARTH_PIN_STYLE.baseScale * 0.88;
+    const maxLabelDistance = isLaunch
+      ? 28_000_000
+      : site.type === 'deep-space-communication'
+      ? 35_000_000
+      : 18_000_000;
 
     const entity = viewer.entities.add({
       name: feature.name,
@@ -238,16 +271,23 @@ export function createEarthFeatures({ viewer, container, callbacks }) {
       },
       properties: {
         feature,
-        category: 'earth-communication-sites',
+        category,
         markerType: feature.type,
         baseScale,
         maxLabelDistance,
       },
     });
 
-    sitePinEntities.push(entity);
+    if (isLaunch) {
+      launchSitePinEntities.push(entity);
+    } else {
+      sitePinEntities.push(entity);
+    }
     updatePinStyle(entity);
-  });
+  };
+
+  EARTH_COMMUNICATION_SITES.forEach((site) => addSiteEntity(site, 'earth-communication-sites'));
+  EARTH_LAUNCH_SITES.forEach((site) => addSiteEntity(site, 'earth-launch-sites'));
 
   const getSurfaceCartesian = (position) => {
     return viewer.camera.pickEllipsoid(position, Cesium.Ellipsoid.WGS84);
@@ -589,6 +629,12 @@ export function createEarthFeatures({ viewer, container, callbacks }) {
     setLayerVisibility(layerId, visible) {
       if (layerId === 'earth-communication-sites') {
         sitePinEntities.forEach((entity) => {
+          entity.show = visible;
+        });
+        scene.requestRender();
+      }
+      if (layerId === 'earth-launch-sites') {
+        launchSitePinEntities.forEach((entity) => {
           entity.show = visible;
         });
         scene.requestRender();

@@ -4,6 +4,8 @@ import SearchResults from './SearchResults.jsx';
 import { LUNAR_FEATURES } from '../../data/lunarFeatures.js';
 import { LANDING_SITES } from '../../data/landingSites.js';
 import { EARTH_COMMUNICATION_SITES } from '../../data/earthCommunicationSites.js';
+import { EARTH_LAUNCH_SITES } from '../../data/earthLaunchSites.js';
+const COMBINED_EARTH_SEARCH_DATA = [...EARTH_COMMUNICATION_SITES, ...EARTH_LAUNCH_SITES];
 import { parseLunarCoordinates } from '../../utils/coordinates.js';
 
 // Searchable catalog including craters, mountains, maria, valleys/rilles, and landing sites
@@ -63,7 +65,7 @@ export default function SearchBox({ onSelectFeature, onCoordinateSearch, body = 
       }
 
       // Feature name, CLPS metadata, payloads, provider, and type matching
-      const searchData = body === 'earth' ? EARTH_COMMUNICATION_SITES : COMBINED_SEARCH_DATA;
+      const searchData = body === 'earth' ? COMBINED_EARTH_SEARCH_DATA : COMBINED_SEARCH_DATA;
       const matches = searchData.filter((item) => {
         const nameMatch = item.name.toLowerCase().includes(trimmed);
         const typeMatch = item.type.toLowerCase().includes(trimmed);
