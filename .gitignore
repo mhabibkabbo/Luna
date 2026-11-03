@@ -4,3 +4,4 @@ dist
 PROJECT_DOCUMENTATION.md
 .env*
 !.env.example
+scripts/dem/
