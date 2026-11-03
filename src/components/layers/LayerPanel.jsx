@@ -10,7 +10,8 @@ import LayerToggle from './LayerToggle.jsx';
  *   onClose: () => void,
  *   layers: Array<import('../../types/lunar.js').LunarLayer>,
  *   onToggleLayer: (layerId: string, visible: boolean) => void,
- *   onChangeOpacity: (layerId: string, opacity: number) => void
+ *   onChangeOpacity: (layerId: string, opacity: number) => void,
+ *   activePlanet?: 'moon' | 'earth'
  * }} props
  */
 export default function LayerPanel({

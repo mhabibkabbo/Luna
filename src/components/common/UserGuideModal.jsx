@@ -18,7 +18,7 @@ import {
  * User Guide & Navigation Modal.
  * Provides clear instructions on controls, landing site analysis, and keyboard shortcuts.
  */
-export default function UserGuideModal({ isOpen, onClose }) {
+export default function UserGuideModal({ isOpen, onClose, onStartTour }) {
   if (!isOpen) return null;
 
   return (
@@ -57,6 +57,31 @@ export default function UserGuideModal({ isOpen, onClose }) {
 
         {/* Scrollable Content */}
         <div className="p-6 space-y-6 overflow-y-auto text-xs leading-relaxed">
+          {/* Guided Tour Banner */}
+          {onStartTour && (
+            <div className="p-3.5 rounded-xl bg-gradient-to-r from-cyan-950/60 to-blue-950/60 border border-cyan-500/40 flex items-center justify-between gap-3">
+              <div>
+                <div className="font-bold text-white text-xs flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
+                  <span>First Time Here? Launch 60-Second Guided Tour</span>
+                </div>
+                <p className="text-[11px] text-slate-300 mt-0.5">
+                  Experience the continuous 6-stage mission journey from spacecraft setup to landing site assessment.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onStartTour();
+                }}
+                className="px-3.5 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs tracking-wide shrink-0 transition-all shadow-md active:scale-95"
+              >
+                Start Tour
+              </button>
+            </div>
+          )}
+
           {/* Section 1: Surface Interaction & Site Analysis */}
           <div>
             <h3 className="text-xs font-bold text-cyan-400 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
@@ -86,15 +111,39 @@ export default function UserGuideModal({ isOpen, onClose }) {
             </div>
           </div>
 
-          {/* Section 2: Landing Site Navigator & Comparison */}
+          {/* Section 2: Landing Window Planner */}
           <div>
             <h3 className="text-xs font-bold text-cyan-400 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
-              <GitCompare className="w-3.5 h-3.5" />
-              <span>2. Lunar Landing Site Navigator</span>
+              <Target className="w-3.5 h-3.5" />
+              <span>2. Landing Window Planner</span>
             </h3>
             <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800/80">
               <p className="text-slate-300 text-[11px] mb-2">
-                Click <strong>Site Navigator</strong> in the toolbar to run side-by-side trade-off evaluations:
+                Answers: <em>"Where would be the most suitable place to land on the Moon at a particular date and time?"</em>
+              </p>
+              <ul className="space-y-1.5 text-[11px] text-slate-400 list-disc list-inside">
+                <li>
+                  <strong className="text-white">Full Flight Duration Analysis:</strong> Evaluates solar elevation, daylight hours, Earth line-of-sight, and thermal conditions across your entire mission duration (3, 7, 14, 28, or 90 days), not just at touchdown.
+                </li>
+                <li>
+                  <strong className="text-white">Constraint Filtering:</strong> Filters candidates violating mandatory engineering limits (e.g. max terrain slope, continuous daylight hours, direct Earth comms).
+                </li>
+                <li>
+                  <strong className="text-white">1-Click 3D Inspection:</strong> Select any recommended candidate to immediately animate the 3D Moon camera to its exact selenographic coordinates.
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Section 3: Landing Site Navigator & Comparison */}
+          <div>
+            <h3 className="text-xs font-bold text-cyan-400 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
+              <GitCompare className="w-3.5 h-3.5" />
+              <span>3. Lunar Landing Site Comparison</span>
+            </h3>
+            <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800/80">
+              <p className="text-slate-300 text-[11px] mb-2">
+                Click <strong>Site Comparison</strong> in the top navigation to run side-by-side trade-off evaluations:
               </p>
               <ul className="space-y-1.5 text-[11px] text-slate-400 list-disc list-inside">
                 <li>

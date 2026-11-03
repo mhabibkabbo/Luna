@@ -53,46 +53,46 @@ function getLunarMarkerDataUrl(category = 'crater_minor', isSelected = false) {
 
   ctx.clearRect(0, 0, width, height);
 
-  // Configuration per marker type
-  let primaryColor = '#06b6d4'; // cyan
-  let glowColor = 'rgba(6, 182, 212, 0.45)';
+  // Configuration per marker type - NASA Greenish-Blue / Cyan-Teal palette
+  let primaryColor = '#00D2C4'; // Vibrant greenish-blue
+  let glowColor = 'rgba(0, 210, 196, 0.5)';
 
   switch (category) {
     case 'south_pole':
-      primaryColor = isSelected ? '#38bdf8' : '#00f2fe';
-      glowColor = 'rgba(0, 242, 254, 0.7)';
+      primaryColor = isSelected ? '#FFFFFF' : '#00D2C4';
+      glowColor = 'rgba(0, 210, 196, 0.85)';
       break;
     case 'landing_apollo':
-      primaryColor = isSelected ? '#38bdf8' : '#06b6d4';
-      glowColor = 'rgba(6, 182, 212, 0.6)';
+      primaryColor = isSelected ? '#FFFFFF' : '#00E5FF';
+      glowColor = 'rgba(0, 229, 255, 0.75)';
       break;
     case 'landing_robotic':
-      primaryColor = isSelected ? '#34d399' : '#10b981';
-      glowColor = 'rgba(16, 185, 129, 0.6)';
+      primaryColor = isSelected ? '#FFFFFF' : '#14B8A6';
+      glowColor = 'rgba(20, 184, 166, 0.7)';
       break;
     case 'crater_major':
-      primaryColor = isSelected ? '#f8fafc' : '#e2e8f0';
-      glowColor = 'rgba(241, 245, 249, 0.5)';
+      primaryColor = isSelected ? '#FFFFFF' : '#06B6D4';
+      glowColor = 'rgba(6, 182, 212, 0.65)';
       break;
     case 'crater_minor':
-      primaryColor = isSelected ? '#cbd5e1' : '#94a3b8';
-      glowColor = 'rgba(148, 163, 184, 0.4)';
+      primaryColor = isSelected ? '#FFFFFF' : '#0284C7';
+      glowColor = 'rgba(2, 132, 199, 0.55)';
       break;
     case 'mountain':
-      primaryColor = isSelected ? '#fbbf24' : '#f59e0b';
-      glowColor = 'rgba(245, 158, 11, 0.6)';
+      primaryColor = isSelected ? '#FFFFFF' : '#38BDF8';
+      glowColor = 'rgba(56, 189, 248, 0.65)';
       break;
     case 'mare':
-      primaryColor = isSelected ? '#60a5fa' : '#38bdf8';
-      glowColor = 'rgba(56, 189, 248, 0.5)';
+      primaryColor = isSelected ? '#FFFFFF' : '#0D9488';
+      glowColor = 'rgba(13, 148, 136, 0.6)';
       break;
     case 'valley':
-      primaryColor = isSelected ? '#d8b4fe' : '#c084fc';
-      glowColor = 'rgba(192, 132, 252, 0.5)';
+      primaryColor = isSelected ? '#FFFFFF' : '#22D3EE';
+      glowColor = 'rgba(34, 211, 238, 0.6)';
       break;
     case 'custom_pin':
-      primaryColor = isSelected ? '#fda4af' : '#f43f5e';
-      glowColor = 'rgba(244, 63, 94, 0.75)';
+      primaryColor = isSelected ? '#FFFFFF' : '#00D2C4';
+      glowColor = 'rgba(0, 210, 196, 0.85)';
       break;
   }
 
@@ -133,7 +133,7 @@ function getLunarMarkerDataUrl(category = 'crater_minor', isSelected = false) {
     // Pulsing polar reticle
     ctx.beginPath();
     ctx.arc(cx, cy, 36, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(0, 242, 254, 0.4)';
+    ctx.strokeStyle = 'rgba(229, 154, 109, 0.4)';
     ctx.lineWidth = 4;
     ctx.stroke();
 
@@ -163,7 +163,7 @@ function getLunarMarkerDataUrl(category = 'crater_minor', isSelected = false) {
     // Mission badge with outer ring & inner icon
     ctx.beginPath();
     ctx.arc(cx, cy, 30, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(5, 8, 17, 0.9)';
+    ctx.fillStyle = 'rgba(18, 17, 13, 0.9)';
     ctx.fill();
     ctx.strokeStyle = primaryColor;
     ctx.lineWidth = 5;
@@ -175,16 +175,16 @@ function getLunarMarkerDataUrl(category = 'crater_minor', isSelected = false) {
     ctx.fillStyle = primaryColor;
     ctx.fill();
 
-    // Center white dot
+    // Center dot
     ctx.beginPath();
     ctx.arc(cx, cy, 7, 0, Math.PI * 2);
-    ctx.fillStyle = '#ffffff';
+    ctx.fillStyle = '#F4EFE6';
     ctx.fill();
   } else if (category === 'mountain') {
     // Peak triangle badge
     ctx.beginPath();
     ctx.arc(cx, cy, 28, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(5, 8, 17, 0.85)';
+    ctx.fillStyle = 'rgba(18, 17, 13, 0.85)';
     ctx.fill();
     ctx.strokeStyle = primaryColor;
     ctx.lineWidth = 4;
@@ -201,7 +201,7 @@ function getLunarMarkerDataUrl(category = 'crater_minor', isSelected = false) {
     // Celestial sea plain badge
     ctx.beginPath();
     ctx.arc(cx, cy, 26, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(5, 8, 17, 0.85)';
+    ctx.fillStyle = 'rgba(18, 17, 13, 0.85)';
     ctx.fill();
     ctx.strokeStyle = primaryColor;
     ctx.lineWidth = 4;
@@ -215,7 +215,7 @@ function getLunarMarkerDataUrl(category = 'crater_minor', isSelected = false) {
     // Crater circular ring with illuminated center
     ctx.beginPath();
     ctx.arc(cx, cy, category === 'crater_major' ? 26 : 18, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(5, 8, 17, 0.85)';
+    ctx.fillStyle = 'rgba(18, 17, 13, 0.85)';
     ctx.fill();
     ctx.strokeStyle = primaryColor;
     ctx.lineWidth = 4;
@@ -528,6 +528,7 @@ export function createMoon(container, callbacks = {}) {
       clear: '#1dffac',
       doubtful: '#facc15',
       blocked: '#f43f5e',
+      away: '#f43f5e',
     }[link.status];
 
     if (!statusColor) {
@@ -695,12 +696,42 @@ export function createMoon(container, callbacks = {}) {
     }
   };
 
+  const waitUntilReady = () => {
+    if (destroyed || viewer.isDestroyed()) return Promise.resolve();
+    return new Promise((resolve) => {
+      let settled = false;
+      let frames = 0;
+      const finish = () => {
+        if (settled) return;
+        settled = true;
+        removeCheck?.();
+        clearTimeout(safetyTimer);
+        resolve();
+      };
+      const safetyTimer = setTimeout(finish, 1400);
+      const removeCheck = scene.postRender.addEventListener(() => {
+        frames += 1;
+        if (scene.globe.tilesLoaded || frames >= 2) {
+          finish();
+        } else {
+          scene.requestRender();
+        }
+      });
+      viewer.resize?.();
+      scene.requestRender();
+    });
+  };
+
   return {
     id: 'moon',
     viewer,
     globe: moonGlobe,
     getViewer: () => viewer,
+    waitUntilReady,
     setActive(active) {
+      if (active && 'default' in Cesium.Ellipsoid) {
+        Cesium.Ellipsoid.default = Cesium.Ellipsoid.MOON;
+      }
       viewer.useDefaultRenderLoop = active;
       if (viewer.container) {
         viewer.container.style.display = active ? 'block' : 'none';

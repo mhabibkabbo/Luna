@@ -29,7 +29,7 @@ export function createMeasurementLayer() {
       if (geomType === 'LineString') {
         return new Style({
           stroke: new Stroke({
-            color: '#38bdf8',
+            color: '#00D2C4',
             width: 3,
             lineDash: [6, 6],
           }),

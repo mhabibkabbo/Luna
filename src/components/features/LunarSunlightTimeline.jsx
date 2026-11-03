@@ -4,26 +4,17 @@ import { celestialTimeStore, MAX_CELESTIAL_TIME_MS, MIN_CELESTIAL_TIME_MS } from
 import { sweepIllumination } from '../../utils/illumination.js';
 import { DEFAULT_DTE_CONSTRAINTS, sweepEarthLink } from '../../utils/earthLink.js';
 import { HORIZON_TABLE, horizonAt } from "../../utils/horizons.js";
+import {
+  COMMUNICATION_TIMELINE_COLORS,
+  SUNLIGHT_TIMELINE_COLORS,
+} from "../../utils/visibilityColors.js";
 
 const DAYS = 30;
 const DAY_MS = 86400000;
 const STEP_MIN = 30;
 const MAX_ZOOM_LEVEL = 5;
 
-export const SUNLIGHT_TIMELINE_COLORS = {
-  sunlit: '#19cc16',
-  blocked: '#fa5215',
-  night: '#475569',
-  pending: '#1e293b',
-  playhead: '#f8fafc',
-};
-
-export const COMMUNICATION_TIMELINE_COLORS = {
-  clear: '#1dffac',
-  doubtful: '#facc15',
-  blocked: '#f43f5e',
-  pending: '#1e293b',
-};
+export { COMMUNICATION_TIMELINE_COLORS, SUNLIGHT_TIMELINE_COLORS };
 
 const UTC_FORMAT = new Intl.DateTimeFormat('en-GB', {
   timeZone: 'UTC',
@@ -447,6 +438,9 @@ export default function LunarSunlightTimeline({ feature, earthFeature = null }) 
                 </span>
                 <span className="inline-flex items-center gap-1">
                   <i className="h-2 w-2 rounded-sm" style={{ backgroundColor: COMMUNICATION_TIMELINE_COLORS.doubtful }} /> Marginal
+                </span>
+                <span className="inline-flex items-center gap-1">
+                  <i className="h-2 w-2 rounded-sm" style={{ backgroundColor: COMMUNICATION_TIMELINE_COLORS.away }} /> Facing away
                 </span>
                 <span className="inline-flex items-center gap-1">
                   <i className="h-2 w-2 rounded-sm" style={{ backgroundColor: COMMUNICATION_TIMELINE_COLORS.blocked }} /> No link

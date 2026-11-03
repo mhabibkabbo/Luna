@@ -493,11 +493,6 @@ export default function CelestialPanel({
           ) : (
             <p className="text-[11px] text-slate-400">Waiting for the 3D view…</p>
           )}
-
-          <p className="text-[10px] leading-snug text-slate-500">
-            Directions are exact. Sizes and display distances are compressed to fit the view; labels
-            give the true distances. Turn on solar shading to see the terminator follow the Sun.
-          </p>
         </div>
       )}
     </div>

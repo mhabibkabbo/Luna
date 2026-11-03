@@ -28,6 +28,9 @@ export default function HorizonProfileChart({
   startMs,
 }) {
   const profile = getHorizonProfile(HORIZON_TABLE, siteId);
+  const effectiveStartMs = typeof startMs === "number" && !Number.isNaN(startMs) ? startMs : Date.now();
+  const effectiveLat = typeof latitude === "number" && !Number.isNaN(latitude) ? latitude : (profile?.lat ?? 0);
+  const effectiveLon = typeof longitude === "number" && !Number.isNaN(longitude) ? longitude : (profile?.lon ?? 0);
 
   const data = useMemo(() => {
     const terrain = [];
@@ -38,21 +41,26 @@ export default function HorizonProfileChart({
     const track = [];
     const steps = (PATH_DAYS * 24) / PATH_STEP_H;
     for (let i = 0; i < steps; i++) {
-      const state = computeCelestialState(startMs + i * PATH_STEP_H * 3600000);
-      const flat = solarPosition(state, latitude, longitude);
-      const hz = horizonAt(HORIZON_TABLE, siteId, flat.azimuthDeg) ?? 0;
-      const pos = solarPosition(state, latitude, longitude, hz);
-      // Only plot Sun positions that are plausibly interesting (near or above the horizon)
-      if (flat.elevationDeg > -3) {
-        track.push({
-          az: pos.azimuthDeg,
-          el: pos.elevationDeg,
-          status: pos.status,
-        });
+      try {
+        const stepTime = effectiveStartMs + i * PATH_STEP_H * 3600000;
+        const state = computeCelestialState(stepTime);
+        const flat = solarPosition(state, effectiveLat, effectiveLon);
+        const hz = horizonAt(HORIZON_TABLE, siteId, flat.azimuthDeg) ?? 0;
+        const pos = solarPosition(state, effectiveLat, effectiveLon, hz);
+        // Only plot Sun positions that are plausibly interesting (near or above the horizon)
+        if (flat.elevationDeg > -3) {
+          track.push({
+            az: pos.azimuthDeg,
+            el: pos.elevationDeg,
+            status: pos.status,
+          });
+        }
+      } catch (err) {
+        console.warn("HorizonProfileChart track point error:", err);
       }
     }
     return { terrain, track };
-  }, [siteId, latitude, longitude, startMs]);
+  }, [siteId, effectiveLat, effectiveLon, effectiveStartMs]);
 
   const modeled = Boolean(profile?.horizon);
 

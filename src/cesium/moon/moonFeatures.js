@@ -146,7 +146,7 @@ export function createMoonFeatures({ viewer, container, callbacks, isMobile, fly
         if (target.label) {
           // Force selected label visible across orbital zooms
           target.label.distanceDisplayCondition = new Cesium.DistanceDisplayCondition(0.0, 5.0e7);
-          target.label.fillColor = Cesium.Color.fromCssColorString('#38bdf8');
+          target.label.fillColor = Cesium.Color.fromCssColorString('#00D2C4');
         }
       } catch {}
     }
