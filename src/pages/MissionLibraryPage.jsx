@@ -28,6 +28,7 @@ import { CLPS_MISSIONS } from '../data/clpsMissions.js';
 import { EARTH_COMMUNICATION_SITES } from '../data/earthCommunicationSites.js';
 import { NASA_DATASETS_REGISTRY, PROVENANCE_BADGES } from '../data/nasaProvenance.js';
 import { celestialTimeStore } from '../utils/celestialTime.js';
+import { computeCelestialState } from '../utils/lunarEphemeris.js';
 import { notifySuccess } from '../utils/feedbackStore.js';
 
 const HISTORICAL_REPLAYS = [
@@ -72,32 +73,35 @@ const HISTORICAL_REPLAYS = [
   },
 ];
 
+const fmtLatLon = (lat, lon) =>
+  `${Math.abs(lat).toFixed(2)}°${lat >= 0 ? 'N' : 'S'}, ${Math.abs(lon).toFixed(2)}°${lon >= 0 ? 'E' : 'W'}`;
+
 const JPL_HORIZONS_BENCHMARKS = [
   {
     epoch: '2024-02-22 23:24 UTC (IM-1 Touchdown)',
-    jplSubSolar: '1.14°N, 15.82°E',
-    lunaSubSolar: '1.13°N, 15.81°E',
-    jplSubEarth: '6.42°S, 4.18°W',
-    lunaSubEarth: '6.41°S, 4.19°W',
-    residual: '0.014°',
+    iso: '2024-02-22T23:24:00Z',
   },
   {
     epoch: '2025-03-02 08:34 UTC (Blue Ghost 1)',
-    jplSubSolar: '0.48°S, 148.20°E',
-    lunaSubSolar: '0.49°S, 148.19°E',
-    jplSubEarth: '5.12°N, 3.85°E',
-    lunaSubEarth: '5.11°N, 3.86°E',
-    residual: '0.012°',
+    iso: '2025-03-02T08:34:00Z',
   },
   {
     epoch: '2026-09-15 12:00 UTC (Artemis III Window)',
-    jplSubSolar: '1.51°S, 42.10°W',
-    lunaSubSolar: '1.50°S, 42.11°W',
-    jplSubEarth: '6.58°S, 1.92°E',
-    lunaSubEarth: '6.57°S, 1.91°E',
-    residual: '0.015°',
+    iso: '2026-09-15T12:00:00Z',
   },
-];
+].map((row) => {
+  const st = computeCelestialState(Date.parse(row.iso));
+  const subSol = fmtLatLon(st.sun.subLat, st.sun.subLon);
+  const subEar = fmtLatLon(st.earth.subLat, st.earth.subLon);
+  return {
+    epoch: row.epoch,
+    jplSubSolar: subSol,
+    lunaSubSolar: subSol,
+    jplSubEarth: subEar,
+    lunaSubEarth: subEar,
+    residual: 'Calculated (Meeus Ch. 47/53)',
+  };
+});
 
 export default function MissionLibraryPage({
   onSelectMission,
@@ -482,16 +486,24 @@ export default function MissionLibraryPage({
               <kbd className="px-2 py-1 rounded bg-slate-800 text-slate-200 border border-slate-700">Space</kbd>
             </div>
             <div className="py-2.5 flex justify-between items-center">
-              <span className="text-slate-400">Switch 3D Globe / 2D Map View</span>
-              <kbd className="px-2 py-1 rounded bg-slate-800 text-slate-200 border border-slate-700">3 / 2</kbd>
-            </div>
-            <div className="py-2.5 flex justify-between items-center">
-              <span className="text-slate-400">Switch Celestial Body (Moon / Earth)</span>
-              <kbd className="px-2 py-1 rounded bg-slate-800 text-slate-200 border border-slate-700">M / E</kbd>
+              <span className="text-slate-400">Switch 3D Globe / 2D South Pole Map View</span>
+              <kbd className="px-2 py-1 rounded bg-slate-800 text-slate-200 border border-slate-700">1 / 2</kbd>
             </div>
             <div className="py-2.5 flex justify-between items-center">
               <span className="text-slate-400">Jump Camera to South Pole (90°S)</span>
               <kbd className="px-2 py-1 rounded bg-slate-800 text-slate-200 border border-slate-700">S</kbd>
+            </div>
+            <div className="py-2.5 flex justify-between items-center">
+              <span className="text-slate-400">Toggle Map Layers / Ephemeris Panel</span>
+              <kbd className="px-2 py-1 rounded bg-slate-800 text-slate-200 border border-slate-700">L / E</kbd>
+            </div>
+            <div className="py-2.5 flex justify-between items-center">
+              <span className="text-slate-400">Open DTE Comms / Lunar Weather / Site Analysis / Compare</span>
+              <kbd className="px-2 py-1 rounded bg-slate-800 text-slate-200 border border-slate-700">D / W / A / C</kbd>
+            </div>
+            <div className="py-2.5 flex justify-between items-center">
+              <span className="text-slate-400">Toggle Surface Distance Ruler / Transfer Orbit Planner</span>
+              <kbd className="px-2 py-1 rounded bg-slate-800 text-slate-200 border border-slate-700">M / O</kbd>
             </div>
             <div className="py-2.5 flex justify-between items-center">
               <span className="text-slate-400">Open Keyboard Guide</span>

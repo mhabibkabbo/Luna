@@ -19,6 +19,7 @@ const ALIASES = {
   "landing-odysseus": "clps-im1-odysseus",
   "im-1-odysseus": "clps-im1-odysseus",
   "im-2-athena": "clps-im2-athena",
+  "clps-im2-prime1": "clps-im2-athena",
   "viper-nobile": "clps-griffin-gm1",
   "mons-malapert": "landing-artemis3-malapert",
   "malapert-massif": "landing-artemis3-malapert",
@@ -34,6 +35,26 @@ const ALIASES = {
   "amundsen-crater": "crater-amundsen",
   "nobile-crater": "crater-nobile",
   "south-pole-90s": "landing-artemis3-site-004",
+};
+
+const KNOWN_POLAR_COORDS = {
+  "clps-im1-odysseus": { lat: -80.13, lon: 1.44 },
+  "landing-odysseus": { lat: -80.13, lon: 1.44 },
+  "clps-im2-athena": { lat: -84.7906, lon: 29.1958 },
+  "clps-griffin-gm1": { lat: -84.62, lon: 31.4 },
+  "clps-blueorigin-cp22": { lat: -89.45, lon: -137.2 },
+  "landing-artemis3-shackleton": { lat: -89.8, lon: 120.0 },
+  "landing-artemis3-malapert": { lat: -85.9, lon: 0.0 },
+  "landing-artemis3-mouton": { lat: -84.62, lon: 31.4 },
+  "landing-artemis3-connecting-ridge": { lat: -89.45, lon: -137.2 },
+  "landing-artemis3-faustini-rim-a": { lat: -87.3, lon: 84.0 },
+  "landing-artemis3-de-gerlache-rim-2": { lat: -88.4, lon: -68.5 },
+  "landing-artemis3-amundsen-rim": { lat: -84.5, lon: 82.8 },
+  "landing-artemis3-nobile-rim-1": { lat: -85.2, lon: 53.5 },
+  "landing-artemis3-nobile-rim-2": { lat: -84.8, lon: 56.0 },
+  "landing-artemis3-peak-near-shackleton": { lat: -89.0066, lon: 132.0596 },
+  "landing-artemis3-haworth": { lat: -86.8, lon: -10.5 },
+  "landing-artemis3-cabeus-b": { lat: -84.9, lon: -35.5 },
 };
 
 const resolveId = (id) => (id ? ALIASES[id] || id : id);
@@ -262,10 +283,16 @@ export function loadHorizons() {
 }
 
 export function getHorizonProfile(table, siteId, latDeg = null, lonDeg = null) {
-  const resolved = table?.[resolveId(siteId)] ?? null;
+  const canonicalId = resolveId(siteId);
+  const resolved = table?.[canonicalId] ?? table?.[siteId] ?? null;
   if (resolved?.horizon) return resolved;
-  if (Number.isFinite(latDeg) && Number.isFinite(lonDeg) && latDeg <= -80.0) {
-    return computeDemHorizonProfile(latDeg, lonDeg);
+
+  const known = KNOWN_POLAR_COORDS[canonicalId] || KNOWN_POLAR_COORDS[siteId] || null;
+  const effLat = Number.isFinite(latDeg) ? latDeg : known?.lat ?? null;
+  const effLon = Number.isFinite(lonDeg) ? lonDeg : known?.lon ?? null;
+
+  if (Number.isFinite(effLat) && Number.isFinite(effLon) && effLat <= -80.0) {
+    return computeDemHorizonProfile(effLat, effLon);
   }
   return resolved;
 }
@@ -276,7 +303,12 @@ export function hasHorizon(table, siteId, latDeg = null, lonDeg = null) {
 
 /** Terrain horizon angle (deg) toward an azimuth, linearly interpolated. null = not modeled. */
 export function horizonAt(table, siteId, azDeg, latDeg = null, lonDeg = null) {
-  const profile = getHorizonProfile(table, siteId, latDeg, lonDeg);
+  const canonicalId = resolveId(siteId);
+  const known = KNOWN_POLAR_COORDS[canonicalId] || KNOWN_POLAR_COORDS[siteId] || null;
+  const effLat = Number.isFinite(latDeg) ? latDeg : known?.lat ?? null;
+  const effLon = Number.isFinite(lonDeg) ? lonDeg : known?.lon ?? null;
+
+  const profile = getHorizonProfile(table, siteId, effLat, effLon);
   const h = profile?.horizon;
   if (!h) return null;
   const n = h.length;
@@ -293,6 +325,13 @@ export function horizonAt(table, siteId, azDeg, latDeg = null, lonDeg = null) {
       coverage0 < 0.98 ||
       coverage1 < 0.98
     ) {
+      if (Number.isFinite(effLat) && Number.isFinite(effLon) && effLat <= -80.0) {
+        const demProfile = computeDemHorizonProfile(effLat, effLon);
+        if (demProfile?.horizon) {
+          const dh = demProfile.horizon;
+          return dh[i0] * (1 - f) + dh[i1] * f;
+        }
+      }
       return null;
     }
   }
@@ -657,24 +696,9 @@ export function sampleLunarTerrainMetrics(latDeg, lonDeg, feature = null, option
     });
   }
 
-  // Stratigraphic crater density baseline by province (Neukum / Head crater chronology)
-  const craterDensityPer100Km2 =
-    terrainClassification === "Steep Scarp / Crater Wall"
-      ? 8
-      : inSouthPoleCap
-      ? 38
-      : geologicalRegion.province.includes("Mare")
-      ? 16
-      : 32;
-
-  const craterDensityLabel =
-    craterDensityPer100Km2 >= 35
-      ? "High (Heavily Cratered Polar Highlands)"
-      : craterDensityPer100Km2 >= 25
-      ? "Moderate (Highland Regolith)"
-      : craterDensityPer100Km2 >= 15
-      ? "Low (Smooth Mare Basalt Plain)"
-      : "Low (Active Scarp / Mass Wasting)";
+  // No lunar crater catalog dataset is loaded in local memory; never fabricate crater counts.
+  const craterDensityPer100Km2 = null;
+  const craterDensityLabel = "Not present in loaded dataset";
 
   return {
     elevationM,
@@ -697,7 +721,7 @@ export function sampleLunarTerrainMetrics(latDeg, lonDeg, feature = null, option
       ? "NASA PDS LRO LOLA South Pole DEM (400 m/px)"
       : inSouthPoleCap
       ? "NASA LOLA Polar Coverage (80°S–90°S)"
-      : (elevationSource || "Data unavailable outside 80°S–90°S DEM"),
+      : (elevationSource || "Not present in loaded dataset (Outside 80°S–90°S LOLA DEM)"),
     isDemAvailable: inSouthPoleCap && isDirectDem,
     inSouthPoleCap,
     warnings,

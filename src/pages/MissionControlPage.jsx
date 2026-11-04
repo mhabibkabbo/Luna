@@ -4,7 +4,7 @@
  * Displays active flight profile, planetary ephemeris overview, recommended landing sites, and quick workflows.
  */
 
-import React, { useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Rocket,
   Globe2,
@@ -85,7 +85,13 @@ export default function MissionControlPage({
   onSelectFeature,
   onStartTour,
 }) {
-  const simulationTime = celestialTimeStore.get().ms;
+  const [simulationTime, setSimulationTime] = useState(() => celestialTimeStore.get().ms);
+
+  useEffect(() => {
+    return celestialTimeStore.subscribe(({ ms }) => {
+      setSimulationTime(ms);
+    });
+  }, []);
 
   const celestial = useMemo(() => {
     try {

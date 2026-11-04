@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useDeferredValue } from 'react';
 import {
   X,
   Sun,
@@ -13,24 +13,32 @@ import {
   Bookmark,
   Activity,
 } from 'lucide-react';
-import { computeCelestialState, solarPosition } from '../../utils/lunarEphemeris.js';
 import { celestialTimeStore } from '../../utils/celestialTime.js';
-import { evaluateEarthLink, DEFAULT_DTE_CONSTRAINTS } from '../../utils/earthLink.js';
-import { horizonAt, HORIZON_TABLE, ensurePolarDemLoaded } from '../../utils/horizons.js';
+import { ensurePolarDemLoaded } from '../../utils/horizons.js';
 import {
   simulateMissionTimelineTracks,
   compareWhatIfScenarios,
+  evaluateCandidateForMissionWindow,
   DEFAULT_PLANNER_CONSTRAINTS,
 } from '../../utils/plannerEngine.js';
 import { notifySuccess } from '../../utils/feedbackStore.js';
 
 const SITES_TO_ANALYZE = [
+<<<<<<< Updated upstream
   { id: 'landing-artemis3-shackleton', name: 'Shackleton Rim (A3)', lat: -89.67, lon: 129.78, elevationM: 1251, slopeDeg: 9.2, roughnessM: 1.8 },
   { id: 'landing-artemis3-malapert', name: 'Malapert Massif', lat: -86.02, lon: 2.7, elevationM: 5113, slopeDeg: 8.6, roughnessM: 1.6 },
   { id: 'haworth-crater', name: 'Haworth Rim', lat: -87.40, lon: -5.10, elevationM: 1420, slopeDeg: 10.4, roughnessM: 2.1 },
   { id: 'de-gerlache-crater', name: 'De Gerlache Rim', lat: -88.50, lon: -87.10, elevationM: 1640, slopeDeg: 11.2, roughnessM: 2.2 },
   { id: 'amundsen-crater', name: 'Amundsen Plains', lat: -84.50, lon: 82.8, elevationM: -3628, slopeDeg: 6.4, roughnessM: 1.2 },
   { id: 'cabeus-crater', name: 'Cabeus Peak', lat: -84.90, lon: -35.50, elevationM: 1850, slopeDeg: 8.9, roughnessM: 1.7 },
+=======
+  { id: 'landing-artemis3-shackleton', name: 'Peak Near Shackleton (A3)', lat: -89.0066, lon: 132.0596 },
+  { id: 'landing-artemis3-malapert', name: 'Malapert Massif', lat: -85.90, lon: 0.00 },
+  { id: 'haworth-crater', name: 'Haworth Rim', lat: -87.40, lon: -5.10 },
+  { id: 'de-gerlache-crater', name: 'De Gerlache Rim', lat: -88.50, lon: -87.10 },
+  { id: 'amundsen-crater', name: 'Amundsen Plains', lat: -84.50, lon: 82.8 },
+  { id: 'cabeus-crater', name: 'Cabeus Peak', lat: -84.90, lon: -35.50 },
+>>>>>>> Stashed changes
 ];
 
 const LANDER_PRESETS = [
@@ -38,66 +46,43 @@ const LANDER_PRESETS = [
     id: 'polar-solar',
     name: 'Polar Solar Lander',
     subtitle: 'High Sun Priority (55% Sun / 35% DTE / 10% Slope)',
-    weights: { sun: 0.55, dte: 0.35, slope: 0.10 },
+    weights: { sun: 0.55, dte: 0.35, slope: 0.10, thermal: 0.0 },
   },
   {
     id: 'short-hopper',
     name: 'High-Bandwidth DTE Hopper',
     subtitle: 'Continuous Earth Comms (30% Sun / 55% DTE / 15% Slope)',
-    weights: { sun: 0.30, dte: 0.55, slope: 0.15 },
+    weights: { sun: 0.30, dte: 0.55, slope: 0.15, thermal: 0.0 },
   },
   {
     id: 'rtg-rover',
     name: 'RTG / Cryogenic PSR Rover',
     subtitle: 'Night-Tolerant ISRU (20% Sun / 50% DTE / 30% Slope)',
-    weights: { sun: 0.20, dte: 0.50, slope: 0.30 },
+    weights: { sun: 0.20, dte: 0.50, slope: 0.30, thermal: 0.0 },
   },
 ];
 
-function evaluateSiteAtEpoch(site, epochMs, presetWeights) {
-  const terrainFn = (az) => horizonAt(HORIZON_TABLE, site.id, az, site.lat, site.lon) ?? 0;
+function evaluateSiteAtEpoch(site, epochMs, presetWeights, durationDays = 1) {
+  const ev = evaluateCandidateForMissionWindow(site, {
+    ...DEFAULT_PLANNER_CONSTRAINTS,
+    landingTimeMs: epochMs,
+    missionDurationDays: durationDays,
+    weights: { ...presetWeights, thermal: presetWeights.thermal ?? 0.0 },
+  });
 
-  let sunlitSamples = 0;
-  let clearDteSamples = 0;
-  let lastLink = null;
-  const sampleCount = 4;
-
-  for (let s = 0; s < sampleCount; s++) {
-    const tMs = epochMs + s * 6 * 3600000;
-    const state = computeCelestialState(tMs);
-    const flatSun = solarPosition(state, site.lat, site.lon, 0);
-    const hSun = terrainFn(flatSun.azimuthDeg);
-    const sun = solarPosition(state, site.lat, site.lon, hSun);
-    if (sun.status === 'sunlit') sunlitSamples++;
-
-    const link = evaluateEarthLink({
-      state,
-      moonFeature: { id: site.id, latitude: site.lat, longitude: site.lon },
-      earthFeature: null,
-      constraints: DEFAULT_DTE_CONSTRAINTS,
-      terrainFn,
-    });
-    if (link.status === 'clear') clearDteSamples++;
-    if (s === 0) lastLink = link;
-  }
-
-  const sunlitScore = Math.round((sunlitSamples / sampleCount) * 100);
-  const dteScore = Math.round((clearDteSamples / sampleCount) * 100);
-  const slopeSafetyScore = Math.max(0, Math.min(100, Math.round((1 - (site.slopeDeg || 9) / 22) * 100)));
-
-  const totalScore = Math.round(
-    sunlitScore * presetWeights.sun +
-    dteScore * presetWeights.dte +
-    slopeSafetyScore * presetWeights.slope
-  );
+  const sunlitScore = ev.durationOutlook.sunlitRatio;
+  const dteScore = ev.durationOutlook.dteUptimeRatio;
 
   return {
     sunlitScore,
     isSunlit: sunlitScore >= 50,
-    linkStatus: lastLink?.status || (dteScore >= 50 ? 'clear' : 'blocked'),
-    linkMargin: lastLink?.marginDeg ?? 0,
+    linkStatus: ev.instant.dteStatus || (dteScore >= 50 ? 'clear' : 'blocked'),
+    linkMargin: ev.instant.dteMarginDeg ?? 0,
     dteScore,
-    score: Math.min(100, Math.max(0, totalScore)),
+    score: ev.overallScore,
+    elevationM: ev.terrain.elevationM,
+    slopeDeg: ev.terrain.slopeDeg,
+    roughnessM: ev.terrain.roughnessM,
   };
 }
 
@@ -113,6 +98,10 @@ export default function SlipSimulatorModal({ isOpen, onClose, onSelectSiteAndDat
   const [presetId, setPresetId] = useState(LANDER_PRESETS[0].id);
   const [savedScenarios, setSavedScenarios] = useState([]);
   const [demReadyTick, setDemReadyTick] = useState(0);
+
+  const deferredSlipDays = useDeferredValue(slipDays);
+  const deferredAltSlipDays = useDeferredValue(altSlipDays);
+  const deferredWindowDurationDays = useDeferredValue(windowDurationDays);
 
   const activePreset = useMemo(
     () => LANDER_PRESETS.find((p) => p.id === presetId) || LANDER_PRESETS[0],
@@ -142,8 +131,8 @@ export default function SlipSimulatorModal({ isOpen, onClose, onSelectSiteAndDat
   }, []);
 
   const simulatedTimeMs = useMemo(() => {
-    return baseTimeMs + slipDays * 24 * 60 * 60 * 1000;
-  }, [baseTimeMs, slipDays]);
+    return baseTimeMs + deferredSlipDays * 24 * 60 * 60 * 1000;
+  }, [baseTimeMs, deferredSlipDays]);
 
   // 4-Track Synchronized Mission Timeline (Section 6)
   const timelineTracks = useMemo(() => {
@@ -151,18 +140,18 @@ export default function SlipSimulatorModal({ isOpen, onClose, onSelectSiteAndDat
     return simulateMissionTimelineTracks(
       selectedSite,
       simulatedTimeMs,
-      windowDurationDays,
+      deferredWindowDurationDays,
       stepHours
     );
-  }, [isOpen, selectedSite, simulatedTimeMs, windowDurationDays, stepHours, demReadyTick]);
+  }, [isOpen, selectedSite, simulatedTimeMs, deferredWindowDurationDays, stepHours, demReadyTick]);
 
   // What-If Scenario Comparator (Section 7)
   const whatIfDiff = useMemo(() => {
     if (!isOpen) return null;
-    const altTimeMs = baseTimeMs + altSlipDays * 24 * 60 * 60 * 1000;
+    const altTimeMs = baseTimeMs + deferredAltSlipDays * 24 * 60 * 60 * 1000;
     return compareWhatIfScenarios(
-      { site: selectedSite, landingMs: simulatedTimeMs, durationDays: windowDurationDays },
-      { site: altSite, landingMs: altTimeMs, durationDays: windowDurationDays },
+      { site: selectedSite, landingMs: simulatedTimeMs, durationDays: deferredWindowDurationDays },
+      { site: altSite, landingMs: altTimeMs, durationDays: deferredWindowDurationDays },
       {
         ...DEFAULT_PLANNER_CONSTRAINTS,
         weights: { ...activePreset.weights, thermal: 0.0 },
@@ -174,28 +163,30 @@ export default function SlipSimulatorModal({ isOpen, onClose, onSelectSiteAndDat
     altSite,
     simulatedTimeMs,
     baseTimeMs,
-    altSlipDays,
-    windowDurationDays,
+    deferredAltSlipDays,
+    deferredWindowDurationDays,
     activePreset,
     demReadyTick,
   ]);
 
   const siteEvaluations = useMemo(() => {
+    if (!isOpen) return [];
     return SITES_TO_ANALYZE.map((site) => {
-      const ev = evaluateSiteAtEpoch(site, simulatedTimeMs, activePreset.weights);
+      const ev = evaluateSiteAtEpoch(site, simulatedTimeMs, activePreset.weights, deferredWindowDurationDays);
       return {
         ...site,
         ...ev,
       };
     });
-  }, [simulatedTimeMs, activePreset, demReadyTick]);
+  }, [isOpen, simulatedTimeMs, activePreset, deferredWindowDurationDays, demReadyTick]);
 
   const heatmapMatrix = useMemo(() => {
-    const daysArray = Array.from({ length: windowDurationDays }, (_, i) => i);
+    if (!isOpen) return [];
+    const daysArray = Array.from({ length: deferredWindowDurationDays }, (_, i) => i);
     return SITES_TO_ANALYZE.map((site) => {
       const dayScores = daysArray.map((dayOffset) => {
-        const testMs = baseTimeMs + (slipDays + dayOffset) * 24 * 60 * 60 * 1000;
-        const ev = evaluateSiteAtEpoch(site, testMs, activePreset.weights);
+        const testMs = baseTimeMs + (deferredSlipDays + dayOffset) * 24 * 60 * 60 * 1000;
+        const ev = evaluateSiteAtEpoch(site, testMs, activePreset.weights, 1);
         return {
           dayOffset,
           score: ev.score,
@@ -205,7 +196,7 @@ export default function SlipSimulatorModal({ isOpen, onClose, onSelectSiteAndDat
       });
       return { ...site, dayScores };
     });
-  }, [baseTimeMs, slipDays, windowDurationDays, activePreset, demReadyTick]);
+  }, [isOpen, baseTimeMs, deferredSlipDays, deferredWindowDurationDays, activePreset, demReadyTick]);
 
   const bestPlanB = useMemo(() => {
     let best = null;

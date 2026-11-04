@@ -176,7 +176,7 @@ export default function LunarWeatherModal({
               <div className="p-3.5 rounded-2xl bg-[#181711] border border-[#2D2A22] space-y-1">
                 <span className="text-[10px] font-mono text-[#A8A193] block">Solar Wind Speed</span>
                 <div className="font-mono text-lg font-bold text-[#F4EFE6]">
-                  {spaceWeather.speed} km/s
+                  {spaceWeather.speed != null ? `${spaceWeather.speed} km/s` : 'Not available'}
                 </div>
                 <span className="text-[9.5px] text-[#88B38A] font-mono">
                   {spaceWeather.speedStatus}
@@ -186,7 +186,7 @@ export default function LunarWeatherModal({
               <div className="p-3.5 rounded-2xl bg-[#181711] border border-[#2D2A22] space-y-1">
                 <span className="text-[10px] font-mono text-[#A8A193] block">Proton Density</span>
                 <div className="font-mono text-lg font-bold text-[#F4EFE6]">
-                  {spaceWeather.density} p/cm³
+                  {spaceWeather.density != null ? `${spaceWeather.density} p/cm³` : 'Not available'}
                 </div>
                 <span className="text-[9.5px] text-[#A8A193]">Solar wind stream</span>
               </div>
@@ -194,15 +194,19 @@ export default function LunarWeatherModal({
               <div className="p-3.5 rounded-2xl bg-[#181711] border border-[#2D2A22] space-y-1">
                 <span className="text-[10px] font-mono text-[#A8A193] block">IMF Bz Field</span>
                 <div className="font-mono text-lg font-bold text-[#E59A6D]">
-                  {spaceWeather.bz} nT
+                  {spaceWeather.bz != null ? `${spaceWeather.bz} nT` : 'Not available'}
                 </div>
-                <span className="text-[9.5px] text-[#A8A193]">Total Bt: {spaceWeather.bt} nT</span>
+                <span className="text-[9.5px] text-[#A8A193]">
+                  Total Bt: {spaceWeather.bt != null ? `${spaceWeather.bt} nT` : 'N/A'}
+                </span>
               </div>
 
               <div className="p-3.5 rounded-2xl bg-[#181711] border border-[#2D2A22] space-y-1">
                 <span className="text-[10px] font-mono text-[#A8A193] block">Ion Temperature</span>
                 <div className="font-mono text-lg font-bold text-[#F4EFE6]">
-                  {(spaceWeather.temperature).toLocaleString()} K
+                  {spaceWeather.temperature != null
+                    ? `${spaceWeather.temperature.toLocaleString()} K`
+                    : 'Not available'}
                 </div>
                 <span className="text-[9.5px] text-[#A8A193]">Thermal plasma</span>
               </div>
@@ -217,12 +221,14 @@ export default function LunarWeatherModal({
                     Lunar EVA Radiation &amp; Plasma Environment
                   </div>
                   <div className="text-[10px] text-[#A8A193]">
-                    No solar particle storm active · Solar wind velocity within nominal limits
+                    {spaceWeather.speed != null
+                      ? 'Live NOAA SWPC DSCOVR/ACE L1 solar wind feed active'
+                      : 'Live NOAA SWPC feed unreachable · Displaying analytical surface thermal model only'}
                   </div>
                 </div>
               </div>
               <span className="px-2.5 py-1 rounded-full text-[10px] font-mono font-semibold bg-[#88B38A]/20 text-[#88B38A] border border-[#88B38A]/40">
-                NOMINAL
+                {spaceWeather.speed != null ? 'LIVE FEED' : 'OFFLINE'}
               </span>
             </div>
           </div>

@@ -296,17 +296,45 @@ export default function App() {
     const body = planetId === 'earth' ? 'earth' : 'moon';
     if (body === 'earth') {
       setCustomEarthPin(null);
-      setSelectedEarthFeature((feature) => (feature?.isCustomPin ? null : feature));
+      setSelectedEarthFeature((feature) =>
+        feature?.isCustomPin || feature?.type === 'custom_pin' ? null : feature
+      );
     } else {
       setCustomMoonPin(null);
-      setSelectedMoonFeature((feature) => (feature?.isCustomPin ? null : feature));
+      setSelectedMoonFeature((feature) =>
+        feature?.isCustomPin || feature?.type === 'custom_pin' ? null : feature
+      );
     }
-    globeRef.current?.clearCustomPin(body);
+    globeRef.current?.clearCustomPin?.(body);
+    globeRef.current?.selectFeaturePin?.(null, body);
     setSelectedFeature((feature) =>
-      feature?.isCustomPin && feature.body === body ? null : feature
+      (feature?.isCustomPin || feature?.type === 'custom_pin') &&
+      (feature.body || 'moon') === body
+        ? null
+        : feature
     );
     notifyInfo('Waypoint Removed', `Custom waypoint cleared from ${body === 'earth' ? 'Earth' : 'Moon'} surface.`);
   }, [activePlanet]);
+
+  // Unpin active location (custom or cataloged) when closing FeaturePanel
+  const handleCloseFeaturePanel = useCallback(() => {
+    if (!selectedFeature) return;
+    const body = selectedFeature.body === 'earth' ? 'earth' : 'moon';
+    const isCustom = Boolean(
+      selectedFeature.isCustomPin || selectedFeature.type === 'custom_pin'
+    );
+    if (isCustom) {
+      handleClearCustomPin(body);
+    } else {
+      if (body === 'earth') {
+        setSelectedEarthFeature(null);
+      } else {
+        setSelectedMoonFeature(null);
+      }
+      globeRef.current?.selectFeaturePin?.(null, body);
+    }
+    setSelectedFeature(null);
+  }, [selectedFeature, handleClearCustomPin]);
 
   // Global Keyboard Shortcuts for enhanced user friendliness
   useEffect(() => {
@@ -347,7 +375,7 @@ export default function App() {
         } else if (isLayersOpen) {
           setIsLayersOpen(false);
         } else if (selectedFeature) {
-          setSelectedFeature(null);
+          handleCloseFeaturePanel();
         }
         return;
       }
@@ -439,7 +467,13 @@ export default function App() {
           earthFeature: selectedEarthFeature,
           constraints: DEFAULT_DTE_CONSTRAINTS,
           terrainFn: (azimuthDeg) =>
-            horizonAt(HORIZON_TABLE, selectedMoonFeature.id, azimuthDeg),
+            horizonAt(
+              HORIZON_TABLE,
+              selectedMoonFeature.id,
+              azimuthDeg,
+              selectedMoonFeature.latitude,
+              selectedMoonFeature.longitude
+            ),
         });
         globeRef.current?.setCommunicationLink?.({ ...link, status: dte.status });
       } catch (error) {
@@ -1355,7 +1389,7 @@ export default function App() {
           feature={selectedFeature}
           timelineVisible={showLunarTimeline}
           communicationEarthFeature={selectedCommunicationEarthFeature}
-          onClose={() => setSelectedFeature(null)}
+          onClose={handleCloseFeaturePanel}
           onZoomHere={handleZoomHere}
           onMeasureFromHere={handleMeasureFromFeature}
           onClearCustomPin={handleClearCustomPin}

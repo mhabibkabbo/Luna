@@ -94,15 +94,23 @@ export default function LandingPlannerPage({
     const val = e.target.value;
     const ms = Date.parse(`${val}:00Z`);
     if (!Number.isNaN(ms)) {
+<<<<<<< Updated upstream
       setLandingMs(ms);
       celestialTimeStore.setMs(ms);
+=======
+      setLandingMs(celestialTimeStore.setTime(ms));
+>>>>>>> Stashed changes
     }
   };
 
   const applyPreset = (preset) => {
     const nextMs = preset.getMs(landingMs);
+<<<<<<< Updated upstream
     setLandingMs(nextMs);
     celestialTimeStore.setMs(nextMs);
+=======
+    setLandingMs(celestialTimeStore.setTime(nextMs));
+>>>>>>> Stashed changes
     notifyInfo(`Applied mission epoch: ${preset.label}`);
   };
 
@@ -163,10 +171,18 @@ export default function LandingPlannerPage({
 
     rankedEvaluations.slice(0, 5).forEach((evalItem, idx) => {
       const c = evalItem.candidate;
+      const elevStr =
+        c.elevationM !== null && Number.isFinite(c.elevationM)
+          ? `${c.elevationM >= 0 ? '+' : ''}${c.elevationM}m (Measured LOLA DEM)`
+          : 'Not present in loaded dataset';
+      const slopeStr =
+        c.slopeDeg !== null && Number.isFinite(c.slopeDeg)
+          ? `${c.slopeDeg.toFixed(1)}° (Calculated Horn 3×3 on LOLA DEM)`
+          : 'Not present in loaded dataset';
       lines.push(`### ${idx + 1}. ${c.name} [${evalItem.tierLabel} - Score: ${evalItem.overallScore}/100]`);
-      lines.push(`- Coordinates: ${c.lat.toFixed(2)}°S, ${c.lon.toFixed(2)}°E (Elevation: +${c.elevationM}m, Slope: ${c.slopeDeg}°)`);
-      lines.push(`- Touchdown: Sun ${evalItem.touchdown.sunElevationDeg.toFixed(1)}° (${evalItem.touchdown.isSunlit ? 'Sunlit' : 'Shadow'}), Surface Temp: ${evalItem.touchdown.surfaceTempC}°C, DTE: ${evalItem.touchdown.isDteLinked ? 'Clear LOS' : 'Blocked'}`);
-      lines.push(`- Duration Outlook: ${evalItem.durationOutlook.sunlitRatio}% daylight (${evalItem.durationOutlook.longestSunlitHours}h continuous), DTE Uptime: ${evalItem.durationOutlook.dteUptimeRatio}%, Temp Range: ${evalItem.durationOutlook.minSurfaceTempC}°C to ${evalItem.durationOutlook.maxSurfaceTempC}°C`);
+      lines.push(`- Coordinates: ${c.lat.toFixed(2)}°, ${c.lon.toFixed(2)}° (Elevation: ${elevStr}, Slope: ${slopeStr})`);
+      lines.push(`- Touchdown: Sun ${evalItem.touchdown.sunElevationDeg.toFixed(1)}° (${evalItem.touchdown.isSunlit ? 'Sunlit' : 'Shadow'}), Surface Temp: ${evalItem.touchdown.surfaceTempC}°C (Calculated), DTE: ${evalItem.touchdown.isDteLinked ? 'Clear LOS' : 'Blocked'}`);
+      lines.push(`- Duration Outlook: ${evalItem.durationOutlook.sunlitRatio}% daylight (${evalItem.durationOutlook.longestSunlitHours}h continuous), DTE Uptime: ${evalItem.durationOutlook.dteUptimeRatio}%, Temp Range: ${evalItem.durationOutlook.minSurfaceTempC}°C to ${evalItem.durationOutlook.maxSurfaceTempC}°C (Calculated)`);
       if (evalItem.scientificRationale.reasonsWhy.length > 0) {
         lines.push(`- Key Strengths: ${evalItem.scientificRationale.reasonsWhy.join('; ')}`);
       }
@@ -664,7 +680,7 @@ export default function LandingPlannerPage({
                       Formula: {evalItem.formulaBreakdown.formulaString}
                     </span>
                     <span className="text-[10px] text-slate-500">
-                      Decision-support model (LOLA DEM + DE440)
+                      LOLA DEM (400 m/px, 0.5 m scale) + Meeus Ephemeris
                     </span>
                   </div>
                 )}
@@ -743,10 +759,18 @@ export default function LandingPlannerPage({
                       <span>Terrain & Thermal</span>
                     </span>
                     <div className="text-sm font-bold text-white mt-1">
-                      Slope {c.slopeDeg}° · {c.elevationM >= 0 ? `+${c.elevationM}m` : `${c.elevationM}m`}
+                      {c.slopeDeg !== null && Number.isFinite(c.slopeDeg)
+                        ? `Slope ${c.slopeDeg.toFixed(1)}°`
+                        : 'Slope: Not present'}
+                      {' · '}
+                      {c.elevationM !== null && Number.isFinite(c.elevationM)
+                        ? c.elevationM >= 0
+                          ? `+${c.elevationM}m`
+                          : `${c.elevationM}m`
+                        : 'Elev: Not present'}
                     </div>
                     <span className="text-[10px] text-slate-400 mt-0.5 block">
-                      {evalItem.durationOutlook.minSurfaceTempC}°C to {evalItem.durationOutlook.maxSurfaceTempC}°C
+                      {evalItem.durationOutlook.minSurfaceTempC}°C to {evalItem.durationOutlook.maxSurfaceTempC}°C (Calculated)
                     </span>
                   </div>
                 </div>

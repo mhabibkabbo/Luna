@@ -325,6 +325,7 @@ const SouthPoleTopoMap = forwardRef(function SouthPoleTopoMap(
   // Preload polar DEM for main-thread 360° horizon ray-marching & subscribe to live Sub-Earth longitude and solar angles
   useEffect(() => {
     ensurePolarDemLoaded().catch(() => {});
+    let redrawTimer = null;
     const syncCelestial = (s) => {
       const ms = s?.ms ?? Date.now();
       const state = computeCelestialState(ms);
@@ -338,9 +339,26 @@ const SouthPoleTopoMap = forwardRef(function SouthPoleTopoMap(
         subEarthLonDeg: eLon,
         subEarthLatDeg: eLat,
       };
+      const mode = activeRenderModeRef.current;
+      if (
+        gridLayerRef.current &&
+        (mode === 'illumination' ||
+          mode === 'psr' ||
+          mode === 'earth-visibility' ||
+          mode === 'risk')
+      ) {
+        if (redrawTimer) clearTimeout(redrawTimer);
+        redrawTimer = setTimeout(() => {
+          gridLayerRef.current?.redraw();
+        }, 120);
+      }
     };
     syncCelestial(celestialTimeStore.get());
-    return celestialTimeStore.subscribe(syncCelestial);
+    const unsub = celestialTimeStore.subscribe(syncCelestial);
+    return () => {
+      if (redrawTimer) clearTimeout(redrawTimer);
+      unsub();
+    };
   }, []);
 
   useEffect(() => {
@@ -1451,8 +1469,8 @@ const SouthPoleTopoMap = forwardRef(function SouthPoleTopoMap(
       {isVisible && (
         <SouthPoleLegendHUD
           selectedLocation={selectedLocation}
-          contourInterval={currentIntervalEntry.intervalM}
-          indexInterval={currentIntervalEntry.indexIntervalM}
+          contourInterval={Math.max(200, currentIntervalEntry.intervalM)}
+          indexInterval={Math.max(200, currentIntervalEntry.intervalM) * 5}
           zoomLevel={zoomLevel}
           activeRenderMode={activeRenderMode}
           onSelectRenderMode={setActiveRenderMode}

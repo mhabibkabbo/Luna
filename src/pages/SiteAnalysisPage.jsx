@@ -5,7 +5,7 @@
  * Diviner thermal physics, sunlight duration, and power generation potential.
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Mountain,
   Sun,
@@ -23,7 +23,13 @@ import {
   Target,
 } from 'lucide-react';
 import { LANDING_SITES } from '../data/landingSites.js';
-import { HORIZON_TABLE, horizonAt, getHorizonProfile } from '../utils/horizons.js';
+import {
+  HORIZON_TABLE,
+  horizonAt,
+  getHorizonProfile,
+  ensurePolarDemLoaded,
+  sampleLunarTerrainMetrics,
+} from '../utils/horizons.js';
 import { computeCelestialState, solarPosition } from '../utils/lunarEphemeris.js';
 import { getLunarTemperature } from '../utils/lunarThermal.js';
 import { calculateSolarTransition } from '../utils/transitionTimes.js';
@@ -35,7 +41,19 @@ export default function SiteAnalysisPage({
   onSelectSite,
   onNavigate,
 }) {
-  const simulationTime = celestialTimeStore.get().ms;
+  const [simulationTime, setSimulationTime] = useState(() => celestialTimeStore.get().ms);
+  const [demLoadedTick, setDemLoadedTick] = useState(0);
+
+  useEffect(() => {
+    ensurePolarDemLoaded()
+      .then((grid) => {
+        if (grid) setDemLoadedTick((t) => t + 1);
+      })
+      .catch(() => {});
+    return celestialTimeStore.subscribe(({ ms }) => {
+      setSimulationTime(ms);
+    });
+  }, []);
 
   const currentSite = selectedSite || LANDING_SITES.find((s) => s.id === 'landing-artemis3-malapert') || LANDING_SITES[0];
 
@@ -46,24 +64,30 @@ export default function SiteAnalysisPage({
   const analysis = useMemo(() => {
     try {
       const state = computeCelestialState(simulationTime);
-      const thermal = getLunarTemperature(siteLat, siteLon, new Date(simulationTime));
-      const horizonProfile = getHorizonProfile(HORIZON_TABLE, currentSite.id);
+      const terrainMetrics = sampleLunarTerrainMetrics(siteLat, siteLon, currentSite);
+      const horizonProfile = getHorizonProfile(HORIZON_TABLE, currentSite.id, siteLat, siteLon);
 
       const flat = solarPosition(state, siteLat, siteLon);
-      const terrainHorizonDeg = horizonAt(HORIZON_TABLE, currentSite.id, flat.azimuthDeg) ?? 0;
+      const terrainHorizonDeg = horizonAt(HORIZON_TABLE, currentSite.id, flat.azimuthDeg, siteLat, siteLon) ?? 0;
       const sun = solarPosition(state, siteLat, siteLon, terrainHorizonDeg);
+
+      const thermal = getLunarTemperature(siteLat, siteLon, new Date(simulationTime), {
+        terrainHorizonDeg,
+        elevationM: terrainMetrics?.elevationM ?? null,
+      });
 
       const solarTransition = calculateSolarTransition(simulationTime, siteLat, siteLon, currentSite.id);
 
-      const clearance = thermal.solarElevationDeg - terrainHorizonDeg;
-      const isSunlit = thermal.solarElevationDeg > 0 && clearance > 0;
+      const clearance = sun.elevationDeg - terrainHorizonDeg;
+      const isSunlit = sun.elevationDeg > 0 && clearance > 0 && !thermal.isPSR;
       const powerPotential = isSunlit
-        ? Math.min(100, Math.max(10, Math.round(Math.sin((thermal.solarElevationDeg * Math.PI) / 180) * 110)))
+        ? solarTransition?.powerEfficiencyPct ?? Math.round(Math.max(0, Math.sin((sun.elevationDeg * Math.PI) / 180)) * 100)
         : 0;
 
       return {
         state,
         thermal,
+        terrainMetrics,
         horizonProfile,
         terrainHorizonDeg,
         sun,
@@ -76,7 +100,7 @@ export default function SiteAnalysisPage({
       console.error('Error calculating site analysis:', err);
       return null;
     }
-  }, [currentSite, siteLat, siteLon, simulationTime]);
+  }, [currentSite, siteLat, siteLon, simulationTime, demLoadedTick]);
 
   const latFormatted = `${Math.abs(siteLat).toFixed(3)}° ${siteLat >= 0 ? 'N' : 'S'}`;
   const lonFormatted = `${Math.abs(siteLon).toFixed(3)}° ${siteLon >= 0 ? 'E' : 'W'}`;
@@ -194,7 +218,7 @@ export default function SiteAnalysisPage({
               </div>
 
               <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-400">
-                120m Res LOLA
+                400 m/px LOLA DEM
               </span>
             </div>
 
