@@ -47,9 +47,6 @@ import {
   sampleLunarTerrainMetrics,
 } from '../utils/horizons.js';
 import { getLunarTemperature } from '../utils/lunarThermal.js';
-<<<<<<< Updated upstream
-import { celestialTimeStore } from '../utils/celestialTime.js';
-=======
 import {
   evaluateCandidateForMissionWindow,
   DEFAULT_PLANNER_CONSTRAINTS,
@@ -58,7 +55,6 @@ import {
   celestialTimeStore,
   normalizeCelestialTimeMs,
 } from '../utils/celestialTime.js';
->>>>>>> Stashed changes
 import { notifySuccess, notifyInfo } from '../utils/feedbackStore.js';
 
 // Safe number formatter that never throws on undefined/null/NaN

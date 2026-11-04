@@ -462,12 +462,8 @@ export function evaluateCandidateForMissionWindow(
       sunElevationDeg: sol0.elevationDeg,
       sunAzimuthDeg: sol0.azimuthDeg,
       terrainHorizonDeg: terrainHorizon0,
-<<<<<<< Updated upstream
-      isSunlit: sol0.status === 'sunlit',
-=======
       isHorizonModeled,
       isSunlit: sol0.status === 'sunlit',
->>>>>>> Stashed changes
       surfaceTempC: thermal0.tempC,
       surfaceTempK: thermal0.tempK,
       isDteLinked: isDteLinked0,
