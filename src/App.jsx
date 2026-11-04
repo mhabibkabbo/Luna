@@ -80,6 +80,8 @@ export default function App() {
       if (hash === 'briefing') return 'briefing';
       if (hash === 'library' || hash === 'guide') return 'library';
       if (params.get('autostart') === '1') return 'explorer';
+      // Restore from share link (?planet=&lat=&lon=&site=)
+      if (params.get('lat') && params.get('lon')) return 'explorer';
     }
     return 'landing';
   });
@@ -170,6 +172,49 @@ export default function App() {
 
   // In 3D: 'moon' vs 'earth'
   const [activePlanet, setActivePlanet] = useState('moon');
+
+  // Restore share-link params (?planet=&lat=&lon=&site=) on first mount
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const pLat = parseFloat(params.get('lat'));
+    const pLon = parseFloat(params.get('lon'));
+    if (!Number.isFinite(pLat) || !Number.isFinite(pLon)) return;
+    const pPlanet = params.get('planet') === 'earth' ? 'earth' : 'moon';
+    const pSite = params.get('site') || null;
+
+    // Clean params from URL so refresh gives a clean state
+    const cleanUrl = new URL(window.location.href);
+    ['planet', 'lat', 'lon', 'site'].forEach((k) => cleanUrl.searchParams.delete(k));
+    window.history.replaceState(null, '', cleanUrl.toString());
+
+    setActivePlanet(pPlanet);
+    const knownSite = pSite ? LANDING_SITES.find((s) => s.id === pSite) || null : null;
+    const restoredFeature = knownSite || {
+      id: pSite || ('share-' + pLon + '-' + pLat),
+      name: pSite || 'Shared Location',
+      type: 'custom_pin',
+      isCustomPin: !pSite,
+      body: pPlanet,
+      latitude: pLat,
+      longitude: pLon,
+    };
+    setFeatureSelection(restoredFeature, pPlanet);
+    setTimeout(() => {
+      if (pPlanet === 'earth') {
+        globeRef.current?.switchPlanet?.('earth');
+        globeRef.current?.flyTo?.(pLon, pLat, 1500000);
+      } else {
+        getActiveController()?.flyTo(pLon, pLat, 5.0);
+      }
+      if (pSite) {
+        globeRef.current?.selectFeaturePin?.(pSite, pPlanet);
+      } else {
+        globeRef.current?.dropCustomPin?.(pLon, pLat, 'Shared Location', pPlanet);
+      }
+    }, 400);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Selenographic coordinates under cursor
 

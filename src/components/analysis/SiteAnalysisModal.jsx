@@ -22,7 +22,7 @@ import {
   evaluateEarthLink,
   earthLookFromMoon,
 } from '../../utils/earthLink.js';
-import { computeCelestialState } from '../../utils/lunarEphemeris.js';
+import { computeCelestialState, solarPosition } from '../../utils/lunarEphemeris.js';
 import { celestialTimeStore } from '../../utils/celestialTime.js';
 import { horizonAt, HORIZON_TABLE } from '../../utils/horizons.js';
 import HorizonViewCard from '../features/HorizonViewCard.jsx';
@@ -194,11 +194,11 @@ export default function SiteAnalysisModal({
         minTemp = Math.min(minTemp, therm.tempC);
         maxTemp = Math.max(maxTemp, therm.tempC);
 
-        // Sun
-        const solAz = (stepState.sun?.azimuthDeg || 0);
-        const thElev = terrainFn(solAz);
-        const solElev = stepState.sun?.elevationDeg || 0;
-        const isSunlit = solElev > thElev && !therm.isPSR;
+        // Sun — use solarPosition() which returns { elevationDeg, azimuthDeg, status }
+        const flatSun = solarPosition(stepState, featLat, featLon, 0);
+        const thElev = terrainFn(flatSun.azimuthDeg);
+        const solWithHorizon = solarPosition(stepState, featLat, featLon, thElev);
+        const isSunlit = solWithHorizon.status === 'sunlit';
         if (isSunlit) {
           sunlitSteps++;
           daySunSteps++;

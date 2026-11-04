@@ -106,7 +106,7 @@ export function evaluateCandidateForMissionWindow(
     minTemp = Math.min(minTemp, thermK.tempC);
     maxTemp = Math.max(maxTemp, thermK.tempC);
 
-    const isSunlitK = solK.isSunlit && solK.elevationDeg - thHoriz > 0;
+    const isSunlitK = solK.status === 'sunlit';
     if (isSunlitK) {
       sunlitSteps++;
       currentSunlitStreak++;
@@ -366,7 +366,7 @@ export function evaluateCandidateForMissionWindow(
       sunElevationDeg: sol0.elevationDeg,
       sunAzimuthDeg: sol0.azimuthDeg,
       terrainHorizonDeg: terrainHorizon0,
-      isSunlit: sol0.isSunlit && sol0.elevationDeg - terrainHorizon0 > 0,
+      isSunlit: sol0.status === 'sunlit',
       surfaceTempC: thermal0.tempC,
       surfaceTempK: thermal0.tempK,
       isDteLinked: isDteLinked0,

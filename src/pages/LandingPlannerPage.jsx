@@ -51,9 +51,9 @@ import { notifySuccess, notifyInfo, notifyNavigation } from '../utils/feedbackSt
 // Preset flight windows
 const LUNATION_PRESETS = [
   { label: 'Now (Live UTC)', getMs: () => normalizeCelestialTimeMs(Date.now()) },
-  { label: 'Artemis III Target (Sep 20, 2026)', getMs: () => Date.parse('2026-09-20T12:00:00Z') },
+  { label: 'Artemis III Window (Mar 15, 2027)', getMs: () => Date.parse('2027-03-15T12:00:00Z') },
   { label: 'South Pole Summer (Dec 21, 2026)', getMs: () => Date.parse('2026-12-21T12:00:00Z') },
-  { label: 'South Pole Winter (Jun 21, 2026)', getMs: () => Date.parse('2026-06-21T12:00:00Z') },
+  { label: 'South Pole Winter (Jun 21, 2027)', getMs: () => Date.parse('2027-06-21T12:00:00Z') },
   { label: '+14 Days (Half Lunation)', getMs: (base) => base + 14 * 86400000 },
   { label: '+28 Days (Full Lunation)', getMs: (base) => base + 28 * 86400000 },
 ];
@@ -65,7 +65,7 @@ export default function LandingPlannerPage({
 }) {
   // 1. Mission Window Parameters
   const [landingMs, setLandingMs] = useState(() =>
-    normalizeCelestialTimeMs(Date.parse('2026-09-20T12:00:00Z') || Date.now())
+    normalizeCelestialTimeMs(Date.now())
   );
   const [selectedRegion, setSelectedRegion] = useState('all'); // 'all' | 'south-pole' | 'equatorial-mare' | 'farside'
   const [durationDays, setDurationDays] = useState(14); // 3, 7, 14, 28, 90

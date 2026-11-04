@@ -198,11 +198,12 @@ export function createEarthFeatures({ viewer, container, callbacks }) {
       const maxLabelDistance =
         entity.properties?.maxLabelDistance?.getValue() ??
         EARTH_PIN_STYLE.labelFarDistance;
+      // Show label only when this pin is selected or hovered
       entity.label.distanceDisplayCondition = new Cesium.DistanceDisplayCondition(
         0,
-        entity === selectedEntity
+        (entity === selectedEntity || entity === hoveredEntity)
           ? EARTH_PIN_STYLE.farDistance
-          : Math.min(maxLabelDistance, EARTH_PIN_STYLE.overviewDistance)
+          : 0  // hidden when neither selected nor hovered
       );
       entity.label.fillColor = selected
         ? Cesium.Color.fromCssColorString('#00D2C4')
@@ -264,10 +265,8 @@ export function createEarthFeatures({ viewer, container, callbacks }) {
           EARTH_PIN_STYLE.farDistance,
           0.82
         ),
-        distanceDisplayCondition: new Cesium.DistanceDisplayCondition(
-          0,
-          maxLabelDistance
-        ),
+        // Labels are hidden by default; shown only when pin is selected or hovered (updatePinStyle)
+        distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 0),
       },
       properties: {
         feature,
