@@ -127,10 +127,12 @@ export function createMoonFeatures({ viewer, container, callbacks, isMobile, fly
 
     if (!featureId) return;
 
-    const target = [...pinEntities, customPinEntity].find((e) => {
-      const f = e.properties?.feature?.getValue();
-      return f?.id === featureId;
-    });
+    const target = [...pinEntities, customPinEntity]
+      .filter(Boolean)
+      .find((e) => {
+        const f = e?.properties?.feature?.getValue();
+        return f?.id === featureId;
+      });
 
     if (target) {
       selectedEntity = target;
@@ -318,7 +320,7 @@ export function createMoonFeatures({ viewer, container, callbacks, isMobile, fly
   let lastCoordsThrottleTime = 0;
   let lastHoverPickTime = 0;
   const COORDS_THROTTLE_MS = 100;
-  const HOVER_THROTTLE_MS = 140;
+  const HOVER_THROTTLE_MS = 200;
   let pointerIsDown = false;
 
   handler.setInputAction((movement) => {
@@ -360,20 +362,18 @@ export function createMoonFeatures({ viewer, container, callbacks, isMobile, fly
           hoveredEntity = pickedObject.id;
           hoveredEntity.billboard.scale = baseScale * 1.35;
           hoveredEntity.billboard.image = getLunarMarkerDataUrl(markerType, true);
-        }
-
-        scene.requestRender();
-        callbacks.onFeatureHover?.(feature, movement.endPosition.x, movement.endPosition.y);
-      } else {
-        container.style.cursor = 'default';
-        if (hoveredEntity) {
-          const prevBase = hoveredEntity.properties.baseScale?.getValue() || 0.55;
-          const prevType = hoveredEntity.properties.markerType?.getValue() || 'crater_minor';
-          hoveredEntity.billboard.scale = prevBase;
-          hoveredEntity.billboard.image = getLunarMarkerDataUrl(prevType, false);
-          hoveredEntity = null;
           scene.requestRender();
         }
+
+        callbacks.onFeatureHover?.(feature, movement.endPosition.x, movement.endPosition.y);
+      } else if (hoveredEntity) {
+        container.style.cursor = 'default';
+        const prevBase = hoveredEntity.properties.baseScale?.getValue() || 0.55;
+        const prevType = hoveredEntity.properties.markerType?.getValue() || 'crater_minor';
+        hoveredEntity.billboard.scale = prevBase;
+        hoveredEntity.billboard.image = getLunarMarkerDataUrl(prevType, false);
+        hoveredEntity = null;
+        scene.requestRender();
         callbacks.onFeatureHover?.(null, 0, 0);
       }
     }

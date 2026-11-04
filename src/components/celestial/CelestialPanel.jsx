@@ -20,9 +20,11 @@ import {
 } from 'lucide-react';
 import { formatLunarCoordinates } from '../../utils/coordinates.js';
 import {
+  CELESTIAL_MINUTE_MS,
   celestialTimeStore,
   MIN_CELESTIAL_TIME_MS,
   MAX_CELESTIAL_TIME_MS,
+  normalizeCelestialTimeMs,
 } from '../../utils/celestialTime.js';
 
 // The ephemeris models are validated for these years; the date input enforces the same range.
@@ -110,23 +112,30 @@ export default function CelestialPanel({
   const [rate, setRate] = useState(3600);
   const [shownTime, setShownTime] = useState(() => celestialTimeStore.get().ms);
   const [state, setState] = useState(null);
-  const [isCalculating, setIsCalculating] = useState(false);
 
   const timeRef = useRef(celestialTimeStore.get().ms);
-  const lastPublishRef = useRef(0);
+  const stateRef = useRef(null);
 
-  /** Applies a time to the globe; publishes to React state at most ~4 times a second. */
+  /** Applies and publishes only whole-minute celestial times. */
   const applyTime = useCallback(
     (ms, { force = false, source = 'ephemeris' } = {}) => {
-      const clamped = Math.min(MAX_MS, Math.max(MIN_MS, ms));
+      const clamped = normalizeCelestialTimeMs(
+        Math.min(MAX_MS, Math.max(MIN_MS, ms))
+      );
+      const changed = clamped !== timeRef.current;
       timeRef.current = clamped;
-      celestialTimeStore.setTime(clamped, source);
-      const next = globeRef.current?.getCelestialState?.();
-      const now = performance.now();
-      if (force || now - lastPublishRef.current >= 250) {
-        lastPublishRef.current = now;
+      if (changed) {
+        celestialTimeStore.setTime(clamped, source);
+      }
+      if (!stateRef.current) {
+        const next = globeRef.current?.getCelestialState?.();
+        if (next) {
+          stateRef.current = next;
+          setState(next);
+        }
+      }
+      if (changed || force) {
         setShownTime(clamped);
-        if (next) setState(next);
       }
       return clamped;
     },
@@ -136,28 +145,18 @@ export default function CelestialPanel({
   // Subscribe separately from the local controls so other time publishers stay in sync.
   useEffect(() => celestialTimeStore.subscribe(({ ms, source }) => {
     timeRef.current = ms;
+    setShownTime(ms);
     if (source === 'timeline-drag') {
       setLive(false);
       setPlaying(false);
-      setIsCalculating(true);
-      const now = performance.now();
-      if (now - lastPublishRef.current >= 250) {
-        lastPublishRef.current = now;
-        setShownTime(ms);
-      }
-      return;
-    }
-    if (source === 'timeline' || source === 'timeline-final') {
+    } else if (source === 'timeline' || source === 'timeline-final') {
       setLive(false);
       setPlaying(false);
     }
-    const now = performance.now();
-    if (source === 'timeline-final' || now - lastPublishRef.current >= 250) {
-      lastPublishRef.current = now;
-      setShownTime(ms);
-      const next = globeRef.current?.getCelestialState?.();
-      if (next) setState(next);
-      setIsCalculating(false);
+    const next = globeRef.current?.getCelestialState?.();
+    if (next) {
+      stateRef.current = next;
+      setState(next);
     }
   }), [globeRef]);
 
@@ -173,12 +172,16 @@ export default function CelestialPanel({
   // Keep the shared clock current even when the panel is closed or the app is in 2D mode.
   useEffect(() => {
     if (!live) return undefined;
+    let timeoutId;
+    const updateAtNextMinute = () => {
+      applyTime(Date.now(), { force: true, source: 'live' });
+      const delay = CELESTIAL_MINUTE_MS - (Date.now() % CELESTIAL_MINUTE_MS);
+      timeoutId = setTimeout(updateAtNextMinute, delay);
+    };
     applyTime(Date.now(), { force: true, source: 'live' });
-    const id = setInterval(
-      () => applyTime(Date.now(), { force: true, source: 'live' }),
-      1000
-    );
-    return () => clearInterval(id);
+    const delay = CELESTIAL_MINUTE_MS - (Date.now() % CELESTIAL_MINUTE_MS);
+    timeoutId = setTimeout(updateAtNextMinute, delay);
+    return () => clearTimeout(timeoutId);
   }, [live, applyTime]);
 
   // Time-lapse
@@ -186,24 +189,26 @@ export default function CelestialPanel({
     if (!playing) return undefined;
     let raf = 0;
     let last = null;
+    let remainderMs = 0;
     const tick = (now) => {
       if (last === null) {
-        last = now; // seed from the frame clock itself
+        last = now;
         raf = requestAnimationFrame(tick);
         return;
       }
-      if (now - last < 33) { // cap time-lapse updates at ~30 Hz
-        raf = requestAnimationFrame(tick);
-        return;
-      }
-      const dt = Math.max(0, Math.min(0.1, (now - last) / 1000)); // ignore long gaps (hidden tab)
+      const dt = Math.max(0, Math.min(0.1, (now - last) / 1000));
       last = now;
-      const target = timeRef.current + dt * rate * 1000;
-      const applied = applyTime(target, { source: 'playback' });
-      if (applied !== target) {
-        setPlaying(false); // reached the end of the supported range
-        applyTime(applied, { force: true, source: 'playback' });
-        return;
+      remainderMs += dt * rate * 1000;
+      const minuteSteps = Math.floor(remainderMs / CELESTIAL_MINUTE_MS);
+      if (minuteSteps > 0) {
+        remainderMs %= CELESTIAL_MINUTE_MS;
+        const target = timeRef.current + minuteSteps * CELESTIAL_MINUTE_MS;
+        const applied = applyTime(target, { source: 'playback' });
+        if (applied !== target) {
+          setPlaying(false);
+          applyTime(applied, { force: true, source: 'playback' });
+          return;
+        }
       }
       raf = requestAnimationFrame(tick);
     };
@@ -468,9 +473,7 @@ export default function CelestialPanel({
           </div>
 
           {/* Readouts */}
-          {isCalculating ? (
-            <p role="status" className="text-[11px] text-slate-400">Calculating…</p>
-          ) : earth && sun && moon ? (
+          {earth && sun && moon ? (
             <div className="space-y-2">
               <Readout icon={Globe2} title="Earth" accent="text-sky-300">
                 <Row label="Distance" value={`${fmtInt(earth.distanceKm)} km`} />

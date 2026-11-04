@@ -38,14 +38,19 @@ import { PLANNER_CANDIDATES } from '../data/plannerCandidates.js';
 import {
   evaluateCandidateForMissionWindow,
   rankLandingCandidates,
+  discoverSouthPoleCandidates,
   DEFAULT_PLANNER_CONSTRAINTS,
 } from '../utils/plannerEngine.js';
-import { celestialTimeStore } from '../utils/celestialTime.js';
+import { ensurePolarDemLoaded } from '../utils/horizons.js';
+import {
+  celestialTimeStore,
+  normalizeCelestialTimeMs,
+} from '../utils/celestialTime.js';
 import { notifySuccess, notifyInfo, notifyNavigation } from '../utils/feedbackStore.js';
 
 // Preset flight windows
 const LUNATION_PRESETS = [
-  { label: 'Now (Live UTC)', getMs: () => Date.now() },
+  { label: 'Now (Live UTC)', getMs: () => normalizeCelestialTimeMs(Date.now()) },
   { label: 'Artemis III Target (Sep 20, 2026)', getMs: () => Date.parse('2026-09-20T12:00:00Z') },
   { label: 'South Pole Summer (Dec 21, 2026)', getMs: () => Date.parse('2026-12-21T12:00:00Z') },
   { label: 'South Pole Winter (Jun 21, 2026)', getMs: () => Date.parse('2026-06-21T12:00:00Z') },
@@ -59,7 +64,9 @@ export default function LandingPlannerPage({
   onFlyToSite,
 }) {
   // 1. Mission Window Parameters
-  const [landingMs, setLandingMs] = useState(() => Date.parse('2026-09-20T12:00:00Z') || Date.now());
+  const [landingMs, setLandingMs] = useState(() =>
+    normalizeCelestialTimeMs(Date.parse('2026-09-20T12:00:00Z') || Date.now())
+  );
   const [selectedRegion, setSelectedRegion] = useState('all'); // 'all' | 'south-pole' | 'equatorial-mare' | 'farside'
   const [durationDays, setDurationDays] = useState(14); // 3, 7, 14, 28, 90
 
@@ -67,8 +74,17 @@ export default function LandingPlannerPage({
   const [constraints, setConstraints] = useState(DEFAULT_PLANNER_CONSTRAINTS);
   const [showConstraintsPanel, setShowConstraintsPanel] = useState(false);
 
-  // 3. Filter tab for view
-  const [viewFilter, setViewFilter] = useState('all'); // 'all' | 'compliant' | 'disqualified'
+  // 3. Filter tab for view ('all' | 'compliant' | 'disqualified' | 'discovered')
+  const [viewFilter, setViewFilter] = useState('all');
+  const [demReadyTick, setDemReadyTick] = useState(0);
+
+  React.useEffect(() => {
+    ensurePolarDemLoaded()
+      .then((g) => {
+        if (g) setDemReadyTick((t) => t + 1);
+      })
+      .catch(() => {});
+  }, []);
 
   // Format date for datetime-local input
   const dateInputVal = useMemo(() => {
@@ -83,15 +99,13 @@ export default function LandingPlannerPage({
     const val = e.target.value;
     const ms = Date.parse(`${val}:00Z`);
     if (!Number.isNaN(ms)) {
-      setLandingMs(ms);
-      celestialTimeStore.setMs(ms);
+      setLandingMs(celestialTimeStore.setMs(ms));
     }
   };
 
   const applyPreset = (preset) => {
     const nextMs = preset.getMs(landingMs);
-    setLandingMs(nextMs);
-    celestialTimeStore.setMs(nextMs);
+    setLandingMs(celestialTimeStore.setMs(nextMs));
     notifyInfo(`Applied mission epoch: ${preset.label}`);
   };
 
@@ -104,7 +118,13 @@ export default function LandingPlannerPage({
   // Evaluate and rank all candidates for the specified window & duration
   const rankedEvaluations = useMemo(() => {
     return rankLandingCandidates(candidatesInRegion, landingMs, durationDays, constraints);
-  }, [candidatesInRegion, landingMs, durationDays, constraints]);
+  }, [candidatesInRegion, landingMs, durationDays, constraints, demReadyTick]);
+
+  // Automatic South Pole Candidate Discovery (Section 9)
+  const discoveredEvaluations = useMemo(() => {
+    if (viewFilter !== 'discovered') return [];
+    return discoverSouthPoleCandidates(landingMs, durationDays, constraints);
+  }, [viewFilter, landingMs, durationDays, constraints, demReadyTick]);
 
   // Statistics
   const compliantCount = rankedEvaluations.filter((e) => e.isCompliant).length;
@@ -113,10 +133,11 @@ export default function LandingPlannerPage({
 
   // Displayed evaluations based on viewFilter
   const displayedEvaluations = useMemo(() => {
+    if (viewFilter === 'discovered') return discoveredEvaluations;
     if (viewFilter === 'compliant') return rankedEvaluations.filter((e) => e.isCompliant);
     if (viewFilter === 'disqualified') return rankedEvaluations.filter((e) => !e.isCompliant);
     return rankedEvaluations;
-  }, [rankedEvaluations, viewFilter]);
+  }, [rankedEvaluations, discoveredEvaluations, viewFilter]);
 
   // Copy full structured mission assessment
   const handleCopyAssessment = () => {
@@ -416,6 +437,49 @@ export default function LandingPlannerPage({
                 <span className="text-[10px] text-slate-500 block">Avionics freeze & mechanism cold-welding</span>
               </div>
             </div>
+
+            {/* Multi-Criteria Suitability Weight Sliders (Section 8 & 10) */}
+            <div className="pt-3 border-t border-slate-800 space-y-2">
+              <div className="text-[11px] font-mono font-bold text-cyan-300 uppercase tracking-wider">
+                Transparent Suitability Formula Weights (Normalized to 100%)
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                {[
+                  { key: 'sun', label: 'Solar Illumination Weight' },
+                  { key: 'dte', label: 'Earth Visibility (DTE) Weight' },
+                  { key: 'slope', label: 'Slope Safety Weight' },
+                  { key: 'thermal', label: 'Thermal Stability Weight' },
+                ].map((item) => {
+                  const rawW = constraints.weights?.[item.key] ?? 0.25;
+                  return (
+                    <div key={item.key} className="space-y-1">
+                      <label className="text-[11px] font-mono text-slate-300 flex items-center justify-between">
+                        <span>{item.label}:</span>
+                        <span className="text-cyan-400 font-bold">{Math.round(rawW * 100)}%</span>
+                      </label>
+                      <input
+                        type="range"
+                        min="0.05"
+                        max="0.70"
+                        step="0.05"
+                        value={rawW}
+                        onChange={(e) => {
+                          const val = Number(e.target.value);
+                          setConstraints((prev) => ({
+                            ...prev,
+                            weights: {
+                              ...(prev.weights || { sun: 0.35, dte: 0.30, slope: 0.20, thermal: 0.15 }),
+                              [item.key]: val,
+                            },
+                          }));
+                        }}
+                        className="w-full accent-cyan-400"
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         )}
       </div>
@@ -511,10 +575,22 @@ export default function LandingPlannerPage({
             >
               Disqualified ({disqualifiedCount})
             </button>
+            <button
+              type="button"
+              onClick={() => setViewFilter('discovered')}
+              className={`px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 ${
+                viewFilter === 'discovered'
+                  ? 'bg-cyan-950/90 text-cyan-300 font-bold border border-cyan-500/50'
+                  : 'text-cyan-400/80 hover:text-cyan-300'
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Auto-Discover South Pole Grid (LOLA DEM)</span>
+            </button>
           </div>
 
           <span className="text-xs text-slate-400 font-mono">
-            Ranked by multi-factor mission suitability score
+            Ranked by transparent multi-factor suitability formula
           </span>
         </div>
 
@@ -564,10 +640,10 @@ export default function LandingPlannerPage({
                     </p>
                   </div>
 
-                  {/* Suitability Score Box */}
+                  {/* Suitability Score & Classification Box */}
                   <div className="flex items-center sm:flex-col sm:items-end justify-between shrink-0">
-                    <span className="text-[10px] font-mono uppercase text-slate-500">
-                      Suitability Index
+                    <span className="text-[10px] font-mono uppercase text-cyan-400 font-semibold">
+                      {evalItem.suitabilityOutcome || 'Conditional'}
                     </span>
                     <div className="flex items-baseline gap-1 mt-0.5">
                       <span className={`text-2xl sm:text-3xl font-mono font-bold ${
@@ -583,6 +659,18 @@ export default function LandingPlannerPage({
                     </div>
                   </div>
                 </div>
+
+                {/* Explicit Suitability Formula Breakdown Strip (Section 8) */}
+                {evalItem.formulaBreakdown && (
+                  <div className="mt-2.5 px-3 py-1.5 rounded-xl bg-slate-950/80 border border-slate-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-[10.5px] font-mono text-slate-300">
+                    <span className="text-cyan-300 font-semibold">
+                      Formula: {evalItem.formulaBreakdown.formulaString}
+                    </span>
+                    <span className="text-[10px] text-slate-500">
+                      Decision-support model (LOLA DEM + DE440)
+                    </span>
+                  </div>
+                )}
 
                 {/* Violations Warning Banner (if any) */}
                 {evalItem.violations.length > 0 && (

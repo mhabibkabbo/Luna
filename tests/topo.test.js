@@ -138,3 +138,217 @@ test('Slope Gradient Computation (Horn / Central Difference)', () => {
   // Above hazard threshold
   assert.ok(computeSlopeDeg(dz15 * 1.1, 0) > 15.0);
 });
+
+test('LOLA DEM 360° Horizon Ray-Marching & Alias Resolution', async () => {
+  const {
+    HORIZON_TABLE,
+    registerPolarDemGrid,
+    computeDemHorizonProfile,
+    horizonAt,
+    getHorizonProfile,
+  } = await import('../src/utils/horizons.js');
+
+  // Verify precomputed alias resolution for 2D/3D South Pole landmarks
+  const shackletonProfile = getHorizonProfile(HORIZON_TABLE, 'shackleton-crater');
+  assert.ok(shackletonProfile, 'Shackleton alias should resolve to precomputed horizon');
+  assert.equal(shackletonProfile.horizon.length, 360);
+
+  // Verify horizonAt wrap-around at 0° and 360°
+  const h0 = horizonAt(HORIZON_TABLE, 'shackleton-crater', 0);
+  const h360 = horizonAt(HORIZON_TABLE, 'shackleton-crater', 360);
+  assert.ok(Math.abs(h0 - h360) < 1e-6, 'Azimuth 0° and 360° must match seamlessly');
+
+  // Register a synthetic 64x64 polar DEM with a central ridge and test ray-marching
+  const size = 64;
+  const grid = new Int16Array(size * size);
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      // Elevate northern half (+Y / lower row index) by +1500m
+      grid[y * size + x] = y < size / 2 ? 1500 : 0;
+    }
+  }
+  registerPolarDemGrid(grid, size);
+
+  const rayMarched = computeDemHorizonProfile(-89.5, 0);
+  assert.ok(rayMarched, 'Ray-marched profile should be computed for -89.5°S');
+  assert.equal(rayMarched.isRayMarched, true);
+  assert.equal(rayMarched.horizon.length, 360);
+
+  // Outside 80°S-90°S should return null so caller knows DEM is unmodeled there
+  const outsidePolar = computeDemHorizonProfile(-45.0, 10.0);
+  assert.equal(outsidePolar, null);
+});
+
+test('Lunar Terrain Metrics & Slope Hazard Warnings (Custom Dropped Pin Terrain Tab)', async () => {
+  const { sampleLunarTerrainMetrics } = await import('../src/utils/horizons.js');
+
+  // Safe polar highland ridge point
+  const safeMetrics = sampleLunarTerrainMetrics(-86.0, 0.0, {
+    elevationMeters: 2150,
+    slopeDeg: 6.4,
+  });
+  assert.equal(safeMetrics.elevationM, 2150);
+  assert.equal(safeMetrics.slopeDeg, 6.4);
+  assert.equal(safeMetrics.isSlopeHazard, false);
+  assert.equal(safeMetrics.terrainClassification, 'Polar Illuminated Massif / Ridge');
+  assert.ok(safeMetrics.roughnessM > 0);
+  assert.ok(safeMetrics.craterDensityPer100Km2 > 0);
+
+  // Steep slope hazard (>= 15°)
+  const steepMetrics = sampleLunarTerrainMetrics(-88.5, 45.0, {
+    elevationMeters: -1200,
+    slopeDeg: 18.2,
+  });
+  assert.equal(steepMetrics.isSlopeHazard, true);
+  assert.equal(steepMetrics.terrainClassification, 'Steep Scarp / Crater Wall');
+  assert.ok(
+    steepMetrics.warnings.some((w) => w.id === 'slope-hazard' && w.severity === 'critical'),
+    'Slope >= 15° should emit a critical slope-hazard warning'
+  );
+  assert.ok(safeMetrics.nearestLandmark, 'Should resolve nearest South Pole landmark with distance and bearing');
+  assert.ok(safeMetrics.radialProfile, 'Should compute radial elevation cross-section');
+  assert.equal(safeMetrics.radialProfile.northSouth.length, 13);
+  assert.equal(safeMetrics.radialProfile.westEast.length, 13);
+  assert.ok(['NASA_MEASURED', 'NASA_DERIVED'].includes(safeMetrics.uncertainty.provenanceType));
+});
+
+test('Project LUNA Phases 1-4: Provenance Registry, 4-Track Timeline, What-If Comparator & Discovery', async () => {
+  const { NASA_DATASETS_REGISTRY, SOUTH_POLE_SCIENTIFIC_LAYERS } = await import(
+    '../src/data/nasaProvenance.js'
+  );
+  assert.equal(NASA_DATASETS_REGISTRY.length, 4, 'Should register all 4 core NASA datasets');
+  assert.equal(SOUTH_POLE_SCIENTIFIC_LAYERS.length, 9, 'Should define all 9 scientific map layers');
+
+  const {
+    simulateMissionTimelineTracks,
+    compareWhatIfScenarios,
+    discoverSouthPoleCandidates,
+    DEFAULT_PLANNER_CONSTRAINTS,
+  } = await import('../src/utils/plannerEngine.js');
+
+  const testSiteA = {
+    id: 'landing-artemis3-shackleton',
+    name: 'Shackleton Rim',
+    lat: -89.67,
+    lon: 129.78,
+    elevationM: 1251,
+    slopeDeg: 9.2,
+    roughnessM: 1.8,
+  };
+  const testSiteB = {
+    id: 'landing-artemis3-malapert',
+    name: 'Malapert Massif',
+    lat: -86.02,
+    lon: 2.7,
+    elevationM: 5113,
+    slopeDeg: 8.6,
+    roughnessM: 1.6,
+  };
+
+  const epochMs = Date.parse('2026-09-20T12:00:00Z');
+  const tracks = simulateMissionTimelineTracks(testSiteA, epochMs, 7, 6);
+  assert.equal(tracks.steps.length, 28, '7 days at 6h cadence yields 28 steps');
+  assert.ok(['sunlit', 'blocked', 'night'].includes(tracks.steps[0].solarStatus));
+  assert.ok(['clear', 'doubtful', 'blocked', 'away'].includes(tracks.steps[0].earthStatus));
+  assert.ok(['unobstructed', 'grazing', 'masked'].includes(tracks.steps[0].obstructionStatus));
+  assert.ok(['favorable', 'conditional', 'challenging'].includes(tracks.steps[0].riskStatus));
+
+  const whatIf = compareWhatIfScenarios(
+    { site: testSiteA, landingMs: epochMs, durationDays: 7 },
+    { site: testSiteB, landingMs: epochMs + 7 * 86400000, durationDays: 7 },
+    DEFAULT_PLANNER_CONSTRAINTS
+  );
+  assert.ok(whatIf.evalA.formulaBreakdown.formulaString.includes('Score ='));
+  assert.ok(Array.isArray(whatIf.improved));
+  assert.ok(Array.isArray(whatIf.deteriorated));
+
+  const discovered = discoverSouthPoleCandidates(epochMs, 7, DEFAULT_PLANNER_CONSTRAINTS);
+  assert.ok(discovered.length >= 6, 'Should discover and rank South Pole LOLA DEM candidate sites');
+  assert.ok(discovered[0].overallScore >= discovered[discovered.length - 1].overallScore);
+});
+
+test('Scientific Terrain Analysis: Authenticity, Horn Gradient, Configurable Radius, Geologic Boundaries, and Data Unavailable Guards', async () => {
+  const {
+    sampleLunarTerrainMetrics,
+    computeRoughnessAndRelief,
+    sampleRadialElevationProfile,
+    ensurePolarDemLoaded,
+  } = await import('../src/utils/horizons.js');
+
+  const {
+    determineLunarGeologicalRegion,
+    findNearestLunarLandmark,
+    getLunarRegionInfo,
+  } = await import('../src/utils/coordinates.js');
+
+  // 1. Ensure polar DEM is loaded from binary (force reload over any synthetic test grid)
+  await ensurePolarDemLoaded(true);
+
+  // 2. Genuine Geographic Boundaries & Non-South-Pole Labeling
+  const crisiumGeo = determineLunarGeologicalRegion(17.0, 59.1);
+  assert.equal(crisiumGeo.province, 'Mare Crisium Basin');
+  assert.equal(crisiumGeo.isSouthPole, false);
+  assert.notEqual(crisiumGeo.province, 'South Polar Highlands');
+
+  const procellarumGeo = determineLunarGeologicalRegion(15.0, -50.0);
+  assert.equal(procellarumGeo.province, 'Oceanus Procellarum');
+  assert.equal(procellarumGeo.terrane, 'Procellarum KREEP Terrane (PKT)');
+  assert.equal(procellarumGeo.isSouthPole, false);
+
+  const spaGeo = determineLunarGeologicalRegion(-50.0, 160.0);
+  assert.equal(spaGeo.province, 'South Pole-Aitken (SPA) Basin');
+  assert.equal(spaGeo.isSouthPole, false);
+
+  const southPoleGeo = determineLunarGeologicalRegion(-89.9, 0.0);
+  assert.equal(southPoleGeo.province, 'South Polar Highlands');
+  assert.equal(southPoleGeo.isSouthPole, true);
+
+  // 3. Nearest Landmark with Spherical Distance & Bearing
+  const nearCrisium = findNearestLunarLandmark(17.0, 59.0);
+  assert.ok(nearCrisium, 'Should find landmark near Mare Crisium');
+  assert.ok(nearCrisium.name.includes('Crisium') || nearCrisium.name.includes('Luna'));
+  assert.ok(nearCrisium.distanceKm < 150);
+
+  const nearApollo11 = findNearestLunarLandmark(0.7, 23.5);
+  assert.ok(nearApollo11, 'Should find landmark near Apollo 11');
+  assert.ok(nearApollo11.name.includes('Apollo 11') || nearApollo11.name.includes('Tranquil'));
+
+  // 4. Configurable Roughness & Relief calculation on DEM
+  const r1k = computeRoughnessAndRelief(0, 0, 1000);
+  const r5k = computeRoughnessAndRelief(0, 0, 5000);
+  assert.ok(r1k !== null);
+  assert.ok(r5k !== null);
+  assert.ok(r5k.sampleCount > r1k.sampleCount);
+  assert.ok(r5k.reliefM >= r1k.reliefM, '5km relief should be >= 1km relief');
+
+  // 5. Dropped Pin Outside DEM Coverage -> Data unavailable, NO fabricated math
+  const outsidePinMetrics = sampleLunarTerrainMetrics(20.0, -30.0, {
+    isCustomPin: true,
+  });
+  assert.equal(outsidePinMetrics.elevationM, null, 'Arbitrary pin outside DEM should have null elevation');
+  assert.equal(outsidePinMetrics.slopeDeg, null, 'Arbitrary pin outside DEM should have null slope');
+  assert.equal(outsidePinMetrics.roughnessM, null, 'Arbitrary pin outside DEM should have null roughness');
+  assert.equal(outsidePinMetrics.reliefM, null, 'Arbitrary pin outside DEM should have null relief');
+  assert.equal(outsidePinMetrics.radialProfile, null, 'Arbitrary pin outside DEM should have null radial profile');
+  assert.equal(outsidePinMetrics.uncertainty.isAvailable, false);
+  assert.equal(outsidePinMetrics.uncertainty.verticalAccuracy, 'Data unavailable');
+  assert.notEqual(outsidePinMetrics.geologicalRegion.province, 'South Polar Highlands');
+
+  // 6. South Pole DEM Real Measurements
+  const polarMetrics = sampleLunarTerrainMetrics(-89.9, 0.0, {
+    isCustomPin: true,
+  });
+  assert.ok(polarMetrics.elevationM !== null);
+  assert.ok(polarMetrics.slopeDeg !== null);
+  assert.ok(polarMetrics.roughnessM !== null);
+  assert.ok(polarMetrics.reliefM !== null);
+  assert.ok(polarMetrics.radialProfile !== null);
+  assert.equal(polarMetrics.radialProfile.northSouth.length, 13);
+  assert.equal(polarMetrics.radialProfile.westEast.length, 13);
+  assert.equal(polarMetrics.uncertainty.isAvailable, true);
+  assert.equal(polarMetrics.uncertainty.verticalAccuracy, '±1.0 m (absolute)');
+});
+
+
+
+

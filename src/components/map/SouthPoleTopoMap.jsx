@@ -20,6 +20,9 @@ import {
   isIndexContour,
 } from '../../constants/topoStyle.js';
 import { calculateLunarPathDistance, calculateLunarBearing } from '../../utils/distance.js';
+import { celestialTimeStore } from '../../utils/celestialTime.js';
+import { computeCelestialState, solarPosition } from '../../utils/lunarEphemeris.js';
+import { ensurePolarDemLoaded } from '../../utils/horizons.js';
 
 /**
  * South Polar Stereographic on Lunar Sphere (R = 1,737,400 m)
@@ -62,8 +65,8 @@ export const SOUTH_POLE_LANDMARKS = [
     shortName: 'Shackleton',
     type: 'crater',
     priority: 1,
-    latitude: -89.65,
-    longitude: 129.0,
+    latitude: -89.67,
+    longitude: 129.78,
     elevationMeters: -2768,
     rimElevationMeters: 1251,
     diameterKm: 21,
@@ -91,8 +94,8 @@ export const SOUTH_POLE_LANDMARKS = [
     shortName: 'Haworth',
     type: 'crater',
     priority: 1,
-    latitude: -87.45,
-    longitude: -4.0,
+    latitude: -87.40,
+    longitude: -5.10,
     elevationMeters: -3385,
     diameterKm: 51.4,
     psr: true,
@@ -161,8 +164,8 @@ export const SOUTH_POLE_LANDMARKS = [
     shortName: 'Faustini',
     type: 'crater',
     priority: 2,
-    latitude: -87.2,
-    longitude: 84.3,
+    latitude: -87.30,
+    longitude: 77.00,
     elevationMeters: -2750,
     diameterKm: 42.5,
     psr: true,
@@ -231,11 +234,11 @@ export const SOUTH_POLE_LANDMARKS = [
  * NASA LOLA Permanently Shadowed Regions (PSRs) Cold-Trap Footprints
  */
 const PSR_COLD_TRAPS = [
-  { id: 'psr-shackleton', name: 'Shackleton PSR', lat: -89.65, lon: 129.0, radiusKm: 9.8 },
-  { id: 'psr-haworth', name: 'Haworth PSR', lat: -87.45, lon: -4.0, radiusKm: 21.5 },
+  { id: 'psr-shackleton', name: 'Shackleton PSR', lat: -89.67, lon: 129.78, radiusKm: 9.8 },
+  { id: 'psr-haworth', name: 'Haworth PSR', lat: -87.40, lon: -5.10, radiusKm: 21.5 },
   { id: 'psr-shoemaker', name: 'Shoemaker PSR', lat: -88.1, lon: 45.0, radiusKm: 21.0 },
   { id: 'psr-cabeus', name: 'Cabeus LCROSS PSR', lat: -84.9, lon: -35.5, radiusKm: 29.0 },
-  { id: 'psr-faustini', name: 'Faustini PSR', lat: -87.2, lon: 84.3, radiusKm: 17.5 },
+  { id: 'psr-faustini', name: 'Faustini PSR', lat: -87.30, lon: 77.00, radiusKm: 17.5 },
   { id: 'psr-degerlache', name: 'De Gerlache PSR', lat: -88.5, lon: -87.1, radiusKm: 13.8 },
   { id: 'psr-sverdrup', name: 'Sverdrup PSR', lat: -88.3, lon: -152.0, radiusKm: 14.0 },
   { id: 'psr-slater', name: 'Slater PSR', lat: -88.1, lon: 111.0, radiusKm: 10.5 },
@@ -283,14 +286,29 @@ const SouthPoleTopoMap = forwardRef(function SouthPoleTopoMap(
   const isMeasuringRef = useRef(false);
   const measureNodesRef = useRef([]);
 
-  // Map & Layer Toggles
+  // Map & Layer Toggles + 9-Layer Scientific Raster Mode
   const [zoomLevel, setZoomLevel] = useState(1);
+  const [activeRenderMode, setActiveRenderMode] = useState('svs-5127');
+  const activeRenderModeRef = useRef('svs-5127');
+  const [rasterOpacity, setRasterOpacity] = useState(1.0);
   const [showContours, setShowContours] = useState(true);
   const [showSlopeHazard, setShowSlopeHazard] = useState(true);
+  const showSlopeHazardRef = useRef(true);
   const [showTraverses, setShowTraverses] = useState(true);
   const [showRidges, setShowRidges] = useState(true);
   const [showPsrs, setShowPsrs] = useState(true);
-  const [showDsnLink, setShowDsnLink] = useState(false);
+  const [showDsnLink, setShowDsnLink] = useState(true);
+  const [showLandmarks, setShowLandmarks] = useState(true);
+  const [subEarthLonDeg, setSubEarthLonDeg] = useState(0);
+  const celestialAnglesRef = useRef({
+    sunAzimuthDeg: 315,
+    sunElevationDeg: 1.5,
+    subEarthLonDeg: 0,
+    subEarthLatDeg: -6.5,
+  });
+  const contourCacheRef = useRef(new Map());
+  const rafDrawRef = useRef(null);
+  const lastHoverTimeRef = useRef(0);
 
   // Altimetry Probe & Feature Selection
   const [selectedLocation, setSelectedLocation] = useState(null);
@@ -303,6 +321,54 @@ const SouthPoleTopoMap = forwardRef(function SouthPoleTopoMap(
   // Static Auxiliary Layers (Traverses, Ridges)
   const [plannedTraverses, setPlannedTraverses] = useState(null);
   const [ridgesAndRims, setRidgesAndRims] = useState(null);
+
+  // Preload polar DEM for main-thread 360° horizon ray-marching & subscribe to live Sub-Earth longitude and solar angles
+  useEffect(() => {
+    ensurePolarDemLoaded().catch(() => {});
+    const syncCelestial = (s) => {
+      const ms = s?.ms ?? Date.now();
+      const state = computeCelestialState(ms);
+      const sunPole = solarPosition(state, -89.5, 0);
+      const eLon = state?.earth?.subLon ?? s?.earth?.subLon ?? 0;
+      const eLat = state?.earth?.subLat ?? -6.5;
+      setSubEarthLonDeg(eLon);
+      celestialAnglesRef.current = {
+        sunAzimuthDeg: sunPole.azimuthDeg ?? 315,
+        sunElevationDeg: sunPole.elevationDeg ?? 1.5,
+        subEarthLonDeg: eLon,
+        subEarthLatDeg: eLat,
+      };
+    };
+    syncCelestial(celestialTimeStore.get());
+    return celestialTimeStore.subscribe(syncCelestial);
+  }, []);
+
+  useEffect(() => {
+    showSlopeHazardRef.current = showSlopeHazard;
+    if (gridLayerRef.current) {
+      gridLayerRef.current.redraw();
+    }
+  }, [showSlopeHazard]);
+
+  useEffect(() => {
+    activeRenderModeRef.current = activeRenderMode;
+    if (gridLayerRef.current) {
+      gridLayerRef.current.redraw();
+    }
+  }, [activeRenderMode]);
+
+  useEffect(() => {
+    if (gridLayerRef.current) {
+      gridLayerRef.current.setOpacity(rasterOpacity);
+    }
+  }, [rasterOpacity]);
+
+  useEffect(() => {
+    if (!selectedFeature) {
+      setProbedPin(null);
+      setSelectedLocation(null);
+    }
+  }, [selectedFeature]);
 
   // Active intervals by zoom
   const currentIntervalEntry = useMemo(
@@ -327,16 +393,20 @@ const SouthPoleTopoMap = forwardRef(function SouthPoleTopoMap(
       .catch(() => {});
   }, []);
 
-  // Precompute d3-contour geometries from the smoothed elevation grid
+  // Precompute & cache d3-contour geometries from the smoothed elevation grid (capped at >=200m so zoom never blocks)
   const computedContours = useMemo(() => {
     if (!contourGridData || !showContours) return [];
     const { gridSize, values } = contourGridData;
 
-    const interval = currentIntervalEntry.intervalM;
-    const indexStep = currentIntervalEntry.indexIntervalM;
+    const interval = Math.max(200, currentIntervalEntry.intervalM);
+    const indexStep = interval * 5;
+
+    if (contourCacheRef.current.has(interval)) {
+      return contourCacheRef.current.get(interval);
+    }
 
     const thresholds = [];
-    for (let elev = -7500; elev <= 7500; elev += interval) {
+    for (let elev = -6000; elev <= 6000; elev += interval) {
       thresholds.push(elev);
     }
 
@@ -347,12 +417,14 @@ const SouthPoleTopoMap = forwardRef(function SouthPoleTopoMap(
 
     const geometries = generator(values);
 
-    return geometries.map((geom) => ({
+    const result = geometries.map((geom) => ({
       value: geom.value,
       isIndex: Math.abs(geom.value % indexStep) < 1e-3,
       coordinates: geom.coordinates,
     }));
-  }, [contourGridData, currentIntervalEntry, showContours]);
+    contourCacheRef.current.set(interval, result);
+    return result;
+  }, [contourGridData, currentIntervalEntry.intervalM, showContours]);
 
   // Initialize Web Worker for Background Tile Rendering & Altimetry Probing
   useEffect(() => {
@@ -433,9 +505,10 @@ const SouthPoleTopoMap = forwardRef(function SouthPoleTopoMap(
   const drawOverlayCanvas = useCallback(() => {
     const map = leafletMapRef.current;
     const canvas = overlayCanvasRef.current;
-    if (!map || !canvas) return;
+    if (!map || !map._loaded || !map._mapPane || !canvas) return;
 
     const size = map.getSize();
+    if (!size || size.x <= 0 || size.y <= 0) return;
     const dpr = window.devicePixelRatio || 1;
     if (canvas.width !== size.x * dpr || canvas.height !== size.y * dpr) {
       canvas.width = size.x * dpr;
@@ -450,11 +523,26 @@ const SouthPoleTopoMap = forwardRef(function SouthPoleTopoMap(
     ctx.scale(dpr, dpr);
     ctx.clearRect(0, 0, size.x, size.y);
 
-    const latLonToPx = (lat, lon) =>
-      map.latLngToContainerPoint(L.latLng(lat, lon));
-    const metersToPx = (xM, yM) => {
-      const { lat, lon } = stereographicMetersToLatLon(xM, yM);
-      return map.latLngToContainerPoint(L.latLng(lat, lon));
+    // O(1) linear affine transformation from South Polar Stereographic meters (xM, yM) to screen pixels
+    const polePx = map.latLngToContainerPoint(L.latLng(-90, 0));
+    const refXLatLon = stereographicMetersToLatLon(100000, 0);
+    const refYLatLon = stereographicMetersToLatLon(0, 100000);
+    const refXPx = map.latLngToContainerPoint(L.latLng(refXLatLon.lat, refXLatLon.lon));
+    const refYPx = map.latLngToContainerPoint(L.latLng(refYLatLon.lat, refYLatLon.lon));
+    const scaleX = (refXPx.x - polePx.x) / 100000;
+    const scaleY = (refYPx.y - polePx.y) / 100000;
+
+    const metersToPx = (xM, yM) => ({
+      x: polePx.x + xM * scaleX,
+      y: polePx.y + yM * scaleY,
+    });
+
+    const latLonToPx = (lat, lon) => {
+      const { x, y } = latLonToStereographicMeters(lat, lon);
+      return {
+        x: polePx.x + x * scaleX,
+        y: polePx.y + y * scaleY,
+      };
     };
 
     const currentZoom = map.getZoom();
@@ -691,30 +779,44 @@ const SouthPoleTopoMap = forwardRef(function SouthPoleTopoMap(
       });
     }
 
-    // 6. EARTH DSN LINE-OF-SIGHT CORRIDOR (0°E Meridian)
+    // 6. DYNAMIC EARTH DSN LINE-OF-SIGHT CORRIDOR (Along Instantaneous Sub-Earth Longitude)
     if (showDsnLink) {
-      const polePt = latLonToPx(-90, 0);
-      const earthEdgePt = latLonToPx(-80, 0);
+      const originLat = selectedLocation?.lat ?? selectedFeature?.latitude ?? -90;
+      const originLon = selectedLocation?.lon ?? selectedFeature?.longitude ?? 0;
+      const startPt = latLonToPx(originLat, originLon);
+      const earthEdgePt = latLonToPx(-80, subEarthLonDeg);
+      const midPt = latLonToPx(-83.5, subEarthLonDeg);
+      const lonLabel = `${Math.abs(subEarthLonDeg).toFixed(1)}°${subEarthLonDeg >= 0 ? 'E' : 'W'}`;
       ctx.save();
       ctx.strokeStyle = '#10B981';
-      ctx.lineWidth = 1.5;
+      ctx.lineWidth = 1.8;
       ctx.setLineDash([5, 4]);
       ctx.beginPath();
-      ctx.moveTo(polePt.x, polePt.y);
+      ctx.moveTo(startPt.x, startPt.y);
       ctx.lineTo(earthEdgePt.x, earthEdgePt.y);
       ctx.stroke();
+
+      ctx.font = 'bold 9px "Space Mono", monospace';
+      ctx.fillStyle = '#34D399';
+      ctx.strokeStyle = 'rgba(7, 10, 16, 0.9)';
+      ctx.lineWidth = 2.5;
+      ctx.textAlign = 'center';
+      ctx.strokeText(`EARTH DSN LOS (${lonLabel}) ▲`, midPt.x, midPt.y - 6);
+      ctx.fillText(`EARTH DSN LOS (${lonLabel}) ▲`, midPt.x, midPt.y - 6);
       ctx.restore();
     }
 
     // 7. NASA SVS 5127 PROMINENT SITE MARKERS & LABELS
     const placedBoxes = [];
-    const sortedLandmarks = [...SOUTH_POLE_LANDMARKS].sort((a, b) => {
-      const aSel = selectedFeature?.id === a.id ? -10 : 0;
-      const bSel = selectedFeature?.id === b.id ? -10 : 0;
-      const aHov = hoveredLandmarkId === a.id ? -5 : 0;
-      const bHov = hoveredLandmarkId === b.id ? -5 : 0;
-      return a.priority + aSel + aHov - (b.priority + bSel + bHov);
-    });
+    const sortedLandmarks = showLandmarks
+      ? [...SOUTH_POLE_LANDMARKS].sort((a, b) => {
+          const aSel = selectedFeature?.id === a.id ? -10 : 0;
+          const bSel = selectedFeature?.id === b.id ? -10 : 0;
+          const aHov = hoveredLandmarkId === a.id ? -5 : 0;
+          const bHov = hoveredLandmarkId === b.id ? -5 : 0;
+          return a.priority + aSel + aHov - (b.priority + bSel + bHov);
+        })
+      : [];
 
     for (const lm of sortedLandmarks) {
       const pt = latLonToPx(lm.latitude, lm.longitude);
@@ -939,12 +1041,23 @@ const SouthPoleTopoMap = forwardRef(function SouthPoleTopoMap(
     probedPin,
     ridgesAndRims,
     selectedFeature,
+    selectedLocation,
     showContours,
     showDsnLink,
+    showLandmarks,
     showPsrs,
     showRidges,
     showTraverses,
+    subEarthLonDeg,
   ]);
+
+  const scheduleOverlayDraw = useCallback(() => {
+    if (rafDrawRef.current) cancelAnimationFrame(rafDrawRef.current);
+    rafDrawRef.current = requestAnimationFrame(() => {
+      rafDrawRef.current = null;
+      drawOverlayCanvas();
+    });
+  }, [drawOverlayCanvas]);
 
   // Initialize Leaflet Map with South Polar Stereographic CRS
   useEffect(() => {
@@ -986,6 +1099,7 @@ const SouthPoleTopoMap = forwardRef(function SouthPoleTopoMap(
         pendingTilesRef.current.set(tileKey, { canvas, done });
 
         if (workerRef.current) {
+          const angles = celestialAnglesRef.current;
           workerRef.current.postMessage({
             type: 'RENDER_TILE',
             payload: {
@@ -994,8 +1108,13 @@ const SouthPoleTopoMap = forwardRef(function SouthPoleTopoMap(
               x: coords.x,
               y: coords.y,
               tileSize: size.x,
-              renderMode: 'svs-5127',
+              renderMode: activeRenderModeRef.current,
               enableHillshade: true,
+              showSlopeHazard: showSlopeHazardRef.current,
+              sunAzimuthDeg: angles.sunAzimuthDeg,
+              sunElevationDeg: angles.sunElevationDeg,
+              subEarthLonDeg: angles.subEarthLonDeg,
+              subEarthLatDeg: angles.subEarthLatDeg,
               demUrl: DEM_BINARY_URL,
             },
           });
@@ -1021,12 +1140,12 @@ const SouthPoleTopoMap = forwardRef(function SouthPoleTopoMap(
     // Synchronize View Changes
     const handleViewChange = () => {
       setZoomLevel(map.getZoom());
-      drawOverlayCanvas();
+      scheduleOverlayDraw();
     };
 
     map.on('move zoom viewreset resize', handleViewChange);
 
-    // Mouse Move: Pointer coordinates + landmark hover detection
+    // Mouse Move: Pointer coordinates + landmark hover detection (throttled to 40ms)
     map.on('mousemove', (e) => {
       const projected = southPoleCRS.projection.project(e.latlng);
       const { lat, lon } = stereographicMetersToLatLon(projected.x, projected.y);
@@ -1035,6 +1154,10 @@ const SouthPoleTopoMap = forwardRef(function SouthPoleTopoMap(
         onPointerCoordinates(lon, lat);
       }
 
+      const now = performance.now();
+      if (now - lastHoverTimeRef.current < 40) return;
+      lastHoverTimeRef.current = now;
+
       const mousePt = e.containerPoint;
       const hit = SOUTH_POLE_LANDMARKS.find((lm) => {
         const lmPt = map.latLngToContainerPoint(
@@ -1042,7 +1165,7 @@ const SouthPoleTopoMap = forwardRef(function SouthPoleTopoMap(
         );
         return Math.hypot(lmPt.x - mousePt.x, lmPt.y - mousePt.y) < 14;
       });
-      setHoveredLandmarkId(hit ? hit.id : null);
+      setHoveredLandmarkId((prev) => (prev === (hit ? hit.id : null) ? prev : hit ? hit.id : null));
     });
 
     // Click: Distance measurement or Altimetry Probe or landmark select
@@ -1115,12 +1238,14 @@ const SouthPoleTopoMap = forwardRef(function SouthPoleTopoMap(
       // Real NASA LOLA Altimetry Probe via Worker
       if (workerRef.current) {
         probeCallbackRef.current = ({ elevationM, slopeDeg }) => {
-          setProbedPin({ lat, lon, elevation: elevationM, slope: slopeDeg });
+          const roundedElev = elevationM != null ? Math.round(elevationM) : null;
+          const roundedSlope = slopeDeg != null ? Math.round(slopeDeg * 10) / 10 : null;
+          setProbedPin({ lat, lon, elevation: roundedElev, slope: roundedSlope });
           setSelectedLocation({
             lat,
             lon,
-            elevation: elevationM,
-            slope: slopeDeg,
+            elevation: roundedElev,
+            slope: roundedSlope,
             name: 'Sampled LOLA DEM Point',
             isOutOfDemBounds: false,
           });
@@ -1128,13 +1253,13 @@ const SouthPoleTopoMap = forwardRef(function SouthPoleTopoMap(
           if (onFeatureSelect) {
             onFeatureSelect({
               id: `sp-probe-${lon.toFixed(2)}-${lat.toFixed(2)}`,
-              name: 'South Pole Altimetry Probe',
+              name: 'Custom Dropped Pin',
               type: 'custom_pin',
               isCustomPin: true,
               latitude: lat,
               longitude: lon,
-              elevationMeters: elevationM,
-              slopeDeg,
+              elevationMeters: roundedElev,
+              slopeDeg: roundedSlope,
               body: 'moon',
               description: `South Polar Stereographic coordinate ${Math.abs(
                 lat
@@ -1143,8 +1268,8 @@ const SouthPoleTopoMap = forwardRef(function SouthPoleTopoMap(
               } (X=${Math.round(projected.x).toLocaleString()} m, Y=${Math.round(
                 projected.y
               ).toLocaleString()} m). Decoded NASA LOLA elevation: ${
-                elevationM != null ? `${elevationM > 0 ? '+' : ''}${elevationM} m` : 'No Data'
-              } (relative to R₀=1,737,400 m)${slopeDeg != null ? `, local slope: ${slopeDeg}°` : ''}.`,
+                roundedElev != null ? `${roundedElev > 0 ? '+' : ''}${roundedElev.toLocaleString()} m` : 'No Data'
+              } (relative to R₀=1,737,400 m)${roundedSlope != null ? `, local slope: ${roundedSlope.toFixed(1)}°` : ''}.`,
             });
           }
         };
@@ -1160,17 +1285,28 @@ const SouthPoleTopoMap = forwardRef(function SouthPoleTopoMap(
       }
     });
 
-    setTimeout(() => {
+    const initTimer = setTimeout(() => {
+      if (!leafletMapRef.current || !map._loaded || !map._mapPane) return;
       map.invalidateSize();
       map.setView([-90, 0], 1, { animate: false });
       drawOverlayCanvas();
     }, 60);
 
     return () => {
+      clearTimeout(initTimer);
       map.remove();
       leafletMapRef.current = null;
       gridLayerRef.current = null;
     };
+  }, []);
+
+  // Safe helper to update Leaflet view only when map pane and layout are active
+  const safeSetView = useCallback((latLng, zoom, preferAnimate = false) => {
+    const map = leafletMapRef.current;
+    if (!map || !map._loaded || !map._mapPane) return;
+    const size = map.getSize();
+    const canAnimate = Boolean(preferAnimate && size && size.x > 0 && size.y > 0);
+    map.setView(latLng, zoom, { animate: canAnimate });
   }, []);
 
   // Redraw when overlay layers or selection changes
@@ -1183,26 +1319,27 @@ const SouthPoleTopoMap = forwardRef(function SouthPoleTopoMap(
     if (isVisible && leafletMapRef.current) {
       const map = leafletMapRef.current;
       const timer = setTimeout(() => {
+        if (!leafletMapRef.current || !map._loaded || !map._mapPane) return;
         map.invalidateSize();
         const center = map.getCenter();
         if (!center || center.lat > -78 || Number.isNaN(center.lat)) {
-          map.setView([-90, 0], 1, { animate: false });
+          safeSetView([-90, 0], 1, false);
         }
         drawOverlayCanvas();
       }, 70);
       return () => clearTimeout(timer);
     }
-  }, [isVisible, drawOverlayCanvas]);
+  }, [isVisible, drawOverlayCanvas, safeSetView]);
 
   // Expose Imperative Controller API
   useImperativeHandle(ref, () => ({
     zoomIn: () => leafletMapRef.current?.zoomIn(),
     zoomOut: () => leafletMapRef.current?.zoomOut(),
     resetOverview: () => {
-      leafletMapRef.current?.setView([-90, 0], 1, { animate: true });
+      safeSetView([-90, 0], 1, true);
     },
     goToSouthPole: () => {
-      leafletMapRef.current?.setView([-90, 0], 1, { animate: true });
+      safeSetView([-90, 0], 1, true);
     },
     activateMeasurement: () => {
       isMeasuringRef.current = true;
@@ -1231,16 +1368,14 @@ const SouthPoleTopoMap = forwardRef(function SouthPoleTopoMap(
     flyTo: (lon, lat, targetZoom) => {
       if (typeof lat === 'number' && lat > -79.9) {
         onOutOfDemBounds?.(lat, lon);
-        leafletMapRef.current?.setView([lat, lon ?? 0], 2, { animate: true });
+        safeSetView([lat, lon ?? 0], 2, true);
         return;
       }
       const z =
         typeof targetZoom === 'number'
           ? Math.max(1, Math.min(5, Math.round(targetZoom - 2)))
           : 3;
-      leafletMapRef.current?.setView([lat ?? -90, lon ?? 0], z, {
-        animate: true,
-      });
+      safeSetView([lat ?? -90, lon ?? 0], z, true);
     },
     selectFeature: (featureOrId) => {
       const featId = typeof featureOrId === 'string' ? featureOrId : featureOrId?.id;
@@ -1254,9 +1389,7 @@ const SouthPoleTopoMap = forwardRef(function SouthPoleTopoMap(
           name: lm.name,
           isOutOfDemBounds: false,
         });
-        leafletMapRef.current?.setView([lm.latitude, lm.longitude], 3, {
-          animate: true,
-        });
+        safeSetView([lm.latitude, lm.longitude], 3, true);
       } else if (
         typeof featureOrId === 'object' &&
         typeof featureOrId?.latitude === 'number'
@@ -1273,12 +1406,27 @@ const SouthPoleTopoMap = forwardRef(function SouthPoleTopoMap(
           isOutOfDemBounds: isOutOf,
         });
         if (isOutOf) onOutOfDemBounds?.(lat, lon);
-        leafletMapRef.current?.setView([lat, lon], 3, {
-          animate: true,
-        });
+        safeSetView([lat, lon], 3, true);
       }
     },
-    setLayerVisibility: () => {},
+    setLayerVisibility: (layerId, visible) => {
+      const id = String(layerId || '').toLowerCase();
+      if (id.includes('contour') || id.includes('topo')) {
+        setShowContours(Boolean(visible));
+      } else if (id.includes('psr') || id.includes('shadow') || id.includes('ice')) {
+        setShowPsrs(Boolean(visible));
+      } else if (id.includes('ridge') || id.includes('illumination') || id.includes('sun')) {
+        setShowRidges(Boolean(visible));
+      } else if (id.includes('slope') || id.includes('hazard')) {
+        setShowSlopeHazard(Boolean(visible));
+      } else if (id.includes('dsn') || id.includes('comm') || id.includes('earth')) {
+        setShowDsnLink(Boolean(visible));
+      } else if (id.includes('traverse') || id.includes('route')) {
+        setShowTraverses(Boolean(visible));
+      } else {
+        setShowLandmarks(Boolean(visible));
+      }
+    },
   }));
 
   return (
@@ -1306,6 +1454,10 @@ const SouthPoleTopoMap = forwardRef(function SouthPoleTopoMap(
           contourInterval={currentIntervalEntry.intervalM}
           indexInterval={currentIntervalEntry.indexIntervalM}
           zoomLevel={zoomLevel}
+          activeRenderMode={activeRenderMode}
+          onSelectRenderMode={setActiveRenderMode}
+          rasterOpacity={rasterOpacity}
+          onChangeRasterOpacity={setRasterOpacity}
           showContours={showContours}
           onToggleContours={() => setShowContours((prev) => !prev)}
           showSlopeHazard={showSlopeHazard}
@@ -1318,6 +1470,8 @@ const SouthPoleTopoMap = forwardRef(function SouthPoleTopoMap(
           onTogglePsrs={() => setShowPsrs((prev) => !prev)}
           showDsnLink={showDsnLink}
           onToggleDsnLink={() => setShowDsnLink((prev) => !prev)}
+          showLandmarks={showLandmarks}
+          onToggleLandmarks={() => setShowLandmarks((prev) => !prev)}
           selectedFeature={selectedFeature}
           onSwitchTo3D={onSwitchTo3D}
         />

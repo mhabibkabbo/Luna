@@ -33,7 +33,7 @@ export default function DteCalculationModal({
   onFlyToMoonSite,
 }) {
   const [targetLat, setTargetLat] = useState(() =>
-    selectedMoonFeature ? String(selectedMoonFeature.latitude ?? -89.4) : '-89.40'
+    selectedMoonFeature ? String(selectedMoonFeature.latitude ?? -85.97) : '-85.97'
   );
   const [targetLon, setTargetLon] = useState(() =>
     selectedMoonFeature ? String(selectedMoonFeature.longitude ?? 0.0) : '0.00'
@@ -45,7 +45,7 @@ export default function DteCalculationModal({
   // Auto-sync target coordinates whenever selectedMoonFeature or modal visibility changes
   React.useEffect(() => {
     if (selectedMoonFeature && isOpen) {
-      const lat = typeof selectedMoonFeature.latitude === 'number' ? selectedMoonFeature.latitude : -89.4;
+      const lat = typeof selectedMoonFeature.latitude === 'number' ? selectedMoonFeature.latitude : -85.97;
       const lon = typeof selectedMoonFeature.longitude === 'number' ? selectedMoonFeature.longitude : 0.0;
       setTargetLat(String(lat));
       setTargetLon(String(lon));
@@ -63,9 +63,17 @@ export default function DteCalculationModal({
   const parsedLon = Math.max(-180, Math.min(180, parseFloat(targetLon) || 0));
 
   const moonPoint = useMemo(() => {
+    const isDefaultMalapert =
+      !selectedMoonFeature &&
+      Math.abs(parsedLat - -85.97) < 0.02 &&
+      Math.abs(parsedLon - 0.0) < 0.02;
     return {
-      id: selectedMoonFeature?.id || 'custom-dte-point',
-      name: selectedMoonFeature?.name || `Lunar Target (${parsedLat.toFixed(2)}°, ${parsedLon.toFixed(2)}°)`,
+      id: selectedMoonFeature?.id || (isDefaultMalapert ? 'mons-malapert' : 'custom-dte-point'),
+      name:
+        selectedMoonFeature?.name ||
+        (isDefaultMalapert
+          ? 'Mons Malapert Relay Peak (-85.97°, 0.00°)'
+          : `Lunar Target (${parsedLat.toFixed(2)}°, ${parsedLon.toFixed(2)}°)`),
       latitude: parsedLat,
       longitude: parsedLon,
     };
@@ -80,8 +88,9 @@ export default function DteCalculationModal({
   }, []);
   const state = useMemo(() => computeCelestialState(timeMs), [timeMs]);
   const terrainFn = useMemo(
-    () => (azimuthDeg) => horizonAt(HORIZON_TABLE, moonPoint.id, azimuthDeg) ?? 0,
-    [moonPoint.id]
+    () => (azimuthDeg) =>
+      horizonAt(HORIZON_TABLE, moonPoint.id, azimuthDeg, moonPoint.latitude, moonPoint.longitude) ?? 0,
+    [moonPoint.id, moonPoint.latitude, moonPoint.longitude]
   );
 
   // Overall Earth look from lunar surface point

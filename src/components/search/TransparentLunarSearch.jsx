@@ -240,7 +240,7 @@ export default function TransparentLunarSearch({
       ref={containerRef}
       id="transparent-lunar-search"
       className={`z-40 pointer-events-auto select-none transition-all duration-300 ${
-        className || 'fixed top-3 left-[150px] sm:top-4 sm:left-[160px]'
+        className || 'fixed top-3 left-[206px] sm:top-4 sm:left-[220px]'
       }`}
     >
       {!isExpanded ? (

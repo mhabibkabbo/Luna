@@ -14,6 +14,7 @@ import {
 import { fetchSpaceWeather, FALLBACK_SPACE_WEATHER } from '../../services/spaceWeather.js';
 import { getLunarTemperature } from '../../utils/lunarThermal.js';
 import { formatLunarCoordinates } from '../../utils/coordinates.js';
+import { celestialTimeStore } from '../../utils/celestialTime.js';
 
 export default function LunarWeatherModal({
   isOpen,
@@ -23,12 +24,19 @@ export default function LunarWeatherModal({
   const [spaceWeather, setSpaceWeather] = useState(FALLBACK_SPACE_WEATHER);
   const [isLoading, setIsLoading] = useState(false);
   const [lastRefreshed, setLastRefreshed] = useState(new Date());
+  const [timeMs, setTimeMs] = useState(() => celestialTimeStore.get().ms);
+
+  useEffect(() => {
+    return celestialTimeStore.subscribe(({ ms }) => {
+      setTimeMs(ms);
+    });
+  }, []);
 
   const targetLat = selectedMoonFeature?.latitude ?? -89.4;
   const targetLon = selectedMoonFeature?.longitude ?? 0.0;
   const { latStr, lonStr } = formatLunarCoordinates(targetLon, targetLat, 2);
 
-  const localThermal = getLunarTemperature(targetLat, targetLon);
+  const localThermal = getLunarTemperature(targetLat, targetLon, new Date(timeMs));
 
   const loadData = useCallback(async (force = false) => {
     setIsLoading(true);

@@ -12,6 +12,14 @@ export default function CesiumLoadingOverlay({
 }) {
   const [shouldRenderOverlay, setShouldRenderOverlay] = useState(isInitializing);
   const [fadeComplete, setFadeComplete] = useState(!isInitializing);
+  const peakTilesRef = React.useRef(1);
+
+  if (pendingTiles > peakTilesRef.current) {
+    peakTilesRef.current = pendingTiles;
+  }
+  if (!isInitializing && pendingTiles === 0) {
+    peakTilesRef.current = 1;
+  }
 
   useEffect(() => {
     if (isInitializing) {
@@ -27,6 +35,20 @@ export default function CesiumLoadingOverlay({
   }, [isInitializing]);
 
   const isStreamingTiles = pendingTiles > 0 && !isInitializing;
+  const tileProgressPct =
+    pendingTiles > 0
+      ? Math.max(
+          25,
+          Math.min(
+            98,
+            Math.round(
+              (1 - pendingTiles / Math.max(peakTilesRef.current, pendingTiles + 1)) * 100
+            )
+          )
+        )
+      : isInitializing
+      ? 45
+      : 100;
 
   return (
     <>
@@ -107,9 +129,7 @@ export default function CesiumLoadingOverlay({
                 <div
                   className="h-full bg-gradient-to-r from-[#00D2C4] to-[#34D399] rounded-full transition-all duration-300 shadow-[0_0_8px_rgba(0,210,196,0.5)]"
                   style={{
-                    width: isInitializing
-                      ? `${Math.max(35, Math.min(96, 100 - (pendingTiles > 0 ? pendingTiles * 3 : 8)))}%`
-                      : '100%',
+                    width: `${tileProgressPct}%`,
                   }}
                 />
               </div>
@@ -117,9 +137,11 @@ export default function CesiumLoadingOverlay({
               <div className="flex items-center justify-between text-[10px] font-mono text-[#94A3B8] tabular-nums">
                 <span>{planet === 'earth' ? 'WGS84 Ellipsoid' : 'IAU Moon Datum'}</span>
                 {pendingTiles > 0 ? (
-                  <span className="text-[#00D2C4]">{pendingTiles} tiles queued</span>
+                  <span className="text-[#00D2C4]">
+                    {pendingTiles} tiles queued ({tileProgressPct}%)
+                  </span>
                 ) : (
-                  <span className="text-[#34D399]">Surface Ready</span>
+                  <span className="text-[#34D399]">Surface Ready (100%)</span>
                 )}
               </div>
             </div>

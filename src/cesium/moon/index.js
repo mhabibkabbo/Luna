@@ -266,6 +266,7 @@ export function createMoon(container, callbacks = {}) {
       Cesium.Ellipsoid.MOON
     ),
 
+    skyBox: Cesium.SkyBox.createEarthSkyBox(),
     skyAtmosphere: false,
 
     baseLayerPicker: false,
@@ -311,7 +312,7 @@ export function createMoon(container, callbacks = {}) {
   const scene = viewer.scene;
   scene.backgroundColor = Cesium.Color.TRANSPARENT;
   scene.globe.baseColor = Cesium.Color.fromCssColorString('#0f172a');
-  scene.globe.depthTestAgainstTerrain = true; // Occlude markers on the far side of the Moon
+  scene.globe.depthTestAgainstTerrain = false; // Analytical hemisphere culling in moonFeatures handles far-side occlusion without GPU depth stalls
   scene.highDynamicRange = false;
   scene.msaaSamples = isMobile ? 1 : 2; // Cesium default is 4x MSAA
   scene.fog.enabled = false;
@@ -655,12 +656,13 @@ export function createMoon(container, callbacks = {}) {
 
   // Lighting toggle
   let isLightingEnabled = true;
-  const toggleLighting = () => {
-    isLightingEnabled = !isLightingEnabled;
+  const setLightingEnabled = (enabled) => {
+    isLightingEnabled = Boolean(enabled);
     scene.globe.enableLighting = isLightingEnabled;
     scene.requestRender();
     return isLightingEnabled;
   };
+  const toggleLighting = () => setLightingEnabled(!isLightingEnabled);
 
   // Destruction / cleanup
   const destroy = () => {
@@ -729,13 +731,19 @@ export function createMoon(container, callbacks = {}) {
     getViewer: () => viewer,
     waitUntilReady,
     setActive(active) {
+      if (destroyed || viewer.isDestroyed()) return;
       if (active && 'default' in Cesium.Ellipsoid) {
         Cesium.Ellipsoid.default = Cesium.Ellipsoid.MOON;
       }
-      viewer.useDefaultRenderLoop = active;
+      if (active) {
+        cameraController._ellipsoid = Cesium.Ellipsoid.MOON;
+        viewer.camera._ellipsoid = Cesium.Ellipsoid.MOON;
+        cameraController.enableInputs = true;
+      }
       if (viewer.container) {
         viewer.container.style.display = active ? 'block' : 'none';
       }
+      viewer.useDefaultRenderLoop = active;
       if (active) {
         viewer.resize?.();
         viewer.scene?.requestRender?.();
@@ -751,6 +759,7 @@ export function createMoon(container, callbacks = {}) {
     zoomOut,
     toggleAutoRotate,
     toggleLighting,
+    setLightingEnabled,
     getLightingEnabled: () => isLightingEnabled,
     extras: {
       features: {
