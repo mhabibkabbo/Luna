@@ -418,6 +418,7 @@ export default function LunarSunlightTimeline({ feature, earthFeature = null }) 
   return (
     <section
       id="lunar-sunlight-timeline"
+      data-guide="timeline"
       className="absolute bottom-0 left-0 right-0 z-40 border-t border-slate-700/80 bg-slate-950/95 px-2 pt-1.5 pb-1 shadow-[0_-8px_30px_rgba(0,0,0,0.45)] backdrop-blur-xl sm:px-4 h-[84px]"
       aria-label={`${rangeDays.toFixed(rangeDays < 1 ? 2 : 1)}-day sunlight & DTE timeline for ${feature.name}`}
     >

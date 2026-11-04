@@ -56,6 +56,7 @@ export default function UnifiedToolbar({
 }) {
   return (
     <div
+      data-guide="toolbar"
       className={`fixed left-3 sm:left-4 z-30 pointer-events-auto select-none top-14 sm:top-16 ${
         timelineVisible ? 'bottom-[96px]' : 'bottom-3 sm:bottom-4'
       } flex flex-col justify-start`}
@@ -76,6 +77,7 @@ export default function UnifiedToolbar({
         {/* Map Layers Panel Toggle */}
         <button
           id="btn-toolbar-layers"
+          data-guide="layers"
           type="button"
           onClick={onToggleLayers}
           className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${
@@ -92,7 +94,7 @@ export default function UnifiedToolbar({
         <div className="w-4 h-[1px] bg-[#16283C] my-0.5" />
 
         {/* 3D Globe / 2D South Pole Topo Segmented Switcher */}
-        <div className="flex flex-col items-center p-0.5 rounded-lg bg-[#0A1220] border border-[#16283C] gap-0.5">
+        <div data-guide="view-mode" className="flex flex-col items-center p-0.5 rounded-lg bg-[#0A1220] border border-[#16283C] gap-0.5">
           <button
             id="btn-toolbar-3d"
             type="button"
