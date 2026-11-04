@@ -24,6 +24,8 @@ import {
   Mountain,
   Globe2,
   Rocket,
+  Database,
+  ChevronDown,
 } from 'lucide-react';
 import { formatLunarCoordinates, getLunarRegionInfo } from '../../utils/coordinates.js';
 import { getClpsMission } from '../../data/clpsMissions.js';
@@ -93,6 +95,8 @@ export default function FeaturePanel({
   const [copied, setCopied] = useState(false);
   const [shared, setShared] = useState(false);
   const [demLoadedTick, setDemLoadedTick] = useState(0);
+  const [roughnessRadiusM, setRoughnessRadiusM] = useState(2000);
+  const [isDataSourcesOpen, setIsDataSourcesOpen] = useState(false);
 
   // Weather state
   const [spaceWeather, setSpaceWeather] = useState(FALLBACK_SPACE_WEATHER);
@@ -204,8 +208,10 @@ export default function FeaturePanel({
   // Terrain metrics from NASA LRO LOLA DEM or selenographic model
   const terrainMetrics = useMemo(() => {
     if (!feature || isEarthFeature) return null;
-    return sampleLunarTerrainMetrics(featLat, featLon, feature);
-  }, [feature, isEarthFeature, featLat, featLon, demLoadedTick]);
+    return sampleLunarTerrainMetrics(featLat, featLon, feature, {
+      roughnessRadiusM,
+    });
+  }, [feature, isEarthFeature, featLat, featLon, demLoadedTick, roughnessRadiusM]);
 
   // Ephemeris, Sun position, Earth visibility, and transition countdowns
   const state = useMemo(() => computeCelestialState(timeMs), [timeMs]);
@@ -435,13 +441,13 @@ export default function FeaturePanel({
     if (!feature || isEarthFeature) return [];
     const list = [];
 
-    if (terrainMetrics?.slopeDeg >= 15) {
+    if (terrainMetrics?.slopeDeg != null && terrainMetrics.slopeDeg >= 15) {
       list.push({
         id: 'warn-slope',
         tone: 'critical',
         text: `Slope Hazard: ${terrainMetrics.slopeDeg.toFixed(1)}° exceeds 15° lander tip-over limit`,
       });
-    } else if (terrainMetrics?.slopeDeg >= 10) {
+    } else if (terrainMetrics?.slopeDeg != null && terrainMetrics.slopeDeg >= 10) {
       list.push({
         id: 'warn-slope-mod',
         tone: 'warning',
@@ -459,7 +465,7 @@ export default function FeaturePanel({
       list.push({
         id: 'warn-sun-masked',
         tone: 'warning',
-        text: `Solar disc masked by local terrain ridge (${sunTerrainHorizon.toFixed(1)}° horizon)`,
+        text: `Solar disc masked by local terrain ridge (${(sunTerrainHorizon ?? 0).toFixed(1)}° horizon)`,
       });
     } else if (sun.status === 'night') {
       list.push({
@@ -479,7 +485,7 @@ export default function FeaturePanel({
       list.push({
         id: 'warn-dte-blocked',
         tone: 'warning',
-        text: `DTE Line-of-Sight blocked by local terrain (${earthTerrainHorizon.toFixed(1)}° horizon mask)`,
+        text: `DTE Line-of-Sight blocked by local terrain (${(earthTerrainHorizon ?? 0).toFixed(1)}° horizon mask)`,
       });
     }
 
@@ -687,9 +693,15 @@ export default function FeaturePanel({
                   <div className="text-right font-mono">
                     <span className="text-[10px] text-slate-400 block">Elev / Slope</span>
                     <span className="text-xs font-semibold text-cyan-300 tabular-nums whitespace-nowrap">
-                      {terrainMetrics.elevationM > 0 ? '+' : ''}
-                      {Math.round(terrainMetrics.elevationM).toLocaleString()}m ·{' '}
-                      {terrainMetrics.slopeDeg.toFixed(1)}°
+                      {terrainMetrics.elevationM != null && terrainMetrics.slopeDeg != null ? (
+                        <>
+                          {terrainMetrics.elevationM > 0 ? '+' : ''}
+                          {Math.round(terrainMetrics.elevationM).toLocaleString()}m ·{' '}
+                          {terrainMetrics.slopeDeg.toFixed(1)}°
+                        </>
+                      ) : (
+                        <span className="text-slate-400 text-[11px]">Data unavailable</span>
+                      )}
                     </span>
                   </div>
                 )}
@@ -848,7 +860,7 @@ export default function FeaturePanel({
                   <div className="p-2.5 rounded-xl bg-[#0A121E] border border-slate-800/80">
                     <span className="text-[10px] text-slate-400 block">Horizon Mask</span>
                     <span className="text-sm font-bold text-cyan-300 tabular-nums">
-                      {sunTerrainHorizon.toFixed(1)}°
+                      {sunTerrainHorizon != null ? `${sunTerrainHorizon.toFixed(1)}°` : '—'}
                     </span>
                     <span className="text-[10px] text-slate-400 block">Solar Azimuth</span>
                   </div>
@@ -903,60 +915,153 @@ export default function FeaturePanel({
               </div>
               <span
                 className={`text-[10px] font-mono font-semibold px-2 py-0.5 rounded border ${
-                  terrainMetrics.isSlopeHazard
+                  terrainMetrics.slopeDeg === null
+                    ? 'bg-slate-900/60 text-slate-400 border-slate-700/50'
+                    : terrainMetrics.isSlopeHazard
                     ? 'bg-rose-950/50 text-rose-300 border-rose-500/40'
                     : 'bg-emerald-950/40 text-emerald-300 border-emerald-500/30'
                 }`}
               >
-                {terrainMetrics.isSlopeHazard ? '✖ SLOPE HAZARD' : '● LANDER SAFE'}
+                {terrainMetrics.slopeDeg === null
+                  ? 'DEM UNMODELED'
+                  : terrainMetrics.isSlopeHazard
+                  ? '✖ SLOPE HAZARD'
+                  : '● LANDER SAFE'}
               </span>
+            </div>
+
+            {/* Configurable Radius Selector for Roughness & Local Relief */}
+            <div className="p-2 rounded-xl bg-[#0A121E] border border-slate-800/80 flex items-center justify-between gap-1 text-[10px] font-mono">
+              <span className="text-slate-400">Analysis Radius:</span>
+              <div className="flex items-center gap-1">
+                {[500, 1000, 2000, 5000, 10000].map((r) => (
+                  <button
+                    key={r}
+                    type="button"
+                    onClick={() => setRoughnessRadiusM(r)}
+                    className={`px-2 py-0.5 rounded text-[10px] font-medium transition-all ${
+                      roughnessRadiusM === r
+                        ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/50 font-bold'
+                        : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
+                    }`}
+                  >
+                    {r >= 1000 ? `${r / 1000}km` : `${r}m`}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* 4-Card Quantitative Terrain Grid */}
             <div className="grid grid-cols-2 gap-2 font-mono">
+              {/* Card 1: Elevation */}
               <div className="p-2.5 rounded-xl bg-[#0A121E] border border-slate-800/80">
-                <span className="text-[10px] text-slate-400 block">Surface Elevation</span>
-                <div className="text-base font-bold text-white tabular-nums mt-0.5">
-                  {terrainMetrics.elevationM > 0 ? '+' : ''}
-                  {terrainMetrics.elevationM.toLocaleString()}
-                  <span className="text-xs font-normal text-slate-400 ml-1">m</span>
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] text-slate-400 block">Surface Elevation</span>
+                  {terrainMetrics.elevationM !== null && (
+                    <span className="text-[9px] font-mono text-cyan-400/80">
+                      {terrainMetrics.isDemAvailable ? 'LOLA DEM' : 'CATALOG'}
+                    </span>
+                  )}
                 </div>
-                <span className="text-[10px] text-slate-400">Rel. to R₀ = 1,737.4 km</span>
+                <div className="text-base font-bold text-white tabular-nums mt-0.5">
+                  {terrainMetrics.elevationM !== null ? (
+                    <>
+                      {terrainMetrics.elevationM > 0 ? '+' : ''}
+                      {terrainMetrics.elevationM.toLocaleString()}
+                      <span className="text-xs font-normal text-slate-400 ml-1">m</span>
+                    </>
+                  ) : (
+                    <span className="text-xs font-normal text-slate-400">Data unavailable</span>
+                  )}
+                </div>
+                <span className="text-[10px] text-slate-400 truncate block">
+                  {terrainMetrics.elevationSource ||
+                    (terrainMetrics.inSouthPoleCap
+                      ? 'Rel. to R₀ = 1,737.4 km'
+                      : 'Outside 80°S–90°S LOLA DEM')}
+                </span>
               </div>
 
+              {/* Card 2: Slope Angle */}
               <div className="p-2.5 rounded-xl bg-[#0A121E] border border-slate-800/80">
-                <span className="text-[10px] text-slate-400 block">Local Slope Angle</span>
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] text-slate-400 block">Local Slope Angle</span>
+                  {terrainMetrics.slopeDeg !== null && (
+                    <span className="text-[9px] font-mono text-emerald-400/80">
+                      Horn 3×3
+                    </span>
+                  )}
+                </div>
                 <div
                   className={`text-base font-bold tabular-nums mt-0.5 ${
-                    terrainMetrics.slopeDeg >= 15
+                    terrainMetrics.slopeDeg === null
+                      ? 'text-slate-400 text-xs font-normal'
+                      : terrainMetrics.slopeDeg >= 15
                       ? 'text-rose-400'
                       : terrainMetrics.slopeDeg >= 10
                       ? 'text-amber-400'
                       : 'text-emerald-400'
                   }`}
                 >
-                  {terrainMetrics.slopeDeg.toFixed(1)}°
-                </div>
-                <span className="text-[10px] text-slate-400">15.0° max lander limit</span>
-              </div>
-
-              <div className="p-2.5 rounded-xl bg-[#0A121E] border border-slate-800/80">
-                <span className="text-[10px] text-slate-400 block">Surface Roughness</span>
-                <div className="text-base font-bold text-white tabular-nums mt-0.5">
-                  {terrainMetrics.roughnessM.toFixed(1)}
-                  <span className="text-xs font-normal text-slate-400 ml-1">m RMS</span>
-                </div>
-                <span className="text-[10px] text-slate-400">1.2 km baseline dispersion</span>
-              </div>
-
-              <div className="p-2.5 rounded-xl bg-[#0A121E] border border-slate-800/80">
-                <span className="text-[10px] text-slate-400 block">Crater Density</span>
-                <div className="text-base font-bold text-cyan-300 tabular-nums mt-0.5">
-                  {terrainMetrics.craterDensityPer100Km2}
-                  <span className="text-[10px] font-normal text-slate-400 ml-1">/ 100 km²</span>
+                  {terrainMetrics.slopeDeg !== null
+                    ? `${terrainMetrics.slopeDeg.toFixed(1)}°`
+                    : 'Data unavailable'}
                 </div>
                 <span className="text-[10px] text-slate-400 truncate block">
-                  {terrainMetrics.craterDensityLabel}
+                  {terrainMetrics.slopeSource ||
+                    (terrainMetrics.slopeDeg !== null
+                      ? '15.0° max lander limit'
+                      : 'Requires LOLA DEM')}
+                </span>
+              </div>
+
+              {/* Card 3: Surface Roughness (RMS) */}
+              <div className="p-2.5 rounded-xl bg-[#0A121E] border border-slate-800/80">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] text-slate-400 block">Surface Roughness</span>
+                  <span className="text-[9px] font-mono text-slate-400">
+                    R={(roughnessRadiusM / 1000).toFixed(1)}km
+                  </span>
+                </div>
+                <div className="text-base font-bold text-white tabular-nums mt-0.5">
+                  {terrainMetrics.roughnessM !== null ? (
+                    <>
+                      {terrainMetrics.roughnessM.toFixed(1)}
+                      <span className="text-xs font-normal text-slate-400 ml-1">m RMS</span>
+                    </>
+                  ) : (
+                    <span className="text-xs font-normal text-slate-400">Data unavailable</span>
+                  )}
+                </div>
+                <span className="text-[10px] text-slate-400 truncate block">
+                  {terrainMetrics.roughnessM !== null
+                    ? `Dispersion in ${(roughnessRadiusM / 1000).toFixed(1)} km radius`
+                    : 'Requires LOLA DEM'}
+                </span>
+              </div>
+
+              {/* Card 4: Local Relief within configurable radius */}
+              <div className="p-2.5 rounded-xl bg-[#0A121E] border border-slate-800/80">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] text-slate-400 block">Local Relief (Δz)</span>
+                  <span className="text-[9px] font-mono text-slate-400">
+                    R={(roughnessRadiusM / 1000).toFixed(1)}km
+                  </span>
+                </div>
+                <div className="text-base font-bold text-cyan-300 tabular-nums mt-0.5">
+                  {terrainMetrics.reliefM !== null ? (
+                    <>
+                      {terrainMetrics.reliefM.toLocaleString()}
+                      <span className="text-xs font-normal text-slate-400 ml-1">m</span>
+                    </>
+                  ) : (
+                    <span className="text-xs font-normal text-slate-400">Data unavailable</span>
+                  )}
+                </div>
+                <span className="text-[10px] text-slate-400 truncate block">
+                  {terrainMetrics.reliefM !== null
+                    ? `Max - min in ${(roughnessRadiusM / 1000).toFixed(1)} km radius`
+                    : 'Requires LOLA DEM'}
                 </span>
               </div>
             </div>
@@ -964,29 +1069,44 @@ export default function FeaturePanel({
             {/* Selenographic Region, Nearest Landmark & Uncertainty */}
             <div className="p-2.5 rounded-xl bg-[#0A121E] border border-slate-800/80 space-y-1.5 text-xs">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-mono text-slate-400">Geologic Province</span>
-                <span className="font-mono text-slate-200">
-                  {regionInfo?.province || 'Southern Polar Highlands'}
+                <span className="text-[10px] font-mono text-slate-400">Geologic Region</span>
+                <span className="font-mono text-slate-200 text-right">
+                  {terrainMetrics.geologicalRegion?.province || regionInfo?.province || 'Feldspathic Highlands'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between border-t border-slate-800/70 pt-1.5">
+                <span className="text-[10px] font-mono text-slate-400">Crustal Terrane</span>
+                <span className="font-mono text-slate-300 text-right text-[11px]">
+                  {terrainMetrics.geologicalRegion?.terrane || regionInfo?.terrane || 'Feldspathic Highlands Terrane (FHT)'}
                 </span>
               </div>
               {terrainMetrics.nearestLandmark && (
                 <div className="flex items-center justify-between border-t border-slate-800/70 pt-1.5">
                   <span className="text-[10px] font-mono text-slate-400">Nearest Landmark</span>
-                  <span className="font-mono text-cyan-300 text-[11px]">
-                    {terrainMetrics.nearestLandmark.name} ({terrainMetrics.nearestLandmark.distanceKm} km · {terrainMetrics.nearestLandmark.bearingDeg}°)
+                  <span className="font-mono text-cyan-300 text-[11px] text-right">
+                    {terrainMetrics.nearestLandmark.name}
+                    <span className="text-slate-400 text-[10px] block">
+                      {terrainMetrics.nearestLandmark.distanceKm} km · {terrainMetrics.nearestLandmark.bearingDeg}° az ({terrainMetrics.nearestLandmark.type})
+                    </span>
                   </span>
                 </div>
               )}
               <div className="flex items-center justify-between border-t border-slate-800/70 pt-1.5">
-                <span className="text-[10px] font-mono text-slate-400">Altimetry &amp; Uncertainty</span>
-                <span className="text-[10px] font-mono text-slate-300">
-                  {terrainMetrics.uncertainty?.verticalAccuracy || '±1.0 m'} vert · {terrainMetrics.uncertainty?.horizontalAccuracy || '±20 m'} horiz
+                <span className="text-[10px] font-mono text-slate-400">Altimetry Uncertainty</span>
+                <span className="text-[10px] font-mono text-slate-300 text-right">
+                  {terrainMetrics.uncertainty?.isAvailable ? (
+                    <>
+                      {terrainMetrics.uncertainty.verticalAccuracy} vert · {terrainMetrics.uncertainty.horizontalAccuracy} horiz
+                    </>
+                  ) : (
+                    <span className="text-slate-400">Data unavailable (outside 80°S DEM)</span>
+                  )}
                 </span>
               </div>
             </div>
 
             {/* Radial Elevation Profile (-10 km to +10 km N-S & W-E Cross-Section) */}
-            {terrainMetrics.radialProfile && (
+            {terrainMetrics.radialProfile ? (
               <div className="p-2.5 rounded-xl bg-[#0A121E] border border-slate-800/80 space-y-1.5">
                 <div className="flex items-center justify-between text-[10px] font-mono">
                   <span className="text-slate-200 font-semibold">
@@ -1012,8 +1132,9 @@ export default function FeaturePanel({
                         return `${idx === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`;
                       })
                       .join(' ');
+                  const centerElev = terrainMetrics.elevationM ?? (minE + maxE) / 2;
                   const centerY =
-                    h - 14 - ((terrainMetrics.elevationM - minE) / (maxE - minE)) * (h - 24);
+                    h - 14 - ((centerElev - minE) / (maxE - minE)) * (h - 24);
                   return (
                     <svg
                       viewBox={`0 0 ${w} ${h}`}
@@ -1081,6 +1202,17 @@ export default function FeaturePanel({
                   </span>
                 </div>
               </div>
+            ) : (
+              <div className="p-2.5 rounded-xl bg-[#0A121E] border border-slate-800/80 text-xs font-mono text-slate-400 space-y-1">
+                <div className="flex items-center gap-1.5 text-slate-300 font-semibold">
+                  <Mountain className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>Radial Elevation Profile: Data unavailable</span>
+                </div>
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                  Cross-sectional transect generation samples the NASA LOLA South Polar DEM (80.0°S to 90.0°S).
+                  Selected location ({featLat.toFixed(2)}°, {featLon.toFixed(2)}°) is outside local DEM coverage.
+                </p>
+              </div>
             )}
 
             {/* Terrain Warnings */}
@@ -1088,7 +1220,11 @@ export default function FeaturePanel({
               <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 block">
                 Terrain Engineering Advisories
               </span>
-              {terrainMetrics.warnings.length > 0 ? (
+              {terrainMetrics.slopeDeg === null ? (
+                <div className="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800/80 text-[11px] font-mono text-slate-400">
+                  Slope data is unavailable outside the LOLA South Pole DEM. Terrain tilt advisories require local high-resolution topography.
+                </div>
+              ) : terrainMetrics.warnings.length > 0 ? (
                 terrainMetrics.warnings.map((warn) => (
                   <div
                     key={warn.id}
@@ -1115,9 +1251,77 @@ export default function FeaturePanel({
                 <div className="p-2.5 rounded-xl bg-emerald-950/25 border border-emerald-500/30 flex items-center gap-2 text-xs font-mono text-emerald-300">
                   <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
                   <span>
-                    Slope ({terrainMetrics.slopeDeg.toFixed(1)}°) and roughness (
-                    {terrainMetrics.roughnessM.toFixed(1)} m) are within nominal landing bounds.
+                    Slope ({terrainMetrics.slopeDeg != null ? `${terrainMetrics.slopeDeg.toFixed(1)}°` : 'nominal'}) and roughness (
+                    {terrainMetrics.roughnessM !== null ? `${terrainMetrics.roughnessM.toFixed(1)} m` : 'nominal'}) are within safe landing limits.
                   </span>
+                </div>
+              )}
+            </div>
+
+            {/* Collapsible Data Sources Section (Requirement 10) */}
+            <div className="rounded-xl bg-[#0A121E] border border-slate-800/80 overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setIsDataSourcesOpen(!isDataSourcesOpen)}
+                className="w-full p-2.5 flex items-center justify-between text-left hover:bg-slate-800/30 transition-colors"
+              >
+                <div className="flex items-center gap-1.5 text-xs font-mono font-semibold text-slate-200">
+                  <Database className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>Data Sources &amp; Topographic Provenance</span>
+                </div>
+                <div className="flex items-center gap-1 text-[10px] font-mono text-cyan-400">
+                  <span>{isDataSourcesOpen ? 'Hide' : 'View'}</span>
+                  <ChevronDown
+                    className={`w-3.5 h-3.5 transition-transform duration-200 ${
+                      isDataSourcesOpen ? 'rotate-180' : ''
+                    }`}
+                  />
+                </div>
+              </button>
+              {isDataSourcesOpen && (
+                <div className="p-3 pt-0 border-t border-slate-800/60 space-y-2 text-[11px] font-mono text-slate-300">
+                  <div className="grid grid-cols-3 gap-1 py-1 border-b border-slate-800/50">
+                    <span className="text-slate-400 col-span-1">Dataset Name</span>
+                    <span className="text-white col-span-2">
+                      NASA PDS LRO-L-LOLA-4-GDR-V1.0
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-1 py-1 border-b border-slate-800/50">
+                    <span className="text-slate-400 col-span-1">Instrument</span>
+                    <span className="text-slate-200 col-span-2">
+                      Lunar Orbiter Laser Altimeter (LOLA) / LRO
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-1 py-1 border-b border-slate-800/50">
+                    <span className="text-slate-400 col-span-1">Spatial Resolution</span>
+                    <span className="text-slate-200 col-span-2">
+                      400 m/pixel Polar Stereographic Grid (20 m/px base track profiles)
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-1 py-1 border-b border-slate-800/50">
+                    <span className="text-slate-400 col-span-1">Elevation Units</span>
+                    <span className="text-slate-200 col-span-2">
+                      Meters relative to IAU Lunar Sphere (R₀ = 1,737,400.0 m)
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-1 py-1 border-b border-slate-800/50">
+                    <span className="text-slate-400 col-span-1">Uncertainty</span>
+                    <span className="text-slate-200 col-span-2">
+                      ±1.0 m absolute vertical · ±0.1–0.3 m inter-track · ±20 m horizontal
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-1 py-1 border-b border-slate-800/50">
+                    <span className="text-slate-400 col-span-1">Coverage Area</span>
+                    <span className="text-slate-200 col-span-2">
+                      80.0°S to 90.0°S (Lunar South Polar Cap, ±304 km bounds)
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-1 py-1">
+                    <span className="text-slate-400 col-span-1">Derivation Method</span>
+                    <span className="text-slate-200 col-span-2">
+                      Horn 3×3 weighted gradient stencil for slope; local window RMS height dispersion for roughness; Great-Circle geodesic distance for landmarks.
+                    </span>
+                  </div>
                 </div>
               )}
             </div>
@@ -1139,7 +1343,7 @@ export default function FeaturePanel({
                   </span>
                 </div>
                 <div className="text-sm font-bold text-white tabular-nums">
-                  {sun.elevationDeg.toFixed(2)}° el · {sun.azimuthDeg.toFixed(1)}° az
+                  {sun?.elevationDeg != null ? `${sun.elevationDeg.toFixed(2)}° el` : '—'} · {sun?.azimuthDeg != null ? `${sun.azimuthDeg.toFixed(1)}° az` : '—'}
                 </div>
                 <div className="text-[10px] text-slate-400">
                   Solar Disc Visible: <strong className="text-amber-300">{solarDiscPct}%</strong>
@@ -1150,12 +1354,13 @@ export default function FeaturePanel({
                 <div className="flex items-center justify-between text-[10px]">
                   <span className="text-slate-400">Shadow / Masking</span>
                   <span className="text-cyan-300 font-bold">
-                    {localThermal?.isPSR ? 'PSR Trap' : `${sunTerrainHorizon.toFixed(1)}° Ridge`}
+                    {localThermal?.isPSR ? 'PSR Trap' : `${(sunTerrainHorizon ?? 0).toFixed(1)}° Ridge`}
                   </span>
                 </div>
                 <div className="text-sm font-bold text-white tabular-nums">
-                  {sun.elevationDeg - sunTerrainHorizon >= 0 ? '+' : ''}
-                  {(sun.elevationDeg - sunTerrainHorizon).toFixed(2)}° clearance
+                  {sun?.elevationDeg != null
+                    ? `${sun.elevationDeg - (sunTerrainHorizon ?? 0) >= 0 ? '+' : ''}${(sun.elevationDeg - (sunTerrainHorizon ?? 0)).toFixed(2)}° clearance`
+                    : '—'}
                 </div>
                 <div className="text-[10px] text-slate-400 truncate">
                   {solarTransition.timeUntilMs === null
@@ -1172,19 +1377,19 @@ export default function FeaturePanel({
               <div>
                 <span className="text-[10px] text-slate-400 block">Earth Elevation</span>
                 <span className="font-bold text-white tabular-nums">
-                  {earthLook.elevationDeg.toFixed(1)}°
+                  {earthLook?.elevationDeg != null ? `${earthLook.elevationDeg.toFixed(1)}°` : '—'}
                 </span>
                 <span className="text-[10px] text-slate-400 block">
-                  Az {earthLook.azimuthDeg.toFixed(0)}°
+                  Az {earthLook?.azimuthDeg != null ? `${earthLook.azimuthDeg.toFixed(0)}°` : '—'}
                 </span>
               </div>
               <div>
                 <span className="text-[10px] text-slate-400 block">Earth Horizon</span>
                 <span className="font-bold text-cyan-300 tabular-nums">
-                  {earthTerrainHorizon.toFixed(1)}°
+                  {(earthTerrainHorizon ?? 0).toFixed(1)}°
                 </span>
                 <span className="text-[10px] text-slate-400 block">
-                  {earthLook.elevationDeg - earthTerrainHorizon >= 0 ? 'Unobstructed' : 'Occluded'}
+                  {earthLook?.elevationDeg != null && (earthLook.elevationDeg - (earthTerrainHorizon ?? 0) >= 0) ? 'Unobstructed' : 'Occluded'}
                 </span>
               </div>
               <div>
@@ -1463,24 +1668,28 @@ export default function FeaturePanel({
               <div className="p-2 rounded-xl bg-[#0A121E] border border-slate-800/80">
                 <span className="text-[9.5px] text-slate-400 block">Earth Elev</span>
                 <span className="text-xs font-bold text-white tabular-nums">
-                  {earthLook.elevationDeg.toFixed(1)}°
+                  {earthLook?.elevationDeg != null ? `${earthLook.elevationDeg.toFixed(1)}°` : '—'}
                 </span>
               </div>
               <div className="p-2 rounded-xl bg-[#0A121E] border border-slate-800/80">
                 <span className="text-[9.5px] text-slate-400 block">Earth Az</span>
                 <span className="text-xs font-bold text-white tabular-nums">
-                  {earthLook.azimuthDeg.toFixed(1)}°
+                  {earthLook?.azimuthDeg != null ? `${earthLook.azimuthDeg.toFixed(1)}°` : '—'}
                 </span>
               </div>
               <div className="p-2 rounded-xl bg-[#0A121E] border border-slate-800/80">
                 <span className="text-[9.5px] text-slate-400 block">Link Margin</span>
                 <span
                   className={`text-xs font-bold tabular-nums ${
-                    generalLink.status === 'clear' ? 'text-emerald-400' : 'text-amber-400'
+                    generalLink?.status === 'clear' ? 'text-emerald-400' : 'text-amber-400'
                   }`}
                 >
-                  {generalLink.marginDeg >= 0 ? '+' : ''}
-                  {generalLink.marginDeg.toFixed(1)}°
+                  {generalLink?.marginDeg != null ? (
+                    <>
+                      {generalLink.marginDeg >= 0 ? '+' : ''}
+                      {generalLink.marginDeg.toFixed(1)}°
+                    </>
+                  ) : '—'}
                 </span>
               </div>
               <div className="p-2 rounded-xl bg-[#0A121E] border border-slate-800/80">
@@ -1491,7 +1700,7 @@ export default function FeaturePanel({
               </div>
             </div>
 
-            {/* 30-Day D3 Signal & Elevation Chart */}
+            {/* Interactive NASA Direct-to-Earth Communication Availability Timeline */}
             <DteSignalChart
               moonFeature={moonPoint}
               initialStationId={selectedStationId}

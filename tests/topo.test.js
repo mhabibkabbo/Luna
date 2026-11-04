@@ -267,5 +267,88 @@ test('Project LUNA Phases 1-4: Provenance Registry, 4-Track Timeline, What-If Co
   assert.ok(discovered[0].overallScore >= discovered[discovered.length - 1].overallScore);
 });
 
+test('Scientific Terrain Analysis: Authenticity, Horn Gradient, Configurable Radius, Geologic Boundaries, and Data Unavailable Guards', async () => {
+  const {
+    sampleLunarTerrainMetrics,
+    computeRoughnessAndRelief,
+    sampleRadialElevationProfile,
+    ensurePolarDemLoaded,
+  } = await import('../src/utils/horizons.js');
+
+  const {
+    determineLunarGeologicalRegion,
+    findNearestLunarLandmark,
+    getLunarRegionInfo,
+  } = await import('../src/utils/coordinates.js');
+
+  // 1. Ensure polar DEM is loaded from binary (force reload over any synthetic test grid)
+  await ensurePolarDemLoaded(true);
+
+  // 2. Genuine Geographic Boundaries & Non-South-Pole Labeling
+  const crisiumGeo = determineLunarGeologicalRegion(17.0, 59.1);
+  assert.equal(crisiumGeo.province, 'Mare Crisium Basin');
+  assert.equal(crisiumGeo.isSouthPole, false);
+  assert.notEqual(crisiumGeo.province, 'South Polar Highlands');
+
+  const procellarumGeo = determineLunarGeologicalRegion(15.0, -50.0);
+  assert.equal(procellarumGeo.province, 'Oceanus Procellarum');
+  assert.equal(procellarumGeo.terrane, 'Procellarum KREEP Terrane (PKT)');
+  assert.equal(procellarumGeo.isSouthPole, false);
+
+  const spaGeo = determineLunarGeologicalRegion(-50.0, 160.0);
+  assert.equal(spaGeo.province, 'South Pole-Aitken (SPA) Basin');
+  assert.equal(spaGeo.isSouthPole, false);
+
+  const southPoleGeo = determineLunarGeologicalRegion(-89.9, 0.0);
+  assert.equal(southPoleGeo.province, 'South Polar Highlands');
+  assert.equal(southPoleGeo.isSouthPole, true);
+
+  // 3. Nearest Landmark with Spherical Distance & Bearing
+  const nearCrisium = findNearestLunarLandmark(17.0, 59.0);
+  assert.ok(nearCrisium, 'Should find landmark near Mare Crisium');
+  assert.ok(nearCrisium.name.includes('Crisium') || nearCrisium.name.includes('Luna'));
+  assert.ok(nearCrisium.distanceKm < 150);
+
+  const nearApollo11 = findNearestLunarLandmark(0.7, 23.5);
+  assert.ok(nearApollo11, 'Should find landmark near Apollo 11');
+  assert.ok(nearApollo11.name.includes('Apollo 11') || nearApollo11.name.includes('Tranquil'));
+
+  // 4. Configurable Roughness & Relief calculation on DEM
+  const r1k = computeRoughnessAndRelief(0, 0, 1000);
+  const r5k = computeRoughnessAndRelief(0, 0, 5000);
+  assert.ok(r1k !== null);
+  assert.ok(r5k !== null);
+  assert.ok(r5k.sampleCount > r1k.sampleCount);
+  assert.ok(r5k.reliefM >= r1k.reliefM, '5km relief should be >= 1km relief');
+
+  // 5. Dropped Pin Outside DEM Coverage -> Data unavailable, NO fabricated math
+  const outsidePinMetrics = sampleLunarTerrainMetrics(20.0, -30.0, {
+    isCustomPin: true,
+  });
+  assert.equal(outsidePinMetrics.elevationM, null, 'Arbitrary pin outside DEM should have null elevation');
+  assert.equal(outsidePinMetrics.slopeDeg, null, 'Arbitrary pin outside DEM should have null slope');
+  assert.equal(outsidePinMetrics.roughnessM, null, 'Arbitrary pin outside DEM should have null roughness');
+  assert.equal(outsidePinMetrics.reliefM, null, 'Arbitrary pin outside DEM should have null relief');
+  assert.equal(outsidePinMetrics.radialProfile, null, 'Arbitrary pin outside DEM should have null radial profile');
+  assert.equal(outsidePinMetrics.uncertainty.isAvailable, false);
+  assert.equal(outsidePinMetrics.uncertainty.verticalAccuracy, 'Data unavailable');
+  assert.notEqual(outsidePinMetrics.geologicalRegion.province, 'South Polar Highlands');
+
+  // 6. South Pole DEM Real Measurements
+  const polarMetrics = sampleLunarTerrainMetrics(-89.9, 0.0, {
+    isCustomPin: true,
+  });
+  assert.ok(polarMetrics.elevationM !== null);
+  assert.ok(polarMetrics.slopeDeg !== null);
+  assert.ok(polarMetrics.roughnessM !== null);
+  assert.ok(polarMetrics.reliefM !== null);
+  assert.ok(polarMetrics.radialProfile !== null);
+  assert.equal(polarMetrics.radialProfile.northSouth.length, 13);
+  assert.equal(polarMetrics.radialProfile.westEast.length, 13);
+  assert.equal(polarMetrics.uncertainty.isAvailable, true);
+  assert.equal(polarMetrics.uncertainty.verticalAccuracy, '±1.0 m (absolute)');
+});
+
+
 
 

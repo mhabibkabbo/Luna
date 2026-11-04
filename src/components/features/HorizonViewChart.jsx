@@ -428,7 +428,7 @@ export default function HorizonViewChart({
               />
               <g transform={`translate(${sunX} ${sunIconY})`}>
                 <circle r={standThereMode ? "6" : "5"} fill="#fbbf24" stroke="#fef3c7" strokeWidth="1" />
-                <title>Sun · {currentSun.status} · elevation {currentSun.elevationDeg.toFixed(1)}°</title>
+                <title>Sun · {currentSun.status} · elevation {currentSun.elevationDeg != null ? `${currentSun.elevationDeg.toFixed(1)}°` : '—'}</title>
               </g>
             </>
           ) : (
@@ -438,7 +438,7 @@ export default function HorizonViewChart({
               stroke="#fef3c7"
               strokeWidth="0.7"
             >
-              <title>Sun below horizon · elevation {currentSun.elevationDeg.toFixed(1)}°</title>
+              <title>Sun below horizon · elevation {currentSun.elevationDeg != null ? `${currentSun.elevationDeg.toFixed(1)}°` : '—'}</title>
             </path>
           )}
           {currentEarth.elevationDeg >= 0 ? (
@@ -462,7 +462,7 @@ export default function HorizonViewChart({
                   strokeWidth="0.6"
                   strokeLinejoin="round"
                 />
-                <title>Earth · {currentEarth.status} · elevation {currentEarth.elevationDeg.toFixed(1)}°</title>
+                <title>Earth · {currentEarth.status} · elevation {currentEarth.elevationDeg != null ? `${currentEarth.elevationDeg.toFixed(1)}°` : '—'}</title>
               </g>
             </>
           ) : (
@@ -472,7 +472,7 @@ export default function HorizonViewChart({
               stroke="#dbeafe"
               strokeWidth="0.7"
             >
-              <title>Earth below horizon · elevation {currentEarth.elevationDeg.toFixed(1)}°</title>
+              <title>Earth below horizon · elevation {currentEarth.elevationDeg != null ? `${currentEarth.elevationDeg.toFixed(1)}°` : '—'}</title>
             </path>
           )}
 

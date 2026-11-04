@@ -1,4 +1,10 @@
-import horizonData from "../data/horizons.json";
+import horizonData from "../data/horizons.json" with { type: "json" };
+import {
+  determineLunarGeologicalRegion,
+  findNearestLunarLandmark,
+  computeSelenographicDistanceAndBearing,
+  SOUTH_POLE_REFERENCE_LANDMARKS,
+} from "./coordinates.js";
 
 const MOON_RADIUS_M = 1737400;
 const DEM_LIMIT_LAT_DEG = -80.0;
@@ -38,14 +44,16 @@ export const HORIZON_TABLE = horizonData;
 // Shared polar LOLA DEM reference for real-time 360° horizon ray-marching on any point in 80°S-90°S
 let polarDemGrid = null;
 let polarDemSize = 0;
+let polarDemScale = 1.0;
 let polarDemLoadPromise = null;
 const rayMarchedCache = new Map();
 const demListeners = new Set();
 
-export function registerPolarDemGrid(grid, size) {
+export function registerPolarDemGrid(grid, size, scale = 1.0) {
   if (!grid || !size) return;
   polarDemGrid = grid;
   polarDemSize = size;
+  polarDemScale = Number.isFinite(scale) && scale > 0 ? scale : 1.0;
   rayMarchedCache.clear();
   demListeners.forEach((fn) => {
     try {
@@ -59,29 +67,53 @@ export function subscribePolarDemReady(callback) {
   return () => demListeners.delete(callback);
 }
 
-export function ensurePolarDemLoaded() {
-  if (polarDemGrid) return Promise.resolve(polarDemGrid);
-  if (polarDemLoadPromise) return polarDemLoadPromise;
-  if (typeof fetch === "undefined") return Promise.resolve(null);
+export function ensurePolarDemLoaded(force = false) {
+  if (!force && polarDemGrid && polarDemSize > 0) return Promise.resolve(polarDemGrid);
+  if (!force && polarDemLoadPromise) return polarDemLoadPromise;
 
-  polarDemLoadPromise = fetch("/data/lola_sp_80s_int16.bin")
-    .then((r) => (r.ok ? r.arrayBuffer() : null))
-    .then((buf) => {
-      if (!buf) return null;
-      const arr = new Int16Array(buf);
-      const sz = Math.round(Math.sqrt(arr.length));
-      registerPolarDemGrid(arr, sz);
-      return polarDemGrid;
-    })
-    .catch(() => null)
-    .finally(() => {
-      polarDemLoadPromise = null;
-    });
+  const isBrowser =
+    typeof window !== "undefined" && typeof window.document !== "undefined";
+
+  if (isBrowser) {
+    polarDemLoadPromise = fetch("/data/lola_sp_80s_int16.bin")
+      .then((r) => (r.ok ? r.arrayBuffer() : null))
+      .then((buf) => {
+        if (!buf) return null;
+        const arr = new Int16Array(buf);
+        const sz = Math.round(Math.sqrt(arr.length));
+        registerPolarDemGrid(arr, sz, 0.5);
+        return polarDemGrid;
+      })
+      .catch(() => null)
+      .finally(() => {
+        polarDemLoadPromise = null;
+      });
+    return polarDemLoadPromise;
+  }
+
+  // Node.js environment fallback (e.g., node --test test runner)
+  polarDemLoadPromise = (async () => {
+    try {
+      const fs = await import("node:fs");
+      const path = await import("node:path");
+      const demFile = path.resolve("public/data/lola_sp_80s_int16.bin");
+      if (fs.existsSync(demFile)) {
+        const buf = fs.readFileSync(demFile);
+        const arr = new Int16Array(buf.buffer, buf.byteOffset, buf.length / 2);
+        const sz = Math.round(Math.sqrt(arr.length));
+        registerPolarDemGrid(arr, sz, 0.5);
+        return polarDemGrid;
+      }
+    } catch {}
+    return null;
+  })().finally(() => {
+    polarDemLoadPromise = null;
+  });
 
   return polarDemLoadPromise;
 }
 
-function sampleDemMeters(xMeters, yMeters) {
+export function sampleDemMeters(xMeters, yMeters) {
   if (!polarDemGrid || polarDemSize === 0) return null;
   const u = (xMeters + MAX_EXTENT_M) / (2 * MAX_EXTENT_M);
   const v = (MAX_EXTENT_M - yMeters) / (2 * MAX_EXTENT_M);
@@ -91,24 +123,33 @@ function sampleDemMeters(xMeters, yMeters) {
   const gy = v * (polarDemSize - 1);
   const x0 = Math.floor(gx);
   const y0 = Math.floor(gy);
-  const x1 = x0 < polarDemSize - 1 ? x0 + 1 : x0;
-  const y1 = y0 < polarDemSize - 1 ? y0 + 1 : y0;
+  const x1 = Math.min(x0 + 1, polarDemSize - 1);
+  const y1 = Math.min(y0 + 1, polarDemSize - 1);
   const fx = gx - x0;
   const fy = gy - y0;
 
   const row0 = y0 * polarDemSize;
   const row1 = y1 * polarDemSize;
-  const v00 = polarDemGrid[row0 + x0];
-  const v10 = polarDemGrid[row0 + x1];
-  const v01 = polarDemGrid[row1 + x0];
-  const v11 = polarDemGrid[row1 + x1];
+  const raw00 = polarDemGrid[row0 + x0];
+  const raw10 = polarDemGrid[row0 + x1];
+  const raw01 = polarDemGrid[row1 + x0];
+  const raw11 = polarDemGrid[row1 + x1];
+
+  if (raw00 === -32768 || raw10 === -32768 || raw01 === -32768 || raw11 === -32768) {
+    return null;
+  }
+
+  const v00 = raw00 * polarDemScale;
+  const v10 = raw10 * polarDemScale;
+  const v01 = raw01 * polarDemScale;
+  const v11 = raw11 * polarDemScale;
 
   const top = v00 + (v10 - v00) * fx;
   const bottom = v01 + (v11 - v01) * fx;
   return top + (bottom - top) * fy;
 }
 
-function latLonToStereoMeters(latDeg, lonDeg) {
+export function latLonToStereoMeters(latDeg, lonDeg) {
   const latRad = (Math.abs(latDeg) * Math.PI) / 180;
   const lonRad = (lonDeg * Math.PI) / 180;
   const k = 2 / (1 + Math.sin(latRad));
@@ -263,55 +304,98 @@ export function horizonOrFlat(table, siteId, azDeg, latDeg = null, lonDeg = null
   return horizonAt(table, siteId, azDeg, latDeg, lonDeg) ?? 0;
 }
 
-const SOUTH_POLE_REFERENCE_LANDMARKS = [
-  { id: "shackleton-crater", name: "Shackleton Crater", type: "Crater (21 km)", lat: -89.67, lon: 129.78, elevM: -2768 },
-  { id: "malapert-mountain", name: "Malapert Massif", type: "Polar Massif (5.1 km)", lat: -86.02, lon: 2.7, elevM: 5113 },
-  { id: "haworth-crater", name: "Haworth Crater", type: "PSR Basin (51 km)", lat: -87.4, lon: -5.1, elevM: -3385 },
-  { id: "shoemaker-crater", name: "Shoemaker Crater", type: "PSR Basin (51 km)", lat: -88.1, lon: 45.0, elevM: -3934 },
-  { id: "cabeus-crater", name: "Cabeus Crater (LCROSS)", type: "Volatile Basin (98 km)", lat: -84.9, lon: -35.5, elevM: -2870 },
-  { id: "amundsen-crater", name: "Amundsen Crater", type: "Impact Basin (103 km)", lat: -84.5, lon: 82.8, elevM: -3628 },
-  { id: "de-gerlache-crater", name: "De Gerlache Crater", type: "PSR Crater (32 km)", lat: -88.5, lon: -87.1, elevM: -1013 },
-  { id: "faustini-crater", name: "Faustini Crater", type: "PSR Crater (42 km)", lat: -87.3, lon: 77.0, elevM: -2750 },
-  { id: "nobile-rim", name: "Nobile Crater (VIPER)", type: "Polar Rim (73 km)", lat: -85.2, lon: 53.5, elevM: 690 },
-  { id: "malapert-a", name: "Malapert A (IM-1)", type: "CLPS Landing Zone", lat: -80.13, lon: 1.44, elevM: 2584 },
-  { id: "sverdrup-crater", name: "Sverdrup Crater", type: "Far-Side PSR (33 km)", lat: -88.3, lon: -152.0, elevM: -2899 },
-  { id: "slater-crater", name: "Slater Crater", type: "Polar Crater (25 km)", lat: -88.1, lon: 111.0, elevM: -1753 },
-];
+/**
+ * Computes surface roughness (RMS height dispersion) and local relief (max - min)
+ * across valid DEM pixel samples within a specified radius in meters.
+ *
+ * @param {number} cx - Center X in stereographic meters
+ * @param {number} cy - Center Y in stereographic meters
+ * @param {number} radiusM - Configurable sampling radius (default: 2000m)
+ * @returns {{ radiusM: number, sampleCount: number, reliefM: number, roughnessRmsM: number, minElevM: number, maxElevM: number, meanElevM: number }|null}
+ */
+export function computeRoughnessAndRelief(cx, cy, radiusM = 2000) {
+  if (!polarDemGrid || polarDemSize === 0) return null;
+  const d = (2 * MAX_EXTENT_M) / (polarDemSize - 1);
+  const safeRadius = Math.max(d * 1.2, Math.min(25000, Number(radiusM) || 2000));
+  // At 400m resolution, sample between 200m and d steps for good coverage
+  const step = Math.max(200, Math.min(d, Math.round(safeRadius / 6)));
+  const samples = [];
+  const rSq = safeRadius * safeRadius;
 
-function computeSelenographicDistanceAndBearing(lat1, lon1, lat2, lon2) {
-  const toRad = Math.PI / 180;
-  const phi1 = lat1 * toRad;
-  const phi2 = lat2 * toRad;
-  const dPhi = (lat2 - lat1) * toRad;
-  const dLam = (lon2 - lon1) * toRad;
+  for (let dx = -safeRadius; dx <= safeRadius; dx += step) {
+    for (let dy = -safeRadius; dy <= safeRadius; dy += step) {
+      if (dx * dx + dy * dy <= rSq) {
+        const z = sampleDemMeters(cx + dx, cy + dy);
+        if (z !== null && Number.isFinite(z)) {
+          samples.push(z);
+        }
+      }
+    }
+  }
 
-  const a =
-    Math.sin(dPhi / 2) * Math.sin(dPhi / 2) +
-    Math.cos(phi1) * Math.cos(phi2) * Math.sin(dLam / 2) * Math.sin(dLam / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(Math.max(0, 1 - a)));
-  const distanceKm = (MOON_RADIUS_M / 1000) * c;
+  // If sparse grid or few samples, fallback to 3x3 stencil
+  if (samples.length < 2) {
+    const stencil = [
+      sampleDemMeters(cx - d, cy + d),
+      sampleDemMeters(cx, cy + d),
+      sampleDemMeters(cx + d, cy + d),
+      sampleDemMeters(cx - d, cy),
+      sampleDemMeters(cx, cy),
+      sampleDemMeters(cx + d, cy),
+      sampleDemMeters(cx - d, cy - d),
+      sampleDemMeters(cx, cy - d),
+      sampleDemMeters(cx + d, cy - d),
+    ].filter((v) => v !== null && Number.isFinite(v));
+    if (stencil.length >= 2) {
+      samples.push(...stencil);
+    }
+  }
 
-  const y = Math.sin(dLam) * Math.cos(phi2);
-  const x =
-    Math.cos(phi1) * Math.sin(phi2) -
-    Math.sin(phi1) * Math.cos(phi2) * Math.cos(dLam);
-  const bearingDeg = ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
+  if (samples.length < 2) return null;
+
+  let min = Infinity;
+  let max = -Infinity;
+  let sum = 0;
+  for (let i = 0; i < samples.length; i++) {
+    const s = samples[i];
+    if (s < min) min = s;
+    if (s > max) max = s;
+    sum += s;
+  }
+  const mean = sum / samples.length;
+
+  let sumSq = 0;
+  for (let i = 0; i < samples.length; i++) {
+    const diff = samples[i] - mean;
+    sumSq += diff * diff;
+  }
+  const rms = Math.sqrt(sumSq / samples.length);
 
   return {
-    distanceKm: Math.round(distanceKm * 10) / 10,
-    bearingDeg: Math.round(bearingDeg),
+    radiusM: Math.round(safeRadius),
+    sampleCount: samples.length,
+    reliefM: Math.round((max - min) * 10) / 10,
+    roughnessRmsM: Math.round(Math.max(0.1, rms) * 10) / 10,
+    minElevM: Math.round(min),
+    maxElevM: Math.round(max),
+    meanElevM: Math.round(mean),
   };
 }
 
 /**
- * Samples a 21-point radial elevation cross-section (-10 km to +10 km) along local North-South
- * and West-East axes from the NASA LRO LOLA South Pole DEM.
+ * Samples a 13-point radial elevation cross-section (-10 km to +10 km) along local North-South
+ * and West-East axes from the actual NASA LRO LOLA South Pole DEM.
+ * If outside the South Pole DEM coverage, returns null.
  */
 export function sampleRadialElevationProfile(latDeg, lonDeg, baseElevationM = 0) {
   const safeLat = Number.isFinite(latDeg) ? latDeg : -85.0;
   const safeLon = Number.isFinite(lonDeg) ? lonDeg : 0.0;
+  if (safeLat > -80.0) {
+    return null;
+  }
+
   const steps = [-10, -8, -6, -4, -2, -1, 0, 1, 2, 4, 6, 8, 10];
-  const hasDem = safeLat <= -80.0 && polarDemGrid && polarDemSize > 0;
+  const hasDem = polarDemGrid && polarDemSize > 0;
   const origin = hasDem ? latLonToStereoMeters(safeLat, safeLon) : null;
   const lonRad = (safeLon * Math.PI) / 180;
   const northX = Math.sin(lonRad);
@@ -334,12 +418,10 @@ export function sampleRadialElevationProfile(latDeg, lonDeg, baseElevationM = 0)
         elevationWE: Math.round(zWE),
       };
     }
-    const waveNS = Math.sin(distKm * 0.45 + safeLat) * 120 + distKm * 14;
-    const waveWE = Math.cos(distKm * 0.38 + safeLon) * 95 - distKm * 9;
     return {
       distanceKm: distKm,
-      elevationNS: Math.round(baseElevationM + waveNS),
-      elevationWE: Math.round(baseElevationM + waveWE),
+      elevationNS: Math.round(baseElevationM),
+      elevationWE: Math.round(baseElevationM),
     };
   });
 
@@ -364,49 +446,42 @@ export function sampleRadialElevationProfile(latDeg, lonDeg, baseElevationM = 0)
     westEast,
     minElevM,
     maxElevM,
-    reliefM: Math.max(10, maxElevM - minElevM),
+    reliefM: Math.max(0, maxElevM - minElevM),
   };
 }
 
 /**
  * Computes comprehensive lunar surface terrain metrics (elevation, Horn 3x3 slope,
- * RMS surface roughness, crater density, terrain classification, radial profile,
+ * RMS surface roughness, local relief within radius, terrain classification, radial profile,
  * nearest landmark, DEM uncertainty, and engineering warnings)
- * from the NASA LRO LOLA South Pole DEM (when lat <= -80°S) or selenographic feature data.
+ * from the NASA LRO LOLA South Pole DEM (when lat <= -80°S) or selenographic catalog data.
+ *
+ * Never uses random numbers, artificial hashes, or fabricated values.
  */
-export function sampleLunarTerrainMetrics(latDeg, lonDeg, feature = null) {
+export function sampleLunarTerrainMetrics(latDeg, lonDeg, feature = null, options = {}) {
   const safeLat = Number.isFinite(latDeg) ? latDeg : -85.0;
   const safeLon = Number.isFinite(lonDeg) ? lonDeg : 0.0;
   const siteId = feature?.id || null;
   const resolvedProfile = siteId ? HORIZON_TABLE?.[resolveId(siteId)] : null;
+  const radiusM = options?.radiusM ?? options?.roughnessRadiusM ?? 2000;
 
-  let elevationM =
-    typeof feature?.elevationMeters === "number"
-      ? Math.round(feature.elevationMeters)
-      : typeof resolvedProfile?.elevation_m === "number"
-      ? Math.round(resolvedProfile.elevation_m)
-      : null;
-
-  let slopeDeg =
-    typeof feature?.slopeDeg === "number"
-      ? Math.round(feature.slopeDeg * 10) / 10
-      : null;
-  let roughnessM = null;
-  let dataSource = "Selenographic Topographic Model";
+  const inSouthPoleCap = safeLat <= -80.0;
   let isDirectDem = false;
+  let demElevationM = null;
+  let hornSlope = null;
+  let roughnessM = null;
+  let reliefM = null;
+  let roughnessDetails = null;
 
-  // Direct LOLA DEM 3x3 stencil sampling when inside 80°S–90°S
-  if (safeLat <= -80.0 && polarDemGrid && polarDemSize > 0) {
+  // Direct LOLA DEM 3x3 stencil sampling & radius roughness when inside 80°S–90°S
+  if (inSouthPoleCap && polarDemGrid && polarDemSize > 0) {
     const origin = latLonToStereoMeters(safeLat, safeLon);
     const centerZ = sampleDemMeters(origin.x, origin.y);
-    if (centerZ !== null) {
+    if (centerZ !== null && Number.isFinite(centerZ)) {
       isDirectDem = true;
-      if (elevationM === null) {
-        elevationM = Math.round(centerZ);
-      }
-      dataSource = "NASA LRO LOLA South Pole DEM (240 m/px)";
+      demElevationM = Math.round(centerZ);
 
-      // 3x3 Horn gradient stencil at step d = 240m
+      // 3x3 Horn gradient stencil at step d = cell spacing (~400m)
       const d = (2 * MAX_EXTENT_M) / (polarDemSize - 1);
       const zNW = sampleDemMeters(origin.x - d, origin.y + d) ?? centerZ;
       const zN = sampleDemMeters(origin.x, origin.y + d) ?? centerZ;
@@ -419,179 +494,212 @@ export function sampleLunarTerrainMetrics(latDeg, lonDeg, feature = null) {
 
       const dzdx = (zNE + 2 * zE + zSE - (zNW + 2 * zW + zSW)) / (8 * d);
       const dzdy = (zNW + 2 * zN + zNE - (zSW + 2 * zS + zSE)) / (8 * d);
-      const hornSlope = (Math.atan(Math.hypot(dzdx, dzdy)) * 180) / Math.PI;
-      if (slopeDeg === null) {
-        slopeDeg = Math.round(hornSlope * 10) / 10;
-      }
+      hornSlope = (Math.atan(Math.hypot(dzdx, dzdy)) * 180) / Math.PI;
 
-      // Local RMS vertical roughness across the 3x3 neighborhood
-      const samples = [zNW, zN, zNE, zW, centerZ, zE, zSW, zS, zSE];
-      const mean = samples.reduce((acc, v) => acc + v, 0) / samples.length;
-      const variance =
-        samples.reduce((acc, v) => acc + (v - mean) * (v - mean), 0) /
-        samples.length;
-      roughnessM = Math.round(Math.max(1.2, Math.sqrt(variance) * 0.35) * 10) / 10;
+      // Local RMS vertical roughness and relief within configurable radiusM
+      roughnessDetails = computeRoughnessAndRelief(origin.x, origin.y, radiusM);
+      if (roughnessDetails) {
+        roughnessM = roughnessDetails.roughnessRmsM;
+        reliefM = roughnessDetails.reliefM;
+      }
     }
-  } else if (safeLat <= -80.0) {
+  } else if (inSouthPoleCap) {
     ensurePolarDemLoaded();
   }
 
-  // Deterministic physical fallbacks when outside DEM or before DEM finishes loading
-  const coordHash =
-    Math.abs(Math.sin(safeLat * 12.9898 + safeLon * 78.233) * 43758.5453) % 1;
-
-  if (elevationM === null) {
-    const isMare =
-      Math.abs(safeLat) < 35 && Math.abs(safeLon) < 70 && safeLat > -20;
-    elevationM = isMare
-      ? Math.round(-1800 + (coordHash - 0.5) * 900)
-      : Math.round(450 + (coordHash - 0.45) * 3200);
+  // Elevation resolution:
+  // If custom dropped pin: ALWAYS use direct DEM sampling if available
+  // If catalog landing site with published elevation: preserve catalog value or DEM
+  let elevationM = null;
+  let elevationSource = null;
+  if (feature?.isCustomPin) {
+    if (demElevationM !== null) {
+      elevationM = demElevationM;
+      elevationSource = "NASA LRO LOLA South Pole DEM (400 m/px)";
+    } else if (Number.isFinite(feature?.elevationMeters)) {
+      elevationM = Math.round(feature.elevationMeters);
+      elevationSource = "Sampled LOLA Point";
+    }
+  } else if (Number.isFinite(feature?.elevationMeters)) {
+    elevationM = Math.round(feature.elevationMeters);
+    elevationSource = feature?.source || "NASA Landing Site Catalog";
+  } else if (demElevationM !== null) {
+    elevationM = demElevationM;
+    elevationSource = "NASA LRO LOLA South Pole DEM (400 m/px)";
+  } else if (Number.isFinite(resolvedProfile?.elevation_m)) {
+    elevationM = Math.round(resolvedProfile.elevation_m);
+    elevationSource = "NASA LOLA Precomputed Horizon Table";
   }
 
-  if (slopeDeg === null) {
-    const baseSlope = Math.abs(safeLat) > 75 ? 6.8 : 3.4;
-    slopeDeg = Math.round((baseSlope + coordHash * 11.5) * 10) / 10;
+  // Slope resolution:
+  let slopeDeg = null;
+  let slopeSource = null;
+  if (!feature?.isCustomPin && Number.isFinite(feature?.slopeDeg)) {
+    slopeDeg = Math.round(feature.slopeDeg * 10) / 10;
+    slopeSource = "Published Mission Specification";
+  } else if (hornSlope !== null) {
+    slopeDeg = Math.round(hornSlope * 10) / 10;
+    slopeSource = "LOLA Horn 3×3 Gradient (400 m stencil)";
+  } else if (Number.isFinite(feature?.slopeDeg)) {
+    slopeDeg = Math.round(feature.slopeDeg * 10) / 10;
+    slopeSource = "Published Mission Specification";
   }
 
-  if (roughnessM === null) {
-    roughnessM = Math.round((1.8 + slopeDeg * 0.65 + coordHash * 3.2) * 10) / 10;
+  // Preserve explicit roughnessM in test fixtures if DEM is not loaded
+  if (roughnessM === null && Number.isFinite(feature?.roughnessM)) {
+    roughnessM = Math.round(feature.roughnessM * 10) / 10;
   }
 
-  // Crater density (N(>20m) per 100 km^2) based on selenographic province & elevation
-  const isPolar = Math.abs(safeLat) >= 75;
-  const isMareProvince =
-    !isPolar && Math.abs(safeLat) < 40 && Math.abs(safeLon) < 75 && elevationM < -500;
-  const craterDensityPer100Km2 = Math.round(
-    (isMareProvince ? 16 : isPolar ? 38 : 32) + coordHash * 22
-  );
-  const craterDensityLabel =
-    craterDensityPer100Km2 >= 45
-      ? "High (Heavily Cratered)"
-      : craterDensityPer100Km2 >= 28
-      ? "Moderate (Highland Regolith)"
-      : "Low (Smooth Mare / Plain)";
+  // Selenographic geological region from verified boundaries
+  const geologicalRegion = determineLunarGeologicalRegion(safeLat, safeLon);
 
   // Terrain classification
   let terrainClassification = "Highland Regolith Plain";
-  if (slopeDeg >= 15) {
+  if (slopeDeg !== null && slopeDeg >= 15) {
     terrainClassification = "Steep Scarp / Crater Wall";
-  } else if (isPolar && elevationM >= 1500) {
+  } else if (inSouthPoleCap && elevationM !== null && elevationM >= 1500) {
     terrainClassification = "Polar Illuminated Massif / Ridge";
-  } else if (isPolar && elevationM <= -1800) {
+  } else if (inSouthPoleCap && elevationM !== null && elevationM <= -1800) {
     terrainClassification = "Cryogenic Crater Basin / Floor";
-  } else if (isPolar) {
+  } else if (inSouthPoleCap) {
     terrainClassification = "South Polar Highland Terrain";
-  } else if (isMareProvince) {
+  } else if (
+    geologicalRegion.province.includes("Mare") ||
+    geologicalRegion.province.includes("Oceanus") ||
+    geologicalRegion.terrane.includes("Mare")
+  ) {
     terrainClassification = "Mare Basalt Plain";
+  } else {
+    terrainClassification = geologicalRegion.province;
   }
 
-  // Nearest named landmark calculation
-  let nearestLandmark = null;
-  for (const lm of SOUTH_POLE_REFERENCE_LANDMARKS) {
-    const { distanceKm, bearingDeg } = computeSelenographicDistanceAndBearing(
-      safeLat,
-      safeLon,
-      lm.lat,
-      lm.lon
-    );
-    if (!nearestLandmark || distanceKm < nearestLandmark.distanceKm) {
-      nearestLandmark = {
-        ...lm,
-        distanceKm,
-        bearingDeg,
+  // Nearest named landmark calculation across entire Moon
+  const nearestLandmark = findNearestLunarLandmark(safeLat, safeLon);
+
+  // Radial elevation cross-section (-10 km to +10 km)
+  const radialProfile = inSouthPoleCap
+    ? sampleRadialElevationProfile(safeLat, safeLon, elevationM ?? 0)
+    : null;
+
+  // NASA DEM Uncertainty metadata (Smith et al. 2010, Mazarico et al. 2011)
+  const uncertainty = inSouthPoleCap
+    ? {
+        isAvailable: true,
+        dataset: "NASA PDS LRO-L-LOLA-4-GDR-V1.0",
+        verticalM: 1.0,
+        horizontalM: 20.0,
+        verticalAccuracy: "±1.0 m (absolute)",
+        relativePrecision: "±0.1–0.3 m (inter-track)",
+        horizontalAccuracy: "±20 m (orbital reconstruction)",
+        gridSpacingM: 400,
+        datum: "IAU Lunar Reference Sphere (R₀ = 1,737,400.0 m)",
+        confidenceLevel: isDirectDem
+          ? "HIGH · Direct LOLA GDR Polar Grid"
+          : "HIGH · South Pole Polar Cap",
+        provenanceType: isDirectDem ? "NASA_MEASURED" : "NASA_DERIVED",
+        coverageNote: "Full 400 m/px LOLA South Pole DEM coverage (80.0°S to 90.0°S).",
+      }
+    : {
+        isAvailable: false,
+        dataset: "Unmodeled (Outside LOLA South Pole DEM)",
+        verticalM: null,
+        horizontalM: null,
+        verticalAccuracy: "Data unavailable",
+        relativePrecision: "Data unavailable",
+        horizontalAccuracy: "Data unavailable",
+        gridSpacingM: null,
+        datum: "IAU Lunar Reference Sphere (R₀ = 1,737,400.0 m)",
+        confidenceLevel: "UNAVAILABLE · Outside 80°S–90°S Coverage",
+        provenanceType: "UNAVAILABLE",
+        coverageNote:
+          "Selected coordinate is north of 80°S polar DEM boundary. Global LOLA / SLDEM2015 is not loaded in local memory.",
       };
+
+  const isSlopeHazard = slopeDeg !== null ? slopeDeg >= 15.0 : false;
+  const warnings = [];
+
+  if (slopeDeg !== null) {
+    if (slopeDeg >= 15.0) {
+      warnings.push({
+        id: "slope-hazard",
+        severity: "critical",
+        title: `Slope Hazard (${slopeDeg.toFixed(1)}° ≥ 15° Limit)`,
+        detail:
+          "Local terrain gradient exceeds the 15° Artemis/CLPS lander tip-over safety threshold.",
+      });
+    } else if (slopeDeg >= 10.0) {
+      warnings.push({
+        id: "slope-caution",
+        severity: "warning",
+        title: `Moderate Slope (${slopeDeg.toFixed(1)}°)`,
+        detail:
+          "Approaching 15° lander tilt limit; precision terrain-relative navigation recommended.",
+      });
     }
   }
 
-  // Radial elevation cross-section (-10 km to +10 km)
-  const radialProfile = sampleRadialElevationProfile(safeLat, safeLon, elevationM);
-
-  // Explicit NASA DEM Uncertainty & Coverage Metadata
-  const inSouthPoleCap = safeLat <= -80.0;
-  const uncertainty = {
-    verticalM: inSouthPoleCap ? 1.0 : 15.0,
-    horizontalM: inSouthPoleCap ? 20.0 : 100.0,
-    verticalAccuracy: inSouthPoleCap ? "±1.0 m" : "±15 m",
-    horizontalAccuracy: inSouthPoleCap ? "±20 m" : "±100 m",
-    gridSpacingM: inSouthPoleCap ? 240 : 1000,
-    confidenceLevel: isDirectDem
-      ? "HIGH · Direct LOLA GDR Polar Grid"
-      : inSouthPoleCap
-      ? "HIGH · South Pole Polar Cap"
-      : "LIMITED · Outside 80°S–90°S Polar DEM",
-    provenanceType: isDirectDem
-      ? "NASA_MEASURED"
-      : inSouthPoleCap
-      ? "NASA_DERIVED"
-      : "ESTIMATED",
-    coverageNote: inSouthPoleCap
-      ? "Full 240 m/px LOLA DEM & 360° ray-marched horizon coverage."
-      : "Coordinate is north of 80°S polar binary boundary; sub-grid boulder hazards (>1 m) require LROC NAC inspection.",
-  };
-
-  const isSlopeHazard = slopeDeg >= 15.0;
-  const warnings = [];
-
-  if (slopeDeg >= 15.0) {
-    warnings.push({
-      id: "slope-hazard",
-      severity: "critical",
-      title: `Slope Hazard (${slopeDeg.toFixed(1)}° ≥ 15° Limit)`,
-      detail:
-        "Local terrain gradient exceeds the 15° Artemis/CLPS lander tip-over safety threshold.",
-    });
-  } else if (slopeDeg >= 10.0) {
-    warnings.push({
-      id: "slope-caution",
-      severity: "warning",
-      title: `Moderate Slope (${slopeDeg.toFixed(1)}°)`,
-      detail:
-        "Approaching 15° lander tilt limit; precision terrain-relative navigation recommended.",
-    });
-  }
-
-  if (roughnessM >= 15.0) {
+  if (roughnessM !== null && roughnessM >= 15.0) {
     warnings.push({
       id: "roughness-hazard",
       severity: "warning",
       title: `Elevated Surface Roughness (${roughnessM.toFixed(1)} m RMS)`,
-      detail:
-        "High local vertical relief dispersion indicates potential boulder fields or sub-grid scarps.",
+      detail: `High local vertical relief dispersion (${reliefM !== null ? `${reliefM.toLocaleString()} m relief` : ''}) within ${radiusM} m radius indicates boulder fields or scarps.`,
     });
   }
 
-  if (isPolar && elevationM <= -2000) {
+  if (inSouthPoleCap && elevationM !== null && elevationM <= -2000) {
     warnings.push({
       id: "basin-shadow-trap",
       severity: "warning",
-      title: `Deep Polar Depression (${elevationM} m)`,
+      title: `Deep Polar Depression (${elevationM.toLocaleString()} m)`,
       detail:
         "Low-elevation basin geometry increases horizon masking and cryogenic shadow trap risk.",
     });
   }
 
-  if (craterDensityPer100Km2 >= 48) {
-    warnings.push({
-      id: "crater-density",
-      severity: "warning",
-      title: `High Crater Density (${craterDensityPer100Km2} / 100 km²)`,
-      detail:
-        "Dense distribution of 20m+ impact craters requires terminal hazard avoidance lidar.",
-    });
-  }
+  // Stratigraphic crater density baseline by province (Neukum / Head crater chronology)
+  const craterDensityPer100Km2 =
+    terrainClassification === "Steep Scarp / Crater Wall"
+      ? 8
+      : inSouthPoleCap
+      ? 38
+      : geologicalRegion.province.includes("Mare")
+      ? 16
+      : 32;
+
+  const craterDensityLabel =
+    craterDensityPer100Km2 >= 35
+      ? "High (Heavily Cratered Polar Highlands)"
+      : craterDensityPer100Km2 >= 25
+      ? "Moderate (Highland Regolith)"
+      : craterDensityPer100Km2 >= 15
+      ? "Low (Smooth Mare Basalt Plain)"
+      : "Low (Active Scarp / Mass Wasting)";
 
   return {
     elevationM,
+    elevationSource,
     slopeDeg,
+    slopeSource,
     roughnessM,
+    roughnessDetails,
+    roughnessRadiusM: radiusM,
+    reliefM,
     craterDensityPer100Km2,
     craterDensityLabel,
+    geologicalRegion,
     terrainClassification,
     nearestLandmark,
     radialProfile,
     uncertainty,
     isSlopeHazard,
-    dataSource,
+    dataSource: isDirectDem
+      ? "NASA PDS LRO LOLA South Pole DEM (400 m/px)"
+      : inSouthPoleCap
+      ? "NASA LOLA Polar Coverage (80°S–90°S)"
+      : (elevationSource || "Data unavailable outside 80°S–90°S DEM"),
+    isDemAvailable: inSouthPoleCap && isDirectDem,
+    inSouthPoleCap,
     warnings,
   };
 }
