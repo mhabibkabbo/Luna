@@ -17,6 +17,7 @@ import {
   Ruler,
   Rocket,
   BarChart3,
+  Orbit,
 } from 'lucide-react';
 
 /**
@@ -32,6 +33,8 @@ export default function UnifiedToolbar({
   onOpenMissionExplorer,
   onOpenComparison,
   onOpenSlipSimulator,
+  onOpenTransferOrbit,
+  isTransferOrbitOpen = false,
   onOpenDte,
   isDteOpen = false,
   onOpenWeather,
@@ -224,6 +227,24 @@ export default function UnifiedToolbar({
         >
           <Sliders className="w-3.5 h-3.5" />
         </button>
+
+        {/* Earth-to-Moon Transfer Orbit Planner */}
+        {onOpenTransferOrbit && (
+          <button
+            id="btn-toolbar-transfer-orbit"
+            type="button"
+            onClick={onOpenTransferOrbit}
+            className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${
+              isTransferOrbitOpen
+                ? 'bg-[#A78BFA] text-[#060B13] font-bold shadow-[0_0_10px_rgba(167,139,250,0.4)]'
+                : 'text-[#A78BFA] hover:bg-[#A78BFA]/20 hover:text-white'
+            }`}
+            title="Earth-to-Moon Transfer Orbit Planner [O]"
+            aria-label="Open Earth-to-Moon Transfer Orbit Planner"
+          >
+            <Orbit className="w-3.5 h-3.5" />
+          </button>
+        )}
 
         {/* CLPS Mission Explorer */}
         {onOpenMissionExplorer && (
