@@ -4,16 +4,9 @@ import { ArrowUpRight } from 'lucide-react';
 import { CLPS_MISSIONS } from '../../data/clpsMissions.js';
 import { formatLunarCoordinates } from '../../utils/coordinates.js';
 
-// Reliable CDN mirrors for NASA LRO photographic color and LOLA topographic bump maps
+// Reliable CDN endpoint for NASA LRO photographic lunar texture
 const NASA_LUNAR_COLOR_URLS = [
-  'https://cdn.jsdelivr.net/npm/three-globe@2.31.0/example/img/lunar_surface.jpg',
-  'https://unpkg.com/three-globe@2.31.0/example/img/lunar_surface.jpg',
   'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/textures/planets/moon_1024.jpg',
-];
-
-const NASA_LUNAR_BUMP_URLS = [
-  'https://cdn.jsdelivr.net/npm/three-globe@2.31.0/example/img/lunar_bump.jpg',
-  'https://unpkg.com/three-globe@2.31.0/example/img/lunar_bump.jpg',
 ];
 
 /**
@@ -212,9 +205,9 @@ export default function RealisticMoon({
   onSelectMissionIndex,
 }) {
   const mountRef = useRef(null);
+  const pinDomRefs = useRef([]);
   const rotationTargetRef = useRef({ y: 0.35, x: 0.14, manualOverride: false });
   const [activePin, setActivePin] = useState(null);
-  const [pinScreenCoords, setPinScreenCoords] = useState([]);
 
   const verifiedPins = useMemo(() => HERO_ORBITAL_MISSIONS, []);
 
@@ -370,12 +363,8 @@ export default function RealisticMoon({
 
     tryLoadTexture(NASA_LUNAR_COLOR_URLS, (tex) => {
       moonMaterial.map = tex;
-      moonMaterial.needsUpdate = true;
-    });
-
-    tryLoadTexture(NASA_LUNAR_BUMP_URLS, (bumpTex) => {
-      moonMaterial.bumpMap = bumpTex;
-      moonMaterial.bumpScale = 0.042;
+      moonMaterial.bumpMap = tex;
+      moonMaterial.bumpScale = 0.038;
       moonMaterial.needsUpdate = true;
     });
 
@@ -593,12 +582,13 @@ export default function RealisticMoon({
         Math.sin(lroAngle) * lroRadiusX
       );
 
-      const screenCoords = [];
       const cameraDir = camera.getWorldDirection(new THREE.Vector3());
       const curW = container.clientWidth || width;
       const curH = container.clientHeight || height;
 
-      markerMeshes.forEach(({ pin, idx, dotMesh }) => {
+      markerMeshes.forEach(({ idx, dotMesh }) => {
+        const el = pinDomRefs.current[idx];
+        if (!el) return;
         dotMesh.getWorldPosition(tempV);
         const normal = tempV
           .clone()
@@ -609,17 +599,15 @@ export default function RealisticMoon({
         tempV.project(camera);
         const x = ((tempV.x + 1) * curW) / 2;
         const y = ((-tempV.y + 1) * curH) / 2;
+        const visible = isFacing && tempV.z < 1.0;
 
-        screenCoords.push({
-          pin,
-          idx,
-          x,
-          y,
-          visible: isFacing && tempV.z < 1.0,
-        });
+        el.style.display = visible ? 'block' : 'none';
+        if (visible) {
+          el.style.left = `${x}px`;
+          el.style.top = `${y}px`;
+        }
       });
 
-      setPinScreenCoords(screenCoords);
       renderer.render(scene, camera);
     };
 
@@ -685,15 +673,17 @@ export default function RealisticMoon({
 
       {/* Screen-Space Orbital Mission Nodes */}
       <div className="absolute inset-0 pointer-events-none overflow-visible z-20">
-        {pinScreenCoords.map(({ pin, idx, x, y, visible }) => {
-          if (!visible) return null;
+        {verifiedPins.map((pin, idx) => {
           const isSelected = idx === selectedMissionIndex;
           const isHovered = activePin?.id === pin.id || isSelected;
 
           return (
             <div
               key={pin.id}
-              style={{ left: `${x}px`, top: `${y}px` }}
+              ref={(el) => {
+                pinDomRefs.current[idx] = el;
+              }}
+              style={{ display: 'none', left: '50%', top: '50%' }}
               className="absolute -translate-x-1/2 -translate-y-1/2 pointer-events-auto cursor-pointer"
               onMouseEnter={() => setActivePin(pin)}
               onMouseLeave={() => setActivePin(null)}

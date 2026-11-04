@@ -63,13 +63,13 @@ export function createEarth(container, callbacks = {}) {
     },
   });
 
-  viewer.resolutionScale = Math.min(window.devicePixelRatio || 1.0, 2.0);
+  viewer.resolutionScale = Math.min(window.devicePixelRatio || 1.0, 1.25);
   viewer.useBrowserRecommendedResolution = false;
 
   const scene = viewer.scene;
   scene.backgroundColor = Cesium.Color.fromCssColorString('#060B13');
   scene.globe.depthTestAgainstTerrain = false;
-  scene.highDynamicRange = true;
+  scene.highDynamicRange = false;
   scene.globe.enableLighting = false;
   scene.globe.dynamicAtmosphereLighting = false;
   scene.light = new Cesium.SunLight();
@@ -119,7 +119,6 @@ export function createEarth(container, callbacks = {}) {
   cameraController.enableTilt = true;
   cameraController.enableLook = false;
   cameraController.enableCollisionDetection = false;
-  cameraController.rotateEventTypes = [];
 
   cameraController.inertiaSpin = isMobile
     ? EARTH_CAMERA_SETTINGS.mobileInertiaSpin

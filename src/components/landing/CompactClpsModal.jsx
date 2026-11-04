@@ -69,7 +69,7 @@ export default function CompactClpsModal({ isOpen, mission, onClose, onFlyTo, on
         return (
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-950/80 border border-rose-500/30 text-rose-400 text-xs font-mono">
             <AlertCircle className="w-3.5 h-3.5" />
-            <span>Suborbital / Terminated</span>
+            <span>Cislunar Anomaly / Re-entry</span>
           </span>
         );
       case 'planned':

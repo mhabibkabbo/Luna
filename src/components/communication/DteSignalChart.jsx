@@ -39,13 +39,12 @@ const formatUTC = (ms) => `${UTC_FORMAT.format(new Date(ms))} UTC`;
 function calculateSignalMetrics(evaluateResult, rangeKm) {
   const { status, elevationDeg, stationElevationDeg } = evaluateResult;
 
-  // Base parameters for X-Band 8.4 GHz Direct-To-Earth link
-  // Frequency f = 8.4 GHz, c = 3e5 km/s
-  // Free space path loss: FSPL = 20*log10(rangeKm) + 20*log10(8.4) + 92.45
-  const fspl = 20 * Math.log10(Math.max(350000, rangeKm)) + 20 * Math.log10(8.4) + 92.45; // ~216 to 218 dB
-  const txPowerDbm = 40; // 10W lunar lander transmitter (+40 dBm)
-  const txAntennaGainDbi = 18; // Medium-gain lunar steerable dish
-  const rxAntennaGainDbi = 58; // 34-meter DSN Deep Space antenna
+  // Base parameters for X-Band 8.4 GHz (8400 MHz) Direct-To-Earth link
+  // Free space path loss: FSPL(dB) = 20*log10(rangeKm) + 20*log10(f_MHz) + 32.45
+  const fspl = 20 * Math.log10(Math.max(350000, rangeKm)) + 20 * Math.log10(8400) + 32.45; // ~222.5 to 223.4 dB
+  const txPowerDbm = 40; // 10W lunar lander X-band SSPA transmitter (+40 dBm)
+  const txAntennaGainDbi = 24; // High-gain lunar steerable dish (0.5m X-band HGA)
+  const rxAntennaGainDbi = 68; // 34-meter DSN Beam Waveguide antenna at X-band (~68 dBi)
 
   // Elevation-dependent atmospheric & pointing loss on Earth
   const stEl = stationElevationDeg ?? 0;
@@ -131,8 +130,9 @@ export default function DteSignalChart({
   );
 
   const terrainFn = useMemo(
-    () => (azimuthDeg) => horizonAt(HORIZON_TABLE, moonPoint.id, azimuthDeg) ?? 0,
-    [moonPoint.id]
+    () => (azimuthDeg) =>
+      horizonAt(HORIZON_TABLE, moonPoint.id, azimuthDeg, moonPoint.latitude, moonPoint.longitude) ?? 0,
+    [moonPoint.id, moonPoint.latitude, moonPoint.longitude]
   );
 
   // Compute 30-day timeline series data (~180 sample points at 4-hour intervals)
@@ -447,25 +447,25 @@ export default function DteSignalChart({
   return (
     <div className="space-y-4 font-sans text-[#F4EFE6] select-none">
       {/* Top Station Selector & Metric Mode Controls */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-[#181711] border border-[#2D2A22]">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <Radio className="w-4 h-4 text-[#88B38A]" />
-            <span className="text-xs font-bold text-[#F4EFE6] font-mono uppercase tracking-wider">
-              30-Day Signal Strength &amp; Link Margin Trend (D3.js)
+      <div className="flex flex-col gap-2.5 p-3 rounded-xl bg-[#0A121E] border border-[#16283C]">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <Radio className="w-3.5 h-3.5 text-[#34D399] shrink-0" />
+            <span className="text-[11px] font-bold text-[#F8FAFC] font-mono uppercase tracking-wider truncate">
+              30-Day Signal &amp; Link Margin Trend
             </span>
           </div>
-          <p className="text-[10px] text-[#A8A193] font-mono">
-            Ground Facility: <strong className="text-[#F4EFE6]">{activeStation.name}</strong> ({activeStation.country})
-          </p>
+          <span className="text-[10px] text-[#94A3B8] font-mono truncate shrink-0">
+            {activeStation.country}
+          </span>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-col gap-2">
           {/* Earth Station Selector Dropdown */}
           <select
             value={selectedStationId}
             onChange={(e) => handleStationChange(e.target.value)}
-            className="h-8 px-3 bg-[#12110D] border border-[#2D2A22] rounded-xl text-xs font-mono text-white focus:outline-none focus:border-[#E59A6D] cursor-pointer"
+            className="w-full h-8 px-2.5 bg-[#060B13] border border-[#16283C] rounded-lg text-[11px] font-mono text-white focus:outline-none focus:border-[#00D2C4] cursor-pointer"
           >
             {EARTH_COMMUNICATION_SITES.map((st) => (
               <option key={st.id} value={st.id}>
@@ -475,13 +475,13 @@ export default function DteSignalChart({
           </select>
 
           {/* Metric Toggle Buttons */}
-          <div className="flex items-center gap-1 bg-[#060B13] p-1 rounded-xl border border-[#16283C]">
+          <div className="grid grid-cols-3 gap-1 bg-[#060B13] p-1 rounded-lg border border-[#16283C]">
             <button
               type="button"
               onClick={() => setMetricMode('signal')}
-              className={`px-2.5 py-1 rounded-lg text-xs font-mono transition-colors ${
+              className={`px-2 py-1 rounded text-[11px] font-mono transition-colors whitespace-nowrap ${
                 metricMode === 'signal'
-                  ? 'bg-[#00D2C4] text-[#060B13] font-bold shadow-[0_0_8px_rgba(0,210,196,0.3)]'
+                  ? 'bg-[#00D2C4] text-[#060B13] font-bold'
                   : 'text-[#94A3B8] hover:text-white'
               }`}
             >
@@ -490,9 +490,9 @@ export default function DteSignalChart({
             <button
               type="button"
               onClick={() => setMetricMode('margin')}
-              className={`px-2.5 py-1 rounded-lg text-xs font-mono transition-colors ${
+              className={`px-2 py-1 rounded text-[11px] font-mono transition-colors whitespace-nowrap ${
                 metricMode === 'margin'
-                  ? 'bg-[#00D2C4] text-[#060B13] font-bold shadow-[0_0_8px_rgba(0,210,196,0.3)]'
+                  ? 'bg-[#00D2C4] text-[#060B13] font-bold'
                   : 'text-[#94A3B8] hover:text-white'
               }`}
             >
@@ -501,9 +501,9 @@ export default function DteSignalChart({
             <button
               type="button"
               onClick={() => setMetricMode('elevation')}
-              className={`px-2.5 py-1 rounded-lg text-xs font-mono transition-colors ${
+              className={`px-2 py-1 rounded text-[11px] font-mono transition-colors whitespace-nowrap ${
                 metricMode === 'elevation'
-                  ? 'bg-[#00D2C4] text-[#060B13] font-bold shadow-[0_0_8px_rgba(0,210,196,0.3)]'
+                  ? 'bg-[#00D2C4] text-[#060B13] font-bold'
                   : 'text-[#94A3B8] hover:text-white'
               }`}
             >
@@ -516,8 +516,11 @@ export default function DteSignalChart({
       {/* 30-Day D3 Chart Canvas Container */}
       <div className="relative p-4 rounded-2xl bg-[#0A1220] border border-[#16283C]" ref={containerRef}>
         <div className="flex items-center justify-between pb-2">
-          <span className="text-[10px] font-mono text-[#94A3B8]">
-            X-Band 8.4 GHz Direct-To-Earth Signal Trend over 30 Days <span className="text-[#00D2C4] bg-[#00D2C4]/15 px-1.5 py-0.5 rounded border border-[#00D2C4]/30 ml-1 text-[9px]">Illustrative RF Link Model</span>
+          <span className="text-[10px] font-mono text-[#94A3B8] flex items-center flex-wrap gap-1.5">
+            <span>X-Band 8.4 GHz Direct-To-Earth Signal Trend over 30 Days</span>
+            <span className="inline-block whitespace-nowrap text-[#00D2C4] bg-[#00D2C4]/15 px-1.5 py-0.5 rounded border border-[#00D2C4]/30 text-[9px]">
+              Illustrative RF Link Model
+            </span>
           </span>
           <span className="text-[10px] font-mono text-[#88B38A] flex items-center gap-1">
             <TrendingUp className="w-3 h-3" />

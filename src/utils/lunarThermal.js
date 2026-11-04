@@ -151,10 +151,17 @@ export function getLunarTemperature(latDeg, lonDeg, date = new Date()) {
   const tempC = tempK - 273.15;
   const tempF = (tempC * 9) / 5 + 32;
 
+  const roundedTempK = Math.round(tempK);
+  const roundedTempC = Math.round(tempC);
+  const subsurfaceTempC = Math.round(isPSR ? -228 : -20 - Math.pow(Math.abs(latDeg) / 90, 1.5) * 145);
+
   return {
-    tempK: Math.round(tempK),
-    tempC: Math.round(tempC),
+    tempK: roundedTempK,
+    tempC: roundedTempC,
     tempF: Math.round(tempF),
+    surfaceTempK: roundedTempK,
+    surfaceTempC: roundedTempC,
+    subsurfaceTempC,
     isDaylight,
     solarElevationDeg: Math.round(solarElevationDeg * 10) / 10,
     isPSR,

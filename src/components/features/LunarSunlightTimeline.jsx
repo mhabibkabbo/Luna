@@ -3,7 +3,7 @@ import { Pause, Play, Radio, Sun, ZoomIn, ZoomOut } from 'lucide-react';
 import { celestialTimeStore, MAX_CELESTIAL_TIME_MS, MIN_CELESTIAL_TIME_MS } from '../../utils/celestialTime.js';
 import { sweepIllumination } from '../../utils/illumination.js';
 import { DEFAULT_DTE_CONSTRAINTS, sweepEarthLink } from '../../utils/earthLink.js';
-import { HORIZON_TABLE, horizonAt } from "../../utils/horizons.js";
+import { HORIZON_TABLE, horizonAt, ensurePolarDemLoaded } from "../../utils/horizons.js";
 import {
   COMMUNICATION_TIMELINE_COLORS,
   SUNLIGHT_TIMELINE_COLORS,
@@ -180,6 +180,8 @@ export default function LunarSunlightTimeline({ feature, earthFeature = null }) 
         stepMin: STEP_MIN,
         signal: request.signal,
       };
+      await ensurePolarDemLoaded().catch(() => {});
+
       const calculateSunlight = async () => {
         try {
           const result = await sweepIllumination({
@@ -187,7 +189,7 @@ export default function LunarSunlightTimeline({ feature, earthFeature = null }) 
             lat: latitude,
             lon: longitude,
             ...calculationOptions,
-            horizonFn: (az) => horizonAt(HORIZON_TABLE, siteId, az) ?? 0,
+            horizonFn: (az) => horizonAt(HORIZON_TABLE, siteId, az, latitude, longitude) ?? 0,
           });
           if (alive && id === sequence && result) setForecast(result);
         } catch (calculationError) {
@@ -198,13 +200,12 @@ export default function LunarSunlightTimeline({ feature, earthFeature = null }) 
         }
       };
       const calculateCommunication = async () => {
-        if (!earthFeature) return;
         try {
           const result = await sweepEarthLink({
             moonFeature: feature,
-            earthFeature,
+            earthFeature: earthFeature || null,
             constraints: DEFAULT_DTE_CONSTRAINTS,
-            terrainFn: (az) => horizonAt(HORIZON_TABLE, siteId, az),
+            terrainFn: (az) => horizonAt(HORIZON_TABLE, siteId, az, latitude, longitude) ?? 0,
             ...calculationOptions,
           });
           if (alive && id === sequence && result) {
@@ -403,21 +404,21 @@ export default function LunarSunlightTimeline({ feature, earthFeature = null }) 
     setZoomLevel(nextZoomLevel);
   };
 
+  const activeCommLabel = earthFeature?.name || 'Any NASA DSN Complex';
+
   return (
     <section
       id="lunar-sunlight-timeline"
-      className={`absolute bottom-0 left-0 right-0 z-40 border-t border-slate-700/80 bg-slate-950/95 px-2 pt-1.5 pb-1 shadow-[0_-8px_30px_rgba(0,0,0,0.45)] backdrop-blur-xl sm:px-4 ${
-        earthFeature ? 'h-[82px]' : 'h-[67px]'
-      }`}
-      aria-label={`${rangeDays.toFixed(rangeDays < 1 ? 2 : 1)}-day sunlight timeline for ${feature.name}`}
+      className="absolute bottom-0 left-0 right-0 z-40 border-t border-slate-700/80 bg-slate-950/95 px-2 pt-1.5 pb-1 shadow-[0_-8px_30px_rgba(0,0,0,0.45)] backdrop-blur-xl sm:px-4 h-[84px]"
+      aria-label={`${rangeDays.toFixed(rangeDays < 1 ? 2 : 1)}-day sunlight & DTE timeline for ${feature.name}`}
     >
       <div className="mb-1 flex items-center justify-between gap-2">
         <div className="flex min-w-0 items-center gap-2">
-          <Sun className="h-3 w-3 shrink-0 text-lime-400" />
-          <span className="truncate text-[9px] font-semibold uppercase tracking-wider text-slate-200 sm:text-[10px]">
+          <Sun className="h-3.5 w-3.5 shrink-0 text-lime-400" />
+          <span className="truncate text-[10px] font-semibold uppercase tracking-wider text-slate-200 sm:text-[11px]">
             {feature.name}
           </span>
-          <span className="hidden items-center gap-2 text-[9px] text-slate-400 sm:flex">
+          <span className="hidden items-center gap-2 text-[10px] text-slate-300 sm:flex">
             <span className="inline-flex items-center gap-1">
               <i className="h-2 w-2 rounded-sm bg-lime-500" /> Sunlit
             </span>
@@ -427,30 +428,23 @@ export default function LunarSunlightTimeline({ feature, earthFeature = null }) 
             <span className="inline-flex items-center gap-1">
               <i className="h-2 w-2 rounded-sm bg-slate-600" /> Night
             </span>
-            {earthFeature && (
-              <>
-                <span className="mx-0.5 h-2.5 border-l border-slate-700" />
-                <span className="inline-flex items-center gap-1 text-slate-300">
-                  <Radio className="h-3 w-3" /> LOS
-                </span>
-                <span className="inline-flex items-center gap-1">
-                  <i className="h-2 w-2 rounded-sm" style={{ backgroundColor: COMMUNICATION_TIMELINE_COLORS.clear }} /> Link
-                </span>
-                <span className="inline-flex items-center gap-1">
-                  <i className="h-2 w-2 rounded-sm" style={{ backgroundColor: COMMUNICATION_TIMELINE_COLORS.doubtful }} /> Marginal
-                </span>
-                <span className="inline-flex items-center gap-1">
-                  <i className="h-2 w-2 rounded-sm" style={{ backgroundColor: COMMUNICATION_TIMELINE_COLORS.away }} /> Facing away
-                </span>
-                <span className="inline-flex items-center gap-1">
-                  <i className="h-2 w-2 rounded-sm" style={{ backgroundColor: COMMUNICATION_TIMELINE_COLORS.blocked }} /> No link
-                </span>
-              </>
-            )}
+            <span className="mx-0.5 h-2.5 border-l border-slate-700" />
+            <span className="inline-flex items-center gap-1 text-slate-200">
+              <Radio className="h-3 w-3 text-emerald-400" /> {activeCommLabel}
+            </span>
+            <span className="inline-flex items-center gap-1">
+              <i className="h-2 w-2 rounded-sm" style={{ backgroundColor: COMMUNICATION_TIMELINE_COLORS.clear }} /> Link
+            </span>
+            <span className="inline-flex items-center gap-1">
+              <i className="h-2 w-2 rounded-sm" style={{ backgroundColor: COMMUNICATION_TIMELINE_COLORS.doubtful }} /> Marginal
+            </span>
+            <span className="inline-flex items-center gap-1">
+              <i className="h-2 w-2 rounded-sm" style={{ backgroundColor: COMMUNICATION_TIMELINE_COLORS.blocked }} /> Blocked
+            </span>
           </span>
         </div>
 
-        <div className="flex shrink-0 items-center gap-1.5 font-mono text-[8px] text-slate-300 sm:text-[9px]">
+        <div className="flex shrink-0 items-center gap-1.5 font-mono text-[10px] text-slate-200 sm:text-[11px]">
           {error ? (
             <span className="text-rose-300">Forecast unavailable</span>
           ) : forecast ? (
@@ -460,7 +454,7 @@ export default function LunarSunlightTimeline({ feature, earthFeature = null }) 
           ) : (
             <span>Calculating…</span>
           )}
-          {earthFeature && communicationError && (
+          {communicationError && (
             <span className="text-rose-300" title={communicationError.message}>
               LOS unavailable
             </span>
@@ -550,9 +544,7 @@ export default function LunarSunlightTimeline({ feature, earthFeature = null }) 
             );
           }
         }}
-        className={`relative flex w-full cursor-ew-resize touch-none flex-col rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-lime-400/80 ${
-          earthFeature ? 'gap-1' : ''
-        }`}
+        className="relative flex w-full cursor-ew-resize touch-none flex-col rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-lime-400/80 gap-1"
         style={{ touchAction: 'none' }}
       >
         <TimelineTrack
@@ -562,24 +554,22 @@ export default function LunarSunlightTimeline({ feature, earthFeature = null }) 
           transitions={sunlightTransitions}
           anchorMs={anchorMs}
           playheadRef={sunlightPlayheadRef}
-          earthFeatureName={earthFeature?.name}
+          earthFeatureName={activeCommLabel}
         />
-        {earthFeature && (
-          <TimelineTrack
-            kind="communication"
-            statuses={communicationForecast?.visibility}
-            colors={COMMUNICATION_TIMELINE_COLORS}
-            transitions={communicationTransitions}
-            anchorMs={anchorMs}
-            playheadRef={communicationPlayheadRef}
-            earthFeatureName={earthFeature.name}
-          />
-        )}
+        <TimelineTrack
+          kind="communication"
+          statuses={communicationForecast?.visibility}
+          colors={COMMUNICATION_TIMELINE_COLORS}
+          transitions={communicationTransitions}
+          anchorMs={anchorMs}
+          playheadRef={communicationPlayheadRef}
+          earthFeatureName={activeCommLabel}
+        />
       </div>
 
-      <div className="mt-1 flex items-center justify-between gap-2 font-mono text-[7px] text-slate-400 sm:text-[8px]">
+      <div className="mt-1 flex items-center justify-between gap-2 font-mono text-[10px] text-slate-300 sm:text-[11px]">
         <span className="truncate">{formatUTC(anchorMs)}</span>
-        <span className="max-w-[50%] truncate text-center text-slate-200">
+        <span className="max-w-[50%] truncate text-center text-white font-semibold">
           {formatUTC(currentMs)}
         </span>
         <span className="truncate text-right">{formatUTC(endMs)}</span>

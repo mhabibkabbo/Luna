@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Radio, Sun } from 'lucide-react';
 import { computeCelestialState, solarPosition } from '../../utils/lunarEphemeris.js';
 import { celestialTimeStore } from '../../utils/celestialTime.js';
-import { HORIZON_TABLE, horizonAt } from '../../utils/horizons.js';
+import { HORIZON_TABLE, horizonAt, ensurePolarDemLoaded } from '../../utils/horizons.js';
 import {
   DEFAULT_DTE_CONSTRAINTS,
   earthLookFromMoon,
@@ -20,7 +20,7 @@ import HorizonViewChart from './HorizonViewChart.jsx';
 
 const SUN_STATUS = {
   sunlit: { label: 'Sunlit', color: SUNLIGHT_TIMELINE_COLORS.sunlit },
-  blocked: { label: 'Blocked', color: SUNLIGHT_TIMELINE_COLORS.blocked },
+  blocked: { label: 'Terrain Masked', color: SUNLIGHT_TIMELINE_COLORS.blocked },
   night: { label: 'Night', color: SUNLIGHT_TIMELINE_COLORS.night },
 };
 
@@ -40,7 +40,16 @@ export default function HorizonViewCard({
 }) {
   const [timeMs, setTimeMs] = useState(() => celestialTimeStore.get().ms);
   const [trackStartMs, setTrackStartMs] = useState(() => celestialTimeStore.get().ms);
+  const [demLoadedTick, setDemLoadedTick] = useState(0);
   const constraints = DEFAULT_DTE_CONSTRAINTS;
+
+  useEffect(() => {
+    ensurePolarDemLoaded()
+      .then((grid) => {
+        if (grid) setDemLoadedTick((t) => t + 1);
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     setTrackStartMs(celestialTimeStore.get().ms);
@@ -55,8 +64,9 @@ export default function HorizonViewCard({
   );
 
   const terrainFn = useMemo(
-    () => (azimuthDeg) => horizonAt(HORIZON_TABLE, siteId, azimuthDeg),
-    [siteId]
+    () => (azimuthDeg) =>
+      horizonAt(HORIZON_TABLE, siteId, azimuthDeg, latitude, longitude),
+    [siteId, latitude, longitude, demLoadedTick]
   );
   const state = useMemo(() => computeCelestialState(timeMs), [timeMs]);
   const flatSun = useMemo(
@@ -83,14 +93,27 @@ export default function HorizonViewCard({
       }),
     [state, moonFeature, earthFeature, constraints, terrainFn]
   );
+
+  // Partial solar disc visibility fraction (0% to 100%)
+  const solarDiscPct = useMemo(() => {
+    const r = (state?.sun?.angularDiameterDeg || 0.533) / 2;
+    const upperLimb = flatSun.elevationDeg + r;
+    const lowerLimb = flatSun.elevationDeg - r;
+    if (upperLimb <= terrainHorizon) return 0;
+    if (lowerLimb >= terrainHorizon) return 100;
+    return Math.round(((upperLimb - terrainHorizon) / (2 * r)) * 100);
+  }, [flatSun.elevationDeg, terrainHorizon, state]);
+
   const currentSun = useMemo(
     () => ({
       azimuthDeg: sun.azimuthDeg,
       elevationDeg: sun.elevationDeg,
       radius: state.sun.angularDiameterDeg / 2,
       status: sun.status,
+      discPct: solarDiscPct,
+      terrainHorizonDeg: terrainHorizon,
     }),
-    [sun, state]
+    [sun, state, solarDiscPct, terrainHorizon]
   );
   const currentEarth = useMemo(
     () => ({
@@ -98,8 +121,9 @@ export default function HorizonViewCard({
       elevationDeg: earth.elevationDeg,
       radius: earth.radiusDeg,
       status: link.status,
+      terrainHorizonDeg: terrainFn(earth.azimuthDeg) ?? 0,
     }),
-    [earth, link]
+    [earth, link, terrainFn]
   );
 
   const solarTransition = useMemo(
@@ -125,15 +149,22 @@ export default function HorizonViewCard({
               <span className="font-semibold text-[#F8FAFC]">Sun Position</span>
             </span>
             <span style={{ color: sunStatusMeta.color }} className="font-mono font-bold">
-              {sunStatusMeta.label}
+              {solarDiscPct > 0 && solarDiscPct < 100
+                ? `${solarDiscPct}% Disc`
+                : sunStatusMeta.label}
             </span>
           </div>
-          <div className="mt-1 font-mono text-sm font-bold text-[#F8FAFC]">
-            {sun?.elevationDeg != null ? `${sun.elevationDeg.toFixed(1)}° el` : '—'}
+          <div className="mt-1 font-mono text-sm font-bold text-[#F8FAFC] flex items-baseline justify-between">
+            <span>{sun?.elevationDeg != null ? `${sun.elevationDeg.toFixed(1)}° el` : '—'}</span>
+            <span className="text-[10px] font-normal text-[#94A3B8]">
+              Az {sun?.azimuthDeg != null ? `${sun.azimuthDeg.toFixed(0)}°` : '—'}
+            </span>
           </div>
           <div className="text-[10px] font-mono text-[#94A3B8] truncate">
             {solarTransition.timeUntilMs === null
-              ? (solarTransition.isCurrentlySunlit ? 'Continuous Sunlight' : 'Continuous Shadow')
+              ? solarTransition.isCurrentlySunlit
+                ? 'Continuous Sunlight'
+                : 'Continuous Shadow'
               : `${solarTransition.nextEvent === 'sunset' ? 'Sunset' : 'Sunrise'} in ${solarTransition.formattedDuration}`}
           </div>
         </div>
@@ -151,12 +182,17 @@ export default function HorizonViewCard({
               {earthStatusMeta.label}
             </span>
           </div>
-          <div className="mt-1 font-mono text-sm font-bold text-[#F8FAFC]">
-            {earth?.elevationDeg != null ? `${earth.elevationDeg.toFixed(1)}° el` : '—'}
+          <div className="mt-1 font-mono text-sm font-bold text-[#F8FAFC] flex items-baseline justify-between">
+            <span>{earth?.elevationDeg != null ? `${earth.elevationDeg.toFixed(1)}° el` : '—'}</span>
+            <span className="text-[10px] font-normal text-[#94A3B8]">
+              Az {earth?.azimuthDeg != null ? `${earth.azimuthDeg.toFixed(0)}°` : '—'}
+            </span>
           </div>
           <div className="text-[10px] font-mono text-[#94A3B8] truncate">
             {earthTransition.timeUntilMs === null
-              ? (earthTransition.isAboveHorizon ? 'Continuous Visibility (35d+)' : 'No Earthrise (35d+)')
+              ? earthTransition.isAboveHorizon
+                ? 'Continuous Visibility (35d+)'
+                : 'No Earthrise (35d+)'
               : `${earthTransition.nextEvent === 'earthset' ? 'Set' : 'Rise'} in ${earthTransition.formattedDuration}`}
           </div>
         </div>

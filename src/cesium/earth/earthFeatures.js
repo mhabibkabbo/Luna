@@ -497,35 +497,18 @@ export function createEarthFeatures({ viewer, container, callbacks }) {
     }
 
     selectedEntity =
-      [...sitePinEntities, customPinEntity].find(
-        (entity) =>
-          entity?.properties?.feature?.getValue()?.id === featureId
-      ) || null;
+      [...sitePinEntities, ...launchSitePinEntities, customPinEntity]
+        .filter(Boolean)
+        .find(
+          (entity) =>
+            entity?.properties?.feature?.getValue()?.id === featureId
+        ) || null;
     updatePinStyle(selectedEntity);
     scene.requestRender();
   };
 
   handler.setInputAction((movement) => {
-    if (pointerIsDown) {
-      if (clickStartPosition) {
-        const downDeltaX = movement.endPosition.x - clickStartPosition.x;
-        const downDeltaY = movement.endPosition.y - clickStartPosition.y;
-        dragStarted ||=
-          Math.hypot(downDeltaX, downDeltaY) > EARTH_DRAG_THRESHOLD_PIXELS;
-      }
-
-      if (dragStarted && previousDragPosition) {
-        rotateSurfaceWithPointer(
-          previousDragPosition,
-          movement.endPosition
-        );
-      }
-      previousDragPosition = Cesium.Cartesian2.clone(
-        movement.endPosition,
-        previousDragPosition
-      );
-      return;
-    }
+    if (pointerIsDown) return;
 
     const now = performance.now();
 
@@ -540,7 +523,7 @@ export function createEarthFeatures({ viewer, container, callbacks }) {
       }
     }
 
-    if (now - lastHoverPickTime < 140) return;
+    if (now - lastHoverPickTime < 200) return;
     lastHoverPickTime = now;
     const pickedObject = scene.pick(movement.endPosition);
     const pickedEntity = pickedObject?.id;
@@ -560,10 +543,11 @@ export function createEarthFeatures({ viewer, container, callbacks }) {
         movement.endPosition.x,
         movement.endPosition.y
       );
-    } else {
+    } else if (hoveredEntity) {
       container.style.cursor = 'default';
-      updatePinStyle(hoveredEntity);
+      const previous = hoveredEntity;
       hoveredEntity = null;
+      updatePinStyle(previous);
       scene.requestRender();
       callbacks.onFeatureHover?.(null, 0, 0);
     }

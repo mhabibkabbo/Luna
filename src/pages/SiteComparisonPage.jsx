@@ -85,8 +85,10 @@ export default function SiteComparisonPage({
   onNavigate,
   onSelectSiteForView,
 }) {
-  const [activeTab, setActiveTab] = useState('sites'); // 'sites' | 'dates' | 'manifests'
+  const [activeTab, setActiveTab] = useState('sites'); // 'sites' | 'quad' | 'dates'
   const [copied, setCopied] = useState(false);
+  const [siteCId, setSiteCId] = useState(() => ALL_SITES[2]?.id || ALL_SITES[0]?.id);
+  const [siteDId, setSiteDId] = useState(() => ALL_SITES[3]?.id || ALL_SITES[1]?.id);
 
   // Helper to safely resolve candidate to a Moon landing site with valid coordinates
   const resolveSite = (candidate, fallbackIndex) => {
@@ -202,11 +204,22 @@ export default function SiteComparisonPage({
     }
   };
 
+  const currentSiteC = useMemo(
+    () => ALL_SITES.find((s) => s.id === siteCId) || ALL_SITES[2] || ALL_SITES[0],
+    [siteCId]
+  );
+  const currentSiteD = useMemo(
+    () => ALL_SITES.find((s) => s.id === siteDId) || ALL_SITES[3] || ALL_SITES[1],
+    [siteDId]
+  );
+
   const evalA = useMemo(() => evaluateCandidate(currentSiteA, timeA), [currentSiteA, timeA]);
   const evalB = useMemo(
     () => evaluateCandidate(activeTab === 'dates' ? currentSiteA : currentSiteB, timeB),
     [activeTab, currentSiteA, currentSiteB, timeB]
   );
+  const evalC = useMemo(() => evaluateCandidate(currentSiteC, timeA), [currentSiteC, timeA]);
+  const evalD = useMemo(() => evaluateCandidate(currentSiteD, timeA), [currentSiteD, timeA]);
 
   // Automated scientific trade-off verdict
   const verdict = useMemo(() => {
@@ -311,6 +324,17 @@ ${verdict?.rationale || ''}
           >
             <Compass className="w-3.5 h-3.5" />
             Compare 2 Landing Sites
+          </button>
+          <button
+            onClick={() => setActiveTab('quad')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-2 ${
+              activeTab === 'quad'
+                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800'
+            }`}
+          >
+            <Layers className="w-3.5 h-3.5" />
+            Compare 4 Candidate Sites
           </button>
           <button
             onClick={() => {
@@ -642,6 +666,123 @@ ${verdict?.rationale || ''}
           </div>
         </div>
       </div>
+
+      {/* 4-Site Multi-Candidate Trade Matrix (Section 9) */}
+      {activeTab === 'quad' && (
+        <div className="p-6 rounded-2xl bg-[#0c1017] border border-slate-800 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
+            <div>
+              <h3 className="text-base font-bold text-white">
+                4-Candidate Side-by-Side Comparison Matrix
+              </h3>
+              <p className="text-xs text-slate-400">
+                Simultaneous evaluation of Sites A, B, C, and D across topography, illumination, Earth visibility, and suitability.
+              </p>
+            </div>
+            <div className="flex items-center gap-2 text-xs font-mono">
+              <span className="text-slate-400">Site C:</span>
+              <select
+                value={siteCId}
+                onChange={(e) => setSiteCId(e.target.value)}
+                className="px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-white"
+              >
+                {ALL_SITES.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+              <span className="text-slate-400 ml-2">Site D:</span>
+              <select
+                value={siteDId}
+                onChange={(e) => setSiteDId(e.target.value)}
+                className="px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-white"
+              >
+                {ALL_SITES.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse font-mono text-xs">
+              <thead>
+                <tr className="border-b border-slate-800 text-slate-400">
+                  <th className="py-2.5 px-3">Parameter</th>
+                  {[
+                    { label: 'Site A', ev: evalA },
+                    { label: 'Site B', ev: evalB },
+                    { label: 'Site C', ev: evalC },
+                    { label: 'Site D', ev: evalD },
+                  ].map((col) => (
+                    <th key={col.label} className="py-2.5 px-3 text-white font-bold">
+                      {col.label}: {col.ev?.site?.name}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800/60 text-slate-200">
+                <tr>
+                  <td className="py-2.5 px-3 text-slate-400">Coordinates</td>
+                  {[evalA, evalB, evalC, evalD].map((ev, idx) => (
+                    <td key={idx} className="py-2.5 px-3">
+                      {fmtNum(ev?.site?.latitude, 2)}°, {fmtNum(ev?.site?.longitude, 2)}°
+                    </td>
+                  ))}
+                </tr>
+                <tr>
+                  <td className="py-2.5 px-3 text-slate-400">Solar Elevation / Clearance</td>
+                  {[evalA, evalB, evalC, evalD].map((ev, idx) => (
+                    <td key={idx} className="py-2.5 px-3 text-amber-300">
+                      {fmtNum(ev?.sun?.elevationDeg, 2)}° (Clr {fmtNum(ev?.clearance, 2)}°)
+                    </td>
+                  ))}
+                </tr>
+                <tr>
+                  <td className="py-2.5 px-3 text-slate-400">Solar Power Potential</td>
+                  {[evalA, evalB, evalC, evalD].map((ev, idx) => (
+                    <td key={idx} className="py-2.5 px-3 font-bold">
+                      {ev?.powerPotential ?? 0}% ({ev?.isSunlit ? 'Sunlit' : 'Shadowed'})
+                    </td>
+                  ))}
+                </tr>
+                <tr>
+                  <td className="py-2.5 px-3 text-slate-400">Earth Visibility (DTE)</td>
+                  {[evalA, evalB, evalC, evalD].map((ev, idx) => (
+                    <td
+                      key={idx}
+                      className={`py-2.5 px-3 font-bold uppercase ${
+                        ev?.dte?.status === 'clear' ? 'text-emerald-400' : 'text-rose-400'
+                      }`}
+                    >
+                      {ev?.dte?.status ?? 'N/A'} ({fmtNum(ev?.dte?.elevationDeg, 1)}° el)
+                    </td>
+                  ))}
+                </tr>
+                <tr>
+                  <td className="py-2.5 px-3 text-slate-400">Diviner Surface Temp</td>
+                  {[evalA, evalB, evalC, evalD].map((ev, idx) => (
+                    <td key={idx} className="py-2.5 px-3">
+                      {fmtNum(ev?.thermal?.surfaceTempC, 0)}°C
+                    </td>
+                  ))}
+                </tr>
+                <tr>
+                  <td className="py-2.5 px-3 text-slate-400">Suitability Classification</td>
+                  {[evalA, evalB, evalC, evalD].map((ev, idx) => (
+                    <td key={idx} className="py-2.5 px-3 font-bold text-cyan-300">
+                      {ev?.score ?? 50}/100 ({ev?.score >= 75 ? 'Favorable' : ev?.score >= 50 ? 'Conditional' : 'Challenging'})
+                    </td>
+                  ))}
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

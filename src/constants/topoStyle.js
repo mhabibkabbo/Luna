@@ -125,6 +125,9 @@ export const TOPO_STYLE = Object.freeze({
   },
 });
 
+export const ELEVATION_RAMP = TOPO_STYLE.svs5127.stops;
+
+
 /**
  * Helper to select the appropriate contour interval for a given zoom level.
  */

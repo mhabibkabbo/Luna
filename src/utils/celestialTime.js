@@ -26,5 +26,9 @@ export const celestialTimeStore = {
     return ms;
   },
 
+  setMs(when, source = 'ephemeris') {
+    return this.setTime(when, source);
+  },
+
   subscribe: store.subscribe,
 };

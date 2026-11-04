@@ -58,14 +58,9 @@ czm_material czm_getMaterial(czm_materialInput materialInput)
   return material;
 }`;
 
-// Same package and version the app already pulls its textures from.
 const EARTH_TEXTURE_URLS = [
   // Local asset (served by Vite from public/ at /assets/...)
   "/assets/earth-blue-marble.jpg",
-
-  // CDN fallbacks
-  "https://cdn.jsdelivr.net/npm/three-globe@2.31.0/example/img/earth-blue-marble.jpg",
-  "https://unpkg.com/three-globe@2.31.0/example/img/earth-blue-marble.jpg",
 ];
 
 
