@@ -1,6 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Pause, Play, Radio, Sun, ZoomIn, ZoomOut } from 'lucide-react';
-import { celestialTimeStore, MAX_CELESTIAL_TIME_MS, MIN_CELESTIAL_TIME_MS } from '../../utils/celestialTime.js';
+import {
+  CELESTIAL_MINUTE_MS,
+  celestialTimeStore,
+  MAX_CELESTIAL_TIME_MS,
+  MIN_CELESTIAL_TIME_MS,
+  normalizeCelestialTimeMs,
+} from '../../utils/celestialTime.js';
 import { sweepIllumination } from '../../utils/illumination.js';
 import { DEFAULT_DTE_CONSTRAINTS, sweepEarthLink } from '../../utils/earthLink.js';
 import { HORIZON_TABLE, horizonAt, ensurePolarDemLoaded } from "../../utils/horizons.js";
@@ -143,7 +149,6 @@ export default function LunarSunlightTimeline({ feature, earthFeature = null }) 
   const dragging = useRef(false);
   const pointerFrame = useRef(0);
   const pendingPointerFraction = useRef(null);
-  const lastDragPublishAt = useRef(0);
   const sunlightPlayheadRef = useRef(null);
   const communicationPlayheadRef = useRef(null);
   const currentTimeRef = useRef(currentMs);
@@ -262,6 +267,7 @@ export default function LunarSunlightTimeline({ feature, earthFeature = null }) 
     if (!playing) return undefined;
     let frame = 0;
     let previous = null;
+    let remainderMs = 0;
     const tick = (now) => {
       if (previous === null) {
         previous = now;
@@ -270,11 +276,18 @@ export default function LunarSunlightTimeline({ feature, earthFeature = null }) 
       }
       const elapsed = Math.max(0, Math.min(0.1, (now - previous) / 1000));
       previous = now;
-      const nextMs = Math.min(
-        endMs,
-        currentTimeRef.current + elapsed * DAY_MS
-      );
-      celestialTimeStore.setTime(nextMs, 'timeline');
+      remainderMs += elapsed * DAY_MS;
+      const minuteSteps = Math.floor(remainderMs / CELESTIAL_MINUTE_MS);
+      let nextMs = currentTimeRef.current;
+      if (minuteSteps > 0) {
+        remainderMs %= CELESTIAL_MINUTE_MS;
+        nextMs = Math.min(
+          endMs,
+          currentTimeRef.current + minuteSteps * CELESTIAL_MINUTE_MS
+        );
+        currentTimeRef.current = normalizeCelestialTimeMs(nextMs);
+        celestialTimeStore.setTime(currentTimeRef.current, 'timeline');
+      }
       if (nextMs >= endMs) {
         setPlaying(false);
         return;
@@ -287,9 +300,11 @@ export default function LunarSunlightTimeline({ feature, earthFeature = null }) 
 
   const timeAtFraction = (fraction) => {
     const boundedFraction = Math.max(0, Math.min(1, fraction));
-    return Math.max(
-      MIN_CELESTIAL_TIME_MS,
-      Math.min(endMs, anchorMs + boundedFraction * durationMs)
+    return normalizeCelestialTimeMs(
+      Math.max(
+        MIN_CELESTIAL_TIME_MS,
+        Math.min(endMs, anchorMs + boundedFraction * durationMs)
+      )
     );
   };
 
@@ -318,16 +333,11 @@ export default function LunarSunlightTimeline({ feature, earthFeature = null }) 
 
   const updateDragTime = (fraction) => {
     const timeMs = timeAtFraction(fraction);
+    if (timeMs === currentTimeRef.current) return;
     currentTimeRef.current = timeMs;
     updatePlayhead(timeMs);
     celestialTimeStore.setTime(timeMs, 'timeline-drag');
-
-    // Keep the text readout responsive without rendering the panel every frame.
-    const now = performance.now();
-    if (now - lastDragPublishAt.current >= 100) {
-      lastDragPublishAt.current = now;
-      setCurrentMs(timeMs);
-    }
+    setCurrentMs(timeMs);
   };
 
   const handlePointer = (event) => {
@@ -356,7 +366,6 @@ export default function LunarSunlightTimeline({ feature, earthFeature = null }) 
     }
     pendingPointerFraction.current = null;
     dragging.current = false;
-    lastDragPublishAt.current = 0;
     setTimeAtFraction(fraction, 'timeline-final');
   };
 
@@ -505,7 +514,6 @@ export default function LunarSunlightTimeline({ feature, earthFeature = null }) 
         onPointerDown={(event) => {
           dragging.current = true;
           setPlaying(false);
-          lastDragPublishAt.current = performance.now();
           celestialTimeStore.setTime(currentTimeRef.current, 'timeline-drag');
           event.currentTarget.setPointerCapture(event.pointerId);
           handlePointer(event);
@@ -569,8 +577,8 @@ export default function LunarSunlightTimeline({ feature, earthFeature = null }) 
 
       <div className="mt-1 flex items-center justify-between gap-2 font-mono text-[10px] text-slate-300 sm:text-[11px]">
         <span className="truncate">{formatUTC(anchorMs)}</span>
-        <span className="max-w-[50%] truncate text-center text-white font-semibold">
-          {formatUTC(currentMs)}
+        <span className="max-w-[65%] truncate text-center text-[11px] font-bold text-white sm:text-xs">
+          Current Viewport Time: {formatUTC(currentMs)}
         </span>
         <span className="truncate text-right">{formatUTC(endMs)}</span>
       </div>

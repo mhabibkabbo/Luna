@@ -17,6 +17,7 @@
  */
 
 import * as Cesium from 'cesium';
+import { normalizeCelestialTimeMs } from '../../utils/celestialTime.js';
 import { computeCelestialState, MOON_RADIUS_KM } from '../../utils/lunarEphemeris.js';
 import { formatLunarCoordinates } from '../../utils/coordinates.js';
 
@@ -354,7 +355,8 @@ export function createCelestialOverlay(viewer, options = {}) {
   function setTime(when) {
     if (destroyed || scene.isDestroyed?.() || viewer.isDestroyed?.()) return null;
 
-    const date = when instanceof Date ? when : new Date(when);
+    const inputDate = when instanceof Date ? when : new Date(when);
+    const date = new Date(normalizeCelestialTimeMs(inputDate));
     const julianDate = Cesium.JulianDate.fromDate(date);
 
     // Synchronize Cesium's internal clock so Cesium time stays synchronized

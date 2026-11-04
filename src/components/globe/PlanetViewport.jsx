@@ -19,6 +19,7 @@ const PlanetViewport = forwardRef(function PlanetViewport(
     activePlanet = 'moon',
     onPlanetChange,
     isVisible = true,
+    layers = [],
   },
   ref
 ) {
@@ -32,6 +33,18 @@ const PlanetViewport = forwardRef(function PlanetViewport(
   const [loadingStage, setLoadingStage] = useState('Initializing 3D Planetary Studio...');
   const [pendingTiles, setPendingTiles] = useState(0);
   const [hoveredInfo, setHoveredInfo] = useState(null);
+
+  const syncPlanetLayerVisibility = (planetId) => {
+    const manager = planetManagerRef.current;
+    if (!manager) return;
+    const layerPrefix = planetId === 'earth' ? 'earth-' : 'lunar-';
+    const controller = manager.planet(planetId);
+    for (const layer of layers) {
+      if (layer.id.startsWith(layerPrefix)) {
+        controller.setLayerVisibility(layer.id, layer.visible);
+      }
+    }
+  };
 
   useEffect(() => {
     // Generous fallback safety timeout in case offline or network stall
@@ -65,6 +78,7 @@ const PlanetViewport = forwardRef(function PlanetViewport(
     requestAnimationFrame(() => {
       try {
         manager.switchTo(targetPlanet);
+        syncPlanetLayerVisibility(targetPlanet);
         const activeCtrl = manager.active;
         const readyPromise = activeCtrl?.waitUntilReady?.() || Promise.resolve();
         readyPromise.finally(() => {
@@ -142,12 +156,19 @@ const PlanetViewport = forwardRef(function PlanetViewport(
 
     planetManagerRef.current = planetManager;
     setCurrentPlanet(planetManager.activeId);
+    syncPlanetLayerVisibility(planetManager.activeId);
 
     return () => {
       planetManager.destroy();
       planetManagerRef.current = null;
     };
   }, []);
+
+  useEffect(() => {
+    if (planetManagerRef.current?.activeId === currentPlanet) {
+      syncPlanetLayerVisibility(currentPlanet);
+    }
+  }, [currentPlanet, layers]);
 
   useImperativeHandle(ref, () => ({
     getViewer: () => planetManagerRef.current?.planet('moon').getViewer(),
@@ -199,8 +220,18 @@ const PlanetViewport = forwardRef(function PlanetViewport(
       return planetManagerRef.current?.active.toggleAutoRotate() ?? false;
     },
 
-    toggleLighting: () => {
-      return planetManagerRef.current?.active.toggleLighting() ?? false;
+    toggleLighting: (planetId) => {
+      const controller = planetId
+        ? planetManagerRef.current?.planet(planetId)
+        : planetManagerRef.current?.active;
+      return controller?.toggleLighting() ?? false;
+    },
+
+    setLightingEnabled: (enabled, planetId) => {
+      const controller = planetId
+        ? planetManagerRef.current?.planet(planetId)
+        : planetManagerRef.current?.active;
+      return controller?.setLightingEnabled(enabled) ?? false;
     },
 
     selectFeature: (featureId) => {

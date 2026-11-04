@@ -55,6 +55,10 @@ export function withDefaults(controller) {
       typeof controller.toggleLighting === 'function'
         ? controller.toggleLighting
         : () => false,
+    setLightingEnabled:
+      typeof controller.setLightingEnabled === 'function'
+        ? controller.setLightingEnabled
+        : () => false,
     toggleAutoRotate:
       typeof controller.toggleAutoRotate === 'function'
         ? controller.toggleAutoRotate

@@ -4,7 +4,10 @@
  */
 
 import * as Cesium from 'cesium';
-import { createEarthGlobe } from './earthGlobe.js';
+import {
+  configureEarthImageryLayer,
+  createEarthGlobe,
+} from './earthGlobe.js';
 import { createEarthFeatures } from './earthFeatures.js';
 import { celestialTimeStore } from '../../utils/celestialTime.js';
 
@@ -70,8 +73,8 @@ export function createEarth(container, callbacks = {}) {
   scene.backgroundColor = Cesium.Color.fromCssColorString('#060B13');
   scene.globe.depthTestAgainstTerrain = false;
   scene.highDynamicRange = false;
-  scene.globe.enableLighting = false;
-  scene.globe.dynamicAtmosphereLighting = false;
+  scene.globe.enableLighting = true;
+  scene.globe.dynamicAtmosphereLighting = true;
   scene.light = new Cesium.SunLight();
 
   viewer.clock.shouldAnimate = false;
@@ -79,14 +82,15 @@ export function createEarth(container, callbacks = {}) {
     new Date(celestialTimeStore.get().ms)
   );
 
-  let lightingEnabled = false;
-  const toggleLighting = () => {
-    lightingEnabled = !lightingEnabled;
+  let lightingEnabled = true;
+  const setLightingEnabled = (enabled) => {
+    lightingEnabled = Boolean(enabled);
     scene.globe.enableLighting = lightingEnabled;
     scene.globe.dynamicAtmosphereLighting = lightingEnabled;
     scene.requestRender();
     return lightingEnabled;
   };
+  const toggleLighting = () => setLightingEnabled(!lightingEnabled);
 
   let isAutoRotating = false;
   let removeRotationListener = null;
@@ -162,7 +166,9 @@ export function createEarth(container, callbacks = {}) {
         { enablePickFeatures: false }
       );
       if (isDestroyed || viewer.isDestroyed()) return;
-      tiledImageryLayer = new Cesium.ImageryLayer(arcGisProvider);
+      tiledImageryLayer = configureEarthImageryLayer(
+        new Cesium.ImageryLayer(arcGisProvider)
+      );
       scene.globe.imageryLayers.add(tiledImageryLayer);
       scene.requestRender();
     } catch {
@@ -174,7 +180,9 @@ export function createEarth(container, callbacks = {}) {
           credit: 'Esri, Maxar, Earthstar Geographics, USDA, USGS, AeroGRID, IGN, and the GIS User Community',
         });
         if (isDestroyed || viewer.isDestroyed()) return;
-        tiledImageryLayer = new Cesium.ImageryLayer(urlProvider);
+        tiledImageryLayer = configureEarthImageryLayer(
+          new Cesium.ImageryLayer(urlProvider)
+        );
         scene.globe.imageryLayers.add(tiledImageryLayer);
         scene.requestRender();
       } catch (e) {
@@ -457,6 +465,7 @@ export function createEarth(container, callbacks = {}) {
     setCommunicationLink,
     setLayerVisibility: features.setLayerVisibility,
     toggleLighting,
+    setLightingEnabled,
     toggleAutoRotate,
     getLightingEnabled: () => lightingEnabled,
     setActive(active) {

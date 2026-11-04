@@ -2,6 +2,7 @@ import React from 'react';
 import {
   Home,
   Layers,
+  Lightbulb,
   Moon,
   Globe2,
   Hand,
@@ -317,8 +318,10 @@ export default function UnifiedToolbar({
             isSolarLighting ? 'bg-[#00D2C4] text-[#060B13]' : 'text-[#94A3B8] hover:text-white hover:bg-[#152336]'
           }`}
           title="Toggle Solar Terminator Shading"
+          aria-label="Toggle solar shading"
+          aria-pressed={isSolarLighting}
         >
-          <Moon className="w-3.5 h-3.5" />
+          <Lightbulb className="w-3.5 h-3.5" />
         </button>
 
         {/* User Guide & Help */}

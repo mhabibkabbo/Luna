@@ -115,23 +115,21 @@ export default function CommunicationPage({
 
   const adjustTime = (hours) => {
     const nextMs = simulationTime + hours * 3600000;
-    celestialTimeStore.setMs(nextMs);
-    setSimulationTime(nextMs);
+    setSimulationTime(celestialTimeStore.setMs(nextMs));
   };
 
   const setExactDate = (dateString) => {
     const d = new Date(dateString);
     if (!isNaN(d.getTime())) {
-      celestialTimeStore.setMs(d.getTime());
-      setSimulationTime(d.getTime());
-      notifyInfo(`Analysis date set to ${d.toUTCString().slice(0, 16)}`);
+      const minuteMs = celestialTimeStore.setMs(d.getTime());
+      setSimulationTime(minuteMs);
+      notifyInfo(`Analysis date set to ${new Date(minuteMs).toUTCString().slice(0, 16)}`);
     }
   };
 
   const resetToLive = () => {
     const now = Date.now();
-    celestialTimeStore.setMs(now);
-    setSimulationTime(now);
+    setSimulationTime(celestialTimeStore.setMs(now));
     notifyInfo('Clock synchronized with Live UTC');
   };
 

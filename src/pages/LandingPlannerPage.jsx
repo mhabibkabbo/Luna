@@ -42,12 +42,15 @@ import {
   DEFAULT_PLANNER_CONSTRAINTS,
 } from '../utils/plannerEngine.js';
 import { ensurePolarDemLoaded } from '../utils/horizons.js';
-import { celestialTimeStore } from '../utils/celestialTime.js';
+import {
+  celestialTimeStore,
+  normalizeCelestialTimeMs,
+} from '../utils/celestialTime.js';
 import { notifySuccess, notifyInfo, notifyNavigation } from '../utils/feedbackStore.js';
 
 // Preset flight windows
 const LUNATION_PRESETS = [
-  { label: 'Now (Live UTC)', getMs: () => Date.now() },
+  { label: 'Now (Live UTC)', getMs: () => normalizeCelestialTimeMs(Date.now()) },
   { label: 'Artemis III Target (Sep 20, 2026)', getMs: () => Date.parse('2026-09-20T12:00:00Z') },
   { label: 'South Pole Summer (Dec 21, 2026)', getMs: () => Date.parse('2026-12-21T12:00:00Z') },
   { label: 'South Pole Winter (Jun 21, 2026)', getMs: () => Date.parse('2026-06-21T12:00:00Z') },
@@ -61,7 +64,9 @@ export default function LandingPlannerPage({
   onFlyToSite,
 }) {
   // 1. Mission Window Parameters
-  const [landingMs, setLandingMs] = useState(() => Date.parse('2026-09-20T12:00:00Z') || Date.now());
+  const [landingMs, setLandingMs] = useState(() =>
+    normalizeCelestialTimeMs(Date.parse('2026-09-20T12:00:00Z') || Date.now())
+  );
   const [selectedRegion, setSelectedRegion] = useState('all'); // 'all' | 'south-pole' | 'equatorial-mare' | 'farside'
   const [durationDays, setDurationDays] = useState(14); // 3, 7, 14, 28, 90
 
@@ -94,15 +99,13 @@ export default function LandingPlannerPage({
     const val = e.target.value;
     const ms = Date.parse(`${val}:00Z`);
     if (!Number.isNaN(ms)) {
-      setLandingMs(ms);
-      celestialTimeStore.setMs(ms);
+      setLandingMs(celestialTimeStore.setMs(ms));
     }
   };
 
   const applyPreset = (preset) => {
     const nextMs = preset.getMs(landingMs);
-    setLandingMs(nextMs);
-    celestialTimeStore.setMs(nextMs);
+    setLandingMs(celestialTimeStore.setMs(nextMs));
     notifyInfo(`Applied mission epoch: ${preset.label}`);
   };
 

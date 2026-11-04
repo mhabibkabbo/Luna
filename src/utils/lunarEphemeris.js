@@ -17,6 +17,7 @@
  */
 
 import * as Astronomy from 'astronomy-engine';
+import { normalizeCelestialTimeMs } from './celestialTime.js';
 
 export const MOON_RADIUS_KM = 1737.4;
 export const EARTH_MEAN_RADIUS_KM = 6371.0;
@@ -139,10 +140,11 @@ const toLatLon = (v) => ({
  *  Longitudes are east-positive, in degrees (-180..180); latitudes north-positive.
  */
 export function computeCelestialState(when) {
-  const date = when instanceof Date ? when : new Date(when);
-  if (Number.isNaN(date.getTime())) {
+  const inputDate = when instanceof Date ? when : new Date(when);
+  if (Number.isNaN(inputDate.getTime())) {
     throw new RangeError('computeCelestialState: invalid date');
   }
+  const date = new Date(normalizeCelestialTimeMs(inputDate));
 
   const time = Astronomy.MakeTime(date);
 

@@ -13,6 +13,7 @@
  */
 
 import { computeCelestialState } from './lunarEphemeris.js';
+import { normalizeCelestialTimeMs } from './celestialTime.js';
 
 export const THERMAL_CONSTANTS = Object.freeze({
   T_MAX_K: 390, // Subsolar maximum temperature (~ +117°C)
@@ -100,7 +101,11 @@ export function getSubsolarPoint(date) {
  */
 export function getLunarTemperature(latDeg, lonDeg, date = new Date()) {
   const targetDate = date instanceof Date ? date : new Date(date);
-  const validDate = isNaN(targetDate.getTime()) ? new Date() : targetDate;
+  const validDate = new Date(
+    normalizeCelestialTimeMs(
+      isNaN(targetDate.getTime()) ? new Date() : targetDate
+    )
+  );
 
   // 1. Subsolar Point Calculation (δ_sun, λ_sun)
   const subsolar = getSubsolarPoint(validDate);
@@ -171,4 +176,3 @@ export function getLunarTemperature(latDeg, lonDeg, date = new Date()) {
     },
   };
 }
-

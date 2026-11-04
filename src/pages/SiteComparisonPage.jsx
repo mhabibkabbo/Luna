@@ -41,7 +41,10 @@ import {
 } from '../utils/transitionTimes.js';
 import { horizonAt, HORIZON_TABLE, getHorizonProfile } from '../utils/horizons.js';
 import { getLunarTemperature } from '../utils/lunarThermal.js';
-import { celestialTimeStore } from '../utils/celestialTime.js';
+import {
+  celestialTimeStore,
+  normalizeCelestialTimeMs,
+} from '../utils/celestialTime.js';
 import { notifySuccess, notifyInfo } from '../utils/feedbackStore.js';
 
 // Safe number formatter that never throws on undefined/null/NaN
@@ -69,7 +72,7 @@ const ALL_SITES = LANDING_SITES.map((s) => ({
 
 // Quick presets
 const PRESETS = [
-  { label: 'Now (Live)', getMs: () => Date.now() },
+  { label: 'Now (Live)', getMs: () => normalizeCelestialTimeMs(Date.now()) },
   { label: 'Artemis III Target (Sep 2026)', getMs: () => new Date('2026-09-15T12:00:00Z').getTime() },
   { label: 'South Pole Summer (Dec Solstice)', getMs: () => new Date('2026-12-21T00:00:00Z').getTime() },
   { label: 'South Pole Winter (Jun Solstice)', getMs: () => new Date('2026-06-21T00:00:00Z').getTime() },
@@ -125,12 +128,13 @@ export default function SiteComparisonPage({
 
   // Sync dates when locked
   const handleTimeAChange = (newMs) => {
-    setTimeA(newMs);
-    if (datesLocked) setTimeB(newMs);
+    const minuteMs = normalizeCelestialTimeMs(newMs);
+    setTimeA(minuteMs);
+    if (datesLocked) setTimeB(minuteMs);
   };
 
   const applyPreset = (preset) => {
-    const nextMs = preset.getMs(timeA);
+    const nextMs = normalizeCelestialTimeMs(preset.getMs(timeA));
     setTimeA(nextMs);
     if (datesLocked || activeTab === 'sites') {
       setTimeB(nextMs);
@@ -569,7 +573,9 @@ ${verdict?.rationale || ''}
               <span className="text-white font-bold">{new Date(timeB).toUTCString()}</span>
               {activeTab === 'dates' && (
                 <button
-                  onClick={() => setTimeB(timeB + 14 * 86400000)}
+                  onClick={() =>
+                    setTimeB(normalizeCelestialTimeMs(timeB + 14 * 86400000))
+                  }
                   className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-[10px] text-purple-300"
                 >
                   +14d

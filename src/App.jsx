@@ -196,7 +196,11 @@ export default function App() {
   // Distance measurement tool state (2D mode)
   const [isMeasureActive, setIsMeasureActive] = useState(false);
   const [isAutoRotating, setIsAutoRotating] = useState(false);
-  const [isSolarLighting, setIsSolarLighting] = useState(false);
+  const [solarLightingByPlanet, setSolarLightingByPlanet] = useState({
+    moon: true,
+    earth: true,
+  });
+  const isSolarLighting = solarLightingByPlanet[activePlanet] ?? true;
   const [isVectorsVisible, setIsVectorsVisible] = useState(false); // Vector arrows from Earth & Sun default OFF
   const [measurement, setMeasurement] = useState({
     coordinates: [],
@@ -211,14 +215,6 @@ export default function App() {
     if (viewMode === '3d') return globeRef.current;
     return southPoleMapRef.current;
   };
-
-  useEffect(() => {
-    if (viewMode !== '3d') return;
-    const lightingEnabled = globeRef.current?.getLightingEnabled?.();
-    if (lightingEnabled !== undefined) {
-      setIsSolarLighting(lightingEnabled);
-    }
-  }, [activePlanet, viewMode]);
 
   // Separate custom user-dropped pin states for Moon and Earth
   const [customMoonPin, setCustomMoonPin] = useState(null);
@@ -562,8 +558,11 @@ export default function App() {
 
   const handleToggleLighting = () => {
     if (globeRef.current) {
-      const state = globeRef.current.toggleLighting();
-      setIsSolarLighting(state);
+      const state = globeRef.current.toggleLighting(activePlanet);
+      setSolarLightingByPlanet((previous) => ({
+        ...previous,
+        [activePlanet]: state,
+      }));
       notifyInfo(
         state ? 'Solar Terminator Shading' : 'Even Terrain Lighting',
         state
@@ -918,9 +917,9 @@ export default function App() {
         if (activePlanet !== 'moon') handlePlanetChange('moon');
         if (viewMode !== '3d') setViewMode('3d');
         handleFeatureSelect(malapert);
-        if (!isSolarLighting) {
-          globeRef.current?.toggleLighting?.(true);
-          setIsSolarLighting(true);
+        if (!solarLightingByPlanet.moon) {
+          globeRef.current?.setLightingEnabled?.(true, 'moon');
+          setSolarLightingByPlanet((previous) => ({ ...previous, moon: true }));
         }
         setTimeout(() => {
           getActiveController()?.flyTo(
@@ -1000,7 +999,14 @@ export default function App() {
         );
       }
     },
-    [activePlanet, viewMode, isSolarLighting, handlePlanetChange, handleFeatureSelect]
+    [
+      activePlanet,
+      viewMode,
+      isSolarLighting,
+      solarLightingByPlanet,
+      handlePlanetChange,
+      handleFeatureSelect,
+    ]
   );
 
   const handleStartTour = useCallback(() => {
@@ -1297,6 +1303,7 @@ export default function App() {
               onDropCustomPin={handleDropCustomPin}
               hasCustomPin={activePlanet === 'earth' ? !!customEarthPin : !!customMoonPin}
               onClearCustomPin={handleClearCustomPin}
+              layers={layers}
               activePlanet={activePlanet}
               onPlanetChange={handlePlanetChange}
               isVisible={currentView === 'explorer' && viewMode === '3d'}
@@ -1488,4 +1495,3 @@ export default function App() {
     </div>
   );
 }
-
