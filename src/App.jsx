@@ -15,6 +15,7 @@ import UnifiedToolbar from './components/navigation/UnifiedToolbar.jsx';
 import MissionExplorerModal from './components/missions/MissionExplorerModal.jsx';
 import MissionComparisonModal from './components/missions/MissionComparisonModal.jsx';
 import SlipSimulatorModal from './components/missions/SlipSimulatorModal.jsx';
+import TransferOrbitModal from './components/trajectory/TransferOrbitModal.jsx';
 import DteCalculationModal from './components/communication/DteCalculationModal.jsx';
 import SiteAnalysisModal from './components/analysis/SiteAnalysisModal.jsx';
 import LunarWeatherModal from './components/status/LunarWeatherModal.jsx';
@@ -191,6 +192,7 @@ export default function App() {
   const [isSiteAnalysisOpen, setIsSiteAnalysisOpen] = useState(false);
   const [isWeatherOpen, setIsWeatherOpen] = useState(false);
   const [isSlipSimulatorOpen, setIsSlipSimulatorOpen] = useState(false);
+  const [isTransferOrbitOpen, setIsTransferOrbitOpen] = useState(false);
   const [isInsightsOpen, setIsInsightsOpen] = useState(false);
 
   // Distance measurement tool state (2D mode)
@@ -336,6 +338,8 @@ export default function App() {
           setIsWeatherOpen(false);
         } else if (isSlipSimulatorOpen) {
           setIsSlipSimulatorOpen(false);
+        } else if (isTransferOrbitOpen) {
+          setIsTransferOrbitOpen(false);
         } else if (isMissionExplorerOpen) {
           setIsMissionExplorerOpen(false);
         } else if (isCelestialOpen) {
@@ -381,6 +385,8 @@ export default function App() {
         setIsComparisonOpen((prev) => !prev);
       } else if (e.key === 'm' || e.key === 'M') {
         handleToggleMeasure();
+      } else if (e.key === 'o' || e.key === 'O') {
+        setIsTransferOrbitOpen((prev) => !prev);
       } else if (e.key === '?' || (e.key === 'h' && !e.ctrlKey && !e.metaKey && !e.altKey)) {
         e.preventDefault();
         setIsGuideOpen((prev) => !prev);
@@ -401,6 +407,7 @@ export default function App() {
     isSiteAnalysisOpen,
     isWeatherOpen,
     isSlipSimulatorOpen,
+    isTransferOrbitOpen,
     selectedFeature,
     isMeasureActive,
   ]);
@@ -1247,6 +1254,8 @@ export default function App() {
           onSelectEarthSite={handleSelectEarthSite}
           onOpenMissionExplorer={() => setIsMissionExplorerOpen(true)}
           onOpenSlipSimulator={() => setIsSlipSimulatorOpen(true)}
+          onOpenTransferOrbit={() => setIsTransferOrbitOpen(true)}
+          isTransferOrbitOpen={isTransferOrbitOpen}
           onOpenComparison={() => handleOpenComparison(null)}
           onOpenDte={() => setIsDteOpen(true)}
           isDteOpen={isDteOpen}
@@ -1472,6 +1481,27 @@ export default function App() {
             if (viewMode !== '2d' && viewMode !== 'sp-2d') {
               getActiveController()?.flyTo(site.longitude, site.latitude, 4.5);
             }
+          }}
+        />
+
+        {/* 5. Earth-to-Moon Transfer Orbit Planner Modal */}
+        <TransferOrbitModal
+          isOpen={isTransferOrbitOpen}
+          onClose={() => setIsTransferOrbitOpen(false)}
+          initialLaunchSiteId={selectedCommunicationEarthFeature?.id || selectedEarthFeature?.id}
+          initialMoonSiteId={selectedMoonFeature?.id || selectedFeature?.id}
+          onNavigateToEarthPad={(site) => {
+            if (viewMode !== '3d') setViewMode('3d');
+            if (activePlanet !== 'earth') handlePlanetChange('earth');
+            getActiveController()?.flyTo(site.longitude, site.latitude, 1_500_000);
+            notifyNavigation?.(site.name, 'Navigated to Earth departure launch facility.');
+          }}
+          onNavigateToMoonTarget={(site) => {
+            if (viewMode !== '3d') setViewMode('3d');
+            if (activePlanet !== 'moon') handlePlanetChange('moon');
+            handleFeatureSelect(site);
+            getActiveController()?.flyTo(site.longitude, site.latitude, 4.5);
+            notifyNavigation?.(site.name, 'Navigated to Lunar target landing site.');
           }}
         />
       </main>

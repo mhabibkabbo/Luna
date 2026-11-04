@@ -236,6 +236,13 @@ export default function UserGuideModal({ isOpen, onClose, onStartTour }) {
 
               <div className="p-2 rounded-lg bg-slate-900/50 border border-slate-800/70 text-center">
                 <kbd className="inline-block px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-cyan-300 font-mono font-bold mb-1">
+                  O
+                </kbd>
+                <div className="text-slate-400 text-[10px]">Transfer Orbit</div>
+              </div>
+
+              <div className="p-2 rounded-lg bg-slate-900/50 border border-slate-800/70 text-center">
+                <kbd className="inline-block px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-cyan-300 font-mono font-bold mb-1">
                   ? / H
                 </kbd>
                 <div className="text-slate-400 text-[10px]">Open Guide</div>
