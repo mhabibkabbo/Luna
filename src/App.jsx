@@ -24,6 +24,9 @@ import UserGuideModal from './components/common/UserGuideModal.jsx';
 import GuidedMissionTour from './components/workflow/GuidedMissionTour.jsx';
 import TransparentLunarSearch from './components/search/TransparentLunarSearch.jsx';
 import ToastFeedback from './components/common/ToastFeedback.jsx';
+import GuideOverlay from './guide/GuideOverlay.jsx';
+import WhatsNewToast from './guide/WhatsNewToast.jsx';
+import { guideStore, showFirstVisitPrompt, isFirstVisit, getNewStepsForView, replayGuide } from './guide/guideStore.js';
 
 // Lazy-load dedicated lunar mission workspaces for maximum performance and code splitting
 const MissionControlPage = React.lazy(() => import('./pages/MissionControlPage.jsx'));
@@ -94,6 +97,31 @@ export default function App() {
   const [isGuideOpen, setIsGuideOpen] = useState(false);
   const [isTourActive, setIsTourActive] = useState(false);
   const [tourStep, setTourStep] = useState(0);
+  const [isGuideActive, setIsGuideActive] = useState(() => guideStore.get().isActive || guideStore.get().isPromptOpen);
+  const [newGuideSteps, setNewGuideSteps] = useState([]);
+
+  // Subscribe to guide store updates
+  useEffect(() => {
+    return guideStore.subscribe((state) => {
+      setIsGuideActive(state.isActive || state.isPromptOpen);
+    });
+  }, []);
+
+  // Check for first-visit guide and what's-new toast when explorer mounts
+  useEffect(() => {
+    if (currentView !== 'explorer' || isTourActive) return;
+    const timer = setTimeout(() => {
+      if (isFirstVisit('explorer')) {
+        showFirstVisitPrompt('explorer');
+      } else {
+        const unvisited = getNewStepsForView('explorer');
+        if (unvisited.length > 0) {
+          setNewGuideSteps(unvisited);
+        }
+      }
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [currentView, isTourActive]);
 
   // Listen to hash changes (for browser back/forward buttons and direct bookmark navigation)
   useEffect(() => {
@@ -437,6 +465,7 @@ export default function App() {
   }, [
     viewMode,
     isTourActive,
+    isGuideActive,
     isGuideOpen,
     isComparisonOpen,
     isMissionExplorerOpen,
@@ -1118,6 +1147,7 @@ export default function App() {
       <div className="fixed top-3 left-3 sm:top-4 sm:left-4 z-40 pointer-events-auto select-none flex items-center gap-2">
         <select
           aria-label="Mission Workspace Switcher"
+          data-guide="workspace-switcher"
           value={currentView}
           onChange={(e) => {
             const val = e.target.value;
@@ -1527,6 +1557,41 @@ export default function App() {
         isOpen={isGuideOpen}
         onClose={() => setIsGuideOpen(false)}
         onStartTour={handleStartTour}
+        onReplayGuide={() => replayGuide(currentView)}
+      />
+
+      {/* Spotlight Coachmark Guide Overlay */}
+      <GuideOverlay
+        context={{
+          hasSelection: Boolean(selectedFeature),
+          selectTargetFeature: (siteId) => {
+            const targetSite =
+              LANDING_SITES.find((s) => s.id === siteId) ||
+              LANDING_SITES.find((s) => s.id.includes('malapert')) ||
+              LANDING_SITES[0];
+            if (targetSite) {
+              handleFeatureSelect(targetSite);
+            }
+          },
+          view: currentView,
+        }}
+        isTourActive={isTourActive}
+        isOtherModalOpen={
+          isGuideOpen ||
+          isComparisonOpen ||
+          isMissionExplorerOpen ||
+          isDteOpen ||
+          isSiteAnalysisOpen ||
+          isWeatherOpen ||
+          isSlipSimulatorOpen
+        }
+      />
+
+      {/* What's New Toast */}
+      <WhatsNewToast
+        view={currentView}
+        newSteps={newGuideSteps}
+        onDismiss={() => setNewGuideSteps([])}
       />
 
       {/* 60-Second Interactive Guided Onboarding Tour */}

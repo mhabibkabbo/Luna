@@ -239,6 +239,7 @@ export default function TransparentLunarSearch({
     <div
       ref={containerRef}
       id="transparent-lunar-search"
+      data-guide="search"
       className={`z-40 pointer-events-auto select-none transition-all duration-300 ${
         className || 'fixed top-3 left-[206px] sm:top-4 sm:left-[220px]'
       }`}

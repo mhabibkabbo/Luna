@@ -554,6 +554,7 @@ export default function FeaturePanel({
   return (
     <aside
       aria-label="Lunar Site Information Panel"
+      data-guide="feature-panel"
       className={`fixed z-50 right-3 sm:right-4 top-3 sm:top-4 ${
         timelineVisible ? 'bottom-[96px]' : 'bottom-3 sm:bottom-4'
       } ${

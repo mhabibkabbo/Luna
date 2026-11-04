@@ -18,7 +18,7 @@ import {
  * User Guide & Navigation Modal.
  * Provides clear instructions on controls, landing site analysis, and keyboard shortcuts.
  */
-export default function UserGuideModal({ isOpen, onClose, onStartTour }) {
+export default function UserGuideModal({ isOpen, onClose, onStartTour, onReplayGuide }) {
   if (!isOpen) return null;
 
   return (
@@ -254,6 +254,20 @@ export default function UserGuideModal({ isOpen, onClose, onStartTour }) {
         {/* Footer */}
         <div className="px-6 py-3 border-t border-slate-800/80 bg-slate-950/60 flex items-center justify-between text-[11px] text-slate-400">
           <span>Powered by NASA Moon Trek WMTS & LROC Planetary Datasets</span>
+          <div className="flex items-center gap-2">
+            {onReplayGuide && (
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onReplayGuide();
+                }}
+                className="px-3 py-1.5 rounded-lg bg-slate-900 border border-cyan-500/40 hover:bg-cyan-950/60 text-cyan-300 font-semibold transition-colors text-xs flex items-center gap-1.5"
+              >
+                <Compass className="w-3.5 h-3.5 text-cyan-400" />
+                Replay Guide
+              </button>
+            )}
           <button
             type="button"
             onClick={onClose}
@@ -261,6 +275,7 @@ export default function UserGuideModal({ isOpen, onClose, onStartTour }) {
           >
             Got it
           </button>
+          </div>
         </div>
       </div>
     </div>
