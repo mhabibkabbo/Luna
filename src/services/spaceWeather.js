@@ -25,15 +25,16 @@ export const CACHE_TTL_MS = 5 * 60 * 1000;
  * or NOAA rate limiting.
  */
 export const FALLBACK_SPACE_WEATHER = Object.freeze({
-  density: 5.4, // protons/cm³
-  speed: 420.0, // km/s
-  temperature: 120000, // Kelvin
-  bz: -0.6, // nT (IMF Bz component)
-  bt: 5.2, // nT (IMF total field)
-  speedStatus: 'Moderate',
+  density: null,
+  speed: null,
+  temperature: null,
+  bz: null,
+  bt: null,
+  speedStatus: 'Live telemetry unavailable',
   timestamp: new Date().toISOString(),
-  source: 'NOAA SWPC Baseline Model (Fallback)',
+  source: 'NOAA SWPC Live Feed Unavailable (Offline / CORS)',
   isFallback: true,
+  isUnavailable: true,
 });
 
 /**
@@ -210,34 +211,51 @@ export async function fetchSpaceWeather(forceRefresh = false) {
     };
   }
 
-  // Deterministic time-synchronized NOAA SWPC DSCOVR/ACE L1 solar wind telemetry
-  // (avoids browser CORS blocks from services.swpc.noaa.gov in sandboxed iframe environments)
-  const phase = (now / 3600000) * 0.45;
-  const speed = Number((420.0 + Math.sin(phase) * 32.5).toFixed(1));
-  const density = Number((5.4 + Math.cos(phase * 1.3) * 1.4).toFixed(2));
-  const temperature = Math.round(120000 + Math.sin(phase * 0.8) * 18000);
-  const bz = Number((-0.6 + Math.sin(phase * 1.7) * 2.1).toFixed(2));
-  const bt = Number(Math.max(Math.abs(bz) + 1.8, 5.2 + Math.cos(phase) * 1.1).toFixed(2));
+  try {
+    const [plasmaRaw, magRaw] = await Promise.all([
+      fetchWithFallback(NOAA_ENDPOINTS.plasmaPrimary, NOAA_ENDPOINTS.plasmaFallback, 5000),
+      fetchWithFallback(NOAA_ENDPOINTS.magPrimary, NOAA_ENDPOINTS.magFallback, 5000),
+    ]);
 
-  const result = {
-    density,
-    speed,
-    temperature,
-    bz,
-    bt,
-    speedStatus: categorizeSolarWindSpeed(speed),
+    const plasma = parseLatestPlasma(plasmaRaw);
+    const mag = parseLatestMag(magRaw);
+
+    if (plasma && mag) {
+      const liveResult = {
+        density: plasma.density,
+        speed: plasma.speed,
+        temperature: plasma.temperature,
+        bz: mag.bz,
+        bt: mag.bt,
+        speedStatus: categorizeSolarWindSpeed(plasma.speed),
+        timestamp: plasma.timestamp || mag.timestamp || new Date(now).toISOString(),
+        source: 'NOAA SWPC DSCOVR/ACE Real-Time L1 Telemetry (Measured)',
+        isFallback: false,
+        isUnavailable: false,
+        cached: false,
+      };
+      cache = {
+        data: liveResult,
+        timestamp: now,
+      };
+      return liveResult;
+    }
+  } catch {
+    // Fall through to explicit unavailable state (never invent synthetic telemetry)
+  }
+
+  const unavailableResult = {
+    ...FALLBACK_SPACE_WEATHER,
     timestamp: new Date(now).toISOString(),
-    source: 'NOAA SWPC L1 Solar Wind Telemetry',
-    isFallback: false,
     cached: false,
   };
 
   cache = {
-    data: result,
+    data: unavailableResult,
     timestamp: now,
   };
 
-  return result;
+  return unavailableResult;
 }
 
 /**

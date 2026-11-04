@@ -4,7 +4,7 @@
  * Consolidated scientific findings, operational risks, candidate selection, and exportable reports.
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   FileText,
   Copy,
@@ -26,11 +26,20 @@ import {
 } from 'lucide-react';
 import { LANDING_SITES } from '../data/landingSites.js';
 import { CLPS_MISSIONS } from '../data/clpsMissions.js';
-import { HORIZON_TABLE, horizonAt } from '../utils/horizons.js';
+import {
+  HORIZON_TABLE,
+  horizonAt,
+  ensurePolarDemLoaded,
+  sampleLunarTerrainMetrics,
+} from '../utils/horizons.js';
 import { computeCelestialState, solarPosition } from '../utils/lunarEphemeris.js';
 import { evaluateEarthLink, DEFAULT_DTE_CONSTRAINTS } from '../utils/earthLink.js';
 import { getLunarTemperature } from '../utils/lunarThermal.js';
 import { calculateSolarTransition } from '../utils/transitionTimes.js';
+import {
+  evaluateCandidateForMissionWindow,
+  DEFAULT_PLANNER_CONSTRAINTS,
+} from '../utils/plannerEngine.js';
 import { celestialTimeStore } from '../utils/celestialTime.js';
 import { notifySuccess } from '../utils/feedbackStore.js';
 
@@ -46,7 +55,19 @@ export default function MissionBriefingPage({
   onNavigate,
 }) {
   const [copied, setCopied] = useState(false);
-  const simulationTime = celestialTimeStore.get().ms;
+  const [simulationTime, setSimulationTime] = useState(() => celestialTimeStore.get().ms);
+  const [demLoadedTick, setDemLoadedTick] = useState(0);
+
+  useEffect(() => {
+    ensurePolarDemLoaded()
+      .then((grid) => {
+        if (grid) setDemLoadedTick((t) => t + 1);
+      })
+      .catch(() => {});
+    return celestialTimeStore.subscribe(({ ms }) => {
+      setSimulationTime(ms);
+    });
+  }, []);
 
   const currentSite = selectedSite || LANDING_SITES.find((s) => s.id === 'landing-artemis3-malapert') || LANDING_SITES[0];
   const mission = activeMission || CLPS_MISSIONS[0];
@@ -58,37 +79,46 @@ export default function MissionBriefingPage({
   const assessment = useMemo(() => {
     try {
       const state = computeCelestialState(simulationTime);
-      const thermal = getLunarTemperature(siteLat, siteLon, new Date(simulationTime));
+      const terrainMetrics = sampleLunarTerrainMetrics(siteLat, siteLon, currentSite);
+      const flat = solarPosition(state, siteLat, siteLon);
+      const terrainHorizonDeg = horizonAt(HORIZON_TABLE, currentSite.id, flat.azimuthDeg, siteLat, siteLon) ?? 0;
+      const sun = solarPosition(state, siteLat, siteLon, terrainHorizonDeg);
+
+      const thermal = getLunarTemperature(siteLat, siteLon, new Date(simulationTime), {
+        terrainHorizonDeg,
+        elevationM: terrainMetrics?.elevationM ?? null,
+      });
       const dte = evaluateEarthLink({
         state,
         moonFeature: currentSite,
         constraints: DEFAULT_DTE_CONSTRAINTS,
-        terrainFn: (az) => horizonAt(HORIZON_TABLE, currentSite.id, az),
+        terrainFn: (az) => horizonAt(HORIZON_TABLE, currentSite.id, az, siteLat, siteLon) ?? 0,
       });
-
-      const flat = solarPosition(state, siteLat, siteLon);
-      const terrainHorizonDeg = horizonAt(HORIZON_TABLE, currentSite.id, flat.azimuthDeg) ?? 0;
-      const sun = solarPosition(state, siteLat, siteLon, terrainHorizonDeg);
 
       const solarTransition = calculateSolarTransition(simulationTime, siteLat, siteLon, currentSite.id);
       const clearance = sun.elevationDeg - terrainHorizonDeg;
-      const isSunlit = sun.elevationDeg > 0 && clearance > 0;
+      const isSunlit = sun.elevationDeg > 0 && clearance > 0 && !thermal.isPSR;
       const powerPct = isSunlit
-        ? Math.min(100, Math.max(10, Math.round(Math.sin((sun.elevationDeg * Math.PI) / 180) * 110)))
+        ? solarTransition?.powerEfficiencyPct ?? Math.round(Math.max(0, Math.sin((sun.elevationDeg * Math.PI) / 180)) * 100)
         : 0;
 
-      // Overall Score
-      let score = 60;
-      if (isSunlit) score += 20;
-      if (dte.status === 'clear') score += 20;
-      else if (dte.status === 'doubtful') score += 5;
-      else score -= 25;
-
-      const surfaceTemp = thermal.surfaceTempC;
-      if (surfaceTemp < -180) score -= 15;
-      else if (surfaceTemp > -80 && surfaceTemp < 50) score += 10;
-
-      score = Math.max(0, Math.min(100, score));
+      // Unified Overall Suitability Score from plannerEngine
+      const unifiedEval = evaluateCandidateForMissionWindow(
+        {
+          ...currentSite,
+          latitude: siteLat,
+          longitude: siteLon,
+          slopeDeg: terrainMetrics?.slopeDeg ?? null,
+          elevationM: terrainMetrics?.elevationM ?? null,
+          roughnessM: terrainMetrics?.roughnessM ?? null,
+        },
+        {
+          ...DEFAULT_PLANNER_CONSTRAINTS,
+          landingTimeMs: simulationTime,
+          missionDurationDays: 14,
+        }
+      );
+      const score = unifiedEval?.overallScore ?? 50;
 
       // Risk items
       const risks = [];
@@ -120,7 +150,8 @@ export default function MissionBriefingPage({
         });
       }
 
-      if (surfaceTemp < -150) {
+      const surfaceTemp = thermal?.surfaceTempC ?? null;
+      if (surfaceTemp != null && surfaceTemp < -150) {
         risks.push({
           title: 'Extreme Cryogenic Surface Environment',
           severity: 'HIGH',
@@ -131,6 +162,7 @@ export default function MissionBriefingPage({
       return {
         state,
         thermal,
+        terrainMetrics,
         dte,
         sun,
         clearance,
@@ -138,14 +170,16 @@ export default function MissionBriefingPage({
         powerPct,
         solarTransition,
         score,
+        formulaString: unifiedEval?.formulaString,
+        isPartialScore: unifiedEval?.isPartialScore,
         risks,
-        isGo: score >= 65 && dte.status !== 'blocked',
+        isGo: score >= 65 && dte.status !== 'blocked' && dte.status !== 'away',
       };
     } catch (err) {
       console.warn('Assessment computation failed:', err);
       return null;
     }
-  }, [simulationTime, currentSite, siteLat, siteLon]);
+  }, [simulationTime, currentSite, siteLat, siteLon, demLoadedTick]);
 
   const copyMarkdown = () => {
     if (!assessment) return;
@@ -162,7 +196,7 @@ export default function MissionBriefingPage({
 - **Direct-to-Earth Link (DTE):** ${assessment.dte.status.toUpperCase()}
   - Earth Elevation: ${assessment.dte.elevationDeg.toFixed(2)}°
   - Terrain Clearance Margin: ${assessment.dte.marginDeg.toFixed(2)}°
-- **Diviner Thermal Regimen:**
+- **Analytical Thermal Regimen (Calculated):**
   - Surface Temperature: ${assessment.thermal.surfaceTempC.toFixed(0)}°C (${(assessment.thermal.surfaceTempC + 273.15).toFixed(0)} K)
   - Subsurface Equilibrium: ${assessment.thermal.subsurfaceTempC.toFixed(0)}°C
 
@@ -286,7 +320,7 @@ Generated via LUNA — Lunar Landing Site Navigator (NASA Space Apps Challenge)
               >
                 {assessment?.isGo ? 'STATUS: GO FOR DESCENT' : 'STATUS: CAUTION / CONSTRAINED'}
               </span>
-              <span className="text-slate-400">Readiness Score: {assessment?.score}/100</span>
+              <span className="text-slate-400">Readiness Score: {assessment?.score ?? '--'}/100</span>
             </div>
             <h2 className="text-xl font-black text-white mt-1">
               {assessment?.isGo
@@ -295,7 +329,7 @@ Generated via LUNA — Lunar Landing Site Navigator (NASA Space Apps Challenge)
             </h2>
             <p className="text-xs text-slate-300 mt-1 max-w-2xl">
               Evaluation at {currentSite.name} reveals {assessment?.isSunlit ? 'active solar illumination' : 'darkness/shadow'} and{' '}
-              {assessment?.dte.status === 'clear' ? 'continuous Earth line of sight' : 'RF communication obstruction'}.
+              {assessment?.dte?.status === 'clear' ? 'continuous Earth line of sight' : 'RF communication obstruction'}.
             </p>
           </div>
         </div>
@@ -307,7 +341,7 @@ Generated via LUNA — Lunar Landing Site Navigator (NASA Space Apps Challenge)
               assessment?.isGo ? 'text-emerald-400' : 'text-amber-400'
             }`}
           >
-            {assessment?.score}%
+            {assessment?.score ?? '--'}%
           </span>
         </div>
       </div>
@@ -321,7 +355,7 @@ Generated via LUNA — Lunar Landing Site Navigator (NASA Space Apps Challenge)
               <Sun className="w-4 h-4 text-amber-400" />
               Illumination
             </span>
-            <span className="font-bold text-amber-300">{assessment?.powerPct}% Pwr</span>
+            <span className="font-bold text-amber-300">{assessment?.powerPct ?? 0}% Pwr</span>
           </div>
           <div className="text-lg font-black text-white">
             {assessment?.isSunlit ? 'Active Sunlit' : 'Shadow / Night'}
@@ -363,7 +397,7 @@ Generated via LUNA — Lunar Landing Site Navigator (NASA Space Apps Challenge)
               <Thermometer className="w-4 h-4 text-rose-400" />
               Thermal Regimen
             </span>
-            <span className="font-bold text-white">Diviner</span>
+            <span className="font-bold text-white">Calculated</span>
           </div>
           <div className="text-lg font-black text-white">
             {fmtNum(assessment?.thermal?.surfaceTempC, 0)}°C
@@ -384,10 +418,19 @@ Generated via LUNA — Lunar Landing Site Navigator (NASA Space Apps Challenge)
             <span className="font-bold text-purple-300">LOLA DEM</span>
           </div>
           <div className="text-lg font-black text-white">
-            {currentSite.elevationM ? `${currentSite.elevationM.toLocaleString()} m` : 'Summit Peak'}
+            {assessment?.terrainMetrics?.elevationM != null
+              ? `${Math.round(assessment.terrainMetrics.elevationM).toLocaleString()} m`
+              : currentSite.elevationM != null
+              ? `${currentSite.elevationM.toLocaleString()} m`
+              : 'Not present in DEM'}
           </div>
           <div className="text-[11px] text-slate-400 space-y-1 pt-2 border-t border-slate-800/80">
-            <p>Relief: High South Polar</p>
+            <p>
+              Slope:{' '}
+              {assessment?.terrainMetrics?.slopeDeg != null
+                ? `${fmtNum(assessment.terrainMetrics.slopeDeg, 1)}°`
+                : 'Not present in DEM'}
+            </p>
             <p>Horizon: 360° Profile</p>
           </div>
         </div>
@@ -400,7 +443,7 @@ Generated via LUNA — Lunar Landing Site Navigator (NASA Space Apps Challenge)
           Operational Hazard Identification & Flight Constraints
         </h3>
 
-        {assessment?.risks.length === 0 ? (
+        {!assessment?.risks || assessment.risks.length === 0 ? (
           <div className="p-4 rounded-xl bg-emerald-950/30 border border-emerald-800/40 text-emerald-300 text-xs font-mono">
             All primary operational safety constraints satisfied with zero critical flags.
           </div>
@@ -443,7 +486,7 @@ Generated via LUNA — Lunar Landing Site Navigator (NASA Space Apps Challenge)
             Open Site Topography Analysis
           </button>
           <button
-            onClick={() => onNavigate && onNavigate('comms')}
+            onClick={() => onNavigate && onNavigate('communication')}
             className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 transition"
           >
             Open DSN Ground Stations

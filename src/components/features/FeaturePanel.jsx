@@ -14,7 +14,6 @@ import {
   Thermometer,
   Sun,
   Radio,
-  Trash2,
   AlertTriangle,
   CheckCircle2,
   ShieldCheck,
@@ -58,6 +57,10 @@ import HorizonViewChart from './HorizonViewChart.jsx';
 import DteSignalChart from '../communication/DteSignalChart.jsx';
 
 import { PROVENANCE_BADGES } from '../../data/nasaProvenance.js';
+import {
+  evaluateCandidateForMissionWindow,
+  DEFAULT_PLANNER_CONSTRAINTS,
+} from '../../utils/plannerEngine.js';
 
 const TABS = [
   { id: 'overview', label: 'Overview' },
@@ -200,11 +203,6 @@ export default function FeaturePanel({
     return feature.regionInfo || getLunarRegionInfo(featLon, featLat);
   }, [feature, isEarthFeature, featLon, featLat]);
 
-  const localThermal = useMemo(() => {
-    if (!feature || isEarthFeature) return null;
-    return getLunarTemperature(featLat, featLon, new Date(timeMs));
-  }, [feature, isEarthFeature, featLat, featLon, timeMs]);
-
   // Terrain metrics from NASA LRO LOLA DEM or selenographic model
   const terrainMetrics = useMemo(() => {
     if (!feature || isEarthFeature) return null;
@@ -241,6 +239,14 @@ export default function FeaturePanel({
     () => solarPosition(state, featLat, featLon, sunTerrainHorizon),
     [state, featLat, featLon, sunTerrainHorizon]
   );
+
+  const localThermal = useMemo(() => {
+    if (!feature || isEarthFeature) return null;
+    return getLunarTemperature(featLat, featLon, new Date(timeMs), {
+      terrainHorizonDeg: sunTerrainHorizon,
+      elevationM: terrainMetrics?.elevationM ?? null,
+    });
+  }, [feature, isEarthFeature, featLat, featLon, timeMs, sunTerrainHorizon, terrainMetrics?.elevationM]);
 
   const earthLook = useMemo(
     () => earthLookFromMoon(state, moonPoint),
@@ -355,12 +361,15 @@ export default function FeaturePanel({
       for (let s = 0; s < 4; s++) {
         const t = dayStartMs + s * 6 * 3600000;
         const stepState = computeCelestialState(t);
-        const therm = getLunarTemperature(featLat, featLon, new Date(t));
+        const localSun = solarPosition(stepState, featLat, featLon);
+        const thElev = terrainFn(localSun.azimuthDeg);
+        const therm = getLunarTemperature(featLat, featLon, new Date(t), {
+          terrainHorizonDeg: thElev,
+          elevationM: terrainMetrics?.elevationM ?? null,
+        });
         minTemp = Math.min(minTemp, therm.tempC);
         maxTemp = Math.max(maxTemp, therm.tempC);
 
-        const localSun = solarPosition(stepState, featLat, featLon);
-        const thElev = terrainFn(localSun.azimuthDeg);
         const isSunlit = localSun.elevationDeg > thElev && !therm.isPSR;
         if (isSunlit) {
           sunlitSteps++;
@@ -380,7 +389,7 @@ export default function FeaturePanel({
               constraints: DEFAULT_DTE_CONSTRAINTS,
               terrainFn,
             });
-            return lk.status === 'clear';
+            return lk.isLinked;
           });
           if (anyDsnActive) {
             dsnSteps++;
@@ -401,25 +410,38 @@ export default function FeaturePanel({
       };
     });
 
-    const sunlitRatio = Math.round((sunlitSteps / numSamples) * 100);
-    const dsnRatio = isFarside ? 0 : Math.round((dsnSteps / numSamples) * 100);
-    const longestSunlitHours = Math.round(maxSunStreak * 6);
+    const unifiedEval = evaluateCandidateForMissionWindow(
+      {
+        id: siteId,
+        name: moonPoint.name,
+        latitude: featLat,
+        longitude: featLon,
+        slopeDeg: terrainMetrics?.slopeDeg ?? null,
+        elevationM: terrainMetrics?.elevationM ?? null,
+        roughnessM: terrainMetrics?.roughnessM ?? null,
+      },
+      {
+        ...DEFAULT_PLANNER_CONSTRAINTS,
+        landingTimeMs: timeMs,
+        missionDurationDays: missionWindowDays,
+      }
+    );
 
-    let windowScore = 100;
-    if (isFarside) windowScore -= 35;
-    if (dsnRatio < 30) windowScore -= 30 - dsnRatio;
-    if (sunlitRatio < 40) windowScore -= Math.round((40 - sunlitRatio) * 0.8);
-    if (localThermal?.isPSR) windowScore -= 30;
-    if (terrainMetrics?.isSlopeHazard) windowScore -= 25;
+    const sunlitRatio = unifiedEval?.sunlitRatio ?? Math.round((sunlitSteps / numSamples) * 100);
+    const dsnRatio = unifiedEval?.dteUptimeRatio ?? (isFarside ? 0 : Math.round((dsnSteps / numSamples) * 100));
+    const longestSunlitHours = Math.round(maxSunStreak * 6);
+    const windowScore = unifiedEval?.overallScore ?? 50;
 
     return {
-      windowScore: Math.max(10, Math.min(100, windowScore)),
+      windowScore,
       sunlitRatio,
       dsnRatio,
       longestSunlitHours,
       minTemp: Math.round(minTemp),
       maxTemp: Math.round(maxTemp),
       dailyScores,
+      formulaString: unifiedEval?.formulaString,
+      isPartialScore: unifiedEval?.isPartialScore,
     };
   }, [
     feature,
@@ -427,6 +449,7 @@ export default function FeaturePanel({
     activeTab,
     missionWindowDays,
     timeMs,
+    siteId,
     featLat,
     featLon,
     regionInfo,
@@ -595,9 +618,15 @@ export default function FeaturePanel({
           </button>
           <button
             type="button"
-            onClick={onClose}
-            aria-label="Close panel"
-            title="Close panel [Esc]"
+            onClick={() => {
+              if (isCustomPin && onClearCustomPin) {
+                onClearCustomPin(isEarthFeature ? 'earth' : 'moon');
+              } else {
+                onClose?.();
+              }
+            }}
+            aria-label="Clear pin and close panel"
+            title="Clear pin and close panel [Esc]"
             className="p-1.5 rounded-lg bg-slate-900/90 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800 transition-colors"
           >
             <X className="w-3.5 h-3.5" />
@@ -678,6 +707,15 @@ export default function FeaturePanel({
         {/* ================================================================= */}
         {!isEarthFeature && activeTab === 'overview' && (
           <div className="space-y-2.5">
+            {(safeFeature.horizonEligible === false ||
+              safeFeature.positionTrust === 'illustrative' ||
+              clpsData?.horizonEligible === false ||
+              clpsData?.positionTrust === 'illustrative') && (
+              <div className="px-2.5 py-1.5 rounded-xl bg-amber-950/40 border border-amber-500/40 flex items-center gap-2 text-[11px] font-mono text-amber-200">
+                <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                <span>Exact landing coordinates not published by NASA (Display placeholder only)</span>
+              </div>
+            )}
             {/* Compact Coordinates & Surface Elevation Strip */}
             <div className="px-2.5 py-2 rounded-xl bg-[#0A121E] border border-slate-800/80 flex items-center justify-between gap-2">
               <div className="min-w-0">
@@ -701,7 +739,7 @@ export default function FeaturePanel({
                           {terrainMetrics.slopeDeg.toFixed(1)}°
                         </>
                       ) : (
-                        <span className="text-slate-400 text-[11px]">Data unavailable</span>
+                        <span className="text-slate-400 text-[11px]">Not present in loaded dataset</span>
                       )}
                     </span>
                   </div>
@@ -972,7 +1010,7 @@ export default function FeaturePanel({
                       <span className="text-xs font-normal text-slate-400 ml-1">m</span>
                     </>
                   ) : (
-                    <span className="text-xs font-normal text-slate-400">Data unavailable</span>
+                    <span className="text-xs font-normal text-slate-400">Not present in loaded dataset</span>
                   )}
                 </div>
                 <span className="text-[10px] text-slate-400 truncate block">
@@ -1006,7 +1044,7 @@ export default function FeaturePanel({
                 >
                   {terrainMetrics.slopeDeg !== null
                     ? `${terrainMetrics.slopeDeg.toFixed(1)}°`
-                    : 'Data unavailable'}
+                    : 'Not present in loaded dataset'}
                 </div>
                 <span className="text-[10px] text-slate-400 truncate block">
                   {terrainMetrics.slopeSource ||
@@ -1031,7 +1069,7 @@ export default function FeaturePanel({
                       <span className="text-xs font-normal text-slate-400 ml-1">m RMS</span>
                     </>
                   ) : (
-                    <span className="text-xs font-normal text-slate-400">Data unavailable</span>
+                    <span className="text-xs font-normal text-slate-400">Not present in loaded dataset</span>
                   )}
                 </div>
                 <span className="text-[10px] text-slate-400 truncate block">
@@ -1056,7 +1094,7 @@ export default function FeaturePanel({
                       <span className="text-xs font-normal text-slate-400 ml-1">m</span>
                     </>
                   ) : (
-                    <span className="text-xs font-normal text-slate-400">Data unavailable</span>
+                    <span className="text-xs font-normal text-slate-400">Not present in loaded dataset</span>
                   )}
                 </div>
                 <span className="text-[10px] text-slate-400 truncate block">
@@ -1100,7 +1138,7 @@ export default function FeaturePanel({
                       {terrainMetrics.uncertainty.verticalAccuracy} vert · {terrainMetrics.uncertainty.horizontalAccuracy} horiz
                     </>
                   ) : (
-                    <span className="text-slate-400">Data unavailable (outside 80°S DEM)</span>
+                    <span className="text-slate-400">Not present in loaded dataset (outside 80°S DEM)</span>
                   )}
                 </span>
               </div>
@@ -1207,7 +1245,7 @@ export default function FeaturePanel({
               <div className="p-2.5 rounded-xl bg-[#0A121E] border border-slate-800/80 text-xs font-mono text-slate-400 space-y-1">
                 <div className="flex items-center gap-1.5 text-slate-300 font-semibold">
                   <Mountain className="w-3.5 h-3.5 text-cyan-400" />
-                  <span>Radial Elevation Profile: Data unavailable</span>
+                  <span>Radial Elevation Profile: Not present in loaded dataset</span>
                 </div>
                 <p className="text-[11px] text-slate-400 leading-relaxed">
                   Cross-sectional transect generation samples the NASA LOLA South Polar DEM (80.0°S to 90.0°S).
@@ -1406,13 +1444,13 @@ export default function FeaturePanel({
               </div>
             </div>
 
-            {/* LRO Diviner Surface Radiative Thermal Regime (Vacuum Radiative Balance) */}
+            {/* Surface Radiative Thermal Regime (Calculated — Analytical Radiative Balance Model) */}
             {localThermal && (
               <div className="p-2.5 rounded-xl bg-[#0A121E] border border-slate-800/80 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold text-white flex items-center gap-1.5">
                     <Thermometer className="w-3.5 h-3.5 text-cyan-400" />
-                    <span>LRO Diviner Surface Radiative Temperature</span>
+                    <span>Surface Radiative Temperature (Calculated — Analytical Model)</span>
                   </span>
                   <span
                     className={`text-[10px] font-mono font-semibold px-2 py-0.5 rounded border ${
@@ -1456,7 +1494,7 @@ export default function FeaturePanel({
                         ? 'Cryogenic'
                         : 'Nominal'}
                     </span>
-                    <span className="text-[10px] text-slate-400 block">DLRE GDR L3</span>
+                    <span className="text-[10px] text-slate-400 block">Calculated (Equilibrium)</span>
                   </div>
                 </div>
               </div>
@@ -1766,9 +1804,9 @@ export default function FeaturePanel({
       </div>
 
       {/* =================================================================== */}
-      {/* 4. PERSISTENT ACTION CONTROLS FOOTER (4 Compact Buttons)            */}
+      {/* 4. PERSISTENT ACTION CONTROLS FOOTER (3 Compact Buttons)            */}
       {/* =================================================================== */}
-      <div className="px-3 py-2 border-t border-slate-800/90 bg-[#080f1d] grid grid-cols-4 gap-1.5 shrink-0">
+      <div className="px-3 py-2 border-t border-slate-800/90 bg-[#080f1d] grid grid-cols-3 gap-1.5 shrink-0">
         <button
           type="button"
           onClick={() => onZoomHere?.(featLon, featLat)}
@@ -1806,22 +1844,6 @@ export default function FeaturePanel({
               <span>Share</span>
             </>
           )}
-        </button>
-
-        <button
-          type="button"
-          onClick={() => {
-            if (isCustomPin && onClearCustomPin) {
-              onClearCustomPin(isEarthFeature ? 'earth' : 'moon');
-            } else {
-              onClose?.();
-            }
-          }}
-          title="Remove custom pin from map"
-          className="h-8 px-1.5 rounded-lg bg-rose-950/35 hover:bg-rose-900/50 text-rose-300 border border-rose-500/30 font-mono text-[10.5px] font-medium flex items-center justify-center gap-1 transition-colors whitespace-nowrap"
-        >
-          <Trash2 className="w-3 h-3 shrink-0" />
-          <span>Clear Pin</span>
         </button>
       </div>
     </aside>

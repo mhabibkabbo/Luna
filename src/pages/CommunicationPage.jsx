@@ -60,8 +60,16 @@ export default function CommunicationPage({
   const [customLon, setCustomLon] = useState('0.00');
   const [isCustomMode, setIsCustomMode] = useState(false);
 
-  // Subscribe to celestial time changes
+  const [demLoadedTick, setDemLoadedTick] = useState(0);
+
+  // Subscribe to celestial time changes and ensure LOLA polar DEM is loaded
   useEffect(() => {
+    import('../utils/horizons.js')
+      .then(({ ensurePolarDemLoaded }) => ensurePolarDemLoaded())
+      .then((grid) => {
+        if (grid) setDemLoadedTick((t) => t + 1);
+      })
+      .catch(() => {});
     return celestialTimeStore.subscribe((t) => {
       setSimulationTime(t.ms);
     });
@@ -84,7 +92,7 @@ export default function CommunicationPage({
   // Retrieve actual elevation from NASA LOLA DEM
   const demElevationM = useMemo(() => {
     return getSurfaceElevationM(currentLat, currentLon);
-  }, [currentLat, currentLon]);
+  }, [currentLat, currentLon, demLoadedTick]);
 
   const currentSiteObject = useMemo(() => {
     return {
@@ -111,7 +119,7 @@ export default function CommunicationPage({
       relayType: 'none',
       siteId: currentSiteObject.id,
     });
-  }, [currentLat, currentLon, demElevationM, simulationTime, currentStation, currentSiteObject.id]);
+  }, [currentLat, currentLon, demElevationM, simulationTime, currentStation, currentSiteObject.id, demLoadedTick]);
 
   const adjustTime = (hours) => {
     const nextMs = simulationTime + hours * 3600000;

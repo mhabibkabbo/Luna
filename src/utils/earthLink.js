@@ -167,6 +167,7 @@ export function evaluateEarthLink({
 
   return {
     status,
+    isLinked: status === 'clear' || status === 'doubtful',
     reason,
     elevationDeg,
     azimuthDeg,

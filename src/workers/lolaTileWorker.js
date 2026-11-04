@@ -2,9 +2,13 @@ import { ELEVATION_RAMP } from '../constants/topoStyle.js';
 
 let demGrid = null;
 let demSize = 0; // Expected 1520 for 400m LOLA grid (-80° to -90°S, ±304km)
+let demScale = 0.5; // LOLA LDEM_80S Int16 vertical scale factor (0.5 m per unit)
 let demLoadPromise = null;
 const pendingMessages = [];
 
+const DEM_SCALE_M = 0.5;
+const DEM_NODATA = -32768;
+const MOON_RADIUS_M = 1737400;
 const HALF_EXTENT_M = 304000;
 const SP_RESOLUTIONS = [1280, 640, 320, 160, 80, 40, 20];
 
@@ -56,6 +60,7 @@ async function ensureDemLoaded(demUrl) {
     .then((buf) => {
       demGrid = new Int16Array(buf);
       demSize = Math.round(Math.sqrt(demGrid.length));
+      demScale = DEM_SCALE_M;
       return true;
     })
     .catch((err) => {
@@ -66,7 +71,8 @@ async function ensureDemLoaded(demUrl) {
 }
 
 /**
- * Fast inline bilinear interpolation on the Int16 DEM grid
+ * Fast inline bilinear interpolation on the Int16 DEM grid,
+ * converting raw 0.5m half-meter units to meters and checking -32768 nodata.
  */
 function sampleElevation(gx, gy) {
   if (!demGrid || gx < 0 || gx >= demSize - 1 || gy < 0 || gy >= demSize - 1) {
@@ -80,16 +86,26 @@ function sampleElevation(gx, gy) {
   const row0 = y0 * demSize;
   const row1 = (y0 + 1) * demSize;
 
-  const v00 = demGrid[row0 + x0];
-  const v10 = demGrid[row0 + x0 + 1];
-  const v01 = demGrid[row1 + x0];
-  const v11 = demGrid[row1 + x0 + 1];
+  const raw00 = demGrid[row0 + x0];
+  const raw10 = demGrid[row0 + x0 + 1];
+  const raw01 = demGrid[row1 + x0];
+  const raw11 = demGrid[row1 + x0 + 1];
+
+  if (
+    raw00 === DEM_NODATA ||
+    raw10 === DEM_NODATA ||
+    raw01 === DEM_NODATA ||
+    raw11 === DEM_NODATA
+  ) {
+    return null;
+  }
 
   return (
-    v00 * (1 - dx) * (1 - dy) +
-    v10 * dx * (1 - dy) +
-    v01 * (1 - dx) * dy +
-    v11 * dx * dy
+    (raw00 * (1 - dx) * (1 - dy) +
+      raw10 * dx * (1 - dy) +
+      raw01 * (1 - dx) * dy +
+      raw11 * dx * dy) *
+    demScale
   );
 }
 
@@ -104,7 +120,7 @@ function sampleElevationAtMeters(xMeters, yMeters, halfExtent = HALF_EXTENT_M) {
 
 function computeSlopeAtMeters(xMeters, yMeters, stepM = 400, halfExtent = HALF_EXTENT_M) {
   const zC = sampleElevationAtMeters(xMeters, yMeters, halfExtent);
-  if (zC === null) return { elevationM: 0, slopeDeg: 0 };
+  if (zC === null) return { elevationM: null, slopeDeg: null };
   const zN = sampleElevationAtMeters(xMeters, yMeters + stepM, halfExtent) ?? zC;
   const zS = sampleElevationAtMeters(xMeters, yMeters - stepM, halfExtent) ?? zC;
   const zE = sampleElevationAtMeters(xMeters + stepM, yMeters, halfExtent) ?? zC;
@@ -316,7 +332,7 @@ function handleRenderTile(msgPayload) {
             (zS - meanZ) ** 2 +
             (zSE - meanZ) ** 2) /
           9;
-        const rmsM = Math.sqrt(varZ) * 0.35;
+        const rmsM = Math.sqrt(varZ);
         const t = Math.max(0, Math.min(1, rmsM / 25));
         r = Math.round((15 + t * 229) * (0.6 + shade * 0.4));
         g = Math.round((35 + (1 - Math.abs(t - 0.5) * 1.6) * 155) * (0.6 + shade * 0.4));
@@ -328,44 +344,48 @@ function handleRenderTile(msgPayload) {
         g = Math.min(255, lum + 3);
         b = Math.min(255, lum + 8);
       } else if (renderMode === 'illumination') {
-        // Layer 6: Time-Dynamic Solar Illumination & Grazing Incidence
+        // Layer 6: Time-Dynamic Solar Illumination & Grazing Incidence (first-principles local surface normal dot sun vector)
+        const sinSunEl = Math.sin((sunElevationDeg * Math.PI) / 180);
+        const cosSunEl = Math.cos((sunElevationDeg * Math.PI) / 180);
         const cosInc =
-          sinEl * Math.cos(slopeRad) +
-          cosEl * Math.sin(slopeRad) * Math.cos(azRad - aspectRad);
-        const isShadowed = elev < -2150 || cosInc <= 0.02;
+          sinSunEl * Math.cos(slopeRad) +
+          cosSunEl * Math.sin(slopeRad) * Math.cos(azRad - aspectRad);
+        const isShadowed = cosInc <= 0.0;
         if (isShadowed) {
           const depth = Math.max(0.18, Math.min(0.6, (elev + 5000) / 8000));
           r = Math.round(10 * depth);
           g = Math.round(16 * depth);
           b = Math.round(36 * depth);
         } else {
-          const flux = Math.min(1, Math.pow(cosInc, 0.65) + Math.max(0, elev / 7000) * 0.25);
+          const flux = Math.min(1, Math.pow(cosInc, 0.65));
           r = Math.min(255, Math.round(45 + flux * 210));
           g = Math.min(255, Math.round(28 + flux * 195));
           b = Math.min(255, Math.round(15 + Math.pow(flux, 1.8) * 155));
         }
       } else if (renderMode === 'psr') {
-        // Layer 7: Permanently Shadowed Regions (PSRs) & Cold Traps
+        // Layer 7: Permanently Shadowed Regions (PSRs) & Deep Polar Cold-Trap Basins
         const clampedElev = Math.max(LUT_MIN_ELEV, Math.min(LUT_MAX_ELEV, Math.round(elev)));
         const lutIdx = (clampedElev - LUT_MIN_ELEV) * 3;
         r = Math.min(255, (RAMP_LUT[lutIdx] * shade * 0.55) | 0);
         g = Math.min(255, (RAMP_LUT[lutIdx + 1] * shade * 0.55) | 0);
         b = Math.min(255, (RAMP_LUT[lutIdx + 2] * shade * 0.65) | 0);
-        if (elev < -1800) {
-          const depthFactor = Math.min(1, (-1800 - elev) / 2000);
+        if (elev < -2000) {
+          const depthFactor = Math.min(1, (-2000 - elev) / 2500);
           r = Math.round(r * (1 - 0.75 * depthFactor) + 14 * depthFactor);
           g = Math.round(g * (1 - 0.65 * depthFactor) + 165 * depthFactor);
           b = Math.round(b * (1 - 0.45 * depthFactor) + 245 * depthFactor);
         }
       } else if (renderMode === 'earth-visibility') {
-        // Layer 8: Direct-to-Earth (DTE) Libration-Synced Visibility
-        // Project pixel stereo coordinates onto Earth sub-longitude direction (+1 = nearside edge, -1 = farside edge)
-        const earthProj = (worldX * earthDirX + worldY * earthDirY) / mapExtentM;
-        // Base Earth elevation at pole (~6.5° + latitude offset along sub-Earth meridian + elevation bonus)
-        const earthElevApprox =
-          Math.abs(subEarthLatDeg) + earthProj * 5.2 + (elev / 1800) - (dzdx * earthDirX + dzdy * earthDirY) * 6;
-        if (earthProj < -0.18 && elev < 800) {
-          // Far-side / Terrain-occulted hemisphere
+        // Layer 8: Direct-to-Earth (DTE) Libration-Synced Visibility (first-principles spherical geometry)
+        // Radial projection along sub-Earth meridian in meters (+ toward Earth, - away from Earth)
+        const earthDistM = worldX * earthDirX + worldY * earthDirY;
+        const angularOffsetDeg = (earthDistM / MOON_RADIUS_M) * 57.29577951308232;
+        const localSlopeAlongEarthDeg =
+          Math.atan(dzdx * earthDirX + dzdy * earthDirY) * 57.29577951308232;
+        // At the South Pole (-90°S), Earth elevation is -subEarthLatDeg + angularOffsetDeg
+        const earthElevApprox = -subEarthLatDeg + angularOffsetDeg - localSlopeAlongEarthDeg;
+        if (earthElevApprox <= 0.0) {
+          // Below local horizon / Earth-occulted
           r = Math.round(75 * shade);
           g = Math.round(20 * shade);
           b = Math.round(30 * shade);
@@ -383,17 +403,21 @@ function handleRenderTile(msgPayload) {
         }
       } else if (renderMode === 'risk') {
         // Layer 9: Time-Dependent Composite Mission Risk (Slope + Shadow + DTE Occultation)
+        const sinSunEl = Math.sin((sunElevationDeg * Math.PI) / 180);
+        const cosSunEl = Math.cos((sunElevationDeg * Math.PI) / 180);
         const cosInc =
-          sinEl * Math.cos(slopeRad) +
-          cosEl * Math.sin(slopeRad) * Math.cos(azRad - aspectRad);
-        const earthProj = (worldX * earthDirX + worldY * earthDirY) / mapExtentM;
+          sinSunEl * Math.cos(slopeRad) +
+          cosSunEl * Math.sin(slopeRad) * Math.cos(azRad - aspectRad);
+        const earthDistM = worldX * earthDirX + worldY * earthDirY;
+        const angularOffsetDeg = (earthDistM / MOON_RADIUS_M) * 57.29577951308232;
+        const earthElevApprox = -subEarthLatDeg + angularOffsetDeg;
         let riskScore = 0;
         if (slopeDeg >= 15) riskScore += 55;
         else if (slopeDeg >= 10) riskScore += 28;
         else riskScore += (slopeDeg / 10) * 15;
 
-        if (elev < -2000 || cosInc <= 0.02) riskScore += 32;
-        if (earthProj < -0.15) riskScore += 25;
+        if (cosInc <= 0.0) riskScore += 32;
+        if (earthElevApprox <= 0.0) riskScore += 25;
         const rNorm = Math.max(0, Math.min(1, riskScore / 95));
 
         if (rNorm < 0.35) {
@@ -492,48 +516,59 @@ function processMessage(data) {
   }
 }
 
-self.onmessage = async (e) => {
-  const data = e.data || {};
-  const { type, payload } = data;
+export function initWorkerDemBuffer(buffer, size = null, scale = DEM_SCALE_M) {
+  demGrid = buffer instanceof Int16Array ? buffer : new Int16Array(buffer);
+  demSize = size || Math.round(Math.sqrt(demGrid.length));
+  demScale = Number.isFinite(scale) && scale > 0 ? scale : DEM_SCALE_M;
+}
 
-  if (type === 'INIT_DEM') {
-    const p = payload || data;
-    if (p.buffer) {
-      demGrid = new Int16Array(p.buffer);
-      demSize = p.size || Math.round(Math.sqrt(demGrid.length));
-      self.postMessage({ type: 'DEM_READY', payload: { size: demSize } });
-      while (pendingMessages.length > 0) {
-        processMessage(pendingMessages.shift());
-      }
-      return;
-    }
-    try {
-      await ensureDemLoaded(p.demUrl);
-      self.postMessage({ type: 'DEM_READY', payload: { size: demSize } });
-      while (pendingMessages.length > 0) {
-        processMessage(pendingMessages.shift());
-      }
-    } catch (err) {
-      self.postMessage({
-        type: 'WORKER_ERROR',
-        payload: { message: err?.message || 'Failed to load LOLA South Pole DEM' },
-      });
-    }
-    return;
-  }
+export { sampleElevation, sampleElevationAtMeters, computeSlopeAtMeters };
 
-  if (!demGrid || demSize <= 0) {
-    pendingMessages.push(data);
-    const demUrl = payload?.demUrl || data?.demUrl || '/data/lola_sp_80s_int16.bin';
-    ensureDemLoaded(demUrl)
-      .then(() => {
+if (typeof self !== 'undefined') {
+  self.onmessage = async (e) => {
+    const data = e.data || {};
+    const { type, payload } = data;
+
+    if (type === 'INIT_DEM') {
+      const p = payload || data;
+      if (p.buffer) {
+        demGrid = new Int16Array(p.buffer);
+        demSize = p.size || Math.round(Math.sqrt(demGrid.length));
+        demScale = Number.isFinite(p.scale) && p.scale > 0 ? p.scale : DEM_SCALE_M;
+        self.postMessage({ type: 'DEM_READY', payload: { size: demSize } });
         while (pendingMessages.length > 0) {
           processMessage(pendingMessages.shift());
         }
-      })
-      .catch(() => {});
-    return;
-  }
+        return;
+      }
+      try {
+        await ensureDemLoaded(p.demUrl);
+        self.postMessage({ type: 'DEM_READY', payload: { size: demSize } });
+        while (pendingMessages.length > 0) {
+          processMessage(pendingMessages.shift());
+        }
+      } catch (err) {
+        self.postMessage({
+          type: 'WORKER_ERROR',
+          payload: { message: err?.message || 'Failed to load LOLA South Pole DEM' },
+        });
+      }
+      return;
+    }
 
-  processMessage(data);
-};
+    if (!demGrid || demSize <= 0) {
+      pendingMessages.push(data);
+      const demUrl = payload?.demUrl || data?.demUrl || '/data/lola_sp_80s_int16.bin';
+      ensureDemLoaded(demUrl)
+        .then(() => {
+          while (pendingMessages.length > 0) {
+            processMessage(pendingMessages.shift());
+          }
+        })
+        .catch(() => {});
+      return;
+    }
+
+    processMessage(data);
+  };
+}

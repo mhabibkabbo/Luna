@@ -433,7 +433,7 @@ export default function SouthPoleLegendHUD({
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-400">Grid Resolution:</span>
-                    <span className="text-white">240 m/px (20 m base GDR)</span>
+                    <span className="text-white">400 m/px (0.5 m vertical unit)</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-400">Accuracy:</span>

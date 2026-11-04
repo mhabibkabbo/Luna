@@ -311,8 +311,12 @@ export function createMoonFeatures({ viewer, container, callbacks, isMobile, fly
    */
   const clearCustomPin = () => {
     if (customPinEntity) {
+      if (selectedEntity === customPinEntity) {
+        selectedEntity = null;
+      }
       viewer.entities.remove(customPinEntity);
       customPinEntity = null;
+      scene.requestRender();
     }
   };
 

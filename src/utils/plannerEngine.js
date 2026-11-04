@@ -8,7 +8,14 @@
 import { computeCelestialState, solarPosition } from './lunarEphemeris.js';
 import { getLunarTemperature } from './lunarThermal.js';
 import { evaluateEarthLink, DEFAULT_DTE_CONSTRAINTS } from './earthLink.js';
-import { HORIZON_TABLE, horizonAt, sampleLunarTerrainMetrics } from './horizons.js';
+import {
+  HORIZON_TABLE,
+  horizonAt,
+  sampleLunarTerrainMetrics,
+  ensurePolarDemLoaded,
+} from './horizons.js';
+
+ensurePolarDemLoaded();
 
 export const DEFAULT_PLANNER_CONSTRAINTS = {
   minSunlitHours: 72, // At least 72 hours of continuous daylight
@@ -29,10 +36,32 @@ export const DEFAULT_PLANNER_CONSTRAINTS = {
 
 export function evaluateCandidateForMissionWindow(
   candidate,
-  landingMs,
-  durationDays,
-  constraints = DEFAULT_PLANNER_CONSTRAINTS
+  landingMsOrOpts,
+  durationDaysArg,
+  constraintsArg = DEFAULT_PLANNER_CONSTRAINTS
 ) {
+  let landingMs = landingMsOrOpts;
+  let durationDays = durationDaysArg;
+  let constraints = constraintsArg;
+
+  if (landingMsOrOpts && typeof landingMsOrOpts === 'object' && ! (landingMsOrOpts instanceof Date)) {
+    landingMs =
+      landingMsOrOpts.landingTimeMs ??
+      landingMsOrOpts.landingMs ??
+      Date.now();
+    durationDays =
+      landingMsOrOpts.missionDurationDays ??
+      landingMsOrOpts.durationDays ??
+      14;
+    constraints = { ...DEFAULT_PLANNER_CONSTRAINTS, ...landingMsOrOpts };
+  }
+
+  const safeLandingMs =
+    typeof landingMs === 'number' && Number.isFinite(landingMs)
+      ? landingMs
+      : landingMs instanceof Date
+      ? landingMs.getTime()
+      : Date.now();
   const safeDurationDays = Math.max(1, Number(durationDays) || 14);
   const durationMs = safeDurationDays * 86400000;
   const numSteps = Math.max(16, Math.min(56, Math.round(safeDurationDays * 4)));
@@ -41,31 +70,43 @@ export function evaluateCandidateForMissionWindow(
   const lat = candidate.lat ?? candidate.latitude ?? -85.9;
   const lon = candidate.lon ?? candidate.longitude ?? 0.0;
   const siteId = candidate.id || `cand-${lat.toFixed(2)}-${lon.toFixed(2)}`;
-  const slopeDeg =
-    typeof candidate.slopeDeg === 'number'
-      ? candidate.slopeDeg
-      : sampleLunarTerrainMetrics(lat, lon, candidate).slopeDeg;
-  const elevationM =
-    typeof candidate.elevationM === 'number'
-      ? candidate.elevationM
-      : typeof candidate.elevationMeters === 'number'
-      ? candidate.elevationMeters
-      : sampleLunarTerrainMetrics(lat, lon, candidate).elevationM;
+  const sampledMetrics = sampleLunarTerrainMetrics(lat, lon, candidate);
 
-  // 1. Touchdown Evaluation (t0)
-  const state0 = computeCelestialState(landingMs);
+  const rawSlope =
+    typeof candidate.slopeDeg === 'number' && Number.isFinite(candidate.slopeDeg)
+      ? candidate.slopeDeg
+      : sampledMetrics.slopeDeg;
+  const slopeDeg = typeof rawSlope === 'number' && Number.isFinite(rawSlope) ? rawSlope : null;
+  const hasSlopeData = slopeDeg !== null;
+
+  const rawElevation =
+    typeof candidate.elevationM === 'number' && Number.isFinite(candidate.elevationM)
+      ? candidate.elevationM
+      : typeof candidate.elevationMeters === 'number' && Number.isFinite(candidate.elevationMeters)
+      ? candidate.elevationMeters
+      : sampledMetrics.elevationM;
+  const elevationM =
+    typeof rawElevation === 'number' && Number.isFinite(rawElevation) ? rawElevation : null;
+  const hasElevationData = elevationM !== null;
+
+  // 1. Touchdown Evaluation (t0) — never invent a fallback horizon angle when DEM is unmodeled
+  const state0 = computeCelestialState(safeLandingMs);
   const solFlat0 = solarPosition(state0, lat, lon);
-  const terrainHorizon0 =
-    horizonAt(HORIZON_TABLE, siteId, solFlat0.azimuthDeg, lat, lon) ??
-    (Math.abs(lat) > 80 ? 2.5 : 0.0);
+  const rawHorizon0 = horizonAt(HORIZON_TABLE, siteId, solFlat0.azimuthDeg, lat, lon);
+  const isHorizonModeled = rawHorizon0 !== null && Number.isFinite(rawHorizon0);
+  const terrainHorizon0 = isHorizonModeled ? rawHorizon0 : 0.0;
   const sol0 = solarPosition(state0, lat, lon, terrainHorizon0);
-  const thermal0 = getLunarTemperature(lat, lon, new Date(landingMs));
+  const thermal0 = getLunarTemperature(lat, lon, new Date(safeLandingMs), {
+    terrainHorizonDeg: terrainHorizon0,
+    elevationM,
+  });
 
   const moonFeatureObj = {
     id: siteId,
     name: candidate.name || 'Candidate Site',
     latitude: lat,
     longitude: lon,
+    elevationM: elevationM ?? 0,
   };
 
   const dte0 = candidate.isFarSide
@@ -78,7 +119,9 @@ export function evaluateCandidateForMissionWindow(
         terrainFn: (az) => horizonAt(HORIZON_TABLE, siteId, az, lat, lon),
       });
 
-  const isDteLinked0 = candidate.isFarSide ? false : dte0.isLinked;
+  const isDteLinked0 = candidate.isFarSide
+    ? false
+    : Boolean(dte0.isLinked || dte0.status === 'clear' || dte0.status === 'doubtful');
 
   // 2. Mission Duration Sweep (t0 -> t0 + duration)
   let sunlitSteps = 0;
@@ -94,14 +137,16 @@ export function evaluateCandidateForMissionWindow(
   let maxTemp = thermal0.tempC;
 
   for (let k = 0; k <= numSteps; k++) {
-    const t = landingMs + k * stepMs;
+    const t = safeLandingMs + k * stepMs;
     const stateK = computeCelestialState(t);
     const solFlatK = solarPosition(stateK, lat, lon);
-    const thHoriz =
-      horizonAt(HORIZON_TABLE, siteId, solFlatK.azimuthDeg, lat, lon) ??
-      (Math.abs(lat) > 80 ? 2.5 : 0.0);
+    const rawHorizK = horizonAt(HORIZON_TABLE, siteId, solFlatK.azimuthDeg, lat, lon);
+    const thHoriz = rawHorizK !== null && Number.isFinite(rawHorizK) ? rawHorizK : 0.0;
     const solK = solarPosition(stateK, lat, lon, thHoriz);
-    const thermK = getLunarTemperature(lat, lon, new Date(t));
+    const thermK = getLunarTemperature(lat, lon, new Date(t), {
+      terrainHorizonDeg: thHoriz,
+      elevationM,
+    });
 
     minTemp = Math.min(minTemp, thermK.tempC);
     maxTemp = Math.max(maxTemp, thermK.tempC);
@@ -127,7 +172,7 @@ export function evaluateCandidateForMissionWindow(
         constraints: DEFAULT_DTE_CONSTRAINTS,
         terrainFn: (az) => horizonAt(HORIZON_TABLE, siteId, az, lat, lon),
       });
-      isLinkedK = dteK.isLinked;
+      isLinkedK = Boolean(dteK.isLinked || dteK.status === 'clear' || dteK.status === 'doubtful');
     }
 
     if (isLinkedK) {
@@ -162,12 +207,12 @@ export function evaluateCandidateForMissionWindow(
     });
   }
 
-  if (slopeDeg > constraints.maxSlopeDeg) {
+  if (hasSlopeData && slopeDeg > constraints.maxSlopeDeg) {
     violations.push({
       type: 'slope_excessive',
       severity: 'critical',
       label: 'Terrain Slope Exceeds Lander Footpad Limit',
-      detail: `Local LOLA DEM slope of ${slopeDeg}° exceeds maximum limit of ${constraints.maxSlopeDeg}°. Rollover hazard during touchdown.`,
+      detail: `Local LOLA DEM slope of ${slopeDeg.toFixed(1)}° exceeds maximum limit of ${constraints.maxSlopeDeg}°. Rollover hazard during touchdown.`,
     });
   }
 
@@ -198,7 +243,7 @@ export function evaluateCandidateForMissionWindow(
     });
   }
 
-  // 4. Explainable Weighted Scoring (0 to 100)
+  // 4. Explainable Weighted Scoring (0 to 100) — Strictly Data-Driven (No Fabricated Values)
   const rawWeights = constraints.weights || DEFAULT_PLANNER_CONSTRAINTS.weights;
   const wSum =
     (rawWeights.sun ?? 0.35) +
@@ -212,25 +257,42 @@ export function evaluateCandidateForMissionWindow(
 
   const isCompliant = violations.filter((v) => v.severity === 'critical').length === 0;
 
-  const sunlitScore = Math.min(100, Math.round((sunlitRatio / 85) * 100));
-  const dteScore = candidate.isFarSide ? (constraints.requireDTE ? 0 : 50) : dteUptimeRatio;
-  const slopeScore = Math.max(0, Math.round(100 - (slopeDeg / 15) * 100));
-  const thermalSpan = Math.abs(maxTemp - minTemp);
-  const thermalScore = Math.max(10, Math.round(100 - (thermalSpan / 300) * 90));
-
-  const rawWeightedScore = Math.round(
-    sunlitScore * wSun +
-      dteScore * wDte +
-      slopeScore * wSlope +
-      thermalScore * wThermal
-  );
+  // Component scores are exact physical [0, 100] percentages:
+  // - sunlitScore: exact % of window sunlit
+  // - dteScore: exact % of window with DTE line-of-sight (0% on farside)
+  // - slopeScore: linear safety margin relative to 15° tip-over limit, or null if outside 80°S–90°S LOLA DEM
+  // - thermalScore: Calculated minimum temperature stability relative to [40 K PSR floor, 250 K benign regime]
+  const sunlitScore = Math.max(0, Math.min(100, sunlitRatio));
+  const dteScore = candidate.isFarSide ? 0 : Math.max(0, Math.min(100, dteUptimeRatio));
+  const slopeScore = hasSlopeData
+    ? Math.max(0, Math.min(100, Math.round((1 - slopeDeg / 15) * 100)))
+    : null;
+  const minTempK = minTemp + 273.15;
+  const thermalScore = Math.max(0, Math.min(100, Math.round(((minTempK - 40) / (250 - 40)) * 100)));
 
   let overallScore = 0;
-  if (isCompliant) {
-    overallScore =
-      violations.length > 0 ? Math.max(20, rawWeightedScore - 10) : rawWeightedScore;
+  let formulaString = '';
+  const isPartialScore = !hasSlopeData;
+
+  if (hasSlopeData) {
+    overallScore = Math.round(
+      sunlitScore * wSun +
+        dteScore * wDte +
+        slopeScore * wSlope +
+        thermalScore * wThermal
+    );
+    formulaString = `Score = ${(wSun * 100).toFixed(0)}%·Sun(${sunlitScore}) + ${(wDte * 100).toFixed(0)}%·DTE(${dteScore}) + ${(wSlope * 100).toFixed(0)}%·Slope(${slopeScore}) + ${(wThermal * 100).toFixed(0)}%·Thermal(${thermalScore})`;
   } else {
-    overallScore = Math.max(8, Math.round(rawWeightedScore * 0.42));
+    // Slope data is not present in loaded dataset (outside 80°S–90°S LOLA DEM).
+    // Never invent a slope score; normalize only over the available calculated dimensions.
+    const activeWeightSum = wSun + wDte + wThermal || 1;
+    const nwSun = wSun / activeWeightSum;
+    const nwDte = wDte / activeWeightSum;
+    const nwThermal = wThermal / activeWeightSum;
+    overallScore = Math.round(
+      sunlitScore * nwSun + dteScore * nwDte + thermalScore * nwThermal
+    );
+    formulaString = `Score (Partial — Slope Not Present) = ${(nwSun * 100).toFixed(0)}%·Sun(${sunlitScore}) + ${(nwDte * 100).toFixed(0)}%·DTE(${dteScore}) + ${(nwThermal * 100).toFixed(0)}%·Thermal(${thermalScore}) [Slope: Not present outside 80°S–90°S DEM]`;
   }
 
   // Specification Section 8 Descriptive Feasibility Outcomes:
@@ -246,15 +308,19 @@ export function evaluateCandidateForMissionWindow(
     tierLabel = 'Insufficient Data';
     tierColor = 'text-slate-300 bg-slate-900 border-slate-700';
   } else if (isCompliant) {
-    if (overallScore >= 78 && violations.length === 0) {
+    if (overallScore >= 75 && violations.length === 0) {
       suitabilityOutcome = 'Favorable';
       tier = 'tier-1';
-      tierLabel = 'Favorable · Primary Target';
+      tierLabel = isPartialScore
+        ? 'Favorable · Partial (No DEM Slope)'
+        : 'Favorable · Primary Target';
       tierColor = 'text-cyan-300 bg-cyan-950/80 border-cyan-500/80';
-    } else if (overallScore >= 55) {
+    } else if (overallScore >= 50) {
       suitabilityOutcome = 'Conditional';
       tier = 'tier-2';
-      tierLabel = 'Conditional · Viable Window';
+      tierLabel = isPartialScore
+        ? 'Conditional · Partial (No DEM Slope)'
+        : 'Conditional · Viable Window';
       tierColor = 'text-emerald-300 bg-emerald-950/80 border-emerald-500/80';
     } else {
       suitabilityOutcome = 'Challenging';
@@ -265,12 +331,27 @@ export function evaluateCandidateForMissionWindow(
   }
 
   const formulaBreakdown = {
-    formulaString: `Score = ${(wSun * 100).toFixed(0)}%·Sun(${sunlitScore}) + ${(wDte * 100).toFixed(0)}%·DTE(${dteScore}) + ${(wSlope * 100).toFixed(0)}%·Slope(${slopeScore}) + ${(wThermal * 100).toFixed(0)}%·Thermal(${thermalScore})`,
+    formulaString,
     weights: { wSun, wDte, wSlope, wThermal },
     hasHighResCoverage,
+    hasSlopeData,
+    isPartialScore,
+    partialScoreNote: isPartialScore
+      ? 'Terrain elevation & slope not present in loaded dataset (outside 80°S–90°S LOLA DEM). Score calculated from Solar, DTE, and Thermal dimensions only.'
+      : null,
     suitabilityOutcome,
+    provenance: {
+      elevation: hasElevationData ? 'Measured Dataset (NASA LRO LOLA 400 m/px)' : 'Not present in loaded dataset',
+      slope: hasSlopeData ? 'Calculated (Horn 3×3 Gradient on LOLA 400 m/px DEM)' : 'Not present in loaded dataset',
+      horizon: isHorizonModeled
+        ? 'Measured Dataset (LOLA DEM 360° Horizon Profile)'
+        : 'Not present outside 80°S–90°S DEM (Geometric 0° horizon used)',
+      illumination: 'Calculated (Meeus Ephemeris + Horizon Mask)',
+      dte: 'Calculated (Topocentric Selenographic Libration + Horizon Mask)',
+      thermal: 'Calculated (Analytical Radiative Balance Model — Diviner dataset not present)',
+    },
     disclaimer:
-      'Preliminary scientific trade-study indicator derived from LRO LOLA (240 m/px) & DE440 ephemerides. Not a flight-certification guarantee.',
+      'Preliminary scientific trade-study indicator derived from LRO LOLA (400 m/px, 0.5 m vertical scale) & Meeus/IAU analytical ephemerides. Not a flight-certification guarantee.',
   };
 
   // 5. Evidence-based scientific rationale
@@ -297,15 +378,21 @@ export function evaluateCandidateForMissionWindow(
     );
   }
 
-  if (slopeDeg <= 6.0) {
+  if (hasSlopeData && slopeDeg <= 6.0) {
     reasonsWhy.push(
       `Gentle local topography: ${slopeDeg.toFixed(1)}° LOLA slope minimizes touchdown rollover hazard.`
     );
   }
 
-  if (elevationM > 2000) {
+  if (hasElevationData && elevationM > 2000) {
     reasonsWhy.push(
       `Elevated polar massif/ridge (+${elevationM.toLocaleString()} m) rises above surrounding horizon masks.`
+    );
+  }
+
+  if (!hasSlopeData) {
+    operationalRisks.push(
+      'Local terrain slope & elevation not present in loaded dataset (site is north of 80°S LOLA South Pole DEM coverage).'
     );
   }
 
@@ -317,11 +404,11 @@ export function evaluateCandidateForMissionWindow(
 
   if (minTemp < -150) {
     operationalRisks.push(
-      `Cryogenic surface regime reaches ${minTemp}°C; actuator and seal thermal protection required.`
+      `Cryogenic surface regime reaches ${minTemp}°C (Calculated); actuator and seal thermal protection required.`
     );
   }
 
-  if (slopeDeg > 8.0) {
+  if (hasSlopeData && slopeDeg > 8.0) {
     operationalRisks.push(
       `Local terrain gradient (${slopeDeg.toFixed(1)}°) requires terminal LiDAR hazard detection.`
     );
@@ -338,8 +425,16 @@ export function evaluateCandidateForMissionWindow(
   }
 
   return {
+    id: siteId,
+    slopeDeg,
+    elevationM,
+    sunlitRatio,
+    dteUptimeRatio,
+    slopeScore,
+    formulaString: formulaBreakdown.formulaString,
     candidate: {
       ...candidate,
+      id: siteId,
       lat,
       lon,
       latitude: lat,
@@ -348,6 +443,7 @@ export function evaluateCandidateForMissionWindow(
       elevationM,
     },
     isCompliant,
+    isPartialScore,
     overallScore,
     suitabilityOutcome,
     tier,
@@ -362,11 +458,16 @@ export function evaluateCandidateForMissionWindow(
       thermalScore,
     },
     touchdown: {
-      dateString: new Date(landingMs).toUTCString(),
+      dateString: new Date(safeLandingMs).toUTCString(),
       sunElevationDeg: sol0.elevationDeg,
       sunAzimuthDeg: sol0.azimuthDeg,
       terrainHorizonDeg: terrainHorizon0,
+<<<<<<< Updated upstream
       isSunlit: sol0.status === 'sunlit',
+=======
+      isHorizonModeled,
+      isSunlit: sol0.status === 'sunlit',
+>>>>>>> Stashed changes
       surfaceTempC: thermal0.tempC,
       surfaceTempK: thermal0.tempK,
       isDteLinked: isDteLinked0,
@@ -392,12 +493,12 @@ export function evaluateCandidateForMissionWindow(
 
 export function rankLandingCandidates(
   candidates,
-  landingMs,
+  landingMsOrOpts,
   durationDays,
   constraints = DEFAULT_PLANNER_CONSTRAINTS
 ) {
   const evaluations = candidates.map((cand) =>
-    evaluateCandidateForMissionWindow(cand, landingMs, durationDays, constraints)
+    evaluateCandidateForMissionWindow(cand, landingMsOrOpts, durationDays, constraints)
   );
 
   evaluations.sort((a, b) => {
@@ -423,7 +524,11 @@ export function simulateMissionTimelineTracks(
   const lon = site?.lon ?? site?.longitude ?? 0.0;
   const siteId = site?.id || 'custom-sim-site';
   const metrics = sampleLunarTerrainMetrics(lat, lon, site);
-  const slopeDeg = metrics.slopeDeg;
+  const slopeDeg =
+    typeof site?.slopeDeg === 'number' && Number.isFinite(site.slopeDeg)
+      ? site.slopeDeg
+      : metrics.slopeDeg;
+  const hasSlopeData = slopeDeg !== null && Number.isFinite(slopeDeg);
 
   const totalHours = Math.max(24, durationDays * 24);
   const safeStepHours = Math.max(1, stepHours);
@@ -440,9 +545,8 @@ export function simulateMissionTimelineTracks(
     const tMs = startMs + i * stepMs;
     const state = computeCelestialState(tMs);
     const flatSun = solarPosition(state, lat, lon, 0);
-    const sunHorizon =
-      horizonAt(HORIZON_TABLE, siteId, flatSun.azimuthDeg, lat, lon) ??
-      (Math.abs(lat) > 80 ? 2.2 : 0.0);
+    const rawSunHorizon = horizonAt(HORIZON_TABLE, siteId, flatSun.azimuthDeg, lat, lon);
+    const sunHorizon = rawSunHorizon !== null && Number.isFinite(rawSunHorizon) ? rawSunHorizon : 0.0;
     const sun = solarPosition(state, lat, lon, sunHorizon);
 
     const dte = evaluateEarthLink({
@@ -454,7 +558,7 @@ export function simulateMissionTimelineTracks(
     });
 
     const isTerrainBlockingSun = flatSun.elevationDeg > 0 && flatSun.elevationDeg <= sunHorizon;
-    const isTerrainBlockingEarth = dte.status === 'blocked';
+    const isTerrainBlockingEarth = dte.status === 'blocked' && dte.reason === 'terrain';
     const maxHorizonMaskDeg = Math.max(sunHorizon, dte.terrainHorizonDeg ?? 0);
 
     // Track 1: Solar Availability ('sunlit' | 'blocked' | 'night')
@@ -463,7 +567,7 @@ export function simulateMissionTimelineTracks(
 
     // Track 2: Earth Visibility ('clear' | 'doubtful' | 'blocked' | 'away')
     const earthStatus = dte.status;
-    if (earthStatus === 'clear') dteClearCount++;
+    if (earthStatus === 'clear' || earthStatus === 'doubtful') dteClearCount++;
 
     // Track 3: Terrain Obstruction ('unobstructed' | 'grazing' | 'masked')
     let obstructionStatus = 'unobstructed';
@@ -477,14 +581,14 @@ export function simulateMissionTimelineTracks(
     // Track 4: Operational Risk ('favorable' | 'conditional' | 'challenging')
     let riskStatus = 'favorable';
     if (
-      slopeDeg >= 15 ||
+      (hasSlopeData && slopeDeg >= 15) ||
       (solarStatus !== 'sunlit' && earthStatus !== 'clear') ||
       earthStatus === 'away'
     ) {
       riskStatus = 'challenging';
       highRiskCount++;
     } else if (
-      slopeDeg >= 10 ||
+      (hasSlopeData && slopeDeg >= 10) ||
       solarStatus !== 'sunlit' ||
       earthStatus !== 'clear'
     ) {
@@ -564,13 +668,19 @@ export function compareWhatIfScenarios(
     unchanged.push(`Direct-to-Earth link uptime unchanged (${evalB.durationOutlook.dteUptimeRatio}%).`);
   }
 
-  const slopeDelta = Number((evalB.candidate.slopeDeg - evalA.candidate.slopeDeg).toFixed(1));
-  if (slopeDelta <= -0.5) {
-    improved.push(`Local terrain slope reduced by ${slopeDelta}° (${evalA.candidate.slopeDeg}° → ${evalB.candidate.slopeDeg}°).`);
-  } else if (slopeDelta >= 0.5) {
-    deteriorated.push(`Local terrain slope steepened by +${slopeDelta}° (${evalA.candidate.slopeDeg}° → ${evalB.candidate.slopeDeg}°).`);
+  const slopeA = evalA.candidate.slopeDeg;
+  const slopeB = evalB.candidate.slopeDeg;
+  if (slopeA !== null && slopeB !== null && Number.isFinite(slopeA) && Number.isFinite(slopeB)) {
+    const slopeDelta = Number((slopeB - slopeA).toFixed(1));
+    if (slopeDelta <= -0.5) {
+      improved.push(`Local terrain slope reduced by ${slopeDelta}° (${slopeA.toFixed(1)}° → ${slopeB.toFixed(1)}°).`);
+    } else if (slopeDelta >= 0.5) {
+      deteriorated.push(`Local terrain slope steepened by +${slopeDelta}° (${slopeA.toFixed(1)}° → ${slopeB.toFixed(1)}°).`);
+    } else {
+      unchanged.push(`Terrain slope consistent (${slopeB.toFixed(1)}°).`);
+    }
   } else {
-    unchanged.push(`Terrain slope consistent (${evalB.candidate.slopeDeg}°).`);
+    unchanged.push('Terrain slope comparison unavailable (outside 80°S–90°S LOLA DEM coverage).');
   }
 
   const darkDelta = evalB.durationOutlook.longestDarkHours - evalA.durationOutlook.longestDarkHours;

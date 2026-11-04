@@ -192,7 +192,8 @@ test('Lunar Terrain Metrics & Slope Hazard Warnings (Custom Dropped Pin Terrain 
   assert.equal(safeMetrics.isSlopeHazard, false);
   assert.equal(safeMetrics.terrainClassification, 'Polar Illuminated Massif / Ridge');
   assert.ok(safeMetrics.roughnessM > 0);
-  assert.ok(safeMetrics.craterDensityPer100Km2 > 0);
+  assert.equal(safeMetrics.craterDensityPer100Km2, null);
+  assert.equal(safeMetrics.craterDensityLabel, 'Not present in loaded dataset');
 
   // Steep slope hazard (>= 15°)
   const steepMetrics = sampleLunarTerrainMetrics(-88.5, 45.0, {
@@ -348,6 +349,60 @@ test('Scientific Terrain Analysis: Authenticity, Horn Gradient, Configurable Rad
   assert.equal(polarMetrics.uncertainty.isAvailable, true);
   assert.equal(polarMetrics.uncertainty.verticalAccuracy, '±1.0 m (absolute)');
 });
+
+test('Audit Verification: LOLA Worker 0.5 m Vertical Scaling & Unified Planner Engine Non-Fabrication', async () => {
+  const {
+    initWorkerDemBuffer,
+    sampleElevation,
+    sampleElevationAtMeters,
+    computeSlopeAtMeters,
+  } = await import('../src/workers/lolaTileWorker.js');
+  const { rankLandingCandidates, DEFAULT_PLANNER_CONSTRAINTS } = await import(
+    '../src/utils/plannerEngine.js'
+  );
+  const { PLANNER_CANDIDATES } = await import('../src/data/plannerCandidates.js');
+  const { ensurePolarDemLoaded } = await import('../src/utils/horizons.js');
+
+  await ensurePolarDemLoaded(true);
+
+  // Verify lolaTileWorker applies 0.5 m/DN scaling and returns null out of bounds
+  const dummyGrid = new Int16Array(1520 * 1520);
+  dummyGrid.fill(2000); // 2000 * 0.5 = +1000 m
+  initWorkerDemBuffer(dummyGrid);
+  assert.equal(sampleElevation(760, 760), 1000);
+  assert.equal(sampleElevationAtMeters(0, 0), 1000);
+  const flatSlope = computeSlopeAtMeters(0, 0);
+  assert.equal(flatSlope.elevationM, 1000);
+  assert.equal(flatSlope.slopeDeg, 0);
+
+  const outOfBoundsSlope = computeSlopeAtMeters(500000, 500000);
+  assert.equal(outOfBoundsSlope.elevationM, null);
+  assert.equal(outOfBoundsSlope.slopeDeg, null);
+
+  // Verify rankLandingCandidates runs all 19 candidates without crashing on null slope/elevation
+  const ranked = rankLandingCandidates(PLANNER_CANDIDATES, {
+    ...DEFAULT_PLANNER_CONSTRAINTS,
+    landingTimeMs: Date.parse('2026-09-20T12:00:00Z'),
+    missionDurationDays: 14,
+  });
+  assert.equal(ranked.length, PLANNER_CANDIDATES.length);
+
+  // Nearside polar sites must have > 0% DTE uptime
+  const malapert = ranked.find((r) => r.id === 'landing-artemis3-malapert');
+  assert.ok(malapert, 'Malapert candidate should exist');
+  assert.ok(malapert.dteUptimeRatio > 0, `Nearside polar site DTE uptime must be > 0%, got ${malapert.dteUptimeRatio}%`);
+  assert.ok(malapert.slopeDeg !== null, 'Polar site slopeDeg must be sampled from LOLA DEM');
+  assert.ok(malapert.elevationM !== null, 'Polar site elevationM must be sampled from LOLA DEM');
+
+  // Non-polar sites outside 80°S-90°S must have slopeDeg === null and slopeScore === null (never coerced to 100)
+  const crisium = ranked.find((r) => r.id === 'landing-clps-firefly-crisium');
+  assert.ok(crisium, 'Mare Crisium candidate should exist');
+  assert.equal(crisium.slopeDeg, null, 'Non-polar site outside 80°S-90°S DEM must have slopeDeg === null');
+  assert.equal(crisium.elevationM, null, 'Non-polar site outside 80°S-90°S DEM must have elevationM === null');
+  assert.equal(crisium.slopeScore, null, 'Non-polar site slopeScore must be null, not coerced to 100');
+  assert.equal(crisium.isPartialScore, true, 'Non-polar site must be flagged as partial 3-criterion score');
+});
+
 
 
 

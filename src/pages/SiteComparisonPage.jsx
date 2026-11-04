@@ -39,12 +39,26 @@ import {
   calculateEarthTransition,
   formatDuration,
 } from '../utils/transitionTimes.js';
-import { horizonAt, HORIZON_TABLE, getHorizonProfile } from '../utils/horizons.js';
+import {
+  horizonAt,
+  HORIZON_TABLE,
+  getHorizonProfile,
+  ensurePolarDemLoaded,
+  sampleLunarTerrainMetrics,
+} from '../utils/horizons.js';
 import { getLunarTemperature } from '../utils/lunarThermal.js';
+<<<<<<< Updated upstream
+import { celestialTimeStore } from '../utils/celestialTime.js';
+=======
+import {
+  evaluateCandidateForMissionWindow,
+  DEFAULT_PLANNER_CONSTRAINTS,
+} from '../utils/plannerEngine.js';
 import {
   celestialTimeStore,
   normalizeCelestialTimeMs,
 } from '../utils/celestialTime.js';
+>>>>>>> Stashed changes
 import { notifySuccess, notifyInfo } from '../utils/feedbackStore.js';
 
 // Safe number formatter that never throws on undefined/null/NaN
@@ -142,22 +156,35 @@ export default function SiteComparisonPage({
     notifyInfo(`Applied epoch preset: ${preset.label}`);
   };
 
+  const [demLoadedTick, setDemLoadedTick] = useState(0);
+  useEffect(() => {
+    ensurePolarDemLoaded()
+      .then((grid) => {
+        if (grid) setDemLoadedTick((t) => t + 1);
+      })
+      .catch(() => {});
+  }, []);
+
   // Evaluate candidate site metrics
   const evaluateCandidate = (site, timeMs) => {
     if (!site) return null;
     try {
       const lat = site.latitude ?? site.lat ?? 0;
       const lon = site.longitude ?? site.lon ?? 0;
+      const terrainMetrics = sampleLunarTerrainMetrics(lat, lon, site);
       const normalizedSite = {
         ...site,
         latitude: lat,
         longitude: lon,
+        slopeDeg: terrainMetrics?.slopeDeg ?? null,
+        elevationM: terrainMetrics?.elevationM ?? null,
+        roughnessM: terrainMetrics?.roughnessM ?? null,
       };
 
       const state = computeCelestialState(timeMs);
 
       const flat = solarPosition(state, lat, lon);
-      const terrainHorizonDeg = horizonAt(HORIZON_TABLE, site.id, flat.azimuthDeg) ?? 0;
+      const terrainHorizonDeg = horizonAt(HORIZON_TABLE, site.id, flat.azimuthDeg, lat, lon) ?? 0;
       const sun = solarPosition(state, lat, lon, terrainHorizonDeg);
 
       const solarTransition = calculateSolarTransition(timeMs, lat, lon, site.id);
@@ -167,26 +194,27 @@ export default function SiteComparisonPage({
         state,
         moonFeature: normalizedSite,
         constraints: DEFAULT_DTE_CONSTRAINTS,
-        terrainFn: (az) => horizonAt(HORIZON_TABLE, site.id, az),
+        terrainFn: (az) => horizonAt(HORIZON_TABLE, site.id, az, lat, lon) ?? 0,
       });
 
-      const thermal = getLunarTemperature(lat, lon, new Date(timeMs));
+      const thermal = getLunarTemperature(lat, lon, new Date(timeMs), {
+        terrainHorizonDeg,
+        elevationM: terrainMetrics?.elevationM ?? null,
+      });
 
       const clearance = sun.elevationDeg - terrainHorizonDeg;
-      const isSunlit = sun.elevationDeg > 0 && clearance > 0;
+      const isSunlit = sun.elevationDeg > 0 && clearance > 0 && !thermal.isPSR;
       const powerPotential = isSunlit
-        ? Math.min(100, Math.max(10, Math.round(Math.sin((sun.elevationDeg * Math.PI) / 180) * 110)))
+        ? solarTransition?.powerEfficiencyPct ?? Math.round(Math.max(0, Math.sin((sun.elevationDeg * Math.PI) / 180)) * 100)
         : 0;
 
-      // Operational suitability score (0 - 100)
-      let score = 50;
-      if (isSunlit) score += 25;
-      if (dte.status === 'clear') score += 20;
-      else if (dte.status === 'doubtful') score += 5;
-      else score -= 15;
-
-      if (thermal.surfaceTempC > -60 && thermal.surfaceTempC < 60) score += 5;
-      score = Math.max(0, Math.min(100, score));
+      // Unified deterministic operational suitability score (0 - 100)
+      const unifiedEval = evaluateCandidateForMissionWindow(normalizedSite, {
+        ...DEFAULT_PLANNER_CONSTRAINTS,
+        landingTimeMs: timeMs,
+        missionDurationDays: 14,
+      });
+      const score = unifiedEval?.overallScore ?? 50;
 
       return {
         site: normalizedSite,
@@ -200,7 +228,10 @@ export default function SiteComparisonPage({
         earthTransition,
         dte,
         thermal,
+        terrainMetrics,
         score,
+        formulaString: unifiedEval?.formulaString,
+        isPartialScore: unifiedEval?.isPartialScore,
       };
     } catch (err) {
       console.error('Failed to evaluate candidate:', err);
@@ -217,13 +248,13 @@ export default function SiteComparisonPage({
     [siteDId]
   );
 
-  const evalA = useMemo(() => evaluateCandidate(currentSiteA, timeA), [currentSiteA, timeA]);
+  const evalA = useMemo(() => evaluateCandidate(currentSiteA, timeA), [currentSiteA, timeA, demLoadedTick]);
   const evalB = useMemo(
     () => evaluateCandidate(activeTab === 'dates' ? currentSiteA : currentSiteB, timeB),
-    [activeTab, currentSiteA, currentSiteB, timeB]
+    [activeTab, currentSiteA, currentSiteB, timeB, demLoadedTick]
   );
-  const evalC = useMemo(() => evaluateCandidate(currentSiteC, timeA), [currentSiteC, timeA]);
-  const evalD = useMemo(() => evaluateCandidate(currentSiteD, timeA), [currentSiteD, timeA]);
+  const evalC = useMemo(() => evaluateCandidate(currentSiteC, timeA), [currentSiteC, timeA, demLoadedTick]);
+  const evalD = useMemo(() => evaluateCandidate(currentSiteD, timeA), [currentSiteD, timeA, demLoadedTick]);
 
   // Automated scientific trade-off verdict
   const verdict = useMemo(() => {

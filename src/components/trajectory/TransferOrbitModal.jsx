@@ -52,10 +52,10 @@ export default function TransferOrbitModal({
   onNavigateToMoonTarget,
 }) {
   // ── Selection State ────────────────────────────────────────────────────────
-  const [selectedLaunchId] = useState(
+  const [selectedLaunchId, setSelectedLaunchId] = useState(
     () => initialLaunchSiteId || 'earth-pad-ksc-lc39a'
   );
-  const [selectedMoonId] = useState(
+  const [selectedMoonId, setSelectedMoonId] = useState(
     () => initialMoonSiteId || 'landing-apollo-11'
   );
   const [profileId, setProfileId] = useState('direct');
@@ -325,6 +325,44 @@ export default function TransferOrbitModal({
               <span className="hidden sm:inline-block text-[#A78BFA] text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-[#A78BFA]/10 border border-[#A78BFA]/20 flex-shrink-0 ml-2">
                 {orbitPlan.profile.transitNote}
               </span>
+            </div>
+
+            {/* Interactive Departure Launch Pad & Lunar Landing Target Selectors */}
+            <div className="mt-2.5 pt-2.5 border-t border-[#1b2d45]/70 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-mono">
+              <div className="flex items-center justify-between gap-2 bg-[#060B13] px-3 py-1.5 rounded-xl border border-[#16283C]">
+                <span className="text-[10px] uppercase tracking-wider text-[#94A3B8] shrink-0">
+                  Earth Pad:
+                </span>
+                <select
+                  aria-label="Departure Earth Launch Pad"
+                  value={selectedLaunchId}
+                  onChange={(e) => setSelectedLaunchId(e.target.value)}
+                  className="bg-transparent text-white font-semibold text-xs focus:outline-none truncate max-w-[240px]"
+                >
+                  {EARTH_LAUNCH_SITES.slice(0, 25).map((pad) => (
+                    <option key={pad.id} value={pad.id} className="bg-[#0A111C] text-white">
+                      {pad.name} ({pad.agency})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex items-center justify-between gap-2 bg-[#060B13] px-3 py-1.5 rounded-xl border border-[#16283C]">
+                <span className="text-[10px] uppercase tracking-wider text-[#94A3B8] shrink-0">
+                  Moon Target:
+                </span>
+                <select
+                  aria-label="Target Lunar Landing Site"
+                  value={selectedMoonId}
+                  onChange={(e) => setSelectedMoonId(e.target.value)}
+                  className="bg-transparent text-[#38BDF8] font-semibold text-xs focus:outline-none truncate max-w-[240px]"
+                >
+                  {LANDING_SITES.map((site) => (
+                    <option key={site.id} value={site.id} className="bg-[#0A111C] text-white">
+                      {site.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
 

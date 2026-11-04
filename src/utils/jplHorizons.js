@@ -175,27 +175,49 @@ export async function fetchJplMoonEphemeris(targetDate = new Date(), timeoutMs =
     // Graceful fallback to local high-precision astronomy-engine
   }
 
-  // Fallback using astronomy-engine local calculation
-  const fallback = computeCelestialState(dateObj.getTime());
-  const distKm = fallback.earth?.distanceKm || 384400;
+  // Fallback using local Meeus analytical ephemeris with central-difference velocity
+  const tMs = dateObj.getTime();
+  const dtSec = 60;
+  const state0 = computeCelestialState(tMs);
+  const stateMinus = computeCelestialState(tMs - dtSec * 1000);
+  const statePlus = computeCelestialState(tMs + dtSec * 1000);
 
-  // Approximate 3D vector using Moon declination and RA from local ephemeris
-  const subLat = (fallback.earth?.subLat || 0) * (Math.PI / 180);
-  const subLon = (fallback.earth?.subLon || 0) * (Math.PI / 180);
+  const toGeocentricEclipticKm = (st) => {
+    const r = st.earth?.distanceKm || 384400;
+    // Direction from Moon to Earth is (subLat, subLon); Earth to Moon is opposite
+    const latRad = -((st.earth?.subLat || 0) * Math.PI) / 180;
+    const lonRad = (((st.earth?.subLon || 0) + 180) * Math.PI) / 180;
+    return {
+      x: r * Math.cos(latRad) * Math.cos(lonRad),
+      y: r * Math.cos(latRad) * Math.sin(lonRad),
+      z: r * Math.sin(latRad),
+      r,
+    };
+  };
+
+  const p0 = toGeocentricEclipticKm(state0);
+  const pMinus = toGeocentricEclipticKm(stateMinus);
+  const pPlus = toGeocentricEclipticKm(statePlus);
+
+  const vxKmS = Number(((pPlus.x - pMinus.x) / (2 * dtSec)).toFixed(4));
+  const vyKmS = Number(((pPlus.y - pMinus.y) / (2 * dtSec)).toFixed(4));
+  const vzKmS = Number(((pPlus.z - pMinus.z) / (2 * dtSec)).toFixed(4));
+  const rangeRateKmS = Number(((pPlus.r - pMinus.r) / (2 * dtSec)).toFixed(4));
 
   return {
-    xKm: -distKm * Math.cos(subLat) * Math.cos(subLon),
-    yKm: -distKm * Math.cos(subLat) * Math.sin(subLon),
-    zKm: -distKm * Math.sin(subLat),
-    vxKmS: -0.42,
-    vyKmS: -0.94,
-    vzKmS: -0.09,
-    rangeKm: distKm,
-    rangeRateKmS: 0.041,
-    lightTimeSec: distKm / 299792.458,
+    xKm: Number(p0.x.toFixed(2)),
+    yKm: Number(p0.y.toFixed(2)),
+    zKm: Number(p0.z.toFixed(2)),
+    vxKmS,
+    vyKmS,
+    vzKmS,
+    rangeKm: Number(p0.r.toFixed(2)),
+    rangeRateKmS,
+    lightTimeSec: Number((p0.r / 299792.458).toFixed(4)),
     dateStr,
     isLive: false,
-    source: 'Local Astronomy Engine (IAU/WGCCRE High-Precision)',
+    source: 'Calculated (Meeus Analytical Ephemeris — Central Difference)',
   };
 }
+
 

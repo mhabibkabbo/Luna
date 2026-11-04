@@ -27,15 +27,17 @@ export default function HorizonProfileChart({
   currentSun,
   startMs,
 }) {
-  const profile = getHorizonProfile(HORIZON_TABLE, siteId);
+  const fallbackLat = typeof latitude === "number" && !Number.isNaN(latitude) ? latitude : null;
+  const fallbackLon = typeof longitude === "number" && !Number.isNaN(longitude) ? longitude : null;
+  const profile = getHorizonProfile(HORIZON_TABLE, siteId, fallbackLat, fallbackLon);
   const effectiveStartMs = typeof startMs === "number" && !Number.isNaN(startMs) ? startMs : Date.now();
-  const effectiveLat = typeof latitude === "number" && !Number.isNaN(latitude) ? latitude : (profile?.lat ?? 0);
-  const effectiveLon = typeof longitude === "number" && !Number.isNaN(longitude) ? longitude : (profile?.lon ?? 0);
+  const effectiveLat = fallbackLat !== null ? fallbackLat : (profile?.lat ?? 0);
+  const effectiveLon = fallbackLon !== null ? fallbackLon : (profile?.lon ?? 0);
 
   const data = useMemo(() => {
     const terrain = [];
     for (let az = 0; az <= 360; az += 1) {
-      terrain.push({ az, h: horizonAt(HORIZON_TABLE, siteId, az) });
+      terrain.push({ az, h: horizonAt(HORIZON_TABLE, siteId, az, effectiveLat, effectiveLon) });
     }
 
     const track = [];
@@ -45,7 +47,7 @@ export default function HorizonProfileChart({
         const stepTime = effectiveStartMs + i * PATH_STEP_H * 3600000;
         const state = computeCelestialState(stepTime);
         const flat = solarPosition(state, effectiveLat, effectiveLon);
-        const hz = horizonAt(HORIZON_TABLE, siteId, flat.azimuthDeg) ?? 0;
+        const hz = horizonAt(HORIZON_TABLE, siteId, flat.azimuthDeg, effectiveLat, effectiveLon) ?? 0;
         const pos = solarPosition(state, effectiveLat, effectiveLon, hz);
         // Only plot Sun positions that are plausibly interesting (near or above the horizon)
         if (flat.elevationDeg > -3) {

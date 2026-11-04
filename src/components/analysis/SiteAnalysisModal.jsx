@@ -24,7 +24,11 @@ import {
 } from '../../utils/earthLink.js';
 import { computeCelestialState, solarPosition } from '../../utils/lunarEphemeris.js';
 import { celestialTimeStore } from '../../utils/celestialTime.js';
-import { horizonAt, HORIZON_TABLE } from '../../utils/horizons.js';
+import { horizonAt, HORIZON_TABLE, ensurePolarDemLoaded, sampleLunarTerrainMetrics } from '../../utils/horizons.js';
+import {
+  evaluateCandidateForMissionWindow,
+  DEFAULT_PLANNER_CONSTRAINTS,
+} from '../../utils/plannerEngine.js';
 import HorizonViewCard from '../features/HorizonViewCard.jsx';
 
 export default function SiteAnalysisModal({
@@ -78,11 +82,6 @@ export default function SiteAnalysisModal({
     return feature.regionInfo || getLunarRegionInfo(featLon, featLat);
   }, [feature, isEarthBody, featLon, featLat]);
 
-  const localThermal = useMemo(() => {
-    if (!feature || isEarthBody) return null;
-    return getLunarTemperature(featLat, featLon);
-  }, [feature, isEarthBody, featLat, featLon]);
-
   const payloadsList = useMemo(() => {
     if (clpsData?.payloads) return clpsData.payloads;
     if (Array.isArray(safeFeature.payloads)) return safeFeature.payloads;
@@ -91,15 +90,43 @@ export default function SiteAnalysisModal({
 
   // Compute Ephemeris state
   const [timeMs, setTimeMs] = useState(() => celestialTimeStore.get().ms);
+  const [demTick, setDemTick] = useState(0);
   React.useEffect(() => {
+    ensurePolarDemLoaded()
+      .then((grid) => {
+        if (grid) setDemTick((t) => t + 1);
+      })
+      .catch(() => {});
     const unsubscribe = celestialTimeStore.subscribe(({ ms }) => {
       setTimeMs(ms);
     });
     return unsubscribe;
   }, []);
+
+  const terrainMetrics = useMemo(() => {
+    if (!feature || isEarthBody) return null;
+    return sampleLunarTerrainMetrics(featLat, featLon, feature);
+  }, [feature, isEarthBody, featLat, featLon, demTick]);
+
   const state = useMemo(() => computeCelestialState(timeMs), [timeMs]);
-  const terrainFn = useMemo(() => (azimuthDeg) => horizonAt(HORIZON_TABLE, featureId, azimuthDeg) ?? 0, [featureId]);
-  const earthLook = useMemo(() => earthLookFromMoon(state, { latitude: featLat, longitude: featLon }), [state, featLat, featLon]);
+  const terrainFn = useMemo(
+    () => (azimuthDeg) => horizonAt(HORIZON_TABLE, featureId, azimuthDeg, featLat, featLon) ?? 0,
+    [featureId, featLat, featLon, demTick]
+  );
+  const earthLook = useMemo(
+    () => earthLookFromMoon(state, { latitude: featLat, longitude: featLon }),
+    [state, featLat, featLon]
+  );
+
+  const localThermal = useMemo(() => {
+    if (!feature || isEarthBody) return null;
+    const flatSun = solarPosition(state, featLat, featLon);
+    const sunHoriz = terrainFn(flatSun.azimuthDeg) ?? 0;
+    return getLunarTemperature(featLat, featLon, new Date(timeMs), {
+      terrainHorizonDeg: sunHoriz,
+      elevationM: terrainMetrics?.elevationM ?? null,
+    });
+  }, [feature, isEarthBody, featLat, featLon, timeMs, state, terrainFn, terrainMetrics?.elevationM]);
 
   // Primary NASA DSN ground stations
   const dsnStations = useMemo(() => {
@@ -239,18 +266,27 @@ export default function SiteAnalysisModal({
       };
     });
 
-    const sunlitRatio = Math.round((sunlitSteps / numSamples) * 100);
-    const dsnRatio = isFarside ? 0 : Math.round((dsnSteps / numSamples) * 100);
+    const unifiedEval = evaluateCandidateForMissionWindow(
+      {
+        id: featureId,
+        name: clpsData?.name || safeFeature.name || 'Lunar Site',
+        latitude: featLat,
+        longitude: featLon,
+        slopeDeg: terrainMetrics?.slopeDeg ?? null,
+        elevationM: terrainMetrics?.elevationM ?? null,
+        roughnessM: terrainMetrics?.roughnessM ?? null,
+      },
+      {
+        ...DEFAULT_PLANNER_CONSTRAINTS,
+        landingTimeMs: timeMs,
+        missionDurationDays: missionWindowDays,
+      }
+    );
+
+    const sunlitRatio = unifiedEval?.sunlitRatio ?? Math.round((sunlitSteps / numSamples) * 100);
+    const dsnRatio = unifiedEval?.dteUptimeRatio ?? (isFarside ? 0 : Math.round((dsnSteps / numSamples) * 100));
     const longestSunlitHours = Math.round(maxSunStreak * 6);
-
-    // Compute composite window score
-    let windowScore = 100;
-    if (isFarside) windowScore -= 35;
-    if (dsnRatio < 30) windowScore -= (30 - dsnRatio);
-    if (sunlitRatio < 40) windowScore -= Math.round((40 - sunlitRatio) * 0.8);
-    if (localThermal?.isPSR) windowScore -= 30;
-
-    const finalWindowScore = Math.max(10, Math.min(100, windowScore));
+    const finalWindowScore = unifiedEval?.overallScore ?? 50;
 
     return {
       windowScore: finalWindowScore,
@@ -260,6 +296,8 @@ export default function SiteAnalysisModal({
       minTemp: Math.round(minTemp),
       maxTemp: Math.round(maxTemp),
       dailyScores,
+      formulaString: unifiedEval?.formulaString,
+      isPartialScore: unifiedEval?.isPartialScore,
     };
   }, [
     missionWindowDays,
@@ -267,10 +305,13 @@ export default function SiteAnalysisModal({
     featLat,
     featLon,
     featureId,
+    clpsData,
+    safeFeature.name,
     regionInfo,
     terrainFn,
     dsnStations,
     localThermal,
+    terrainMetrics,
     isEarthBody,
   ]);
 
