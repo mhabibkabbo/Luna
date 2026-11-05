@@ -49,7 +49,7 @@ export default function MissionsPage({ onLaunchExplorer }) {
             <span className="text-xs font-mono font-semibold uppercase tracking-[0.22em] text-[#00D2C4]">
               Lunar surface expeditions
             </span>
-            <h1 className="font-serif text-4xl font-normal text-[#F1F5F9] sm:text-5xl">
+            <h1 className="text-4xl font-semibold tracking-tight text-[#F1F5F9] sm:text-5xl">
               Missions
             </h1>
             <p className="max-w-3xl text-sm leading-relaxed text-[#94A3B8] sm:text-base">
@@ -101,7 +101,7 @@ export default function MissionsPage({ onLaunchExplorer }) {
                     <p className="text-[10px] font-mono uppercase tracking-[0.16em] text-[#34D399]">
                       NASA · {mission.provider}
                     </p>
-                    <h2 className="mt-2 font-serif text-xl leading-snug text-[#F1F5F9] sm:text-2xl">
+                    <h2 className="mt-2 text-xl font-semibold leading-snug text-[#F1F5F9] sm:text-2xl">
                       {mission.name}
                     </h2>
                     <p

@@ -101,6 +101,7 @@ export default function FeaturePanel({
   const [roughnessRadiusM, setRoughnessRadiusM] = useState(2000);
   const [isDataSourcesOpen, setIsDataSourcesOpen] = useState(false);
   const [isContextExpanded, setIsContextExpanded] = useState(false);
+  const [isCardDataExpanded, setIsCardDataExpanded] = useState(false);
 
   // Weather state
   const [spaceWeather, setSpaceWeather] = useState(FALLBACK_SPACE_WEATHER);
@@ -142,6 +143,8 @@ export default function FeaturePanel({
   useEffect(() => {
     if (feature) {
       setTrackStartMs(celestialTimeStore.get().ms);
+      setIsCardDataExpanded(false);
+      setIsContextExpanded(false);
     }
   }, [feature?.id, feature?.latitude, feature?.longitude]);
 
@@ -586,6 +589,8 @@ export default function FeaturePanel({
     : clpsData?.name || feature.name || 'Custom Dropped Pin';
 
   const payloadsList = clpsData?.payloads || (Array.isArray(feature.payloads) ? feature.payloads : []);
+  // The panel's existing expand action also reveals every value inside its information cards.
+  const showFullCardData = isExpanded || isCardDataExpanded;
 
   return (
     <aside
@@ -729,6 +734,15 @@ export default function FeaturePanel({
                 <span>Exact landing coordinates not published by NASA (Display placeholder only)</span>
               </div>
             )}
+            <button
+              type="button"
+              aria-expanded={isCardDataExpanded}
+              onClick={() => setIsCardDataExpanded((expanded) => !expanded)}
+              className="inline-flex items-center gap-1 rounded-md border border-slate-700 bg-slate-900/70 px-2 py-1 text-[10px] font-mono text-cyan-300 transition-colors hover:border-cyan-500/50 hover:text-cyan-200"
+            >
+              {isCardDataExpanded ? 'Collapse card details' : 'Show full card details'}
+              <ChevronDown className={`h-3 w-3 transition-transform ${isCardDataExpanded ? 'rotate-180' : ''}`} />
+            </button>
             {/* Compact Coordinates & Surface Elevation Strip */}
             <div className="px-2.5 py-2 rounded-xl bg-[#0A121E] border border-slate-800/80 flex items-center justify-between gap-2">
               <div className="min-w-0">
@@ -784,7 +798,7 @@ export default function FeaturePanel({
                   {PROVENANCE_BADGES[terrainMetrics.uncertainty.provenanceType]?.shortLabel ||
                     'NASA MEASURED'}
                 </span>
-                <span className="text-slate-300 truncate">
+                <span className={`text-slate-300 ${showFullCardData ? 'whitespace-normal break-words' : 'truncate'}`}>
                   {terrainMetrics.dataSource} · {terrainMetrics.uncertainty.verticalAccuracy}
                 </span>
               </div>
@@ -817,7 +831,7 @@ export default function FeaturePanel({
                     Az {sun?.azimuthDeg != null ? `${sun.azimuthDeg.toFixed(0)}°` : '—'}
                   </span>
                 </div>
-                <div className="text-[10px] font-mono text-slate-400 truncate">
+                <div className={`text-[10px] font-mono text-slate-400 ${showFullCardData ? 'whitespace-normal break-words' : 'truncate'}`}>
                   {solarTransition.timeUntilMs === null
                     ? solarTransition.isCurrentlySunlit
                       ? 'Continuous Sunlight'
@@ -851,7 +865,7 @@ export default function FeaturePanel({
                     Az {earthLook?.azimuthDeg != null ? `${earthLook.azimuthDeg.toFixed(0)}°` : '—'}
                   </span>
                 </div>
-                <div className="text-[10px] font-mono text-slate-400 truncate">
+                <div className={`text-[10px] font-mono text-slate-400 ${showFullCardData ? 'whitespace-normal break-words' : 'truncate'}`}>
                   {earthTransition.timeUntilMs === null
                     ? earthTransition.isAboveHorizon
                       ? 'Continuous Visibility'
@@ -1026,7 +1040,7 @@ export default function FeaturePanel({
                     <span className="text-xs font-normal text-slate-400">Not present in loaded dataset</span>
                   )}
                 </div>
-                <span className="text-[10px] text-slate-400 truncate block">
+                <span className={`text-[10px] text-slate-400 block ${showFullCardData ? 'whitespace-normal break-words' : 'truncate'}`}>
                   {terrainMetrics.elevationSource ||
                     (terrainMetrics.inSouthPoleCap
                       ? 'Rel. to R₀ = 1,737.4 km'
@@ -1059,7 +1073,7 @@ export default function FeaturePanel({
                     ? `${terrainMetrics.slopeDeg.toFixed(1)}°`
                     : 'Not present in loaded dataset'}
                 </div>
-                <span className="text-[10px] text-slate-400 truncate block">
+                <span className={`text-[10px] text-slate-400 block ${showFullCardData ? 'whitespace-normal break-words' : 'truncate'}`}>
                   {terrainMetrics.slopeSource ||
                     (terrainMetrics.slopeDeg !== null
                       ? '15.0° max lander limit'
@@ -1085,7 +1099,7 @@ export default function FeaturePanel({
                     <span className="text-xs font-normal text-slate-400">Not present in loaded dataset</span>
                   )}
                 </div>
-                <span className="text-[10px] text-slate-400 truncate block">
+                <span className={`text-[10px] text-slate-400 block ${showFullCardData ? 'whitespace-normal break-words' : 'truncate'}`}>
                   {terrainMetrics.roughnessM !== null
                     ? `Dispersion in ${(roughnessRadiusM / 1000).toFixed(1)} km radius`
                     : 'Requires LOLA DEM'}
@@ -1110,7 +1124,7 @@ export default function FeaturePanel({
                     <span className="text-xs font-normal text-slate-400">Not present in loaded dataset</span>
                   )}
                 </div>
-                <span className="text-[10px] text-slate-400 truncate block">
+                <span className={`text-[10px] text-slate-400 block ${showFullCardData ? 'whitespace-normal break-words' : 'truncate'}`}>
                   {terrainMetrics.reliefM !== null
                     ? `Max - min in ${(roughnessRadiusM / 1000).toFixed(1)} km radius`
                     : 'Requires LOLA DEM'}
@@ -1414,7 +1428,7 @@ export default function FeaturePanel({
                     ? `${sun.elevationDeg - (sunTerrainHorizon ?? 0) >= 0 ? '+' : ''}${(sun.elevationDeg - (sunTerrainHorizon ?? 0)).toFixed(2)}° clearance`
                     : '—'}
                 </div>
-                <div className="text-[10px] text-slate-400 truncate">
+                <div className={`text-[10px] text-slate-400 ${showFullCardData ? 'whitespace-normal break-words' : 'truncate'}`}>
                   {solarTransition.timeUntilMs === null
                     ? solarTransition.isCurrentlySunlit
                       ? 'Continuous Polar Day'
@@ -1805,7 +1819,7 @@ export default function FeaturePanel({
                       }`}
                     >
                       <div className="min-w-0">
-                        <div className="font-medium text-white truncate">
+                        <div className={`font-medium text-white ${showFullCardData ? 'whitespace-normal break-words' : 'truncate'}`}>
                           {station.name}{' '}
                           <span className="text-[10px] font-mono text-slate-400">
                             ({station.country})

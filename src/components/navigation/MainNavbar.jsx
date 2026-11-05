@@ -30,7 +30,6 @@ export const WORKSPACE_PAGES = [
   { id: 'comparison', label: 'Site Comparison', icon: GitCompare, shortcut: 'C' },
   { id: 'library', label: 'Data Sources & Library', icon: Database, shortcut: 'L' },
   { id: 'missions', label: 'Mission Catalog', icon: Rocket, shortcut: 'K' },
-  { id: 'about', label: 'About Luna', icon: Compass, shortcut: '?' },
 ];
 
 export default function MainNavbar({

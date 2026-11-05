@@ -98,9 +98,9 @@ export default function App() {
       if (params.get('autostart') === '1') return 'explorer';
       // Restore from share link (?planet=&lat=&lon=&site=)
       if (params.get('lat') && params.get('lon')) return 'explorer';
-      return 'explorer';
+      return 'landing';
     }
-    return 'explorer';
+    return 'landing';
   });
 
   // Mobile navigation drawer state
@@ -345,6 +345,12 @@ export default function App() {
   const handlePlanetChange = useCallback((body) => {
     const targetBody = body === 'earth' ? 'earth' : 'moon';
     setActivePlanet(targetBody);
+    if (targetBody === 'earth') {
+      // These controls describe lunar terrain and lunar ephemerides only.
+      setIsCelestialOpen(false);
+      setIsLayersOpen(false);
+      setIsMeasureActive(false);
+    }
     setSelectedFeature((prev) => {
       if (targetBody === 'earth') {
         return selectedEarthFeature || (prev?.body === 'earth' ? prev : null);
@@ -1057,28 +1063,28 @@ export default function App() {
         Skip to main content
       </a>
 
-      {/* ========================================================================= */}
-      {/* 1. TOP NAVBAR: Compact Header with Logo, Workspace Dropdown & Search      */}
-      {/* ========================================================================= */}
-      <MainNavbar
-        currentView={currentView}
-        viewMode={viewMode}
-        activePlanet={activePlanet}
-        onNavigate={handleNavigate}
-        onViewModeChange={(mode) => {
-          ensureExplorerView();
-          setViewMode(mode);
-        }}
-        onPlanetChange={(body) => {
-          ensureExplorerView();
-          if (viewMode !== '3d') setViewMode('3d');
-          handlePlanetChange(body);
-        }}
-        onSearchSelect={handleSearchSelect}
-        onOpenGuide={() => startGuide(currentView)}
-        isMobileMenuOpen={isMobileNavOpen}
-        onToggleMobileMenu={() => setIsMobileNavOpen((prev) => !prev)}
-      />
+      {/* The Explorer has its own workspace toolbar. Public pages use PublicPageHeader. */}
+      {currentView === 'explorer' && (
+        <MainNavbar
+          currentView={currentView}
+          viewMode={viewMode}
+          activePlanet={activePlanet}
+          onNavigate={handleNavigate}
+          onViewModeChange={(mode) => {
+            ensureExplorerView();
+            setViewMode(mode);
+          }}
+          onPlanetChange={(body) => {
+            ensureExplorerView();
+            if (viewMode !== '3d') setViewMode('3d');
+            handlePlanetChange(body);
+          }}
+          onSearchSelect={handleSearchSelect}
+          onOpenGuide={() => startGuide(currentView)}
+          isMobileMenuOpen={isMobileNavOpen}
+          onToggleMobileMenu={() => setIsMobileNavOpen((prev) => !prev)}
+        />
+      )}
 
       {/* ========================================================================= */}
       {/* FLOATING NOTIFICATIONS: Upper right corner                                */}
@@ -1096,6 +1102,7 @@ export default function App() {
         {currentView === 'explorer' && (
           <LeftSidebarNav
             viewMode={viewMode}
+            activePlanet={activePlanet}
             onViewModeChange={(mode) => {
               ensureExplorerView();
               setViewMode(mode);

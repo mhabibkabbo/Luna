@@ -5,11 +5,14 @@ import LunaBrandLogo from '../common/LunaBrandLogo.jsx';
 import ExpandableText from '../common/ExpandableText.jsx';
 import { CLPS_MISSIONS } from '../../data/clpsMissions.js';
 
+// Set to false to remove the optional post-hero overview without touching the hero or catalog.
+const SHOW_HOME_OVERVIEW = true;
+
 export default function LandingPage({ onLaunchExplorer }) {
   const [selectedMissionIndex, setSelectedMissionIndex] = useState(0);
 
   return (
-    <div className="min-h-screen w-full bg-[#060B13] text-[#F1F5F9] font-sans selection:bg-[#00D2C4]/30 selection:text-[#F1F5F9] overflow-x-hidden flex flex-col justify-between">
+    <div className="h-screen w-full overflow-x-hidden overflow-y-auto bg-[#060B13] text-[#F1F5F9] font-sans selection:bg-[#00D2C4]/30 selection:text-[#F1F5F9] flex flex-col justify-between">
       {/* ===================================================================== */}
       {/* HEADER: Luna Logo in Corner, Center Navigation, Open Explorer on Right */}
       {/* ===================================================================== */}
@@ -85,7 +88,7 @@ export default function LandingPage({ onLaunchExplorer }) {
               <span>NASA CLPS &amp; Artemis GIS Platform</span>
             </div>
 
-            <h1 className="font-serif text-4xl sm:text-5xl xl:text-[4.2rem] leading-[1.02] tracking-[-0.02em] text-[#F1F5F9] font-normal">
+            <h1 className="text-4xl font-semibold sm:text-5xl xl:text-[4.2rem] leading-[1.02] tracking-[-0.02em] text-[#F1F5F9]">
               The <span className="italic text-[#00D2C4]">lunar</span> surface
               <br />
               in high <span className="italic text-[#34D399]">definition.</span>
@@ -139,6 +142,44 @@ export default function LandingPage({ onLaunchExplorer }) {
         </div>
       </section>
 
+      {SHOW_HOME_OVERVIEW && (
+        <section
+          aria-label="Luna platform overview"
+          className="relative border-t border-white/[0.08] bg-[#07111D] px-6 py-16 sm:px-10 sm:py-20 lg:px-16"
+        >
+          <div className="mx-auto max-w-[1400px]">
+            <div className="max-w-2xl">
+              <span className="text-xs font-mono uppercase tracking-[0.22em] text-[#00D2C4]">
+                Built for discovery
+              </span>
+              <h2 className="mt-3 text-3xl font-semibold tracking-tight text-[#F1F5F9] sm:text-4xl">
+                Move from a place on the Moon to the context around it.
+              </h2>
+              <p className="mt-4 text-sm leading-relaxed text-[#94A3B8] sm:text-base">
+                Luna connects the questions behind a landing site: what the terrain is like, when
+                it is illuminated, and how a mission fits into the wider lunar program.
+              </p>
+            </div>
+
+            <div className="mt-9 grid gap-4 md:grid-cols-3">
+              {[
+                ['Explore terrain', 'Switch between the global lunar globe and a focused South Pole topographic map.'],
+                ['Understand conditions', 'Inspect illumination, local relief, and direct-to-Earth visibility at a selected location.'],
+                ['Follow missions', 'Connect landing regions to CLPS missions, landers, launch dates, and payloads.'],
+              ].map(([title, description], index) => (
+                <article key={title} className="rounded-2xl border border-white/[0.1] bg-[#0A1220] p-5 sm:p-6">
+                  <span className="text-[10px] font-mono uppercase tracking-[0.18em] text-[#34D399]">
+                    0{index + 1}
+                  </span>
+                  <h3 className="mt-3 text-lg font-semibold text-[#F1F5F9]">{title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-[#94A3B8]">{description}</p>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* ===================================================================== */}
       {/* MISSION CATALOG SECTION WITH EXPANDABLE DESCRIPTIONS                   */}
       {/* ===================================================================== */}
@@ -151,7 +192,7 @@ export default function LandingPage({ onLaunchExplorer }) {
             <span className="text-xs font-mono uppercase tracking-[0.22em] text-[#00D2C4]">
               Mission catalog
             </span>
-            <h2 className="font-serif text-3xl sm:text-5xl mt-3 text-[#F1F5F9]">
+            <h2 className="text-3xl font-semibold tracking-tight sm:text-5xl mt-3 text-[#F1F5F9]">
               A clearer view of lunar exploration.
             </h2>
             <p className="text-sm sm:text-base text-[#94A3B8] leading-relaxed mt-4">
@@ -169,7 +210,7 @@ export default function LandingPage({ onLaunchExplorer }) {
                 <span className="text-[10px] font-mono uppercase tracking-widest text-[#34D399]">
                   {mission.provider} · {mission.taskOrder}
                 </span>
-                <h3 className="font-serif text-xl text-[#F1F5F9] mt-3">{mission.name}</h3>
+                <h3 className="text-xl font-semibold text-[#F1F5F9] mt-3">{mission.name}</h3>
 
                 {/* Accessible Expandable Description */}
                 <ExpandableText
@@ -218,7 +259,7 @@ export default function LandingPage({ onLaunchExplorer }) {
       </section>
 
       <footer className="px-6 sm:px-12 py-6 border-t border-white/[0.08] text-[10px] font-mono text-[#64748B] flex flex-wrap justify-between gap-3">
-        <span>Luna Studio · Lunar Landing Site Navigator</span>
+        <span>Luna · Lunar Landing Site Navigator</span>
         <a href="#about" className="hover:text-[#00D2C4] transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#00D2C4] rounded">
           About this project
         </a>

@@ -1,37 +1,25 @@
 import React from 'react';
 import { ArrowUpRight } from 'lucide-react';
+import LunaBrandLogo from './LunaBrandLogo.jsx';
 
 const navigationLinks = [
-  { href: '#landing', label: 'Home' },
   { href: '#missions', label: 'Missions' },
   { href: '#about', label: 'About' },
 ];
 
-const workspaces = [
-  ['landing', 'Home'],
-  ['missions', 'Mission Catalog'],
-  ['about', 'About Luna'],
-  ['explorer', 'Lunar Map (3D / 2D)'],
-  ['mission-control', 'Mission Overview'],
-  ['site-analysis', 'Site Analysis'],
-  ['communication', 'DTE Communications'],
-  ['planner', 'Landing Recommendations'],
-  ['comparison', 'Site Comparison'],
-  ['library', 'Data Sources & Library'],
-];
-
 export default function PublicPageHeader({ currentPage, onLaunchExplorer }) {
   return (
-    <header className="sticky top-0 z-50 border-b border-white/[0.08] bg-[#060B13]/95 px-4 sm:px-8 lg:px-12 backdrop-blur-xl">
-      <div className="mx-auto flex min-h-16 max-w-[1400px] items-center justify-between gap-3">
-        <a
-          href="#landing"
-          className="shrink-0 font-serif text-lg text-[#F1F5F9] transition-colors hover:text-[#00D2C4]"
-        >
-          Luna
-        </a>
+    <header className="sticky top-0 z-50 h-16 px-4 sm:px-8 lg:px-12 pointer-events-none bg-gradient-to-b from-black/80 to-[#060B13]/85 backdrop-blur-[2px]">
+      <div className="mx-auto flex h-full max-w-[1400px] items-center justify-between gap-3">
+        <div className="pointer-events-auto shrink-0">
+          <LunaBrandLogo
+            asButton
+            onClick={() => onLaunchExplorer({ viewMode: '3d' })}
+            title="Luna — Lunar Mission & Site Studio"
+          />
+        </div>
 
-        <nav aria-label="Main navigation" className="flex items-center gap-3 sm:gap-7">
+        <nav aria-label="Main page links" className="pointer-events-auto flex items-center gap-4 sm:gap-6 rounded-full border border-white/[0.08] bg-[#0A1220]/80 px-4 py-2 sm:px-6 backdrop-blur-md shadow-xl">
           {navigationLinks.map(({ href, label }) => {
             const isCurrent = currentPage === label.toLowerCase();
             return (
@@ -39,9 +27,9 @@ export default function PublicPageHeader({ currentPage, onLaunchExplorer }) {
                 key={href}
                 href={href}
                 aria-current={isCurrent ? 'page' : undefined}
-                className={`py-2 text-[10px] font-mono uppercase tracking-[0.12em] transition-colors sm:text-xs sm:tracking-[0.18em] ${
+                className={`relative py-1 text-[10px] font-mono uppercase tracking-[0.12em] transition-colors sm:text-xs sm:tracking-[0.18em] ${
                   isCurrent
-                    ? 'text-[#00D2C4]'
+                    ? 'text-[#00D2C4] after:absolute after:bottom-0 after:left-0 after:h-[1.5px] after:w-full after:bg-[#00D2C4]'
                     : 'text-[#94A3B8] hover:text-[#F1F5F9]'
                 }`}
               >
@@ -51,10 +39,7 @@ export default function PublicPageHeader({ currentPage, onLaunchExplorer }) {
           })}
         </nav>
 
-        <div className="flex shrink-0 items-center gap-2">
-          <label htmlFor="public-workspace-nav" className="sr-only">
-            Go to workspace
-          </label>
+        <div className="pointer-events-auto flex shrink-0 items-center gap-2">
           <button
             type="button"
             onClick={() => onLaunchExplorer({ viewMode: '3d' })}

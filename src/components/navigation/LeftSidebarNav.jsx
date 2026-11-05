@@ -18,6 +18,7 @@ import NavTooltip from './NavTooltip.jsx';
  */
 export default function LeftSidebarNav({
   viewMode = '3d',
+  activePlanet = 'moon',
   onViewModeChange,
   isLayersOpen = false,
   onToggleLayers,
@@ -35,6 +36,7 @@ export default function LeftSidebarNav({
   isMobileOpen = false,
   onCloseMobile,
 }) {
+  const isMoon = activePlanet === 'moon';
   const content = (
     <div className="flex flex-col items-center gap-1.5 w-full py-2.5 px-1.5">
       <span className="hidden sr-only">Visualization Controls</span>
@@ -44,7 +46,7 @@ export default function LeftSidebarNav({
         <button
           type="button"
           onClick={onResetOverview}
-          aria-label="Reset Moon view to global overview"
+          aria-label={`Reset ${isMoon ? 'Moon' : 'Earth'} view to global overview`}
           className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-300 hover:bg-[#00D2C4] hover:text-[#060B13] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00D2C4]"
         >
           <Home className="w-4 h-4" />
@@ -52,7 +54,7 @@ export default function LeftSidebarNav({
       </NavTooltip>
 
       {/* Orbit / Layer Controls */}
-      <NavTooltip label="Basemap & Layers" shortcut="L">
+      {isMoon && <NavTooltip label="Basemap & Layers" shortcut="L">
         <button
           type="button"
           data-guide="layers"
@@ -67,10 +69,10 @@ export default function LeftSidebarNav({
         >
           <Layers className="w-4 h-4" />
         </button>
-      </NavTooltip>
+      </NavTooltip>}
 
       {/* Rocket / Mission Controls */}
-      {onOpenMissionExplorer && (
+      {isMoon && onOpenMissionExplorer && (
         <NavTooltip label="Mission Manifest">
           <button
             type="button"
@@ -84,7 +86,7 @@ export default function LeftSidebarNav({
       )}
 
       {/* Moon View / Display Mode (3D Globe vs 2D Topo) */}
-      <div data-guide="view-mode" className="p-0.5 rounded-xl bg-[#0A1220] border border-[#16283C] flex flex-col gap-0.5">
+      {isMoon && <div data-guide="view-mode" className="p-0.5 rounded-xl bg-[#0A1220] border border-[#16283C] flex flex-col gap-0.5">
         <NavTooltip label="3D Globe View" shortcut="1">
           <button
             type="button"
@@ -115,10 +117,10 @@ export default function LeftSidebarNav({
             2D
           </button>
         </NavTooltip>
-      </div>
+      </div>}
 
       {/* Pan / Navigation (Center on Lunar South Pole) */}
-      <NavTooltip label="Target South Pole" shortcut="S">
+      {isMoon && <NavTooltip label="Target South Pole" shortcut="S">
         <button
           type="button"
           onClick={onGoToSouthPole}
@@ -127,7 +129,7 @@ export default function LeftSidebarNav({
         >
           <Compass className="w-4 h-4" />
         </button>
-      </NavTooltip>
+      </NavTooltip>}
 
       {/* Lighting / Display Settings */}
       <NavTooltip label="Solar Shading">
@@ -147,7 +149,7 @@ export default function LeftSidebarNav({
       </NavTooltip>
 
       {/* Ephemeris & Time Engine */}
-      <NavTooltip label="Ephemeris Engine" shortcut="E">
+      {isMoon && <NavTooltip label="Ephemeris Engine" shortcut="E">
         <button
           type="button"
           onClick={onToggleCelestial}
@@ -161,7 +163,7 @@ export default function LeftSidebarNav({
         >
           <Orbit className="w-4 h-4" />
         </button>
-      </NavTooltip>
+      </NavTooltip>}
 
       {/* Auto-Rotation */}
       <NavTooltip label={isAutoRotating ? 'Pause Rotation' : 'Auto-Rotation'}>
@@ -181,7 +183,7 @@ export default function LeftSidebarNav({
       </NavTooltip>
 
       {/* Geodesic Ruler (when in 2D mode) */}
-      {(viewMode === '2d' || viewMode === 'sp-2d') && onToggleMeasure && (
+      {isMoon && (viewMode === '2d' || viewMode === 'sp-2d') && onToggleMeasure && (
         <NavTooltip label="Geodesic Ruler" shortcut="M">
           <button
             type="button"

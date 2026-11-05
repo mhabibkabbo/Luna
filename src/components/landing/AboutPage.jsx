@@ -3,10 +3,10 @@ import { ArrowUpRight, Compass, Globe2, Users } from 'lucide-react';
 import PublicPageHeader from '../common/PublicPageHeader.jsx';
 
 const team = [
-  { name: 'Mishkatul Habib Kabbo', role: 'Mission Research', colors: ['#0E7490', '#22D3EE'] },
-  { name: 'Nahid Iqbal', role: 'Mapping & Visualization', colors: ['#047857', '#34D399'] },
-  { name: 'Rafid Muammar', role: 'Scientific Analysis', colors: ['#4338CA', '#818CF8'] },
-  { name: 'Yeasin Anzam Rifat', role: 'Product & Interface', colors: ['#B45309', '#FBBF24'] },
+  { name: 'Mishkatul Habib Kabbo', role: 'Presenter & Video Person', colors: ['#0E7490', '#22D3EE'] },
+  { name: 'Nahid Iqbal', role: 'Data Person', colors: ['#047857', '#34D399'] },
+  { name: 'Rafid Muammar', role: 'Designer', colors: ['#4338CA', '#818CF8'] },
+  { name: 'Yeasin Anzam Rifat', role: 'Builder', colors: ['#B45309', '#FBBF24'] },
 ];
 
 function PlaceholderPortrait({ name, colors }) {
@@ -58,12 +58,12 @@ export default function AboutPage({ onLaunchExplorer }) {
           <span className="text-xs font-mono uppercase tracking-[0.22em] text-[#00D2C4]">
             About the project
           </span>
-          <h1 className="font-serif text-4xl sm:text-6xl mt-4">
+          <h1 className="text-4xl font-semibold tracking-tight sm:text-6xl mt-4">
             Lunar exploration, made navigable.
           </h1>
           <p className="text-base sm:text-lg text-[#94A3B8] leading-relaxed mt-6">
-            Luna brings lunar terrain, landing locations, commercial missions, and planning
-            context together in one interactive browser.
+            Luna is a team-built lunar exploration tool that brings terrain, landing locations,
+            commercial missions, and planning context together in one interactive browser.
           </p>
         </section>
 
@@ -73,11 +73,11 @@ export default function AboutPage({ onLaunchExplorer }) {
               <Compass className="w-5 h-5" />
               <h2 className="text-xs font-mono uppercase tracking-widest">Challenge</h2>
             </div>
-            <h3 className="font-serif text-2xl mt-5">NASA Space Apps Challenge</h3>
+            <h3 className="text-2xl font-semibold mt-5">NASA Space Apps Challenge</h3>
             <p className="text-sm text-[#94A3B8] leading-relaxed mt-3">
-              Project entry: <strong className="text-[#F1F5F9]">Lunar Landing Site Navigator</strong>.
-              The project explores how interactive maps and mission context can help people
-              understand lunar landing sites and exploration plans.
+              <strong className="text-[#F1F5F9]">Lunar Landing Site Navigator</strong> is our
+              response to the NASA Space Apps Challenge: a clearer way to explore the Moon,
+              compare candidate landing areas, and understand the missions headed there.
             </p>
           </article>
 
@@ -86,10 +86,10 @@ export default function AboutPage({ onLaunchExplorer }) {
               <Users className="w-5 h-5" />
               <h2 className="text-xs font-mono uppercase tracking-widest">Team</h2>
             </div>
-            <h3 className="font-serif text-2xl mt-5">Luna Studio</h3>
+            <h3 className="text-2xl font-semibold mt-5">A small, multidisciplinary team</h3>
             <p className="text-sm text-[#94A3B8] leading-relaxed mt-3">
-              Four placeholder team profiles are shown below; names and portraits are generic and
-              can be replaced with the team&apos;s details.
+              We combine research, data, design, building, storytelling, and presentation to
+              turn complex lunar information into a useful, approachable experience.
             </p>
           </article>
         </section>
@@ -99,7 +99,7 @@ export default function AboutPage({ onLaunchExplorer }) {
             <span className="text-xs font-mono uppercase tracking-[0.2em] text-[#00D2C4]">
               The team
             </span>
-            <h2 className="font-serif text-3xl mt-2">Meet Luna Studio</h2>
+            <h2 className="text-3xl font-semibold tracking-tight mt-2">Meet the team</h2>
           </div>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
             {team.map((member) => (
