@@ -60,8 +60,8 @@ export default function UnifiedToolbar({
   return (
     <div
       data-guide="toolbar"
-      className={`fixed left-3 sm:left-4 z-30 pointer-events-auto select-none top-14 sm:top-16 ${
-        timelineVisible ? 'bottom-[96px]' : 'bottom-3 sm:bottom-4'
+      className={`fixed left-3 sm:left-4 z-30 pointer-events-auto select-none top-1/2 -translate-y-1/2 ${
+        timelineVisible ? '!top-[calc(50%-18px)]' : ''
       } flex flex-col justify-start`}
     >
       <div className="flex flex-col items-center gap-1 p-1 rounded-xl bg-[#080E18]/95 border border-[#16283C] shadow-[0_12px_36px_rgba(0,0,0,0.9)] backdrop-blur-2xl max-h-full overflow-y-auto custom-scrollbar">
@@ -155,78 +155,6 @@ export default function UnifiedToolbar({
         </button>
 
         <div className="w-4 h-[1px] bg-[#16283C] my-0.5" />
-
-        {/* Direct-to-Earth (DTE) Communication Link Calculator */}
-        <button
-          id="btn-toolbar-dte"
-          type="button"
-          onClick={onOpenDte}
-          className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${
-            isDteOpen
-              ? 'bg-[#E59A6D] text-[#12110D] shadow-[0_0_10px_rgba(229,154,109,0.4)]'
-              : 'text-[#E59A6D] hover:bg-[#E59A6D]/20 hover:text-white'
-          }`}
-          title="Direct-to-Earth (DTE) Link & DSN Calculator [D]"
-          aria-label="Open DTE Communication Calculator"
-        >
-          <Radio className="w-3.5 h-3.5" />
-        </button>
-
-        {/* Lunar Surface Thermal & Space Weather Report */}
-        <button
-          id="btn-toolbar-weather"
-          type="button"
-          onClick={onOpenWeather}
-          className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${
-            isWeatherOpen
-              ? 'bg-[#88B38A] text-[#12110D] shadow-[0_0_10px_rgba(136,179,138,0.4)]'
-              : 'text-[#88B38A] hover:bg-[#88B38A]/20 hover:text-white'
-          }`}
-          title="Lunar Surface Thermal & Space Weather Report [W]"
-          aria-label="Open Lunar Weather and Thermal Report"
-        >
-          <Thermometer className="w-3.5 h-3.5" />
-        </button>
-
-        {/* Comprehensive Site Analysis & 360° Horizon Modal */}
-        <button
-          id="btn-toolbar-analysis"
-          type="button"
-          onClick={onOpenSiteAnalysis}
-          className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${
-            isSiteAnalysisOpen
-              ? 'bg-[#38BDF8] text-[#060B13] shadow-[0_0_10px_rgba(56,189,248,0.4)]'
-              : 'text-[#38BDF8] hover:bg-[#38BDF8]/20 hover:text-white'
-          }`}
-          title="360° Horizon Mask & Full Site Analysis [A]"
-          aria-label="Open Site Analysis"
-        >
-          <BarChart3 className="w-3.5 h-3.5" />
-        </button>
-
-        {/* Mission / Site Comparison Modal */}
-        <button
-          id="btn-toolbar-compare"
-          type="button"
-          onClick={onOpenComparison}
-          className="w-8 h-8 rounded-lg flex items-center justify-center text-[#38BDF8] hover:bg-[#38BDF8]/20 hover:text-white transition-all"
-          title="Compare Landing Sites & Dates Side-by-Side [C]"
-          aria-label="Compare landing sites"
-        >
-          <GitCompare className="w-3.5 h-3.5" />
-        </button>
-
-        {/* Launch Slip Simulator & Heatmap */}
-        <button
-          id="btn-toolbar-slip"
-          type="button"
-          onClick={onOpenSlipSimulator}
-          className="w-8 h-8 rounded-lg flex items-center justify-center text-[#22D3EE] hover:bg-[#22D3EE]/20 hover:text-white transition-all"
-          title="Launch Slip Simulator & Window Heatmap"
-          aria-label="Open Launch Slip Simulator"
-        >
-          <Sliders className="w-3.5 h-3.5" />
-        </button>
 
         {/* Earth-to-Moon Transfer Orbit Planner */}
         {onOpenTransferOrbit && (

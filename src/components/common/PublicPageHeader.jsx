@@ -55,19 +55,6 @@ export default function PublicPageHeader({ currentPage, onLaunchExplorer }) {
           <label htmlFor="public-workspace-nav" className="sr-only">
             Go to workspace
           </label>
-          <select
-            id="public-workspace-nav"
-            aria-label="Go to workspace"
-            value={currentPage}
-            onChange={(event) => {
-              window.location.hash = `#${event.target.value}`;
-            }}
-            className="h-9 max-w-28 rounded-lg border border-[#16283C] bg-[#0A1220] px-2 text-[10px] text-[#CBD5E1] outline-none focus:border-[#00D2C4] sm:max-w-44 sm:px-3 sm:text-xs"
-          >
-            {workspaces.map(([value, label]) => (
-              <option key={value} value={value}>{label}</option>
-            ))}
-          </select>
           <button
             type="button"
             onClick={() => onLaunchExplorer({ viewMode: '3d' })}
