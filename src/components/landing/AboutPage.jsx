@@ -3,10 +3,10 @@ import { ArrowUpRight, Compass, Globe2, Users } from 'lucide-react';
 import PublicPageHeader from '../common/PublicPageHeader.jsx';
 
 const team = [
-  { name: 'Alex Morgan', role: 'Mission Research', colors: ['#0E7490', '#22D3EE'] },
-  { name: 'Jordan Lee', role: 'Mapping & Visualization', colors: ['#047857', '#34D399'] },
-  { name: 'Sam Taylor', role: 'Scientific Analysis', colors: ['#4338CA', '#818CF8'] },
-  { name: 'Riley Chen', role: 'Product & Interface', colors: ['#B45309', '#FBBF24'] },
+  { name: 'Mishkatul Habib Kabbo', role: 'Mission Research', colors: ['#0E7490', '#22D3EE'] },
+  { name: 'Nahid Iqbal', role: 'Mapping & Visualization', colors: ['#047857', '#34D399'] },
+  { name: 'Rafid Muammar', role: 'Scientific Analysis', colors: ['#4338CA', '#818CF8'] },
+  { name: 'Yeasin Anzam Rifat', role: 'Product & Interface', colors: ['#B45309', '#FBBF24'] },
 ];
 
 function PlaceholderPortrait({ name, colors }) {
@@ -115,9 +115,6 @@ export default function AboutPage({ onLaunchExplorer }) {
                   <p className="mt-1 text-[10px] leading-relaxed text-[#94A3B8] sm:text-xs">
                     {member.role}
                   </p>
-                  <span className="mt-2 inline-block text-[9px] font-mono uppercase tracking-wide text-[#64748B]">
-                    Placeholder
-                  </span>
                 </div>
               </article>
             ))}

@@ -1034,7 +1034,7 @@ export default function App() {
       {/* ========================================================================= */}
       {/* MODULAR WORKSPACE SWITCHER: Upper left corner                             */}
       {/* ========================================================================= */}
-      {currentView !== 'trajectory' && (
+      {currentView !== 'trajectory' && currentView !== 'missions' && currentView !== 'about' && (
         <div className="fixed top-3 left-3 sm:top-4 sm:left-4 z-40 pointer-events-auto select-none flex items-center gap-2">
           <select
             aria-label="Mission Workspace Switcher"
@@ -1064,6 +1064,8 @@ export default function App() {
             <option value="planner">Landing Recommendations</option>
             <option value="comparison">Site Comparison</option>
             <option value="library">Data Sources &amp; Library</option>
+            <option value="missions">Mission Catalog</option>
+            <option value="about">About Luna</option>
           </select>
         </div>
       )}
@@ -1080,7 +1082,7 @@ export default function App() {
       {currentView !== 'explorer' && (
         <div
           className={`flex-1 w-full h-full overflow-hidden flex flex-col bg-[#07090e] ${
-            currentView === 'trajectory' ? 'pt-0' : 'pt-11 sm:pt-12'
+            currentView === 'trajectory' || currentView === 'missions' || currentView === 'about' ? 'pt-0' : 'pt-11 sm:pt-12'
           }`}
         >
           <React.Suspense
@@ -1176,6 +1178,9 @@ export default function App() {
               <MissionsPage
                 onLaunchExplorer={handleLaunchExplorer}
               />
+            )}
+            {currentView === 'about' && (
+              <AboutPage onLaunchExplorer={handleLaunchExplorer} />
             )}
             {currentView === 'trajectory' && (
               <TrajectoryPlannerPage
