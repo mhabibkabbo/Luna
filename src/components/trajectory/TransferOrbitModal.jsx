@@ -219,24 +219,14 @@ export default function TransferOrbitModal({
     >
       <div className="relative w-full max-w-6xl max-h-[96vh] bg-[#0A111C] border border-[#16283C] rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col text-[#F8FAFC] font-sans my-auto">
         {/* ── Modal Header ────────────────────────────────────────────────────── */}
-        <div className="flex items-center justify-between px-5 sm:px-6 py-3.5 border-b border-[#16283C] bg-[#060B13]/95 flex-shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-[#152336] border border-[#A78BFA]/40 flex items-center justify-center text-[#A78BFA] shadow-[0_0_15px_rgba(167,139,250,0.25)]">
-              <Orbit className="w-5 h-5 animate-pulse" />
+        <div className="flex items-center justify-between px-4 sm:px-6 py-2.5 border-b border-[#16283C] bg-[#060B13]/95 flex-shrink-0">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-[#152336] border border-[#A78BFA]/40 flex items-center justify-center text-[#A78BFA] shadow-[0_0_15px_rgba(167,139,250,0.25)]">
+              <Orbit className="w-4 h-4 animate-pulse" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="font-serif text-lg sm:text-xl text-[#F8FAFC] tracking-wide">
-                  Earth-to-Moon 3D Transfer Orbit Planner
-                </h2>
-                <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-[#A78BFA]/15 text-[#A78BFA] border border-[#A78BFA]/30">
-                  3D WebGL · NASA JPL Horizons API
-                </span>
-              </div>
-              <p className="text-[11px] font-mono text-[#94A3B8]">
-                Trans-Lunar Injection (TLI) Trajectory &middot; 3D Spaceflight &middot; Delta-V Budget
-              </p>
-            </div>
+            <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-[#A78BFA]/15 text-[#A78BFA] border border-[#A78BFA]/30">
+              3D WebGL · NASA JPL Horizons API
+            </span>
           </div>
 
           <div className="flex items-center gap-3">

@@ -7,13 +7,11 @@
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import {
-  Orbit,
   Rocket,
   Play,
   Pause,
   RotateCcw,
   Compass,
-  ArrowRight,
   Globe2,
   Moon,
   Clock,
@@ -168,37 +166,9 @@ export default function TrajectoryPlannerPage({ onNavigate }) {
   const phaseInfo = getPhaseInfo(currentState?.phase);
 
   return (
-    <div className="flex-1 w-full h-full overflow-y-auto px-2 sm:px-4 lg:px-6 pt-1.5 pb-6 space-y-2.5 bg-[#07090e] text-[#F8FAFC] scroll-smooth snap-y snap-proximity">
-      {/* ── Page Header & Navigation Bar (Flush to Top, Zero Gap) ───────────── */}
-      <div className="flex items-center justify-between gap-3 bg-[#0d1624] border border-[#1b2d45] rounded-xl px-3.5 py-1.5 sm:py-2 shadow-lg flex-shrink-0">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-8 h-8 rounded-lg bg-[#152336] border border-[#A78BFA]/40 flex items-center justify-center text-[#A78BFA] shadow-[0_0_12px_rgba(167,139,250,0.3)] flex-shrink-0">
-            <Orbit className="w-4 h-4 animate-pulse" />
-          </div>
-
-          <div className="flex items-center gap-2 flex-wrap min-w-0">
-            <h1 className="font-serif text-base sm:text-xl text-white tracking-wide font-bold truncate">
-              Earth-to-Moon 3D Transfer Orbit Planner
-            </h1>
-            <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-[#A78BFA]/15 text-[#A78BFA] border border-[#A78BFA]/30 hidden sm:inline-block">
-              3D WebGL &middot; NASA JPL Horizons DE440/441
-            </span>
-          </div>
-        </div>
-
-        <button
-          type="button"
-          onClick={() => onNavigate?.('explorer')}
-          className="px-3.5 py-1.5 rounded-xl bg-[#152336] hover:bg-[#223854] text-white font-mono text-xs transition-colors border border-[#223854] flex-shrink-0 flex items-center gap-1.5"
-          title="Return to Lunar Surface Map"
-        >
-          <ArrowRight className="w-3.5 h-3.5 rotate-180" />
-          <span>Back to Map</span>
-        </button>
-      </div>
-
+    <div className="flex-1 w-full h-full overflow-y-auto custom-scrollbar px-2 sm:px-4 lg:px-6 py-2.5 pb-8 space-y-3 bg-[#07090e] text-[#F8FAFC] scroll-smooth">
       {/* ── Main Workspace: Display on Left, Unified Controls on Right ─────── */}
-      <div className="flex flex-col lg:flex-row gap-3 items-stretch h-auto lg:h-[calc(100vh-4.25rem)] lg:min-h-[500px] snap-start scroll-mt-2">
+      <div className="flex flex-col lg:flex-row gap-3 items-stretch h-auto lg:h-[calc(100vh-4.75rem)] lg:min-h-[500px]">
 
         {/* Left: 3D / 2D Visualizer Display (Auto-readjusts to fit display height) */}
         <div className="flex-1 lg:w-[62%] xl:w-[65%] min-w-0 flex flex-col bg-[#060B13] border border-[#16283C] rounded-2xl p-2.5 sm:p-3 overflow-hidden shadow-2xl">

@@ -1069,6 +1069,11 @@ export default function App() {
           ensureExplorerView();
           setViewMode(mode);
         }}
+        onPlanetChange={(body) => {
+          ensureExplorerView();
+          if (viewMode !== '3d') setViewMode('3d');
+          handlePlanetChange(body);
+        }}
         onSearchSelect={handleSearchSelect}
         onOpenGuide={() => startGuide(currentView)}
         isMobileMenuOpen={isMobileNavOpen}
@@ -1087,66 +1092,59 @@ export default function App() {
       {/* 2. THREE-PART DASHBOARD BODY: Left Nav Sidebar + Central Workspace        */}
       {/* ========================================================================= */}
       <div className="relative flex-1 min-h-0 w-full flex overflow-hidden">
-        {/* Compact Left-Side Navigation Panel */}
-        <LeftSidebarNav
-          currentView={currentView}
-          onNavigate={handleNavigate}
-          viewMode={viewMode}
-          onViewModeChange={(mode) => {
-            ensureExplorerView();
-            setViewMode(mode);
-          }}
-          activePlanet={activePlanet}
-          onPlanetChange={(body) => {
-            ensureExplorerView();
-            if (viewMode !== '3d') setViewMode('3d');
-            handlePlanetChange(body);
-          }}
-          isLayersOpen={isLayersOpen}
-          onToggleLayers={() => {
-            ensureExplorerView();
-            setIsLayersOpen((prev) => {
-              if (!prev) setIsCelestialOpen(false);
-              return !prev;
-            });
-          }}
-          isCelestialOpen={isCelestialOpen}
-          onToggleCelestial={() => {
-            ensureExplorerView();
-            setIsCelestialOpen((prev) => {
-              const next = !prev;
-              if (next) setIsLayersOpen(false);
-              return next;
-            });
-          }}
-          isAutoRotating={isAutoRotating}
-          onToggleAutoRotate={() => {
-            ensureExplorerView();
-            handleToggleAutoRotate();
-          }}
-          isSolarLighting={isSolarLighting}
-          onToggleLighting={() => {
-            ensureExplorerView();
-            handleToggleLighting();
-          }}
-          isMeasureActive={isMeasureActive}
-          onToggleMeasure={() => {
-            ensureExplorerView();
-            handleToggleMeasure();
-          }}
-          onGoToSouthPole={() => {
-            ensureExplorerView();
-            handleGoToSouthPole();
-          }}
-          onResetOverview={() => {
-            ensureExplorerView();
-            handleResetOverview();
-          }}
-          onOpenMissionExplorer={() => setIsMissionExplorerOpen(true)}
-          onOpenGuide={() => startGuide(currentView)}
-          isMobileOpen={isMobileNavOpen}
-          onCloseMobile={() => setIsMobileNavOpen(false)}
-        />
+        {/* Compact Left-Side Navigation Panel (Visualization Controls for Explorer) */}
+        {currentView === 'explorer' && (
+          <LeftSidebarNav
+            viewMode={viewMode}
+            onViewModeChange={(mode) => {
+              ensureExplorerView();
+              setViewMode(mode);
+            }}
+            isLayersOpen={isLayersOpen}
+            onToggleLayers={() => {
+              ensureExplorerView();
+              setIsLayersOpen((prev) => {
+                if (!prev) setIsCelestialOpen(false);
+                return !prev;
+              });
+            }}
+            isCelestialOpen={isCelestialOpen}
+            onToggleCelestial={() => {
+              ensureExplorerView();
+              setIsCelestialOpen((prev) => {
+                const next = !prev;
+                if (next) setIsLayersOpen(false);
+                return next;
+              });
+            }}
+            isAutoRotating={isAutoRotating}
+            onToggleAutoRotate={() => {
+              ensureExplorerView();
+              handleToggleAutoRotate();
+            }}
+            isSolarLighting={isSolarLighting}
+            onToggleLighting={() => {
+              ensureExplorerView();
+              handleToggleLighting();
+            }}
+            isMeasureActive={isMeasureActive}
+            onToggleMeasure={() => {
+              ensureExplorerView();
+              handleToggleMeasure();
+            }}
+            onGoToSouthPole={() => {
+              ensureExplorerView();
+              handleGoToSouthPole();
+            }}
+            onResetOverview={() => {
+              ensureExplorerView();
+              handleResetOverview();
+            }}
+            onOpenMissionExplorer={() => setIsMissionExplorerOpen(true)}
+            isMobileOpen={isMobileNavOpen}
+            onCloseMobile={() => setIsMobileNavOpen(false)}
+          />
+        )}
 
         {/* Central Lunar Mission Workspace */}
         <div className="relative flex-1 min-w-0 h-full overflow-hidden flex flex-col bg-[#060B13]">

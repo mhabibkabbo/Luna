@@ -7,7 +7,6 @@ import {
   Mountain,
   Compass,
   CircleDot,
-  Navigation,
   AlertCircle,
 } from 'lucide-react';
 import { parseLunarCoordinates, formatLunarCoordinates, getLunarRegionInfo } from '../../utils/coordinates.js';
@@ -79,14 +78,7 @@ export default function NavbarSearch({
   const containerRef = useRef(null);
   const inputRef = useRef(null);
 
-  // Focus input when opened
-  useEffect(() => {
-    if (isOpen) {
-      setTimeout(() => inputRef.current?.focus(), 50);
-    }
-  }, [isOpen]);
-
-  // Click outside to close
+  // Click outside to close results dropdown
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (containerRef.current && !containerRef.current.contains(e.target)) {
@@ -97,7 +89,7 @@ export default function NavbarSearch({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Global keyboard shortcut to open search (Ctrl+K or /)
+  // Global keyboard shortcut to focus search input (Ctrl+K or /)
   useEffect(() => {
     const handleGlobalKey = (e) => {
       const tag = e.target?.tagName?.toLowerCase();
@@ -106,10 +98,12 @@ export default function NavbarSearch({
       }
       if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
         e.preventDefault();
-        setIsOpen(true);
+        inputRef.current?.focus();
+        inputRef.current?.select();
       } else if (e.key === '/' && !e.ctrlKey && !e.metaKey && !e.altKey) {
         e.preventDefault();
-        setIsOpen(true);
+        inputRef.current?.focus();
+        inputRef.current?.select();
       }
     };
     window.addEventListener('keydown', handleGlobalKey);
@@ -124,6 +118,7 @@ export default function NavbarSearch({
 
     if (!trimmed) {
       setResults([]);
+      setIsOpen(false);
       return;
     }
 
@@ -199,8 +194,12 @@ export default function NavbarSearch({
       scored.sort((a, b) => b.score - a.score);
       const topMatches = scored.map((s) => s.item).slice(0, 8);
 
-      setResults([...matchResults, ...topMatches]);
+      const allMatches = [...matchResults, ...topMatches];
+      setResults(allMatches);
       setActiveIndex(-1);
+      if (allMatches.length > 0 || coordError) {
+        setIsOpen(true);
+      }
     }, 80);
 
     return () => clearTimeout(handler);
@@ -215,6 +214,7 @@ export default function NavbarSearch({
   const handleKeyDown = (e) => {
     if (e.key === 'Escape') {
       setIsOpen(false);
+      inputRef.current?.blur();
       return;
     }
 
@@ -222,9 +222,11 @@ export default function NavbarSearch({
 
     if (e.key === 'ArrowDown') {
       e.preventDefault();
+      setIsOpen(true);
       setActiveIndex((prev) => (prev < results.length - 1 ? prev + 1 : 0));
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
+      setIsOpen(true);
       setActiveIndex((prev) => (prev > 0 ? prev - 1 : results.length - 1));
     } else if (e.key === 'Enter') {
       e.preventDefault();
@@ -252,57 +254,58 @@ export default function NavbarSearch({
       data-guide="search"
       className={`relative select-none ${className}`}
     >
-      {/* Resting / Trigger State: Integrated directly beside dropdown */}
-      <button
-        type="button"
-        onClick={() => setIsOpen((prev) => !prev)}
-        aria-label="Search lunar locations, missions, and coordinates"
-        aria-expanded={isOpen}
-        aria-haspopup="dialog"
-        className="h-8 px-2.5 sm:px-3 rounded-xl bg-[#080E18] hover:bg-[#0E1726] border border-[#16283C] hover:border-[#00D2C4]/50 text-slate-300 hover:text-white flex items-center gap-2 text-xs transition-all shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00D2C4]"
-      >
-        <Search className="w-3.5 h-3.5 text-[#00D2C4] shrink-0" />
-        <span className="hidden md:inline text-[11px] font-mono text-slate-400">
-          Search lunar targets...
-        </span>
-        <kbd className="hidden lg:inline-flex items-center px-1.5 py-0.2 rounded bg-[#0D1726] border border-[#16283C] text-[9.5px] font-mono text-[#00D2C4]">
-          /
-        </kbd>
-      </button>
+      {/* Direct Interactive Search Input Field in the Navbar */}
+      <div className="relative flex items-center">
+        <Search className="w-3.5 h-3.5 absolute left-2.5 text-[#00D2C4] pointer-events-none" />
 
-      {/* Expanded Search Dialog Popover */}
-      {isOpen && (
+        <input
+          ref={inputRef}
+          type="text"
+          value={query}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            if (!isOpen) setIsOpen(true);
+          }}
+          onFocus={() => {
+            if (query.trim() && (results.length > 0 || coordError)) {
+              setIsOpen(true);
+            }
+          }}
+          onKeyDown={handleKeyDown}
+          placeholder="Search craters, maria, missions..."
+          aria-label="Search lunar locations, missions, and coordinates"
+          aria-autocomplete="list"
+          aria-expanded={isOpen && (results.length > 0 || !!coordError)}
+          className="h-8 w-36 sm:w-52 md:w-64 lg:w-72 pl-8 pr-7 bg-[#080E18] hover:bg-[#0A1220] focus:bg-[#0A1220] border border-[#16283C] hover:border-[#00D2C4]/40 focus:border-[#00D2C4] rounded-xl text-xs text-[#F1F5F9] placeholder-slate-500 focus:outline-none transition-all font-sans shadow-sm"
+        />
+
+        {query ? (
+          <button
+            type="button"
+            onClick={() => {
+              setQuery('');
+              setIsOpen(false);
+              inputRef.current?.focus();
+            }}
+            className="absolute right-2 p-0.5 text-slate-400 hover:text-white rounded"
+            aria-label="Clear search input"
+          >
+            <X className="w-3 h-3" />
+          </button>
+        ) : (
+          <kbd className="hidden lg:inline-flex items-center absolute right-2 px-1.5 py-0.2 rounded bg-[#0D1726] border border-[#16283C] text-[9.5px] font-mono text-[#00D2C4] pointer-events-none">
+            /
+          </kbd>
+        )}
+      </div>
+
+      {/* Autocomplete Suggestions Popover */}
+      {isOpen && (results.length > 0 || coordError) && (
         <div
-          role="dialog"
-          aria-label="Lunar Search"
-          className="absolute left-0 top-full mt-2 w-72 sm:w-80 md:w-96 bg-[#080E18]/95 backdrop-blur-2xl border border-[#16283C] rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.85)] p-2.5 z-50 animate-in fade-in zoom-in-95 duration-150 flex flex-col gap-2"
+          role="listbox"
+          aria-label="Search suggestions"
+          className="absolute left-0 top-full mt-1.5 w-72 sm:w-80 md:w-96 bg-[#080E18]/95 backdrop-blur-2xl border border-[#16283C] rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.85)] p-2 z-50 animate-in fade-in zoom-in-95 duration-150 flex flex-col gap-1.5 max-h-80 overflow-y-auto custom-scrollbar"
         >
-          <div className="relative flex items-center">
-            <Search className="w-3.5 h-3.5 absolute left-3 text-[#00D2C4] pointer-events-none" />
-
-            <input
-              ref={inputRef}
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Search craters, maria, missions, or coordinates (e.g. 89.9°S, 0°E)..."
-              aria-label="Search query"
-              className="w-full h-8.5 pl-9 pr-7 bg-[#0A1220] border border-[#16283C] focus:border-[#00D2C4] rounded-xl text-xs text-[#F1F5F9] placeholder-slate-500 focus:outline-none transition-all font-sans"
-            />
-
-            {query && (
-              <button
-                type="button"
-                onClick={() => setQuery('')}
-                className="absolute right-2 p-1 text-slate-400 hover:text-white rounded"
-                aria-label="Clear search input"
-              >
-                <X className="w-3 h-3" />
-              </button>
-            )}
-          </div>
-
           {coordError && (
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-rose-950/60 border border-rose-500/30 text-rose-300 text-[10px] font-mono">
               <AlertCircle className="w-3 h-3 shrink-0" />
@@ -310,61 +313,49 @@ export default function NavbarSearch({
             </div>
           )}
 
-          {results.length > 0 ? (
-            <div className="border-t border-[#16283C]/80 pt-1.5 max-h-64 overflow-y-auto custom-scrollbar space-y-1">
-              {results.map((item, idx) => {
-                const isFocused = idx === activeIndex;
+          {results.map((item, idx) => {
+            const isFocused = idx === activeIndex;
 
-                return (
-                  <div
-                    key={item.id || idx}
-                    onClick={() => handleSelect(item)}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') handleSelect(item);
-                    }}
-                    className={`px-2.5 py-1.5 rounded-xl cursor-pointer flex items-center justify-between gap-2 transition-all ${
-                      isFocused
-                        ? 'bg-[#00D2C4]/15 border border-[#00D2C4]/50 text-white'
-                        : 'bg-[#0A1220]/70 hover:bg-[#0E1A2C] border border-transparent text-slate-300'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="p-1 rounded-lg bg-[#060B13] border border-[#16283C] text-[#00D2C4] shrink-0">
-                        {getTypeIcon(item)}
-                      </div>
-
-                      <div className="flex flex-col min-w-0">
-                        <span className="text-xs font-semibold text-white truncate">
-                          {item.name}
-                        </span>
-                        <span className="text-[10px] font-mono text-slate-400 truncate">
-                          {item.category || item.provider || 'Lunar Target'}
-                        </span>
-                      </div>
-                    </div>
-
-                    <Navigation className="w-3 h-3 text-[#00D2C4] shrink-0 opacity-70" />
+            return (
+              <div
+                key={item.id || idx}
+                role="option"
+                aria-selected={isFocused}
+                onClick={() => handleSelect(item)}
+                className={`p-2 rounded-xl cursor-pointer transition-colors flex items-start gap-2.5 ${
+                  isFocused
+                    ? 'bg-[#00D2C4]/15 border border-[#00D2C4]/40 text-white'
+                    : 'hover:bg-[#0E1A2C] border border-transparent text-slate-300'
+                }`}
+              >
+                <div className="mt-0.5 p-1 rounded-lg bg-[#060B13] border border-[#16283C] shrink-0">
+                  {getTypeIcon(item)}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between gap-1">
+                    <span className="text-xs font-semibold text-[#F1F5F9] truncate font-sans">
+                      {item.name}
+                    </span>
+                    <span className="text-[9.5px] font-mono text-cyan-400 shrink-0 uppercase">
+                      {item.category || item.type}
+                    </span>
                   </div>
-                );
-              })}
-            </div>
-          ) : query.trim() ? (
-            <div className="p-3 text-center text-[11px] font-mono text-slate-400">
-              No matching lunar target or coordinates found.
-            </div>
-          ) : (
-            <div className="px-2 py-1 text-[10.5px] font-mono text-slate-400 flex items-center justify-between">
-              <span>Quick: Shackleton, Mare Crisium, IM-1...</span>
-              <kbd className="px-1.5 py-0.2 rounded bg-[#0A1220] border border-[#16283C] text-[9.5px] text-[#00D2C4]">
-                ESC to close
-              </kbd>
-            </div>
-          )}
+                  {item.description && (
+                    <p className="text-[10px] text-slate-400 truncate mt-0.5 font-sans">
+                      {item.description}
+                    </p>
+                  )}
+                  {Number.isFinite(item.latitude) && Number.isFinite(item.longitude) && (
+                    <span className="text-[9px] font-mono text-slate-500 block mt-0.5">
+                      {item.latitude.toFixed(2)}°, {item.longitude.toFixed(2)}°
+                    </span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
   );
 }
-
