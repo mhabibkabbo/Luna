@@ -8,6 +8,7 @@ import 'cesium/Build/Cesium/Widgets/widgets.css';
 import { createCelestialOverlay } from './moonCelestial.js';
 import { createMoonGlobe } from './moonGlobe.js';
 import { createMoonFeatures } from './moonFeatures.js';
+import { createGlobeCameraControls } from '../globeCameraControls.js';
 import { celestialTimeStore } from '../../utils/celestialTime.js';
 
 // Ensure no Cesium Ion authentication prompt
@@ -407,6 +408,14 @@ export function createMoon(container, callbacks = {}) {
   cameraController.minimumZoomDistance = 20000.0; // 20 km minimum altitude
   cameraController.maximumZoomDistance = 1_000_000_000; // 1M km overview
 
+  // Google Earth style drag / zoom (replaces the pole-locked stock controller).
+  const globeControls = createGlobeCameraControls(viewer, {
+    ellipsoid: Cesium.Ellipsoid.MOON,
+    minHeight: 20000,
+    maxHeight: 1_000_000_000,
+    isMobile,
+  });
+
   // Enable Cesium's built-in Sun
   if (!scene.sun) {
     scene.sun = new Cesium.Sun();
@@ -680,8 +689,7 @@ export function createMoon(container, callbacks = {}) {
   const destroy = () => {
     if (destroyed) return;
     destroyed = true;
-
-    
+    globeControls.destroy();
     if (removeAdaptiveResolutionListener) {
       removeAdaptiveResolutionListener();
     }

@@ -9,6 +9,7 @@ import {
   createEarthGlobe,
 } from './earthGlobe.js';
 import { createEarthFeatures } from './earthFeatures.js';
+import { createGlobeCameraControls } from '../globeCameraControls.js';
 import { celestialTimeStore } from '../../utils/celestialTime.js';
 
 const EARTH_CAMERA_SETTINGS = {
@@ -148,6 +149,14 @@ export function createEarth(container, callbacks = {}) {
   cameraController.zoomFactor = EARTH_CAMERA_SETTINGS.zoomFactor;
   cameraController.minimumZoomDistance = EARTH_CAMERA_SETTINGS.minimumZoomDistance;
   cameraController.maximumZoomDistance = EARTH_CAMERA_SETTINGS.maximumZoomDistance;
+
+  // Google Earth style drag / zoom (replaces the pole-locked stock controller).
+  const globeControls = createGlobeCameraControls(viewer, {
+    ellipsoid: Cesium.Ellipsoid.WGS84,
+    minHeight: EARTH_CAMERA_SETTINGS.minimumZoomDistance,
+    maxHeight: EARTH_CAMERA_SETTINGS.maximumZoomDistance,
+    isMobile,
+  });
 
   viewer.camera.setView({
     destination: Cesium.Cartesian3.fromDegrees(
@@ -501,6 +510,7 @@ export function createEarth(container, callbacks = {}) {
     destroy() {
       if (isDestroyed) return;
       isDestroyed = true;
+      globeControls.destroy();
       removeTimeListener();
       removePostRenderListener();
       if (removeRotationListener) {
