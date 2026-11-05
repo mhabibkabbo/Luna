@@ -701,9 +701,10 @@ export default function TrajectoryPlannerPage({ onNavigate }) {
         </div>
       </div>
 
-      {/* ── Select Vehicle & NASA JPL Horizons Strip (Bottom of Simulation, Ahead of Info) ── */}
+      {/* ── Select Vehicle & NASA JPL Horizons Strip (Bottom of Simulation, Ahead of Info) ──
       <div className="bg-[#0d1624] border border-[#1b2d45] rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3 text-xs shadow-lg snap-start scroll-mt-2.5">
         {/* Rocket Launcher Selector */}
+        {/*
         <div className="flex items-center gap-2.5 flex-wrap">
           <span className="font-mono text-[#F59E0B] flex items-center gap-1.5 font-semibold uppercase text-xs">
             <Rocket className="w-4 h-4" />
@@ -725,9 +726,9 @@ export default function TrajectoryPlannerPage({ onNavigate }) {
               </button>
             ))}
           </div>
-        </div>
-
+        </div>*/}
         {/* NASA JPL Horizons Ephemeris API Status */}
+        {/*
         <div className="flex items-center gap-2 font-mono text-xs">
           <div className="flex items-center gap-2 bg-[#152336] px-3 py-1.5 rounded-lg border border-[#223854]">
             <Radio className={`w-3.5 h-3.5 ${jplEphemeris?.isLive ? 'text-emerald-400 animate-pulse' : 'text-cyan-400'}`} />
@@ -752,7 +753,7 @@ export default function TrajectoryPlannerPage({ onNavigate }) {
             <RefreshCw className={`w-3.5 h-3.5 ${isLoadingJpl ? 'animate-spin text-cyan-400' : ''}`} />
           </button>
         </div>
-      </div>
+      </div> */}
 
       {/* ── Flight Telemetry & Delta-V Budget Deck ─────────────────────────────── */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3.5 snap-start scroll-mt-2.5">
@@ -827,7 +828,7 @@ export default function TrajectoryPlannerPage({ onNavigate }) {
             <div className="text-[10px] font-mono text-[#38BDF8] font-bold">PHASE 1 &middot; LIFTOFF</div>
             <div className="text-xs font-semibold text-white mt-1">LEO Parking Orbit</div>
             <div className="text-[11px] font-mono text-[#94A3B8] mt-1 leading-tight">
-              Launch via {selectedRocket.name} into {orbitPlan.parkingOrbit?.altKm ?? 185} km LEO orbit (v = {orbitPlan.parkingOrbit?.velocityKmS?.toFixed(2) ?? '7.79'} km/s).
+              Launch via Payload Rocket into {orbitPlan.parkingOrbit?.altKm ?? 185} km LEO orbit (v = {orbitPlan.parkingOrbit?.velocityKmS?.toFixed(2) ?? '7.79'} km/s).
             </div>
           </div>
 
