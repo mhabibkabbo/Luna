@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   X,
   Rocket,
@@ -15,6 +15,46 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { CLPS_MISSIONS } from '../../data/clpsMissions.js';
+
+function ExpandableParagraph({ text, className }) {
+  const [expanded, setExpanded] = useState(false);
+
+  useEffect(() => {
+    setExpanded(false);
+  }, [text]);
+
+  if (!text) return null;
+
+  return (
+    <div>
+      <p
+        className={className}
+        style={
+          expanded
+            ? undefined
+            : {
+                display: '-webkit-box',
+                WebkitBoxOrient: 'vertical',
+                WebkitLineClamp: 4,
+                overflow: 'hidden',
+              }
+        }
+      >
+        {text}
+      </p>
+      {text.length > 180 && (
+        <button
+          type="button"
+          aria-expanded={expanded}
+          onClick={() => setExpanded((value) => !value)}
+          className="mt-2 text-[10px] font-mono text-[#00D2C4] hover:text-[#34D399]"
+        >
+          {expanded ? 'Show less' : 'Read full description'}
+        </button>
+      )}
+    </div>
+  );
+}
 
 function getMissionImage(mission) {
   if (!mission) return '/pictures/odysseus-malapert-landing.jpg';
@@ -39,6 +79,9 @@ function getMissionAgency(mission) {
 
 export default function CompactClpsModal({ isOpen, mission, onClose, onFlyTo, onLaunchExplorer }) {
   const [activeTab, setActiveTab] = useState('overview');
+  useEffect(() => {
+    setActiveTab('overview');
+  }, [mission?.id]);
 
   if (!isOpen) return null;
 
@@ -89,7 +132,7 @@ export default function CompactClpsModal({ isOpen, mission, onClose, onFlyTo, on
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-3xl max-h-[90vh] flex flex-col rounded-3xl bg-[#0A111C] border border-[#16283C] text-left shadow-2xl overflow-hidden"
+        className="relative w-full max-w-3xl h-[90dvh] max-h-[90dvh] flex flex-col rounded-3xl bg-[#0A111C] border border-[#16283C] text-left shadow-2xl overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Top Header / Banner Photo */}
@@ -171,23 +214,27 @@ export default function CompactClpsModal({ isOpen, mission, onClose, onFlyTo, on
         </div>
 
         {/* Modal Scrollable Content Body */}
-        <div className="p-6 overflow-y-auto space-y-6 text-sm text-[#94A3B8] leading-relaxed">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-6 space-y-6 text-sm text-[#94A3B8] leading-relaxed">
           {activeTab === 'overview' && (
             <div className="space-y-5">
               <div>
                 <h4 className="text-xs font-mono uppercase tracking-widest text-[#00D2C4] mb-2 font-semibold">
                   Mission Summary
                 </h4>
-                <p className="text-base text-[#F8FAFC] font-normal leading-relaxed">
-                  {activeMission.description}
-                </p>
+                <ExpandableParagraph
+                  text={activeMission.description}
+                  className="text-base text-[#F8FAFC] font-normal leading-relaxed"
+                />
               </div>
 
               <div className="p-4 rounded-2xl bg-[#060B13] border border-[#16283C] space-y-2">
                 <h4 className="text-xs font-mono uppercase tracking-widest text-[#34D399] font-semibold">
                   Primary Scientific Objective
                 </h4>
-                <p className="text-sm text-[#E2E8F0]">{activeMission.objectives}</p>
+                <ExpandableParagraph
+                  text={activeMission.objectives}
+                  className="text-sm text-[#E2E8F0]"
+                />
               </div>
 
               {/* Data & Catalog Attribution */}
@@ -304,4 +351,3 @@ export default function CompactClpsModal({ isOpen, mission, onClose, onFlyTo, on
     </div>
   );
 }
-

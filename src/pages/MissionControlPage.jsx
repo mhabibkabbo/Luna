@@ -18,7 +18,6 @@ import {
   Thermometer,
   ShieldCheck,
   Target,
-  Sparkles,
 } from 'lucide-react';
 import { CLPS_MISSIONS } from '../data/clpsMissions.js';
 import { LANDING_SITES } from '../data/landingSites.js';
@@ -83,7 +82,6 @@ export default function MissionControlPage({
   onSelectMission,
   selectedFeature,
   onSelectFeature,
-  onStartTour,
 }) {
   const [simulationTime, setSimulationTime] = useState(() => celestialTimeStore.get().ms);
 
@@ -122,17 +120,6 @@ export default function MissionControlPage({
         </div>
 
         <div className="flex items-center gap-2.5 shrink-0">
-          {onStartTour && (
-            <button
-              type="button"
-              onClick={onStartTour}
-              className="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-850 text-cyan-300 border border-cyan-500/30 hover:border-cyan-400/60 font-semibold text-xs tracking-wide transition-all active:scale-95 flex items-center gap-2"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
-              <span>Launch 60s Tour</span>
-            </button>
-          )}
-
           <button
             type="button"
             onClick={() => onNavigate('explorer')}

@@ -100,6 +100,7 @@ export default function FeaturePanel({
   const [demLoadedTick, setDemLoadedTick] = useState(0);
   const [roughnessRadiusM, setRoughnessRadiusM] = useState(2000);
   const [isDataSourcesOpen, setIsDataSourcesOpen] = useState(false);
+  const [isContextExpanded, setIsContextExpanded] = useState(false);
 
   // Weather state
   const [spaceWeather, setSpaceWeather] = useState(FALLBACK_SPACE_WEATHER);
@@ -182,6 +183,10 @@ export default function FeaturePanel({
       ? safeFeature.lon
       : 0.0;
   const siteId = safeFeature.id || 'custom-dropped-pin';
+
+  useEffect(() => {
+    setIsContextExpanded(false);
+  }, [siteId]);
 
   const clpsData = useMemo(() => {
     if (!feature || isEarthFeature) return null;
@@ -533,6 +538,14 @@ export default function FeaturePanel({
         fullStr: `${Math.abs(featLat).toFixed(4)}° ${featLat >= 0 ? 'N' : 'S'}, ${Math.abs(featLon).toFixed(4)}° ${featLon >= 0 ? 'E' : 'W'}`,
       }
     : formatLunarCoordinates(featLon, featLat, 4);
+
+  const siteContextDescription =
+    clpsData?.description ||
+    clpsData?.objectives ||
+    safeFeature.description ||
+    `Lunar surface coordinate (${latStr}, ${lonStr}) in the ${
+      regionInfo?.province || 'Southern Polar Region'
+    }. Evaluated using NASA LRO LOLA digital elevation models and DE421/440 analytical ephemerides.`;
 
   const handleCopyCoords = () => {
     navigator.clipboard.writeText(fullStr);
@@ -1664,13 +1677,31 @@ export default function FeaturePanel({
               <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 block">
                 Site Context &amp; Provenance
               </span>
-              <p className="text-xs text-slate-300 leading-relaxed">
-                {clpsData?.objectives ||
-                  feature.description ||
-                  `Lunar surface coordinate (${latStr}, ${lonStr}) in the ${
-                    regionInfo?.province || 'Southern Polar Region'
-                  }. Evaluated using NASA LRO LOLA digital elevation models and DE421/440 analytical ephemerides.`}
+              <p
+                className="text-xs text-slate-300 leading-relaxed"
+                style={
+                  isContextExpanded
+                    ? undefined
+                    : {
+                        display: '-webkit-box',
+                        WebkitBoxOrient: 'vertical',
+                        WebkitLineClamp: 3,
+                        overflow: 'hidden',
+                      }
+                }
+              >
+                {siteContextDescription}
               </p>
+              {siteContextDescription.length > 120 && (
+                <button
+                  type="button"
+                  aria-expanded={isContextExpanded}
+                  onClick={() => setIsContextExpanded((expanded) => !expanded)}
+                  className="text-[10px] font-mono text-cyan-400 hover:text-cyan-300 transition-colors"
+                >
+                  {isContextExpanded ? 'Show less' : 'Read full description'}
+                </button>
+              )}
               <div className="pt-1 flex items-center justify-between text-[10px] font-mono text-slate-400 border-t border-slate-800/70">
                 <span>Datum: IAU Moon 2000 (R₀ = 1,737.4 km)</span>
                 <a

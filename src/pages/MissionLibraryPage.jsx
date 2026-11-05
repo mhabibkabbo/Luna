@@ -15,7 +15,6 @@ import {
   HelpCircle,
   ExternalLink,
   ChevronRight,
-  Sparkles,
   Info,
   Layers,
   Compass,
@@ -106,7 +105,6 @@ const JPL_HORIZONS_BENCHMARKS = [
 export default function MissionLibraryPage({
   onSelectMission,
   onNavigate,
-  onStartTour,
 }) {
   const [activeTab, setActiveTab] = useState('missions'); // 'missions' | 'stations' | 'science' | 'shortcuts'
   const [selectedMission, setSelectedMission] = useState(CLPS_MISSIONS[0]);
@@ -128,14 +126,6 @@ export default function MissionLibraryPage({
           </p>
         </div>
 
-        {/* Guided Tour Launcher */}
-        <button
-          onClick={onStartTour}
-          className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-cyan-950/60 transition active:scale-98"
-        >
-          <Sparkles className="w-4 h-4" />
-          Launch 60s Guided Tour
-        </button>
       </div>
 
       {/* 1-Click Historical Mission Replay Bar */}

@@ -6,6 +6,7 @@
  */
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import {
   X,
   ChevronRight,
@@ -29,7 +30,6 @@ const BORDER_RADIUS = 8;
 export default function GuideOverlay({
   context = {},
   isOtherModalOpen = false,
-  isTourActive = false,
 }) {
   const [guideState, setGuideState] = useState(() => guideStore.get());
   const [targetRect, setTargetRect] = useState(null);
@@ -59,24 +59,33 @@ export default function GuideOverlay({
     guideState.isActive && guideState.steps.length > 0
       ? guideState.steps[guideState.activeStepIndex]
       : null;
+  const targetSelector =
+    isMobile && activeStep?.mobileTarget ? activeStep.mobileTarget : activeStep?.target;
 
   // Measure target and recompute position
   const updateTargetRect = useCallback(() => {
-    if (!activeStep || !activeStep.target) {
+    if (!activeStep || !targetSelector) {
       setTargetRect(null);
       return;
     }
 
-    const el = document.querySelector(activeStep.target);
+    const el = document.querySelector(targetSelector);
     if (el) {
       const rect = el.getBoundingClientRect();
-      // Verify rect is visible in viewport
       if (rect.width > 0 && rect.height > 0) {
+        const left = Math.max(0, rect.left - PADDING);
+        const top = Math.max(0, rect.top - PADDING);
+        const right = Math.min(window.innerWidth, rect.right + PADDING);
+        const bottom = Math.min(window.innerHeight, rect.bottom + PADDING);
+        if (right <= left || bottom <= top) {
+          setTargetRect(null);
+          return;
+        }
         setTargetRect({
-          top: Math.max(0, rect.top - PADDING),
-          left: Math.max(0, rect.left - PADDING),
-          width: rect.width + PADDING * 2,
-          height: rect.height + PADDING * 2,
+          top,
+          left,
+          width: right - left,
+          height: bottom - top,
           rawTop: rect.top,
           rawLeft: rect.left,
           rawBottom: rect.bottom,
@@ -88,7 +97,7 @@ export default function GuideOverlay({
       }
     }
     setTargetRect(null);
-  }, [activeStep]);
+  }, [activeStep, targetSelector]);
 
   // Handle step activation, before() actions, and missing element resilience
   useEffect(() => {
@@ -116,7 +125,7 @@ export default function GuideOverlay({
 
       if (isCancelled) return;
 
-      if (!activeStep.target) {
+      if (!targetSelector) {
         // Text-only step, center modal
         setTargetRect(null);
         setIsWaitingForTarget(false);
@@ -124,7 +133,7 @@ export default function GuideOverlay({
       }
 
       // Check for target element in DOM with a retry timeout up to ~500ms
-      const el = document.querySelector(activeStep.target);
+      const el = document.querySelector(targetSelector);
       if (el) {
         updateTargetRect();
         setIsWaitingForTarget(false);
@@ -136,7 +145,7 @@ export default function GuideOverlay({
             clearInterval(checkInterval);
             return;
           }
-          const found = document.querySelector(activeStep.target);
+          const found = document.querySelector(targetSelector);
           if (found) {
             clearInterval(checkInterval);
             setIsWaitingForTarget(false);
@@ -147,7 +156,7 @@ export default function GuideOverlay({
             // Element not found after 500ms, skip silently to prevent breaking UI
             if (process.env.NODE_ENV === 'development') {
               console.warn(
-                `[Guide dev check] Target '${activeStep.target}' for step '${activeStep.id}' was not found after 500ms. Skipping step.`
+                `[Guide dev check] Target '${targetSelector}' for step '${activeStep.id}' was not found after 500ms. Skipping step.`
               );
             }
             nextGuideStep();
@@ -161,13 +170,13 @@ export default function GuideOverlay({
     return () => {
       isCancelled = true;
     };
-  }, [guideState.isActive, activeStep, context, updateTargetRect]);
+  }, [guideState.isActive, activeStep, context, isMobile, targetSelector, updateTargetRect]);
 
   // Observe target element resizing and window resize / scroll
   useEffect(() => {
-    if (!guideState.isActive || !activeStep || !activeStep.target) return;
+    if (!guideState.isActive || !activeStep || !targetSelector) return;
 
-    const el = document.querySelector(activeStep.target);
+    const el = document.querySelector(targetSelector);
     if (!el) return;
 
     if (window.ResizeObserver) {
@@ -191,7 +200,7 @@ export default function GuideOverlay({
       window.removeEventListener('resize', handleScrollOrResize);
       window.removeEventListener('scroll', handleScrollOrResize, true);
     };
-  }, [guideState.isActive, activeStep, updateTargetRect]);
+  }, [guideState.isActive, activeStep, targetSelector, updateTargetRect]);
 
   // Keyboard navigation when guide is active
   useEffect(() => {
@@ -218,18 +227,18 @@ export default function GuideOverlay({
   }, [guideState.isActive]);
 
   // If another modal or tour is active, suppress overlay
-  if (isTourActive || isOtherModalOpen) return null;
+  if (isOtherModalOpen) return null;
 
   // 1. First-Visit Prompt Modal ("Take the tour / Skip")
   if (guideState.isPromptOpen) {
-    return (
+    return createPortal(
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby="guide-welcome-title"
-        className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-200"
+        className="fixed inset-0 z-[60] flex items-center justify-center overflow-y-auto p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-200"
       >
-        <div className="bg-[#070b14] border border-cyan-500/40 rounded-2xl max-w-md w-full p-6 shadow-[0_20px_50px_rgba(0,0,0,0.85)] flex flex-col gap-4 text-white animate-in zoom-in-95 duration-150">
+        <div className="bg-[#070b14] border border-cyan-500/40 rounded-2xl max-w-md w-full max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain p-6 shadow-[0_20px_50px_rgba(0,0,0,0.85)] flex flex-col gap-4 text-white animate-in zoom-in-95 duration-150">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-cyan-500/20 border border-cyan-500/50 flex items-center justify-center text-cyan-400 shrink-0">
               <Compass className="w-5 h-5 animate-pulse" />
@@ -267,7 +276,8 @@ export default function GuideOverlay({
             </button>
           </div>
         </div>
-      </div>
+      </div>,
+      document.body
     );
   }
 
@@ -353,11 +363,12 @@ export default function GuideOverlay({
   const isLastStep = guideState.activeStepIndex === guideState.steps.length - 1;
   const isFirstStep = guideState.activeStepIndex === 0;
 
-  return (
+  return createPortal(
     <div
       role="region"
       aria-label="Coachmark Guide"
       className="fixed inset-0 z-[60] pointer-events-auto select-none overflow-hidden"
+      style={{ height: '100dvh' }}
     >
       {/* 2. Full-Screen Backdrop with Spotlight Cut-Out */}
       {targetRect ? (
@@ -383,7 +394,7 @@ export default function GuideOverlay({
         ref={popoverRef}
         className={`fixed z-[61] ${
           isMobile
-            ? 'bottom-0 left-0 right-0 rounded-t-2xl p-4 bg-[#070b14] border-t border-cyan-500/40 shadow-2xl animate-in slide-in-from-bottom duration-200'
+            ? 'bottom-0 left-0 right-0 max-h-[55dvh] overflow-y-auto overscroll-contain custom-scrollbar rounded-t-2xl p-4 pb-[max(1rem,env(safe-area-inset-bottom))] bg-[#070b14] border-t border-cyan-500/40 shadow-2xl animate-in slide-in-from-bottom duration-200'
             : 'w-80 rounded-xl p-4 bg-[#070b14]/95 backdrop-blur-md border border-cyan-500/50 shadow-[0_16px_40px_rgba(0,0,0,0.85)] animate-in fade-in zoom-in-95 duration-200'
         } text-white`}
         style={getPopoverStyle()}
@@ -468,6 +479,7 @@ export default function GuideOverlay({
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

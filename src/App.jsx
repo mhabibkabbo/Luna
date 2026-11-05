@@ -21,13 +21,19 @@ import SiteAnalysisModal from './components/analysis/SiteAnalysisModal.jsx';
 import LunarWeatherModal from './components/status/LunarWeatherModal.jsx';
 import LandingPage from './components/landing/LandingPage.jsx';
 import MissionsPage from './components/missions/MissionsPage.jsx';
-import UserGuideModal from './components/common/UserGuideModal.jsx';
-import GuidedMissionTour from './components/workflow/GuidedMissionTour.jsx';
+import AboutPage from './components/landing/AboutPage.jsx';
 import TransparentLunarSearch from './components/search/TransparentLunarSearch.jsx';
 import ToastFeedback from './components/common/ToastFeedback.jsx';
 import GuideOverlay from './guide/GuideOverlay.jsx';
 import WhatsNewToast from './guide/WhatsNewToast.jsx';
-import { guideStore, showFirstVisitPrompt, isFirstVisit, getNewStepsForView, replayGuide } from './guide/guideStore.js';
+import {
+  guideStore,
+  showFirstVisitPrompt,
+  isFirstVisit,
+  getNewStepsForView,
+  startGuide,
+  skipGuide,
+} from './guide/guideStore.js';
 
 // Lazy-load dedicated lunar mission workspaces for maximum performance and code splitting
 const MissionControlPage = React.lazy(() => import('./pages/MissionControlPage.jsx'));
@@ -76,7 +82,9 @@ export default function App() {
       ) {
         return 'explorer';
       }
-      if (hash === 'mission-control' || hash === 'missions') return 'mission-control';
+      if (hash === 'missions') return 'missions';
+      if (hash === 'about') return 'about';
+      if (hash === 'mission-control') return 'mission-control';
       if (hash === 'site-analysis' || hash === 'analysis') return 'site-analysis';
       if (hash === 'communication' || hash === 'comms') return 'communication';
       if (hash === 'planner') return 'planner';
@@ -94,10 +102,7 @@ export default function App() {
   const [activeMission, setActiveMission] = useState(() => CLPS_MISSIONS[0]);
   const [comparisonMissionB, setComparisonMissionB] = useState(() => CLPS_MISSIONS[1] || null);
 
-  // User Guide Modal & Guided Tour state
-  const [isGuideOpen, setIsGuideOpen] = useState(false);
-  const [isTourActive, setIsTourActive] = useState(false);
-  const [tourStep, setTourStep] = useState(0);
+  // Spotlight guide state
   const [isGuideActive, setIsGuideActive] = useState(() => guideStore.get().isActive || guideStore.get().isPromptOpen);
   const [newGuideSteps, setNewGuideSteps] = useState([]);
 
@@ -110,8 +115,13 @@ export default function App() {
 
   // Check for first-visit guide and what's-new toast when explorer mounts
   useEffect(() => {
-    if (currentView !== 'explorer' || isTourActive) return;
+    if (
+      currentView !== 'explorer' ||
+      guideStore.get().isActive ||
+      guideStore.get().isPromptOpen
+    ) return;
     const timer = setTimeout(() => {
+      if (guideStore.get().isActive || guideStore.get().isPromptOpen) return;
       if (isFirstVisit('explorer')) {
         showFirstVisitPrompt('explorer');
       } else {
@@ -122,7 +132,7 @@ export default function App() {
       }
     }, 800);
     return () => clearTimeout(timer);
-  }, [currentView, isTourActive]);
+  }, [currentView]);
 
   // Listen to hash changes (for browser back/forward buttons and direct bookmark navigation)
   useEffect(() => {
@@ -133,7 +143,11 @@ export default function App() {
         setViewMode('sp-2d');
       } else if (hash.includes('explorer') || hash.includes('map') || hash.includes('globe')) {
         setCurrentView('explorer');
-      } else if (hash === 'mission-control' || hash === 'missions') {
+      } else if (hash === 'missions') {
+        setCurrentView('missions');
+      } else if (hash === 'about') {
+        setCurrentView('about');
+      } else if (hash === 'mission-control') {
         setCurrentView('mission-control');
       } else if (hash === 'site-analysis' || hash === 'analysis') {
         setCurrentView('site-analysis');
@@ -162,8 +176,6 @@ export default function App() {
         ? 'communication'
         : pageId === 'site-comparison'
         ? 'comparison'
-        : pageId === 'missions'
-        ? 'mission-control'
         : pageId;
     setCurrentView(normalized);
     window.location.hash = normalized === 'landing' ? '#' : `#${normalized}`;
@@ -417,18 +429,6 @@ export default function App() {
       }
 
       if (e.key === 'Escape') {
-        if (isTourActive) {
-          setIsTourActive(false);
-          setIsSiteAnalysisOpen(false);
-          setIsDteOpen(false);
-          setIsSlipSimulatorOpen(false);
-          notifyInfo('Tour Dismissed', 'Free exploration active.');
-          return;
-        }
-        if (isGuideOpen) {
-          setIsGuideOpen(false);
-          return;
-        }
         if (isComparisonOpen) {
           setIsComparisonOpen(false);
         } else if (isDteOpen) {
@@ -490,7 +490,11 @@ export default function App() {
         setIsTransferOrbitOpen((prev) => !prev);
       } else if (e.key === '?' || (e.key === 'h' && !e.ctrlKey && !e.metaKey && !e.altKey)) {
         e.preventDefault();
-        setIsGuideOpen((prev) => !prev);
+        if (isGuideActive) {
+          skipGuide();
+        } else {
+          startGuide(currentView);
+        }
       }
     };
 
@@ -498,9 +502,8 @@ export default function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [
     viewMode,
-    isTourActive,
     isGuideActive,
-    isGuideOpen,
+    currentView,
     isComparisonOpen,
     isMissionExplorerOpen,
     isCelestialOpen,
@@ -1013,168 +1016,10 @@ export default function App() {
   const selectedCommunicationEarthFeature =
     selectedMoonFeature && selectedEarthFeature ? selectedEarthFeature : null;
 
-  // 60-Second Interactive Guided Tour Orchestrator
-  const executeTourStep = useCallback(
-    (step) => {
-      setTourStep(step);
-      const malapert =
-        LANDING_SITES.find((s) => s.id === 'landing-artemis3-malapert') ||
-        LANDING_SITES.find((s) => s.id.includes('malapert')) ||
-        LANDING_SITES[0];
-
-      if (step === 0) {
-        // Step 1: Target South Pole Malapert Massif in 3D with Lighting
-        setIsSiteAnalysisOpen(false);
-        setIsDteOpen(false);
-        setIsSlipSimulatorOpen(false);
-        setIsComparisonOpen(false);
-        setIsLayersOpen(false);
-        if (activePlanet !== 'moon') handlePlanetChange('moon');
-        if (viewMode !== '3d') setViewMode('3d');
-        handleFeatureSelect(malapert);
-        if (!solarLightingByPlanet.moon) {
-          globeRef.current?.setLightingEnabled?.(true, 'moon');
-          setSolarLightingByPlanet((previous) => ({ ...previous, moon: true }));
-        }
-        setTimeout(() => {
-          getActiveController()?.flyTo(
-            malapert.longitude ?? 0,
-            malapert.latitude ?? -85.9,
-            4.5
-          );
-        }, 120);
-        notifySuccess(
-          'Guided Tour: Step 1 of 6',
-          'Artemis III Malapert Massif (85.90°S, 0.00°E) targeted with solar terminator.'
-        );
-      } else if (step === 1) {
-        // Step 2: Switch to 2D South Pole Topographic GIS Map
-        setIsSiteAnalysisOpen(false);
-        setIsDteOpen(false);
-        setIsSlipSimulatorOpen(false);
-        setIsComparisonOpen(false);
-        setViewMode('sp-2d');
-        notifyInfo(
-          'Guided Tour: Step 2 of 6',
-          'Switched to 2D South Pole Topographic Map with 100m/200m LOLA DEM contours.'
-        );
-      } else if (step === 2) {
-        // Step 3: Landing Site Horizon & Diviner Thermal
-        if (viewMode !== '3d') setViewMode('3d');
-        setIsDteOpen(false);
-        setIsSlipSimulatorOpen(false);
-        setIsComparisonOpen(false);
-        handleFeatureSelect(malapert);
-        setTimeout(() => {
-          getActiveController()?.flyTo(
-            malapert.longitude ?? 0,
-            malapert.latitude ?? -85.9,
-            4.5
-          );
-          setIsSiteAnalysisOpen(true);
-        }, 150);
-        notifyInfo(
-          'Guided Tour: Step 3 of 6',
-          'Inspect panoramic 360° LOLA DEM horizons and Diviner thermal environment.'
-        );
-      } else if (step === 3) {
-        // Step 4: Direct-to-Earth Communication Link
-        setIsSiteAnalysisOpen(false);
-        setIsSlipSimulatorOpen(false);
-        setIsComparisonOpen(false);
-        setIsDteOpen(true);
-        setIsVectorsVisible(true);
-        notifyInfo(
-          'Guided Tour: Step 4 of 6',
-          'Direct-to-Earth communication links evaluated to Deep Space Network tracking sites.'
-        );
-      } else if (step === 4) {
-        // Step 5: Launch Window Slip Simulator
-        setIsDteOpen(false);
-        setIsSiteAnalysisOpen(false);
-        setIsComparisonOpen(false);
-        setIsSlipSimulatorOpen(true);
-        notifyInfo(
-          'Guided Tour: Step 5 of 6',
-          'Launch slip simulation sweeps daylight duration and candidate rankings.'
-        );
-      } else if (step === 5) {
-        // Step 6: Ready for Free Exploration
-        setIsSlipSimulatorOpen(false);
-        setIsDteOpen(false);
-        setIsSiteAnalysisOpen(false);
-        setIsComparisonOpen(false);
-        if (viewMode !== '3d') setViewMode('3d');
-        setTimeout(() => {
-          getActiveController()?.flyTo(0, -90, 5.2);
-        }, 120);
-        notifySuccess(
-          'Tour Complete!',
-          'Full operational command active. Press [?] anytime for reference and shortcuts.'
-        );
-      }
-    },
-    [
-      activePlanet,
-      viewMode,
-      isSolarLighting,
-      solarLightingByPlanet,
-      handlePlanetChange,
-      handleFeatureSelect,
-    ]
-  );
-
-  const handleStartTour = useCallback(() => {
-    setIsGuideOpen(false);
-    if (currentView !== 'explorer') {
-      setCurrentView('explorer');
-      window.location.hash = '#explorer';
-    }
-    setIsTourActive(true);
-    executeTourStep(0);
-  }, [currentView, executeTourStep]);
-
-  const handleNextTourStep = useCallback(() => {
-    if (tourStep < 5) {
-      executeTourStep(tourStep + 1);
-    } else {
-      setIsTourActive(false);
-      notifySuccess(
-        'Ready to Explore',
-        'Use the left toolbar or press [L] for layers, [1]/[2] for 3D/2D views.'
-      );
-    }
-  }, [tourStep, executeTourStep]);
-
-  const handlePrevTourStep = useCallback(() => {
-    if (tourStep > 0) {
-      executeTourStep(tourStep - 1);
-    }
-  }, [tourStep, executeTourStep]);
-
-  const handleEndTour = useCallback(() => {
-    setIsTourActive(false);
-    setIsSiteAnalysisOpen(false);
-    setIsDteOpen(false);
-    setIsSlipSimulatorOpen(false);
-    notifyInfo('Tour Dismissed', 'Free exploration active.');
-  }, []);
-
-  const handleNavigateToMissions = () => {
-    setCurrentView('missions');
-    window.location.hash = '#missions';
-  };
-
-  const handleNavigateToLanding = () => {
-    setCurrentView('landing');
-    window.location.hash = '#';
-  };
-
   // Render Landing Page if currentView is 'landing'
   if (currentView === 'landing') {
     return (
       <LandingPage
-        onNavigateToMissions={() => handleNavigate('mission-control')}
         onLaunchExplorer={handleLaunchExplorer}
       />
     );
@@ -1185,6 +1030,7 @@ export default function App() {
       {/* ========================================================================= */}
       {/* MODULAR WORKSPACE SWITCHER: Upper left corner                             */}
       {/* ========================================================================= */}
+      {currentView !== 'missions' && currentView !== 'about' && (
       <div className="fixed top-3 left-3 sm:top-4 sm:left-4 z-40 pointer-events-auto select-none flex items-center gap-2">
         <select
           aria-label="Mission Workspace Switcher"
@@ -1213,8 +1059,11 @@ export default function App() {
           <option value="planner">Landing Recommendations</option>
           <option value="comparison">Site Comparison</option>
           <option value="library">Data Sources &amp; Library</option>
+          <option value="missions">Mission Catalog</option>
+          <option value="about">About Luna</option>
         </select>
       </div>
+      )}
 
       {/* ========================================================================= */}
       {/* FLOATING NOTIFICATIONS: Upper right corner                                */}
@@ -1226,7 +1075,11 @@ export default function App() {
 
       {/* Dedicated Subpage Workspaces (Lazy Loaded) */}
       {currentView !== 'explorer' && (
-        <div className="flex-1 w-full h-full overflow-hidden flex flex-col bg-[#07090e] pt-11 sm:pt-12">
+        <div
+          className={`flex-1 w-full min-h-0 overflow-hidden flex flex-col bg-[#07090e] ${
+            currentView === 'missions' || currentView === 'about' ? '' : 'pt-11 sm:pt-12'
+          }`}
+        >
           <React.Suspense
             fallback={
               <div className="flex-1 flex flex-col items-center justify-center min-h-[50vh] text-cyan-400 font-mono text-xs gap-3">
@@ -1245,7 +1098,6 @@ export default function App() {
                 }}
                 selectedFeature={selectedMoonFeature || selectedFeature}
                 onSelectFeature={handleFeatureSelect}
-                onStartTour={handleStartTour}
               />
             )}
             {currentView === 'site-analysis' && (
@@ -1315,14 +1167,15 @@ export default function App() {
                   handleSelectMissionFromModal(m);
                 }}
                 onNavigate={handleNavigate}
-                onStartTour={handleStartTour}
               />
             )}
             {currentView === 'missions' && (
               <MissionsPage
-                onNavigateToLanding={handleNavigateToLanding}
                 onLaunchExplorer={handleLaunchExplorer}
               />
+            )}
+            {currentView === 'about' && (
+              <AboutPage onLaunchExplorer={handleLaunchExplorer} />
             )}
           </React.Suspense>
         </div>
@@ -1394,7 +1247,7 @@ export default function App() {
           onViewModeChange={setViewMode}
           selectedFeature={selectedFeature}
           activePlanet={activePlanet}
-          onOpenGuide={() => setIsGuideOpen(true)}
+          onOpenGuide={() => startGuide(currentView)}
         />
 
         {/* Transparent Top-Centered Lunar Location Search Bar */}
@@ -1616,14 +1469,6 @@ export default function App() {
       </main>
       </div>
 
-      {/* Dedicated NASA Space Apps User Guide & Keyboard Shortcuts Modal */}
-      <UserGuideModal
-        isOpen={isGuideOpen}
-        onClose={() => setIsGuideOpen(false)}
-        onStartTour={handleStartTour}
-        onReplayGuide={() => replayGuide(currentView)}
-      />
-
       {/* Spotlight Coachmark Guide Overlay */}
       <GuideOverlay
         context={{
@@ -1639,9 +1484,7 @@ export default function App() {
           },
           view: currentView,
         }}
-        isTourActive={isTourActive}
         isOtherModalOpen={
-          isGuideOpen ||
           isComparisonOpen ||
           isMissionExplorerOpen ||
           isDteOpen ||
@@ -1656,15 +1499,6 @@ export default function App() {
         view={currentView}
         newSteps={newGuideSteps}
         onDismiss={() => setNewGuideSteps([])}
-      />
-
-      {/* 60-Second Interactive Guided Onboarding Tour */}
-      <GuidedMissionTour
-        isActive={isTourActive}
-        stepIndex={tourStep}
-        onNext={handleNextTourStep}
-        onPrev={handlePrevTourStep}
-        onEnd={handleEndTour}
       />
     </div>
   );

@@ -121,6 +121,18 @@ export function createEarth(container, callbacks = {}) {
   cameraController.enableTranslate = true;
   cameraController.enableZoom = true;
   cameraController.enableTilt = true;
+  // Keep the default two-finger gesture zoom-only instead of tilting during a pinch.
+  cameraController.tiltEventTypes = [
+    Cesium.CameraEventType.MIDDLE_DRAG,
+    {
+      eventType: Cesium.CameraEventType.LEFT_DRAG,
+      modifier: Cesium.KeyboardEventModifier.CTRL,
+    },
+    {
+      eventType: Cesium.CameraEventType.RIGHT_DRAG,
+      modifier: Cesium.KeyboardEventModifier.CTRL,
+    },
+  ];
   cameraController.enableLook = false;
   cameraController.enableCollisionDetection = false;
 
