@@ -24,6 +24,7 @@ import { LANDING_SITES } from '../data/landingSites.js';
 import { computeCelestialState } from '../utils/lunarEphemeris.js';
 import { getLunarTemperature } from '../utils/lunarThermal.js';
 import { celestialTimeStore } from '../utils/celestialTime.js';
+import ExpandableText from '../components/common/ExpandableText.jsx';
 
 export const RECOMMENDED_CANDIDATES = [
   {
@@ -340,9 +341,12 @@ export default function MissionControlPage({
                   <div className="text-[11px] font-mono text-slate-400 mb-2">
                     {site.region}
                   </div>
-                  <p className="text-xs text-slate-400 leading-relaxed line-clamp-3">
-                    {site.description}
-                  </p>
+                  <ExpandableText
+                    text={site.description}
+                    maxLines={3}
+                    charThreshold={120}
+                    className="text-xs text-slate-400 leading-relaxed"
+                  />
                 </div>
 
                 <div className="pt-3 mt-3 border-t border-slate-800/80 flex items-center justify-between">

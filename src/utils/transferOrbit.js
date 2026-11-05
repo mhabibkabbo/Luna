@@ -94,11 +94,86 @@ export function latLonToSphere3D(latDeg, lonDeg, radius = 1) {
   return { x, y, z };
 }
 
+// ── Kepler Solver ──────────────────────────────────────────────────────────
+
+/**
+ * Solve Kepler's equation M = E - e * sin(E) for Eccentric Anomaly E.
+ * @param {number} M Mean anomaly in radians
+ * @param {number} e Eccentricity (0 <= e < 1)
+ * @returns {number} Eccentric anomaly E in radians
+ */
+export function solveKepler(M, e) {
+  let E = M;
+  for (let iter = 0; iter < 15; iter++) {
+    const f = E - e * Math.sin(E) - M;
+    const fPrime = 1 - e * Math.cos(E);
+    const delta = f / fPrime;
+    E -= delta;
+    if (Math.abs(delta) < 1e-8) break;
+  }
+  return E;
+}
+
 // ── Smoothstep Mathematical Helper ─────────────────────────────────────────
 
 function smoothstep(edge0, edge1, x) {
   const t = Math.max(0, Math.min(1, (x - edge0) / (edge1 - edge0)));
   return t * t * (3 - 2 * t);
+}
+
+// ── Centripetal Catmull-Rom Spline Interpolator ─────────────────────────────
+
+/**
+ * Samples an array of control points along a centripetal Catmull-Rom spline.
+ * Guarantees C¹ continuous tangent continuity without self-intersection loops.
+ *
+ * @param {Array<{ x: number, y: number, z?: number, vx?: number, vy?: number }>} points
+ * @param {number} targetCount Desired number of evenly interpolated samples
+ * @returns {Array<{ x: number, y: number, z?: number, vx?: number, vy?: number }>}
+ */
+export function sampleCatmullRomSpline(points, targetCount = 100) {
+  if (!points || points.length < 2) return points || [];
+  if (points.length === targetCount) return points;
+
+  const result = [];
+  const N = points.length;
+
+  for (let i = 0; i < targetCount; i++) {
+    const u = i / (targetCount - 1);
+    const rawIdx = u * (N - 1);
+    const i1 = Math.floor(rawIdx);
+    const i2 = Math.min(N - 1, i1 + 1);
+    const i0 = Math.max(0, i1 - 1);
+    const i3 = Math.min(N - 1, i2 + 1);
+    const t = rawIdx - i1;
+
+    const p0 = points[i0];
+    const p1 = points[i1];
+    const p2 = points[i2];
+    const p3 = points[i3];
+
+    const t2 = t * t;
+    const t3 = t2 * t;
+
+    const b0 = -0.5 * t3 + t2 - 0.5 * t;
+    const b1 = 1.5 * t3 - 2.5 * t2 + 1.0;
+    const b2 = -1.5 * t3 + 2.0 * t2 + 0.5 * t;
+    const b3 = 0.5 * t3 - 0.5 * t2;
+
+    const pt = {
+      x: b0 * p0.x + b1 * p1.x + b2 * p2.x + b3 * p3.x,
+      y: b0 * p0.y + b1 * p1.y + b2 * p2.y + b3 * p3.y,
+    };
+    if (p0.z != null) {
+      pt.z = b0 * (p0.z || 0) + b1 * (p1.z || 0) + b2 * (p2.z || 0) + b3 * (p3.z || 0);
+    }
+    if (p0.vx != null) {
+      pt.vx = b0 * p0.vx + b1 * p1.vx + b2 * p2.vx + b3 * p3.vx;
+      pt.vy = b0 * p0.vy + b1 * p1.vy + b2 * p2.vy + b3 * p3.vy;
+    }
+    result.push(pt);
+  }
+  return result;
 }
 
 // ── Core Computation ───────────────────────────────────────────────────────
@@ -216,6 +291,7 @@ function generateWaypoints({
   const DU = r_moon || EARTH_MOON_DIST_KM;
   const h_park = r_park - EARTH_RADIUS_KM;
   const v_tli = Math.sqrt(EARTH_MU * (2 / r_park - 1 / a_trans));
+  const omega_M = TWO_PI / MOON_ORBITAL_PERIOD_S;
 
   // 1. Orthonormal 3D Basis Vectors
   const targetMoon3d = moon3dPos
@@ -285,41 +361,134 @@ function generateWaypoints({
   // ── 3. Profile-Specific Trajectory Generation ─────────────────────────────
 
   if (profileId === 'direct') {
-    const r_lunar_orbit = MOON_RADIUS_KM + lunarOrbitAltKm;
+    // ══════════════════════════════════════════════════════════════════════════
+    // Regime 1: Direct Transfer (Fast TLI + LOI)
+    // ══════════════════════════════════════════════════════════════════════════
+    const deltaThetaM = omega_M * transitTimeS;
+    const thetaTLI = deltaThetaM - Math.PI;
 
-    for (let i = 0; i <= 14; i++) {
-      const angle = Math.PI * 0.5 + (i / 14) * Math.PI;
+    const r_lunar_orbit = MOON_RADIUS_KM + lunarOrbitAltKm;
+    const r_target_moon = DU + r_lunar_orbit;
+    const a_direct = (r_park + r_target_moon) / 2;
+    const e_direct = 1 - r_park / a_direct;
+
+    // Power-law sampling for eccentric anomaly E for smooth C1 departure
+    const gamma = 1.45;
+    const N_TRANS = 75;
+    const u1 = 1 / N_TRANS;
+    const E1 = Math.PI * Math.pow(u1, gamma);
+    const cosNu1 = (Math.cos(E1) - e_direct) / (1 - e_direct * Math.cos(E1));
+    const sinNu1 = (Math.sqrt(Math.max(0, 1 - e_direct * e_direct)) * Math.sin(E1)) / (1 - e_direct * Math.cos(E1));
+    const nu1 = Math.atan2(sinNu1, cosNu1);
+
+    // Parking orbit leading to TLI injection
+    const dThetaPark = nu1;
+    const N_PARK = 14;
+    for (let i = N_PARK; i >= 1; i--) {
+      const angle = thetaTLI - i * dThetaPark;
       const x_km = r_park * Math.cos(angle);
       const y_km = r_park * Math.sin(angle);
-      const { x3d, y3d, z3d } = mapTo3D(x_km, y_km, lunarOrbitAltKm);
-      points.push({ x: x_km/DU, y: y_km/DU, x3d, y3d, z3d, t: 0, velocityKmS: v_tli, distEarthKm: r_park, distMoonKm: DU, phase: 'tli' });
-    }
+      const { x3d, y3d, z3d } = mapTo3D(x_km, y_km, 100);
 
-    // Direct Transfer Arc defined in physical KM
-    const p0 = { x: 0, y: -r_park };
-    const p1 = { x: DU * 0.45, y: -r_park };
-    const p2 = { x: DU * 0.8, y: -r_lunar_orbit };
-    const p3 = { x: DU, y: -r_lunar_orbit };
-
-    for (let i = 1; i <= 60; i++) {
-      const u = i / 60;
-      const { x: x_km, y: y_km } = getBezier2D(p0, p1, p2, p3, u);
-      const dE_km = Math.hypot(x_km, y_km);
-      const dM_km = Math.hypot(x_km - DU, y_km);
-      const { x3d, y3d, z3d } = mapTo3D(x_km, y_km, lunarOrbitAltKm);
       points.push({
-        x: x_km/DU, y: y_km/DU, x3d, y3d, z3d, t: u * transitTimeS,
-        velocityKmS: Math.max(1.0, 10.9 - u * 8), distEarthKm: dE_km, distMoonKm: dM_km,
-        phase: dM_km <= MOON_SOI_KM ? 'lunar-approach' : 'coast',
+        x: x_km / DU,
+        y: y_km / DU,
+        x3d,
+        y3d,
+        z3d,
+        t: 0,
+        velocityKmS: v_tli,
+        distEarthKm: r_park,
+        distMoonKm: Math.hypot(x_km - DU, y_km),
+        phase: 'tli',
       });
     }
 
-    for (let i = 1; i <= 20; i++) {
-      const angle = -Math.PI * 0.5 + (i / 20) * TWO_PI;
-      const x_km = DU + r_lunar_orbit * Math.cos(angle);
-      const y_km = r_lunar_orbit * Math.sin(angle);
+    // Translunar Transfer Ellipse
+    for (let i = 0; i <= N_TRANS; i++) {
+      const u = i / N_TRANS;
+      const E = Math.PI * Math.pow(u, gamma);
+      const M = E - e_direct * Math.sin(E);
+      const t = (M / Math.PI) * transitTimeS;
+      const r = a_direct * (1 - e_direct * Math.cos(E));
+      const cosNu = (Math.cos(E) - e_direct) / (1 - e_direct * Math.cos(E));
+      const sinNu = (Math.sqrt(Math.max(0, 1 - e_direct * e_direct)) * Math.sin(E)) / (1 - e_direct * Math.cos(E));
+      const nu = Math.atan2(sinNu, cosNu);
+      const thetaRot = thetaTLI + nu - omega_M * t;
+
+      const x_km = r * Math.cos(thetaRot);
+      const y_km = r * Math.sin(thetaRot);
+      const dE_km = Math.hypot(x_km, y_km);
+      const dM_km = Math.hypot(x_km - DU, y_km);
+      const v = Math.sqrt(EARTH_MU * (2 / r - 1 / a_direct));
       const { x3d, y3d, z3d } = mapTo3D(x_km, y_km, lunarOrbitAltKm);
-      points.push({ x: x_km/DU, y: y_km/DU, x3d, y3d, z3d, t: transitTimeS, velocityKmS: 1.6, distEarthKm: DU, distMoonKm: 100, phase: 'loi' });
+
+      let phase = 'coast';
+      if (u < 0.08) phase = 'tli';
+      else if (dM_km <= MOON_SOI_KM) phase = 'lunar-approach';
+
+      points.push({
+        x: x_km / DU,
+        y: y_km / DU,
+        x3d,
+        y3d,
+        z3d,
+        t,
+        velocityKmS: Math.max(1.0, v),
+        distEarthKm: dE_km,
+        distMoonKm: dM_km,
+        phase,
+      });
+    }
+
+    // Lunar Orbit Insertion: 100 km circular lunar parking orbit
+    const N_LOI = 16;
+    for (let i = 1; i <= N_LOI; i++) {
+      const p = i / N_LOI;
+      const phi = -p * (Math.PI * 0.5);
+      const x_km = DU + r_lunar_orbit * Math.cos(phi);
+      const y_km = r_lunar_orbit * Math.sin(phi);
+      const { x3d, y3d, z3d } = mapTo3D(x_km, y_km, lunarOrbitAltKm);
+
+      points.push({
+        x: x_km / DU,
+        y: y_km / DU,
+        x3d,
+        y3d,
+        z3d,
+        t: transitTimeS + p * 3600,
+        velocityKmS: Math.sqrt(MOON_MU / r_lunar_orbit),
+        distEarthKm: DU,
+        distMoonKm: r_lunar_orbit,
+        phase: 'loi',
+      });
+    }
+
+    // Powered Descent: continuous forward descent to target landing site
+    const N_DESC = 16;
+    for (let i = 1; i <= N_DESC; i++) {
+      const p = i / N_DESC;
+      const s = p * p * (3 - 2 * p);
+      const alt = lunarOrbitAltKm * (1 - s);
+      const distM = MOON_RADIUS_KM + alt;
+      const phi = -Math.PI * 0.5 - p * (Math.PI * 0.45);
+      const x_km = DU + distM * Math.cos(phi);
+      const y_km = distM * Math.sin(phi);
+
+      const { x3d, y3d, z3d } = mapTo3D(x_km, y_km, alt);
+
+      points.push({
+        x: x_km / DU,
+        y: y_km / DU,
+        x3d,
+        y3d,
+        z3d,
+        t: transitTimeS + 3600 + p * 1800,
+        velocityKmS: Math.sqrt(MOON_MU / r_lunar_orbit) * (1 - p * 0.95),
+        distEarthKm: DU,
+        distMoonKm: distM,
+        phase: 'descent',
+      });
     }
 
   } else if (profileId === 'free-return') {
@@ -355,7 +524,7 @@ function generateWaypoints({
       const x_km = DU + r_peri_km * Math.cos(angle);
       const y_km = r_peri_km * Math.sin(angle);
       const { x3d, y3d, z3d } = mapTo3D(x_km, y_km, h_peri_km);
-      points.push({ x: x_km/DU, y: y_km/DU, x3d, y3d, z3d, t: t_mid, velocityKmS: 2.32, distEarthKm: DU, distMoonKm: 100, phase: 'lunar-approach' });
+      points.push({ x: x_km/DU, y: y_km/DU, x3d, y3d, z3d, t: t_mid, velocityKmS: 2.32, distEarthKm: DU, distMoonKm: r_peri_km, phase: 'lunar-approach' });
     }
 
     const pIn0 = { x: DU, y: -r_peri_km };

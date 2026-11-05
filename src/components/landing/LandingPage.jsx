@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { ArrowUpRight } from 'lucide-react';
 import RealisticMoon from './RealisticMoon.jsx';
+import LunaBrandLogo from '../common/LunaBrandLogo.jsx';
+import ExpandableText from '../common/ExpandableText.jsx';
 import { CLPS_MISSIONS } from '../../data/clpsMissions.js';
 
 export default function LandingPage({ onLaunchExplorer }) {
@@ -9,17 +11,29 @@ export default function LandingPage({ onLaunchExplorer }) {
   return (
     <div className="min-h-screen w-full bg-[#060B13] text-[#F1F5F9] font-sans selection:bg-[#00D2C4]/30 selection:text-[#F1F5F9] overflow-x-hidden flex flex-col justify-between">
       {/* ===================================================================== */}
-      {/* HEADER: Centered Missions & About, Open Explorer on Right             */}
+      {/* HEADER: Luna Logo in Corner, Center Navigation, Open Explorer on Right */}
       {/* ===================================================================== */}
-      <header className="fixed top-0 left-0 right-0 z-50 px-6 sm:px-12 h-20 flex items-center justify-between pointer-events-none bg-gradient-to-b from-black/80 to-transparent backdrop-blur-[2px]">
-        {/* Left empty spacer for perfect center alignment */}
-        <div className="w-20 hidden sm:block" />
+      <header
+        role="banner"
+        className="fixed top-0 left-0 right-0 z-50 px-4 sm:px-8 lg:px-12 h-16 flex items-center justify-between pointer-events-none bg-gradient-to-b from-black/80 to-transparent backdrop-blur-[2px]"
+      >
+        {/* Left: Luna Branding Logo */}
+        <div className="pointer-events-auto">
+          <LunaBrandLogo
+            asButton
+            onClick={() => onLaunchExplorer({ viewMode: '3d' })}
+            title="Luna — Lunar Mission & Site Studio"
+          />
+        </div>
 
         {/* Center Navigation Container */}
-        <nav className="pointer-events-auto flex items-center gap-6 bg-[#0A1220]/80 px-6 py-2 rounded-full border border-white/[0.08] backdrop-blur-md shadow-xl mx-auto sm:mx-0">
+        <nav
+          aria-label="Main page links"
+          className="pointer-events-auto flex items-center gap-6 bg-[#0A1220]/80 px-6 py-2 rounded-full border border-white/[0.08] backdrop-blur-md shadow-xl mx-auto sm:mx-0"
+        >
           <a
             href="#missions"
-            className="text-xs font-mono uppercase tracking-[0.18em] text-[#94A3B8] hover:text-[#00D2C4] transition-colors relative py-1 group"
+            className="text-xs font-mono uppercase tracking-[0.18em] text-[#94A3B8] hover:text-[#00D2C4] transition-colors relative py-1 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00D2C4] rounded"
           >
             <span>Missions</span>
             <span className="absolute bottom-0 left-0 w-0 h-[1.5px] bg-[#00D2C4] group-hover:w-full transition-all duration-300" />
@@ -27,7 +41,7 @@ export default function LandingPage({ onLaunchExplorer }) {
 
           <a
             href="#about"
-            className="text-xs font-mono uppercase tracking-[0.18em] text-[#94A3B8] hover:text-[#00D2C4] transition-colors py-1 relative group cursor-pointer"
+            className="text-xs font-mono uppercase tracking-[0.18em] text-[#94A3B8] hover:text-[#00D2C4] transition-colors py-1 relative group cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00D2C4] rounded"
           >
             <span>About</span>
             <span className="absolute bottom-0 left-0 w-0 h-[1.5px] bg-[#00D2C4] group-hover:w-full transition-all duration-300" />
@@ -39,7 +53,8 @@ export default function LandingPage({ onLaunchExplorer }) {
           <button
             type="button"
             onClick={() => onLaunchExplorer({ viewMode: '3d' })}
-            className="flex items-center gap-2 h-10 px-5 rounded-full bg-[#00D2C4] hover:bg-[#22E7D9] text-[#060B13] font-bold text-xs tracking-wide transition-all shadow-[0_0_20px_rgba(0,210,196,0.35)] active:scale-95"
+            aria-label="Launch interactive 3D and 2D Lunar Explorer"
+            className="flex items-center gap-2 h-9 px-4 sm:px-5 rounded-full bg-[#00D2C4] hover:bg-[#22E7D9] text-[#060B13] font-bold text-xs tracking-wide transition-all shadow-[0_0_20px_rgba(0,210,196,0.35)] active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00D2C4]"
           >
             <span>Open Explorer</span>
             <ArrowUpRight className="w-3.5 h-3.5" />
@@ -50,38 +65,67 @@ export default function LandingPage({ onLaunchExplorer }) {
       {/* ===================================================================== */}
       {/* CLEAN CINEMATIC HERO SECTION                                          */}
       {/* ===================================================================== */}
-      <section className="relative my-auto w-full min-h-screen flex items-center pt-20 pb-12 px-6 sm:px-10 lg:px-16 overflow-hidden">
-        {/* Luminous Greenish-Blue / Deep Space Atmospheric Gradient Backdrop */}
+      <section
+        aria-label="Lunar Surface Hero Overview"
+        className="relative my-auto w-full min-h-screen flex items-center pt-20 pb-12 px-6 sm:px-10 lg:px-16 overflow-hidden"
+      >
+        {/* Deep Space Atmospheric Gradient Backdrop */}
         <div
           className="absolute inset-0 pointer-events-none -z-20"
           style={{
             background:
-              'radial-gradient(circle at 65% 45%, rgba(0, 210, 196, 0.22) 0%, rgba(14, 116, 144, 0.12) 38%, rgba(6, 11, 19, 0.98) 78%)',
+              'radial-gradient(circle at 65% 45%, rgba(0, 210, 196, 0.18) 0%, rgba(14, 116, 144, 0.10) 38%, rgba(6, 11, 19, 0.98) 78%)',
           }}
         />
 
         <div className="my-auto grid grid-cols-1 lg:grid-cols-12 gap-8 items-center max-w-[1400px] w-full mx-auto">
           {/* Left Text Block */}
-          <div className="lg:col-span-5 space-y-6 z-10">
-            <h1 className="font-serif text-5xl sm:text-6xl xl:text-[4.5rem] leading-[0.98] tracking-[-0.02em] text-[#F1F5F9] font-normal">
+          <div className="lg:col-span-6 space-y-6 z-10">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#00D2C4]/10 border border-[#00D2C4]/30 text-[#00D2C4] text-[11px] font-mono uppercase tracking-wider">
+              <span>NASA CLPS &amp; Artemis GIS Platform</span>
+            </div>
+
+            <h1 className="font-serif text-4xl sm:text-5xl xl:text-[4.2rem] leading-[1.02] tracking-[-0.02em] text-[#F1F5F9] font-normal">
               The <span className="italic text-[#00D2C4]">lunar</span> surface
               <br />
               in high <span className="italic text-[#34D399]">definition.</span>
             </h1>
 
-            <p className="text-base sm:text-[17px] text-[#94A3B8] max-w-md leading-relaxed font-normal">
+            <p className="text-base sm:text-[17px] text-[#94A3B8] max-w-lg leading-relaxed font-normal">
               Explore lunar topography, commercial landers, and polar expedition targets in interactive 3D and 2D.{' '}
               <strong className="text-[#F1F5F9] font-medium">
                 Analyze solar illumination, ephemeris vectors, and direct-to-Earth links.
               </strong>
             </p>
+
+            <div className="flex flex-wrap items-center gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => onLaunchExplorer({ viewMode: '3d' })}
+                aria-label="Launch 3D Lunar Surface Explorer"
+                className="flex items-center gap-2 h-11 px-6 rounded-full bg-[#00D2C4] hover:bg-[#22E7D9] text-[#060B13] font-bold text-xs tracking-wide transition-all shadow-[0_0_20px_rgba(0,210,196,0.35)] active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00D2C4]"
+              >
+                <span>Launch Lunar Map</span>
+                <ArrowUpRight className="w-4 h-4" />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => onLaunchExplorer({ viewMode: '2d' })}
+                aria-label="Open 2D South Pole Topographical GIS Map"
+                className="flex items-center gap-2 h-11 px-5 rounded-full bg-[#0A1220] hover:bg-[#121F33] text-[#F1F5F9] border border-[#16283C] hover:border-[#00D2C4]/60 font-semibold text-xs tracking-wide transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00D2C4]"
+              >
+                <span>South Pole 2D Topo</span>
+              </button>
+            </div>
           </div>
 
           {/* Right Column: 3D Orbital Moon */}
-          <div className="lg:col-span-7 relative h-[420px] sm:h-[520px] flex items-center justify-center">
+          <div className="lg:col-span-6 relative h-[380px] sm:h-[460px] flex items-center justify-center">
             <RealisticMoon
               selectedMissionIndex={selectedMissionIndex}
               onSelectMissionIndex={setSelectedMissionIndex}
+              onLaunchExplorer={onLaunchExplorer}
               onOpenMission={(missionObj) => {
                 const matched = CLPS_MISSIONS.find((m) => m.id === missionObj.id);
                 if (matched) {
@@ -95,7 +139,13 @@ export default function LandingPage({ onLaunchExplorer }) {
         </div>
       </section>
 
-      <section className="relative px-6 sm:px-10 lg:px-16 py-20 sm:py-28 border-t border-white/[0.08] bg-[#080F19]">
+      {/* ===================================================================== */}
+      {/* MISSION CATALOG SECTION WITH EXPANDABLE DESCRIPTIONS                   */}
+      {/* ===================================================================== */}
+      <section
+        aria-label="Commercial Lunar Missions Manifest"
+        className="relative px-6 sm:px-10 lg:px-16 py-16 sm:py-24 border-t border-white/[0.08] bg-[#080F19]"
+      >
         <div className="max-w-[1400px] mx-auto">
           <div className="max-w-2xl mb-10 sm:mb-14">
             <span className="text-xs font-mono uppercase tracking-[0.22em] text-[#00D2C4]">
@@ -114,15 +164,21 @@ export default function LandingPage({ onLaunchExplorer }) {
             {CLPS_MISSIONS.slice(0, 3).map((mission) => (
               <article
                 key={mission.id}
-                className="flex flex-col rounded-2xl border border-white/[0.1] bg-[#0A1220] p-5 sm:p-6"
+                className="flex flex-col rounded-2xl border border-white/[0.1] bg-[#0A1220] p-5 sm:p-6 transition-all hover:border-[#00D2C4]/40"
               >
                 <span className="text-[10px] font-mono uppercase tracking-widest text-[#34D399]">
                   {mission.provider} · {mission.taskOrder}
                 </span>
                 <h3 className="font-serif text-xl text-[#F1F5F9] mt-3">{mission.name}</h3>
-                <p className="text-sm text-[#94A3B8] leading-relaxed mt-3 flex-1">
-                  {mission.description}
-                </p>
+
+                {/* Accessible Expandable Description */}
+                <ExpandableText
+                  text={mission.description}
+                  maxLines={3}
+                  charThreshold={140}
+                  className="text-sm text-[#94A3B8] leading-relaxed mt-3 flex-1"
+                />
+
                 <button
                   type="button"
                   onClick={() =>
@@ -133,9 +189,11 @@ export default function LandingPage({ onLaunchExplorer }) {
                       lat: mission.latitude,
                     })
                   }
-                  className="inline-flex items-center gap-2 mt-5 text-xs font-mono uppercase tracking-wider text-[#00D2C4] hover:text-[#34D399] transition-colors self-start"
+                  aria-label={`Explore mission ${mission.name} on lunar map`}
+                  className="inline-flex items-center gap-2 mt-5 text-xs font-mono uppercase tracking-wider text-[#00D2C4] hover:text-[#34D399] transition-colors self-start focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#00D2C4] rounded"
                 >
-                  Explore mission <ArrowUpRight className="w-3.5 h-3.5" />
+                  <span>Explore mission</span>
+                  <ArrowUpRight className="w-3.5 h-3.5" />
                 </button>
               </article>
             ))}
@@ -144,15 +202,16 @@ export default function LandingPage({ onLaunchExplorer }) {
           <div className="flex flex-wrap gap-3 mt-9">
             <a
               href="#missions"
-              className="inline-flex items-center gap-2 px-5 py-3 rounded-full bg-[#00D2C4] text-[#060B13] font-bold text-xs hover:bg-[#22E7D9] transition-colors"
+              className="inline-flex items-center gap-2 px-5 py-3 rounded-full bg-[#00D2C4] text-[#060B13] font-bold text-xs hover:bg-[#22E7D9] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00D2C4]"
             >
-              View all missions <ArrowUpRight className="w-3.5 h-3.5" />
+              <span>View all missions</span>
+              <ArrowUpRight className="w-3.5 h-3.5" />
             </a>
             <a
               href="#about"
-              className="inline-flex items-center gap-2 px-5 py-3 rounded-full border border-white/15 text-[#F1F5F9] font-semibold text-xs hover:border-[#00D2C4]/60 hover:text-[#00D2C4] transition-colors"
+              className="inline-flex items-center gap-2 px-5 py-3 rounded-full border border-white/15 text-[#F1F5F9] font-semibold text-xs hover:border-[#00D2C4]/60 hover:text-[#00D2C4] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00D2C4]"
             >
-              About the challenge
+              <span>About the challenge</span>
             </a>
           </div>
         </div>
@@ -160,7 +219,7 @@ export default function LandingPage({ onLaunchExplorer }) {
 
       <footer className="px-6 sm:px-12 py-6 border-t border-white/[0.08] text-[10px] font-mono text-[#64748B] flex flex-wrap justify-between gap-3">
         <span>Luna Studio · Lunar Landing Site Navigator</span>
-        <a href="#about" className="hover:text-[#00D2C4] transition-colors">
+        <a href="#about" className="hover:text-[#00D2C4] transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#00D2C4] rounded">
           About this project
         </a>
       </footer>

@@ -2,17 +2,31 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2312110D'/%3E%3Cpath d='M16 5 A11 11 0 1 0 24 23.5 A9.8 9.8 0 1 1 16 5 Z' fill='%23F4EFE6'/%3E%3Ccircle cx='11' cy='15' r='1' fill='%23E59A6D'/%3E%3Ccircle cx='13.5' cy='19.5' r='0.8' fill='%2388B38A'/%3E%3Cpath d='M5.5 24.5 C7.5 14.5 18.5 9.5 25.5 12' fill='none' stroke='%23E59A6D' stroke-width='1.5' stroke-linecap='round'/%3E%3Ccircle cx='25.5' cy='12' r='1.3' fill='%23F4EFE6'/%3E%3Ccircle cx='25.5' cy='12' r='2.4' fill='none' stroke='%2388B38A' stroke-width='0.8'/%3E%3C/svg%3E" />
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23060B13'/%3E%3Cpath d='M16 5 A11 11 0 1 0 24 23.5 A9.8 9.8 0 1 1 16 5 Z' fill='%23F1F5F9'/%3E%3Ccircle cx='11' cy='15' r='1' fill='%2334D399'/%3E%3Cpath d='M5.5 24.5 C7.5 14.5 18.5 9.5 25.5 12' fill='none' stroke='%2300D2C4' stroke-width='1.5' stroke-linecap='round'/%3E%3Ccircle cx='25.5' cy='12' r='1.3' fill='%2334D399'/%3E%3C/svg%3E" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Lunar Explorer</title>
-    <meta name="description" content="Interactive 3D Cesium Moon and 2D lunar GIS map, powered by CesiumJS and NASA Moon Trek WMTS data, exploring NASA CLPS missions, landing sites, and live ephemeris." />
-    <meta property="og:title" content="Lunar Explorer" />
-    <meta property="og:description" content="Interactive 3D Cesium Moon and 2D lunar GIS map, powered by CesiumJS and NASA Moon Trek WMTS data, exploring NASA CLPS missions, landing sites, and live ephemeris." />
+    <title>Luna — Lunar Mission Planning &amp; Exploration Platform</title>
+    <meta name="description" content="Professional lunar exploration platform and GIS mission control for NASA Commercial Lunar Payload Services (CLPS) and Artemis missions. Features high-definition 3D lunar terrain, orbital trajectory planning, solar illumination, and direct-to-Earth link analysis." />
+    <meta name="keywords" content="Luna, Moon, lunar exploration, NASA CLPS, Artemis, lunar terrain, LOLA DEM, lunar landing sites, orbit planner, space missions" />
+    <meta name="theme-color" content="#060B13" />
+
+    <!-- Open Graph Metadata for Link Previews -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Luna Studio" />
+    <meta property="og:title" content="Luna — Lunar Mission Planning &amp; Exploration Platform" />
+    <meta property="og:description" content="Explore lunar topography, commercial landers, and polar expedition targets in interactive 3D and 2D GIS with live ephemeris, illumination modeling, and orbit planning." />
+    <meta property="og:image" content="/pictures/lunar-south-pole-horizon.jpg" />
+
+    <!-- Twitter Card Metadata -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Luna — Lunar Mission Planning &amp; Exploration Platform" />
+    <meta name="twitter:description" content="Explore lunar topography, commercial landers, and polar expedition targets in interactive 3D and 2D GIS with live ephemeris, illumination modeling, and orbit planning." />
+    <meta name="twitter:image" content="/pictures/lunar-south-pole-horizon.jpg" />
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
   </head>
-  <body class="bg-[#12110D] text-[#F4EFE6] min-h-screen antialiased selection:bg-[#E59A6D]/30 selection:text-[#F4EFE6]">
+  <body class="bg-[#060B13] text-[#F1F5F9] min-h-screen antialiased selection:bg-[#00D2C4]/30 selection:text-[#F1F5F9] overflow-hidden">
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

@@ -284,7 +284,11 @@ const PlanetViewport = forwardRef(function PlanetViewport(
   }));
 
   return (
-    <div className="relative w-full h-full overflow-hidden select-none bg-[#060B13]">
+    <div
+      role="region"
+      aria-label="Interactive 3D planetary globe viewer"
+      className="relative w-full h-full overflow-hidden select-none bg-[#060B13]"
+    >
       {/* Space Starfield Backdrop */}
       <div
         className="absolute inset-0 pointer-events-none opacity-40"

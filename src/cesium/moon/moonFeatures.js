@@ -436,7 +436,7 @@ export function createMoonFeatures({ viewer, container, callbacks, isMobile, fly
 
   // 5. Initial Camera Positioning over Lunar Nearside
   viewer.camera.setView({
-    destination: Cesium.Cartesian3.fromDegrees(0, 0, 7500000, Cesium.Ellipsoid.MOON),
+    destination: Cesium.Cartesian3.fromDegrees(0, 0, 9200000, Cesium.Ellipsoid.MOON),
   });
 
 

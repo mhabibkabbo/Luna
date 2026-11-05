@@ -261,7 +261,7 @@ export default function RealisticMoon({
     // 1. Scene & Camera
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(38, width / height, 0.1, 100);
-    camera.position.set(0, 0.02, 3.25);
+    camera.position.set(0, 0.02, 3.65);
 
     // 2. WebGL Renderer
     const renderer = new THREE.WebGLRenderer({
@@ -653,7 +653,11 @@ export default function RealisticMoon({
   }, [verifiedPins]);
 
   return (
-    <div className="relative flex items-center justify-center select-none w-full max-w-[360px] sm:max-w-[480px] lg:max-w-[580px] xl:max-w-[640px] aspect-square mx-auto">
+    <div
+      role="region"
+      aria-label="Interactive 3D Moon visualization"
+      className="relative flex items-center justify-center select-none w-full max-w-[300px] sm:max-w-[360px] lg:max-w-[420px] xl:max-w-[460px] aspect-square mx-auto"
+    >
       {/* Warm Atmospheric Glow */}
       <div
         className="absolute inset-0 rounded-full pointer-events-none -z-10"
@@ -683,8 +687,17 @@ export default function RealisticMoon({
               ref={(el) => {
                 pinDomRefs.current[idx] = el;
               }}
+              role="button"
+              tabIndex={0}
+              aria-label={`Explore mission ${pin.name} at ${pin.siteName}`}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  handleLaunchToPin(pin, idx);
+                }
+              }}
               style={{ display: 'none', left: '50%', top: '50%' }}
-              className="absolute -translate-x-1/2 -translate-y-1/2 pointer-events-auto cursor-pointer"
+              className="absolute -translate-x-1/2 -translate-y-1/2 pointer-events-auto cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00D2C4] rounded-full"
               onMouseEnter={() => setActivePin(pin)}
               onMouseLeave={() => setActivePin(null)}
               onClick={() => handleLaunchToPin(pin, idx)}

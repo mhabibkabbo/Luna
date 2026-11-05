@@ -29,6 +29,7 @@ import { NASA_DATASETS_REGISTRY, PROVENANCE_BADGES } from '../data/nasaProvenanc
 import { celestialTimeStore } from '../utils/celestialTime.js';
 import { computeCelestialState } from '../utils/lunarEphemeris.js';
 import { notifySuccess } from '../utils/feedbackStore.js';
+import ExpandableText from '../components/common/ExpandableText.jsx';
 
 const HISTORICAL_REPLAYS = [
   {
@@ -260,7 +261,12 @@ export default function MissionLibraryPage({
                 Mission Profile Detail
               </span>
               <h2 className="text-2xl font-black text-white mt-1">{selectedMission.name}</h2>
-              <p className="text-xs text-slate-400 mt-1">{selectedMission.description}</p>
+              <ExpandableText
+                text={selectedMission.description}
+                maxLines={3}
+                charThreshold={150}
+                className="text-xs text-slate-400 mt-1 leading-relaxed"
+              />
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 font-mono text-xs">
@@ -361,7 +367,12 @@ export default function MissionLibraryPage({
                 </span>
               </div>
               <h3 className="text-sm font-bold text-white">{st.name}</h3>
-              <p className="text-xs text-slate-400">{st.description}</p>
+              <ExpandableText
+                text={st.description}
+                maxLines={2}
+                charThreshold={100}
+                className="text-xs text-slate-400 leading-relaxed"
+              />
               <div className="pt-2 border-t border-slate-800 font-mono text-[11px] text-slate-400 flex justify-between">
                 <span>{st.country}</span>
                 <span>

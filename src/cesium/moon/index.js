@@ -615,7 +615,7 @@ export function createMoon(container, callbacks = {}) {
    */
   const resetOverview = () => {
     viewer.camera.flyTo({
-      destination: Cesium.Cartesian3.fromDegrees(0, 0, 7500000, Cesium.Ellipsoid.MOON),
+      destination: Cesium.Cartesian3.fromDegrees(0, 0, 9200000, Cesium.Ellipsoid.MOON),
       duration: 1.4,
       easingFunction: Cesium.EasingFunction.QUADRATIC_OUT,
     });

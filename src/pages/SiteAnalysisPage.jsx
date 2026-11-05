@@ -35,6 +35,7 @@ import { getLunarTemperature } from '../utils/lunarThermal.js';
 import { calculateSolarTransition } from '../utils/transitionTimes.js';
 import { celestialTimeStore } from '../utils/celestialTime.js';
 import HorizonProfileChart from '../components/features/HorizonProfileChart.jsx';
+import ExpandableText from '../components/common/ExpandableText.jsx';
 
 export default function SiteAnalysisPage({
   selectedSite,
@@ -243,9 +244,12 @@ export default function SiteAnalysisPage({
             <h2 className="text-sm font-bold text-white uppercase tracking-wider font-mono">
               Scientific Context & Objectives
             </h2>
-            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-              {currentSite.description}
-            </p>
+            <ExpandableText
+              text={currentSite.description}
+              maxLines={3}
+              charThreshold={160}
+              className="text-xs sm:text-sm text-slate-300 leading-relaxed"
+            />
             {currentSite.objectives && (
               <div className="pt-2 border-t border-slate-800/80">
                 <span className="text-[11px] font-mono text-cyan-400 uppercase tracking-wider block mb-1">

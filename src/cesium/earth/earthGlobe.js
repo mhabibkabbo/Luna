@@ -8,9 +8,9 @@ import * as Cesium from 'cesium';
 const EARTH_TEXTURE_URL = '/assets/earth-blue-marble.jpg';
 
 export function configureEarthImageryLayer(layer) {
-  layer.brightness = 0.9;
+  layer.brightness = 0.8;
   layer.contrast = 1.0;
-  layer.saturation = 1.7;
+  layer.saturation = 2.5;
   layer.gamma = 1.2;
   layer.hue = -0.1;
   return layer;
@@ -37,10 +37,7 @@ export function createEarthGlobe() {
   globe.atmosphereBrightnessShift = -0.5;
   globe.atmosphereSaturationShift = 0.1;
   globe.atmosphereLightIntensity = 15.0;
-  globe.baseColor = Cesium.Color.fromCssColorString('#141A16');
-  globe.atmosphereRayleighScaleHeight = 10000;
-  globe.atmosphereMieScaleHeight = 5500;
-  globe.atmosphereMieCoefficient = new Cesium.Cartesian3(14e-6, 14e-6, 14e-6);
+  globe.baseColor = Cesium.Color.fromCssColorString('#14171a');
 
   return { globe, fallbackImageryLayer, earthImageryProvider };
 }
