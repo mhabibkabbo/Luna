@@ -71,7 +71,7 @@ export default function TransferOrbitModal({
 
   // ── Playback & Simulation State ────────────────────────────────────────────
   const [simProgress, setSimProgress] = useState(0.0);
-  const [isPlaying, setIsPlaying] = useState(true);
+  const [isPlaying, setIsPlaying] = useState(false);
   const [simSpeed, setSimSpeed] = useState(1); // 1x, 3x, 8x
   const animFrameRef = useRef(null);
   const lastTimeRef = useRef(performance.now());
@@ -124,6 +124,8 @@ export default function TransferOrbitModal({
   useEffect(() => {
     if (isOpen) {
       loadJplData();
+      setIsPlaying(false);
+      setSimProgress(0.0);
     }
   }, [isOpen]);
 
@@ -325,44 +327,6 @@ export default function TransferOrbitModal({
               <span className="hidden sm:inline-block text-[#A78BFA] text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-[#A78BFA]/10 border border-[#A78BFA]/20 flex-shrink-0 ml-2">
                 {orbitPlan.profile.transitNote}
               </span>
-            </div>
-
-            {/* Interactive Departure Launch Pad & Lunar Landing Target Selectors */}
-            <div className="mt-2.5 pt-2.5 border-t border-[#1b2d45]/70 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-mono">
-              <div className="flex items-center justify-between gap-2 bg-[#060B13] px-3 py-1.5 rounded-xl border border-[#16283C]">
-                <span className="text-[10px] uppercase tracking-wider text-[#94A3B8] shrink-0">
-                  Earth Pad:
-                </span>
-                <select
-                  aria-label="Departure Earth Launch Pad"
-                  value={selectedLaunchId}
-                  onChange={(e) => setSelectedLaunchId(e.target.value)}
-                  className="bg-transparent text-white font-semibold text-xs focus:outline-none truncate max-w-[240px]"
-                >
-                  {EARTH_LAUNCH_SITES.slice(0, 25).map((pad) => (
-                    <option key={pad.id} value={pad.id} className="bg-[#0A111C] text-white">
-                      {pad.name} ({pad.agency})
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="flex items-center justify-between gap-2 bg-[#060B13] px-3 py-1.5 rounded-xl border border-[#16283C]">
-                <span className="text-[10px] uppercase tracking-wider text-[#94A3B8] shrink-0">
-                  Moon Target:
-                </span>
-                <select
-                  aria-label="Target Lunar Landing Site"
-                  value={selectedMoonId}
-                  onChange={(e) => setSelectedMoonId(e.target.value)}
-                  className="bg-transparent text-[#38BDF8] font-semibold text-xs focus:outline-none truncate max-w-[240px]"
-                >
-                  {LANDING_SITES.map((site) => (
-                    <option key={site.id} value={site.id} className="bg-[#0A111C] text-white">
-                      {site.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
             </div>
           </div>
 
@@ -787,7 +751,7 @@ export default function TransferOrbitModal({
                           {hoveredMilestone.label}
                         </text>
                         <text x="-98" y="26" fill="#F8FAFC" fontSize="9" fontFamily="monospace">
-                          MET: T+{formatTransitTime(hoveredMilestone.t)} &middot; {hoveredMilestone.velocityKmS.toFixed(2)} km/s
+                          MET: T+{formatTransitTime(hoveredMilestone.t ?? 0)} &middot; {(hoveredMilestone.velocityKmS ?? 1.0).toFixed(2)} km/s
                         </text>
                         <text x="-98" y="40" fill="#94A3B8" fontSize="8" fontFamily="monospace">
                           Earth: {Math.round(hoveredMilestone.distEarthKm).toLocaleString()} km | Moon: {Math.round(hoveredMilestone.distMoonKm).toLocaleString()} km
@@ -849,7 +813,7 @@ export default function TransferOrbitModal({
                 <div className="flex items-center gap-1.5">
                   <Gauge className="w-3.5 h-3.5 text-[#22D3EE]" />
                   <span className="text-[#94A3B8]">Velocity:</span>
-                  <span className="font-bold text-[#22D3EE]">{currentState.velocityKmS.toFixed(2)} km/s</span>
+                  <span className="font-bold text-[#22D3EE]">{(currentState.velocityKmS ?? 1.0).toFixed(2)} km/s</span>
                 </div>
 
                 <div className="flex items-center gap-1.5">
@@ -923,7 +887,7 @@ export default function TransferOrbitModal({
                 </span>
                 {jplEphemeris && (
                   <span className="text-[#38BDF8]">
-                    ({Math.round(jplEphemeris.rangeKm).toLocaleString()} km &middot; {jplEphemeris.lightTimeSec.toFixed(2)}s LT)
+                    ({Math.round(jplEphemeris.rangeKm || 384400).toLocaleString()} km &middot; {(jplEphemeris.lightTimeSec ?? (jplEphemeris.rangeKm / 299792.458))?.toFixed(2) ?? '1.28'}s LT)
                   </span>
                 )}
               </div>
@@ -949,10 +913,10 @@ export default function TransferOrbitModal({
                 <Clock className="w-4 h-4 text-[#38BDF8]" />
               </div>
               <div className="mt-2 text-2xl font-bold font-serif text-white tracking-wide">
-                {orbitPlan.transfer.transitLabel || formatTransitTime(orbitPlan.transfer.transitTimeS)}
+                {orbitPlan.transfer?.transitLabel || formatTransitTime(orbitPlan.transfer?.transitTimeS ?? 0)}
               </div>
               <div className="mt-1 text-[11px] font-mono text-[#38BDF8]">
-                {orbitPlan.transfer.transitDays.toFixed(1)} Days &middot; {orbitPlan.profile.name}
+                {(orbitPlan.transfer?.transitDays ?? 5.0).toFixed(1)} Days &middot; {orbitPlan.profile?.name ?? 'Direct'}
               </div>
             </div>
 
@@ -963,11 +927,11 @@ export default function TransferOrbitModal({
                 <Fuel className="w-4 h-4 text-[#F59E0B]" />
               </div>
               <div className="mt-2 text-2xl font-bold font-mono text-white tracking-wide">
-                {(orbitPlan.totalDeltaVKmS * 1000).toLocaleString('en-US', { maximumFractionDigits: 0 })}{' '}
+                {((orbitPlan.totalDeltaVKmS ?? 4.0) * 1000).toLocaleString('en-US', { maximumFractionDigits: 0 })}{' '}
                 <span className="text-sm font-normal text-[#94A3B8]">m/s</span>
               </div>
               <div className="mt-1 text-[11px] font-mono text-[#FBBF24]">
-                {orbitPlan.totalDeltaVKmS.toFixed(2)} km/s from LEO to touchdown
+                {(orbitPlan.totalDeltaVKmS ?? 4.0).toFixed(2)} km/s from LEO to touchdown
               </div>
             </div>
 
@@ -978,11 +942,11 @@ export default function TransferOrbitModal({
                 <Rocket className="w-4 h-4 text-[#EF4444]" />
               </div>
               <div className="mt-2 text-2xl font-bold font-mono text-white tracking-wide">
-                {selectedRocket.tliPayloadKg.toLocaleString()}{' '}
+                {(selectedRocket?.tliPayloadKg ?? 27000).toLocaleString()}{' '}
                 <span className="text-sm font-normal text-[#94A3B8]">kg</span>
               </div>
               <div className="mt-1 text-[11px] font-mono text-[#94A3B8]">
-                {selectedRocket.name} &middot; {(selectedRocket.liftoffThrustKn / 1000).toFixed(1)} MN Thrust
+                {selectedRocket?.name ?? 'Rocket'} &middot; {((selectedRocket?.liftoffThrustKn ?? 39000) / 1000).toFixed(1)} MN Thrust
               </div>
             </div>
 
@@ -993,11 +957,11 @@ export default function TransferOrbitModal({
                 <ShieldCheck className="w-4 h-4 text-[#00D2C4]" />
               </div>
               <div className="mt-2 text-2xl font-bold font-mono text-white tracking-wide">
-                {((orbitPlan.lunarArrival.orbitInsertionDvKmS + orbitPlan.descentDvKmS) * 1000).toFixed(0)}{' '}
+                {(((orbitPlan.lunarArrival?.orbitInsertionDvKmS ?? 0) + (orbitPlan.descentDvKmS ?? 0)) * 1000).toFixed(0)}{' '}
                 <span className="text-sm font-normal text-[#94A3B8]">m/s &Delta;V</span>
               </div>
               <div className="mt-1 text-[11px] font-mono text-[#00D2C4]">
-                LOI: {(orbitPlan.lunarArrival.orbitInsertionDvKmS * 1000).toFixed(0)} m/s &middot; Descent: {(orbitPlan.descentDvKmS * 1000).toFixed(0)} m/s
+                LOI: {((orbitPlan.lunarArrival?.orbitInsertionDvKmS ?? 0) * 1000).toFixed(0)} m/s &middot; Descent: {((orbitPlan.descentDvKmS ?? 0) * 1000).toFixed(0)} m/s
               </div>
             </div>
           </div>
@@ -1014,7 +978,7 @@ export default function TransferOrbitModal({
                 <div className="text-[10px] font-mono text-[#38BDF8] font-bold">PHASE 1 &middot; LIFTOFF</div>
                 <div className="text-xs font-semibold text-white mt-0.5">{launchSite.name}</div>
                 <div className="text-[10px] font-mono text-[#94A3B8] mt-1 leading-tight">
-                  Launch &amp; ascent via {selectedRocket.name} into {orbitPlan.parkingOrbit.altKm} km LEO orbit (v = {orbitPlan.parkingOrbit.velocityKmS.toFixed(2)} km/s).
+                  Launch &amp; ascent via {selectedRocket?.name ?? 'Rocket'} into {orbitPlan.parkingOrbit?.altKm ?? 185} km LEO orbit (v = {(orbitPlan.parkingOrbit?.velocityKmS ?? 7.79).toFixed(2)} km/s).
                 </div>
               </div>
 
@@ -1022,15 +986,15 @@ export default function TransferOrbitModal({
                 <div className="text-[10px] font-mono text-[#F59E0B] font-bold">PHASE 2 &middot; TLI BURN</div>
                 <div className="text-xs font-semibold text-white mt-0.5">Trans-Lunar Injection</div>
                 <div className="text-[10px] font-mono text-[#94A3B8] mt-1 leading-tight">
-                  Upper stage prograde burn of +{(orbitPlan.tli.deltaVKmS * 1000).toFixed(0)} m/s into transfer ellipse (e = {orbitPlan.transfer.eccentricity.toFixed(3)}).
+                  Upper stage prograde burn of +{((orbitPlan.tli?.deltaVKmS ?? 3.15) * 1000).toFixed(0)} m/s into transfer ellipse (e = {(orbitPlan.transfer?.eccentricity ?? 0.966).toFixed(3)}).
                 </div>
               </div>
 
               <div className="bg-[#152336]/60 border border-[#223854] rounded-xl p-2.5">
                 <div className="text-[10px] font-mono text-[#34D399] font-bold">PHASE 3 &middot; TRANSLUNAR COAST</div>
                 <div className="text-xs font-semibold text-white mt-0.5">Cislunar Transit</div>
-                <div className="text-[10px] font-mono text-[#94A3B8] mt-1 leading-tight">
-                  {orbitPlan.transfer.transitLabel || formatTransitTime(orbitPlan.transfer.transitTimeS)} coast with PTC roll and mid-course correction (MCC) burns.
+                <div className="text-[11px] font-mono text-[#94A3B8] mt-1 leading-tight">
+                  {orbitPlan.transfer?.transitLabel || formatTransitTime(orbitPlan.transfer?.transitTimeS ?? 0)} coast with PTC roll and mid-course correction (MCC) burns.
                 </div>
               </div>
 
@@ -1038,15 +1002,15 @@ export default function TransferOrbitModal({
                 <div className="text-[10px] font-mono text-[#EC4899] font-bold">PHASE 4 &middot; LUNAR CAPTURE</div>
                 <div className="text-xs font-semibold text-white mt-0.5">Lunar Orbit Insertion</div>
                 <div className="text-[10px] font-mono text-[#94A3B8] mt-1 leading-tight">
-                  LOI retro-burn of -{(orbitPlan.lunarArrival.orbitInsertionDvKmS * 1000).toFixed(0)} m/s into {orbitPlan.lunarArrival.orbitAltKm} km polar/equatorial orbit.
+                  LOI retro-burn of -{((orbitPlan.lunarArrival?.orbitInsertionDvKmS ?? 0) * 1000).toFixed(0)} m/s into {orbitPlan.lunarArrival?.orbitAltKm ?? 100} km polar/equatorial orbit.
                 </div>
               </div>
 
               <div className="bg-[#152336]/60 border border-[#223854] rounded-xl p-2.5">
                 <div className="text-[10px] font-mono text-[#00D2C4] font-bold">PHASE 5 &middot; TOUCHDOWN</div>
-                <div className="text-xs font-semibold text-white mt-0.5">{moonTarget.name}</div>
+                <div className="text-xs font-semibold text-white mt-0.5">{moonTarget?.name ?? 'Moon'}</div>
                 <div className="text-[10px] font-mono text-[#94A3B8] mt-1 leading-tight">
-                  Deorbit burn and terminal powered descent of ~{(orbitPlan.descentDvKmS * 1000).toFixed(0)} m/s to surface touchdown.
+                  Deorbit burn and terminal powered descent of ~{((orbitPlan.descentDvKmS ?? 0) * 1000).toFixed(0)} m/s to surface touchdown.
                 </div>
               </div>
             </div>
