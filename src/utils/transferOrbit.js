@@ -385,6 +385,7 @@ export function computeTransferOrbit({
     tli: {
       deltaVKmS: dv_tli,
       velocityKmS: v_tli,
+      velocityPostBurnKmS: v_tli,
       escapeVinfKmS: v_inf_depart,
     },
     transfer: {
@@ -488,6 +489,7 @@ function generateWaypoints({
     const dxM_km = x_km - DU;
     const dM_km = Math.hypot(dxM_km, y_km);
 
+    // Near-Earth zone: smoothly scales from visual parking radius 3.3 to linear scale at 32,000 km
     if (dE_km < 32000) {
       const r_lin = (dE_km / DU) * moonDist3d;
       const r_park_lin = (r_park / DU) * moonDist3d;
@@ -498,6 +500,7 @@ function generateWaypoints({
       return { x3d: dirE_x * r_vis, y3d: dirE_y * r_vis, z3d: dirE_z * r_vis };
     }
 
+    // Near-Moon zone: smoothly scales from visual perilune radius 1.25 to linear scale at 28,000 km
     if (dM_km < 28000) {
       const r_peri_km = MOON_RADIUS_KM + h_peri_km;
       const r_lin = (dM_km / DU) * moonDist3d;
@@ -513,6 +516,7 @@ function generateWaypoints({
       };
     }
 
+    // Cislunar & Deep Space cruise: exact linear scale matching Moon's 3D distance
     const xi = x_km / DU;
     const eta = y_km / DU;
     return {
@@ -522,187 +526,363 @@ function generateWaypoints({
     };
   };
 
-// Helper to evaluate a 3D Cubic Bezier curve
-  const getBezierPoint3D = (p0, p1, p2, p3, t) => {
-    const mt = 1 - t;
-    const mt2 = mt * mt;
-    const t2 = t * t;
-    const a = mt2 * mt;
-    const b = 3 * mt2 * t;
-    const c = 3 * mt * t2;
-    const d = t2 * t;
-    return {
-      x3d: a * p0.x + b * p1.x + c * p2.x + d * p3.x,
-      y3d: a * p0.y + b * p1.y + c * p2.y + d * p3.y,
-      z3d: a * p0.z + b * p1.z + c * p2.z + d * p3.z,
-    };
-  };
-
   const points = [];
 
   // ── 3. Profile-Specific Trajectory Generation ─────────────────────────────
-
-  const pEarth = { x: 0, y: 0, z: 0 };
-  const pMoon = { x: targetMoon3d.x, y: targetMoon3d.y, z: targetMoon3d.z };
 
   if (profileId === 'direct') {
     // ══════════════════════════════════════════════════════════════════════════
     // Regime 1: Direct Transfer (Fast TLI + LOI)
     // ══════════════════════════════════════════════════════════════════════════
+    const deltaThetaM = omega_M * transitTimeS;
+    const thetaTLI = deltaThetaM - Math.PI;
 
-    // A. LEO Departure Arc (Sweeps CCW to exact Z=-R bottom edge, heading +X)
+    const r_lunar_orbit = MOON_RADIUS_KM + lunarOrbitAltKm;
+    const r_target_moon = DU + r_lunar_orbit;
+    const a_direct = (r_park + r_target_moon) / 2;
+    const e_direct = 1 - r_park / a_direct;
+
+    // Power-law sampling for eccentric anomaly E for smooth C1 departure
+    const gamma = 1.45;
+    const N_TRANS = 75;
+    const u1 = 1 / N_TRANS;
+    const E1 = Math.PI * Math.pow(u1, gamma);
+    const cosNu1 = (Math.cos(E1) - e_direct) / (1 - e_direct * Math.cos(E1));
+    const sinNu1 = (Math.sqrt(Math.max(0, 1 - e_direct * e_direct)) * Math.sin(E1)) / (1 - e_direct * Math.cos(E1));
+    const nu1 = Math.atan2(sinNu1, cosNu1);
+
+    // Parking orbit leading to TLI injection
+    const dThetaPark = nu1;
     const N_PARK = 14;
-    for (let i = 0; i <= N_PARK; i++) {
-      const angle = Math.PI * 0.5 + (i / N_PARK) * Math.PI;
+    for (let i = N_PARK; i >= 1; i--) {
+      const angle = thetaTLI - i * dThetaPark;
+      const x_km = r_park * Math.cos(angle);
+      const y_km = r_park * Math.sin(angle);
+      const { x3d, y3d, z3d } = mapTo3D(x_km, y_km, 100);
+
       points.push({
-        x: 0, y: 0,
-        x3d: pEarth.x + SCALE_3D.PARKING_RADIUS * Math.cos(angle),
-        y3d: pEarth.y,
-        z3d: pEarth.z + SCALE_3D.PARKING_RADIUS * Math.sin(angle),
-        t: 0, velocityKmS: v_tli, distEarthKm: r_park, distMoonKm: DU, phase: 'tli',
+        x: x_km / DU,
+        y: y_km / DU,
+        x3d,
+        y3d,
+        z3d,
+        t: 0,
+        velocityKmS: v_tli,
+        distEarthKm: r_park,
+        distMoonKm: Math.hypot(x_km - DU, y_km),
+        phase: 'tli',
       });
     }
 
-    // B. Direct Transfer Arc (Strict +X tangents at Earth and Moon)
-    const N_TRANS = 60;
-    const p0 = { x: pEarth.x, y: pEarth.y, z: pEarth.z - SCALE_3D.PARKING_RADIUS };
-    const p1 = { x: pEarth.x + 30, y: pEarth.y, z: pEarth.z - SCALE_3D.PARKING_RADIUS };
-    const p2 = { x: pMoon.x - 30, y: pMoon.y, z: pMoon.z - SCALE_3D.LUNAR_ORBIT_RADIUS };
-    const p3 = { x: pMoon.x, y: pMoon.y, z: pMoon.z - SCALE_3D.LUNAR_ORBIT_RADIUS };
-
-    for (let i = 1; i <= N_TRANS; i++) {
+    // Translunar Transfer Ellipse
+    for (let i = 0; i <= N_TRANS; i++) {
       const u = i / N_TRANS;
-      const { x3d, y3d, z3d } = getBezierPoint3D(p0, p1, p2, p3, u);
-      const dE_km = u * DU;
-      const dM_km = (1 - u) * DU;
+      const E = Math.PI * Math.pow(u, gamma);
+      const M = E - e_direct * Math.sin(E);
+      const t = (M / Math.PI) * transitTimeS;
+      const r = a_direct * (1 - e_direct * Math.cos(E));
+      const cosNu = (Math.cos(E) - e_direct) / (1 - e_direct * Math.cos(E));
+      const sinNu = (Math.sqrt(Math.max(0, 1 - e_direct * e_direct)) * Math.sin(E)) / (1 - e_direct * Math.cos(E));
+      const nu = Math.atan2(sinNu, cosNu);
+      const thetaRot = thetaTLI + nu - omega_M * t;
+
+      const x_km = r * Math.cos(thetaRot);
+      const y_km = r * Math.sin(thetaRot);
+      const dE_km = Math.hypot(x_km, y_km);
+      const dM_km = Math.hypot(x_km - DU, y_km);
+      const v = Math.sqrt(EARTH_MU * (2 / r - 1 / a_direct));
+      const { x3d, y3d, z3d } = mapTo3D(x_km, y_km, lunarOrbitAltKm);
+
+      let phase = 'coast';
+      if (u < 0.08) phase = 'tli';
+      else if (dM_km <= MOON_SOI_KM) phase = 'lunar-approach';
+
       points.push({
-        x: u, y: 0, x3d, y3d, z3d, t: u * transitTimeS,
-        velocityKmS: Math.max(1.0, 10.9 - u * 8), distEarthKm: dE_km, distMoonKm: dM_km,
-        phase: dM_km <= MOON_SOI_KM ? 'lunar-approach' : 'coast',
+        x: x_km / DU,
+        y: y_km / DU,
+        x3d,
+        y3d,
+        z3d,
+        t,
+        velocityKmS: Math.max(1.0, v),
+        distEarthKm: dE_km,
+        distMoonKm: dM_km,
+        phase,
       });
     }
 
-    // C. Lunar Orbit Insertion (360-degree capture ring perfectly meeting the transfer arc)
-    const N_LOI = 20;
+    // Lunar Orbit Insertion: 100 km circular lunar parking orbit
+    const N_LOI = 16;
     for (let i = 1; i <= N_LOI; i++) {
-      const angle = -Math.PI * 0.5 + (i / N_LOI) * TWO_PI;
+      const p = i / N_LOI;
+      const phi = -p * (Math.PI * 0.5);
+      const x_km = DU + r_lunar_orbit * Math.cos(phi);
+      const y_km = r_lunar_orbit * Math.sin(phi);
+      const { x3d, y3d, z3d } = mapTo3D(x_km, y_km, lunarOrbitAltKm);
+
       points.push({
-        x: 1, y: 0,
-        x3d: pMoon.x + SCALE_3D.LUNAR_ORBIT_RADIUS * Math.cos(angle),
-        y3d: pMoon.y,
-        z3d: pMoon.z + SCALE_3D.LUNAR_ORBIT_RADIUS * Math.sin(angle),
-        t: transitTimeS, velocityKmS: 1.6, distEarthKm: DU, distMoonKm: 100, phase: 'loi',
+        x: x_km / DU,
+        y: y_km / DU,
+        x3d,
+        y3d,
+        z3d,
+        t: transitTimeS + p * 3600,
+        velocityKmS: Math.sqrt(MOON_MU / r_lunar_orbit),
+        distEarthKm: DU,
+        distMoonKm: r_lunar_orbit,
+        phase: 'loi',
+      });
+    }
+
+    // Powered Descent: continuous forward descent to target landing site
+    const N_DESC = 16;
+    for (let i = 1; i <= N_DESC; i++) {
+      const p = i / N_DESC;
+      const s = p * p * (3 - 2 * p);
+      const alt = lunarOrbitAltKm * (1 - s);
+      const distM = MOON_RADIUS_KM + alt;
+      const phi = -Math.PI * 0.5 - p * (Math.PI * 0.45);
+      const x_km = DU + distM * Math.cos(phi);
+      const y_km = distM * Math.sin(phi);
+
+      const { x3d, y3d, z3d } = mapTo3D(x_km, y_km, alt);
+
+      points.push({
+        x: x_km / DU,
+        y: y_km / DU,
+        x3d,
+        y3d,
+        z3d,
+        t: transitTimeS + 3600 + p * 1800,
+        velocityKmS: Math.sqrt(MOON_MU / r_lunar_orbit) * (1 - p * 0.95),
+        distEarthKm: DU,
+        distMoonKm: distM,
+        phase: 'descent',
       });
     }
 
   } else if (profileId === 'free-return') {
     // ══════════════════════════════════════════════════════════════════════════
-    // Regime 2: Free-Return Trajectory (Classic Figure-8)
+    // Regime 2: Free-Return Trajectory (Circumlunar Figure-8)
     // ══════════════════════════════════════════════════════════════════════════
+    const h_peri_km = 220;
+    const r_peri_km = MOON_RADIUS_KM + h_peri_km;
     const t_mid = transitTimeS * 0.5;
 
-    // 1. Earth LEO Departure
     const N_PRE = 12;
-    for (let i = 0; i <= N_PRE; i++) {
-      const angle = Math.PI * 0.5 + (i / N_PRE) * Math.PI;
+    const N_LEG = 50;
+    const N_PERI = 21;
+
+    const thetaDep = -Math.PI * 0.75;
+    const dTheta = 0.045;
+
+    // 1. Earth LEO Departure Arc
+    for (let i = N_PRE; i >= 1; i--) {
+      const ang = thetaDep - i * dTheta;
+      const x_km = r_park * Math.cos(ang);
+      const y_km = r_park * Math.sin(ang);
+      const { x3d, y3d, z3d } = mapTo3D(x_km, y_km, h_peri_km);
       points.push({
-        x: 0, y: 0,
-        x3d: pEarth.x + SCALE_3D.PARKING_RADIUS * Math.cos(angle),
-        y3d: pEarth.y,
-        z3d: pEarth.z + SCALE_3D.PARKING_RADIUS * Math.sin(angle),
-        t: 0, velocityKmS: v_tli, distEarthKm: r_park, distMoonKm: DU, phase: 'tli',
+        x: x_km / DU,
+        y: y_km / DU,
+        x3d,
+        y3d,
+        z3d,
+        distEarthKm: r_park,
+        distMoonKm: DU,
+        velocityKmS: v_tli,
+        phase: 'tli',
+        t: 0,
       });
     }
 
-    // 2. Outbound Leg (Crosses the X axis geometrically to form the first half of the 8)
-    const pOut0 = { x: pEarth.x, y: pEarth.y, z: pEarth.z - SCALE_3D.PARKING_RADIUS };
-    const pOut1 = { x: pEarth.x + 35, y: pEarth.y, z: pEarth.z - SCALE_3D.PARKING_RADIUS };
-    const pOut2 = { x: pMoon.x - 35, y: pMoon.y, z: pMoon.z + SCALE_3D.LUNAR_ORBIT_RADIUS };
-    const pOut3 = { x: pMoon.x, y: pMoon.y, z: pMoon.z + SCALE_3D.LUNAR_ORBIT_RADIUS };
+    // 2. Outbound Leg: Earth Perigee -> Lunar Far Side Entry
+    const psiEntry = 48 * (Math.PI / 180);
+    const eh = 1.35;
+    const rhEntry = (r_peri_km * (1 + eh)) / (1 + eh * Math.cos(psiEntry));
+    const pDep = { x: r_park * Math.cos(thetaDep), y: r_park * Math.sin(thetaDep) };
+    const pEntry = { x: DU + rhEntry * Math.cos(psiEntry), y: rhEntry * Math.sin(psiEntry) };
 
-    for (let i = 1; i <= 60; i++) {
-      const u = i / 60;
-      const { x3d, y3d, z3d } = getBezierPoint3D(pOut0, pOut1, pOut2, pOut3, u);
-      points.push({ x: u, y: 0, x3d, y3d, z3d, t: u * t_mid, velocityKmS: 10.9, distEarthKm: u*DU, distMoonKm: DU*(1-u), phase: 'coast' });
-    }
+    const tDep = { x: -Math.sin(thetaDep) * DU * 0.8, y: Math.cos(thetaDep) * DU * 0.8 };
+    const tEntry = { x: rhEntry * 4.0, y: -rhEntry * 12.0 };
 
-    // 3. Moon Far-Side Sweep (Flawless semi-circle behind the trailing hemisphere)
-    const N_SWING = 20;
-    for (let i = 1; i < N_SWING; i++) {
-      const angle = Math.PI * 0.5 - (i / N_SWING) * Math.PI;
+    for (let i = 0; i <= N_LEG; i++) {
+      const u = i / N_LEG;
+      const h00 = 2 * u * u * u - 3 * u * u + 1;
+      const h10 = u * u * u - 2 * u * u + u;
+      const h01 = -2 * u * u * u + 3 * u * u;
+      const h11 = u * u * u - u * u;
+
+      const x_km = h00 * pDep.x + h10 * tDep.x + h01 * pEntry.x + h11 * tEntry.x;
+      const y_km = h00 * pDep.y + h10 * tDep.y + h01 * pEntry.y + h11 * tEntry.y;
+
+      const dE = Math.hypot(x_km, y_km);
+      const dM = Math.hypot(x_km - DU, y_km);
+      const { x3d, y3d, z3d } = mapTo3D(x_km, y_km, h_peri_km);
+
       points.push({
-        x: 1, y: 0,
-        x3d: pMoon.x + SCALE_3D.LUNAR_ORBIT_RADIUS * Math.cos(angle),
-        y3d: pMoon.y,
-        z3d: pMoon.z + SCALE_3D.LUNAR_ORBIT_RADIUS * Math.sin(angle),
-        t: t_mid, velocityKmS: 2.32, distEarthKm: DU, distMoonKm: 100, phase: 'lunar-approach',
+        x: x_km / DU,
+        y: y_km / DU,
+        x3d,
+        y3d,
+        z3d,
+        distEarthKm: Math.max(r_park, dE),
+        distMoonKm: Math.max(r_peri_km, dM),
+        velocityKmS: Math.max(1.1, Math.sqrt(EARTH_MU * (2 / Math.max(r_park, dE) - 1 / a_trans))),
+        phase: dM <= MOON_SOI_KM ? 'lunar-approach' : (u < 0.1 ? 'tli' : 'coast'),
+        t: u * t_mid,
       });
     }
 
-    // 4. Inbound Leg (Completes the Figure-8 intersection)
-    const pIn0 = { x: pMoon.x, y: pMoon.y, z: pMoon.z - SCALE_3D.LUNAR_ORBIT_RADIUS };
-    const pIn1 = { x: pMoon.x - 35, y: pMoon.y, z: pMoon.z - SCALE_3D.LUNAR_ORBIT_RADIUS };
-    const pIn2 = { x: pEarth.x + 35, y: pEarth.y, z: pEarth.z + SCALE_3D.PARKING_RADIUS };
-    const pIn3 = { x: pEarth.x, y: pEarth.y, z: pEarth.z + SCALE_3D.PARKING_RADIUS };
+    // 3. Hyperbolic Perilune Flyby around Moon's Trailing Hemisphere
+    for (let i = 1; i < N_PERI - 1; i++) {
+      const p = i / (N_PERI - 1);
+      const psi = psiEntry * (1 - 2 * p);
+      const rh = (r_peri_km * (1 + eh)) / (1 + eh * Math.cos(psi));
+      const x_km = DU + rh * Math.cos(psi);
+      const y_km = rh * Math.sin(psi);
+      const { x3d, y3d, z3d } = mapTo3D(x_km, y_km, h_peri_km);
 
-    for (let i = 1; i <= 60; i++) {
-      const u = i / 60;
-      const { x3d, y3d, z3d } = getBezierPoint3D(pIn0, pIn1, pIn2, pIn3, u);
-      points.push({ x: 1-u, y: 0, x3d, y3d, z3d, t: t_mid + u * t_mid, velocityKmS: 10.9, distEarthKm: (1-u)*DU, distMoonKm: u*DU, phase: 'return' });
+      points.push({
+        x: x_km / DU,
+        y: y_km / DU,
+        x3d,
+        y3d,
+        z3d,
+        distEarthKm: Math.hypot(x_km, y_km),
+        distMoonKm: rh,
+        velocityKmS: 2.32,
+        phase: p <= 0.6 ? 'lunar-approach' : 'return',
+        t: t_mid * (0.95 + 0.10 * p),
+      });
     }
 
-    // 5. Earth Re-entry Wrap
+    // 4. Inbound Return Leg: Lunar Exit to Earth Perigee
+    const pExit = { x: DU + rhEntry * Math.cos(-psiEntry), y: rhEntry * Math.sin(-psiEntry) };
+    const thetaArr = Math.PI * 0.75;
+    const pArr = { x: r_park * Math.cos(thetaArr), y: r_park * Math.sin(thetaArr) };
+    const tExit = { x: -rhEntry * 4.0, y: -rhEntry * 12.0 };
+    const tArr = { x: -Math.sin(thetaArr) * DU * 0.8, y: Math.cos(thetaArr) * DU * 0.8 };
+
+    for (let i = 0; i <= N_LEG; i++) {
+      const u = i / N_LEG;
+      const h00 = 2 * u * u * u - 3 * u * u + 1;
+      const h10 = u * u * u - 2 * u * u + u;
+      const h01 = -2 * u * u * u + 3 * u * u;
+      const h11 = u * u * u - u * u;
+
+      const x_km = h00 * pExit.x + h10 * tExit.x + h01 * pArr.x + h11 * tArr.x;
+      const y_km = h00 * pExit.y + h10 * tExit.y + h01 * pArr.y + h11 * tArr.y;
+
+      const dE = Math.hypot(x_km, y_km);
+      const dM = Math.hypot(x_km - DU, y_km);
+      const { x3d, y3d, z3d } = mapTo3D(x_km, y_km, h_peri_km);
+
+      points.push({
+        x: x_km / DU,
+        y: y_km / DU,
+        x3d,
+        y3d,
+        z3d,
+        distEarthKm: Math.max(r_park, dE),
+        distMoonKm: Math.max(r_peri_km, dM),
+        velocityKmS: Math.max(1.1, Math.sqrt(EARTH_MU * (2 / Math.max(r_park, dE) - 1 / a_trans))),
+        phase: 'return',
+        t: t_mid * 1.05 + u * t_mid * 0.95,
+      });
+    }
+
+    // 5. Earth Re-entry Interface Perigee Wrap
     for (let i = 1; i <= N_PRE; i++) {
-      const angle = Math.PI * 0.5 + (i / N_PRE) * Math.PI;
+      const ang = thetaArr + i * dTheta;
+      const x_km = r_park * Math.cos(ang);
+      const y_km = r_park * Math.sin(ang);
+      const { x3d, y3d, z3d } = mapTo3D(x_km, y_km, h_peri_km);
+
       points.push({
-        x: 0, y: 0,
-        x3d: pEarth.x + SCALE_3D.PARKING_RADIUS * Math.cos(angle),
-        y3d: pEarth.y,
-        z3d: pEarth.z + SCALE_3D.PARKING_RADIUS * Math.sin(angle),
-        t: transitTimeS, velocityKmS: 10.9, distEarthKm: r_park, distMoonKm: DU, phase: 'return',
+        x: x_km / DU,
+        y: y_km / DU,
+        x3d,
+        y3d,
+        z3d,
+        distEarthKm: r_park,
+        distMoonKm: Math.hypot(x_km - DU, y_km),
+        velocityKmS: Math.sqrt(EARTH_MU / r_park),
+        phase: 'return',
+        t: transitTimeS,
       });
     }
 
   } else {
     // ══════════════════════════════════════════════════════════════════════════
-    // Regime 3: Low-Energy Transfer (WSB Ballistic Loop)
+    // Regime 3: Low-Energy Transfer (BLT / WSB / Weak Stability Boundary)
     // ══════════════════════════════════════════════════════════════════════════
-    const N_PRE = 12;
-    for (let i = 0; i <= N_PRE; i++) {
-      const angle = Math.PI * 0.5 + (i / N_PRE) * Math.PI;
+    const N_WSB = 115;
+    const r_lunar_orbit = MOON_RADIUS_KM + lunarOrbitAltKm;
+
+    for (let i = 0; i <= N_WSB; i++) {
+      const frac = i / N_WSB;
+      const t = frac * transitTimeS;
+
+      let x_km;
+      let y_km;
+      let phase = 'coast';
+
+      if (frac < 0.40) {
+        // Phase 1: High-energy departure past the Moon toward Sun-Earth L1/L2
+        const p = frac / 0.40;
+        const r_km = r_park + (1450000 - r_park) * Math.sin(p * Math.PI * 0.5);
+        const angle = -1.8 + p * 2.15;
+        x_km = r_km * Math.cos(angle);
+        y_km = r_km * Math.sin(angle);
+        phase = frac < 0.05 ? 'tli' : 'coast';
+      } else if (frac < 0.70) {
+        // Phase 2: Strictly convex, wide-radius turnaround loop at WSB boundary (~1.45M km)
+        const p = (frac - 0.40) / 0.30;
+        const r_km = 1450000 - (1450000 - 1180000) * (p * p);
+        const angle = 0.35 + p * 0.55;
+        x_km = r_km * Math.cos(angle);
+        y_km = r_km * Math.sin(angle);
+        phase = 'coast';
+      } else if (frac < 0.88) {
+        // Phase 3: Inbound ballistic descent falling toward Moon orbit
+        const p = (frac - 0.70) / 0.18;
+        const s = p * p * (3 - 2 * p);
+        const r_km = 1180000 + ((DU + 32000) - 1180000) * s;
+        const angle = 0.90 * (1 - s) + 0.08 * s;
+        x_km = r_km * Math.cos(angle);
+        y_km = r_km * Math.sin(angle);
+        phase = 'lunar-approach';
+      } else {
+        // Phase 4: Ballistic capture spiral into 100 km circular lunar orbit
+        const p = (frac - 0.88) / 0.12;
+        const s = p * p * (3 - 2 * p);
+        const r_spiral = r_lunar_orbit + (32000 - r_lunar_orbit) * (1 - s) * (1 - s);
+        const phi = 0.08 * (1 - s) - p * 1.6 * Math.PI;
+        x_km = DU + r_spiral * Math.cos(phi);
+        y_km = r_spiral * Math.sin(phi);
+        phase = p > 0.5 ? 'loi' : 'lunar-approach';
+      }
+
+      const dE_km = Math.max(r_park, Math.hypot(x_km, y_km));
+      const dM_km = Math.max(r_lunar_orbit, Math.hypot(x_km - DU, y_km));
+      const v = Math.sqrt(Math.max(0.25, EARTH_MU * (2 / dE_km - 1 / (DU * 2))));
+      const { x3d, y3d, z3d } = mapTo3D(x_km, y_km, 100);
+
       points.push({
-        x: 0, y: 0,
-        x3d: pEarth.x + SCALE_3D.PARKING_RADIUS * Math.cos(angle),
-        y3d: pEarth.y,
-        z3d: pEarth.z + SCALE_3D.PARKING_RADIUS * Math.sin(angle),
-        t: 0, velocityKmS: v_tli, distEarthKm: r_park, distMoonKm: DU, phase: 'tli',
+        x: x_km / DU,
+        y: y_km / DU,
+        x3d,
+        y3d,
+        z3d,
+        t,
+        velocityKmS: v,
+        distEarthKm: dE_km,
+        distMoonKm: dM_km,
+        phase,
       });
     }
-
-    // Two strict Bezier segments with collinear handles at the apex to prevent the folded teardrop
-    const pOut0 = { x: pEarth.x, y: pEarth.y, z: pEarth.z - SCALE_3D.PARKING_RADIUS };
-    const pOut1 = { x: pEarth.x + 50, y: pEarth.y, z: pEarth.z - SCALE_3D.PARKING_RADIUS };
-    const pOut2 = { x: 260, y: pMoon.y * 2.2, z: 20 };
-    const pOut3 = { x: 260, y: pMoon.y * 2.2, z: 80 }; // Apex tangent is strictly +Z
-
-    for (let i = 1; i <= 60; i++) {
-      const u = i / 60;
-      const { x3d, y3d, z3d } = getBezierPoint3D(pOut0, pOut1, pOut2, pOut3, u);
-      points.push({ x: u, y: 0, x3d, y3d, z3d, t: u * transitTimeS, velocityKmS: 11.0, distEarthKm: u*1450000, distMoonKm: DU, phase: 'coast' });
-    }
-
-    const pIn0 = { x: 260, y: pMoon.y * 2.2, z: 80 };  // Match apex exactly
-    const pIn1 = { x: 260, y: pMoon.y * 2.2, z: 140 }; // Handle is collinear (+Z) for C1 continuity
-    const pIn2 = { x: pMoon.x + 60, y: pMoon.y, z: pMoon.z + SCALE_3D.LUNAR_ORBIT_RADIUS };
-    const pIn3 = { x: pMoon.x, y: pMoon.y, z: pMoon.z + SCALE_3D.LUNAR_ORBIT_RADIUS };
-
-    for (let i = 1; i <= 60; i++) {
-      const u = i / 60;
-      const { x3d, y3d, z3d } = getBezierPoint3D(pIn0, pIn1, pIn2, pIn3, u);
-      points.push({ x: 1, y: 0, x3d, y3d, z3d, t: transitTimeS, velocityKmS: 0.5, distEarthKm: (1-u)*1450000, distMoonKm: DU*(1-u), phase: 'coast' });
-    }
   }
-
 
   // ── 4. High-Precision Forward Tangent Vectors (dir3d) ─────────────────────
   for (let i = 0; i < points.length; i++) {
@@ -718,12 +898,6 @@ function generateWaypoints({
   return points;
 }
 
-// ── Trajectory Milestones & Annotations ─────────────────────────────────────
-
-/**
- * Extracts key mission milestone markers (TLI, MCC, LOI, Perilune, Re-entry / Landing)
- * with precise timestamps, coordinates, velocities, and telemetry.
- */
 export function getTrajectoryMilestones(waypoints, profileId = 'direct') {
   if (!waypoints || !waypoints.length) return [];
 
@@ -979,9 +1153,11 @@ export function get2DTrajectoryProjection(waypoints, profileId = 'direct', optio
 
     const buildPathD = (pts) => {
       if (!pts || !pts.length) return '';
-      let d = `M ${pts[0].x.toFixed(1)} ${pts[0].y.toFixed(1)}`;
-      for (let i = 1; i < pts.length; i++) {
-        d += ` L ${pts[i].x.toFixed(1)} ${pts[i].y.toFixed(1)}`;
+      const validPts = pts.filter((p) => p && typeof p.x === 'number' && typeof p.y === 'number' && !isNaN(p.x) && !isNaN(p.y));
+      if (!validPts.length) return '';
+      let d = `M ${validPts[0].x.toFixed(1)} ${validPts[0].y.toFixed(1)}`;
+      for (let i = 1; i < validPts.length; i++) {
+        d += ` L ${validPts[i].x.toFixed(1)} ${validPts[i].y.toFixed(1)}`;
       }
       return d;
     };
@@ -1013,6 +1189,13 @@ export function get2DTrajectoryProjection(waypoints, profileId = 'direct', optio
       },
       milestones,
       toSvgCoords: toSvg,
+      scaleX: (nx) => earthX + nx * scale,
+      scaleY: (ny) => earthY - ny * scale,
+      svgWidth: width,
+      svgHeight: height,
+      earthSvg,
+      moonSvg: moonInterceptSvg,
+      pathD: fullPathD,
     };
   }
 
@@ -1071,9 +1254,11 @@ export function get2DTrajectoryProjection(waypoints, profileId = 'direct', optio
 
   const buildPathD = (pts) => {
     if (!pts || !pts.length) return '';
-    let d = `M ${pts[0].x.toFixed(1)} ${pts[0].y.toFixed(1)}`;
-    for (let i = 1; i < pts.length; i++) {
-      d += ` L ${pts[i].x.toFixed(1)} ${pts[i].y.toFixed(1)}`;
+    const validPts = pts.filter((p) => p && typeof p.x === 'number' && typeof p.y === 'number' && !isNaN(p.x) && !isNaN(p.y));
+    if (!validPts.length) return '';
+    let d = `M ${validPts[0].x.toFixed(1)} ${validPts[0].y.toFixed(1)}`;
+    for (let i = 1; i < validPts.length; i++) {
+      d += ` L ${validPts[i].x.toFixed(1)} ${validPts[i].y.toFixed(1)}`;
     }
     return d;
   };
@@ -1110,6 +1295,13 @@ export function get2DTrajectoryProjection(waypoints, profileId = 'direct', optio
     },
     milestones,
     toSvgCoords: toSvg,
+    scaleX: (nx) => earthX + nx * spanX,
+    scaleY: (ny) => earthY - ny * 340,
+    svgWidth: width,
+    svgHeight: height,
+    earthSvg,
+    moonSvg,
+    pathD: fullPathD,
   };
 }
 

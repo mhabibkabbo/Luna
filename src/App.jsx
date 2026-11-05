@@ -37,6 +37,7 @@ const LandingPlannerPage = React.lazy(() => import('./pages/LandingPlannerPage.j
 const SiteComparisonPage = React.lazy(() => import('./pages/SiteComparisonPage.jsx'));
 const MissionBriefingPage = React.lazy(() => import('./pages/MissionBriefingPage.jsx'));
 const MissionLibraryPage = React.lazy(() => import('./pages/MissionLibraryPage.jsx'));
+const TrajectoryPlannerPage = React.lazy(() => import('./pages/TrajectoryPlannerPage.jsx'));
 import { CLPS_MISSIONS } from './data/clpsMissions.js';
 import { LANDING_SITES } from './data/landingSites.js';
 import { LUNAR_LAYERS_CATALOG } from './services/nasa/layers.js';
@@ -83,6 +84,7 @@ export default function App() {
       if (hash === 'comparison' || hash === 'compare') return 'comparison';
       if (hash === 'briefing') return 'briefing';
       if (hash === 'library' || hash === 'guide') return 'library';
+      if (hash === 'trajectory' || hash === 'orbit' || hash === 'transfer') return 'trajectory';
       if (params.get('autostart') === '1') return 'explorer';
       // Restore from share link (?planet=&lat=&lon=&site=)
       if (params.get('lat') && params.get('lon')) return 'explorer';
@@ -164,6 +166,8 @@ export default function App() {
         ? 'comparison'
         : pageId === 'missions'
         ? 'mission-control'
+        : pageId === 'orbit' || pageId === 'transfer'
+        ? 'trajectory'
         : pageId;
     setCurrentView(normalized);
     window.location.hash = normalized === 'landing' ? '#' : `#${normalized}`;
@@ -1185,36 +1189,39 @@ export default function App() {
       {/* ========================================================================= */}
       {/* MODULAR WORKSPACE SWITCHER: Upper left corner                             */}
       {/* ========================================================================= */}
-      <div className="fixed top-3 left-3 sm:top-4 sm:left-4 z-40 pointer-events-auto select-none flex items-center gap-2">
-        <select
-          aria-label="Mission Workspace Switcher"
-          data-guide="workspace-switcher"
-          value={currentView}
-          onChange={(e) => {
-            const val = e.target.value;
-            if (val === 'sp-2d') {
-              setCurrentView('explorer');
-              setViewMode('sp-2d');
-              window.location.hash = '#sp-2d';
-            } else if (val === 'explorer') {
-              setCurrentView('explorer');
-              setViewMode('3d');
-              window.location.hash = '#explorer';
-            } else {
-              handleNavigate(val);
-            }
-          }}
-          className="h-8 px-2.5 rounded-xl bg-[#060b14]/90 backdrop-blur-md border border-slate-800/90 hover:border-cyan-500/50 text-[11px] font-mono text-cyan-300 focus:outline-none shadow-lg cursor-pointer"
-        >
-          <option value="explorer">Lunar Map (3D / 2D)</option>
-          <option value="mission-control">Mission Overview</option>
-          <option value="site-analysis">Site Analysis</option>
-          <option value="communication">DTE Communications</option>
-          <option value="planner">Landing Recommendations</option>
-          <option value="comparison">Site Comparison</option>
-          <option value="library">Data Sources &amp; Library</option>
-        </select>
-      </div>
+      {currentView !== 'trajectory' && (
+        <div className="fixed top-3 left-3 sm:top-4 sm:left-4 z-40 pointer-events-auto select-none flex items-center gap-2">
+          <select
+            aria-label="Mission Workspace Switcher"
+            data-guide="workspace-switcher"
+            value={currentView}
+            onChange={(e) => {
+              const val = e.target.value;
+              if (val === 'sp-2d') {
+                setCurrentView('explorer');
+                setViewMode('sp-2d');
+                window.location.hash = '#sp-2d';
+              } else if (val === 'explorer') {
+                setCurrentView('explorer');
+                setViewMode('3d');
+                window.location.hash = '#explorer';
+              } else {
+                handleNavigate(val);
+              }
+            }}
+            className="h-8 px-2.5 rounded-xl bg-[#060b14]/90 backdrop-blur-md border border-slate-800/90 hover:border-cyan-500/50 text-[11px] font-mono text-cyan-300 focus:outline-none shadow-lg cursor-pointer"
+          >
+            <option value="explorer">Lunar Map (3D / 2D)</option>
+            <option value="trajectory">Orbit Planner (3D / 2D)</option>
+            <option value="mission-control">Mission Overview</option>
+            <option value="site-analysis">Site Analysis</option>
+            <option value="communication">DTE Communications</option>
+            <option value="planner">Landing Recommendations</option>
+            <option value="comparison">Site Comparison</option>
+            <option value="library">Data Sources &amp; Library</option>
+          </select>
+        </div>
+      )}
 
       {/* ========================================================================= */}
       {/* FLOATING NOTIFICATIONS: Upper right corner                                */}
@@ -1226,7 +1233,11 @@ export default function App() {
 
       {/* Dedicated Subpage Workspaces (Lazy Loaded) */}
       {currentView !== 'explorer' && (
-        <div className="flex-1 w-full h-full overflow-hidden flex flex-col bg-[#07090e] pt-11 sm:pt-12">
+        <div
+          className={`flex-1 w-full h-full overflow-hidden flex flex-col bg-[#07090e] ${
+            currentView === 'trajectory' ? 'pt-0' : 'pt-11 sm:pt-12'
+          }`}
+        >
           <React.Suspense
             fallback={
               <div className="flex-1 flex flex-col items-center justify-center min-h-[50vh] text-cyan-400 font-mono text-xs gap-3">
@@ -1324,6 +1335,11 @@ export default function App() {
                 onLaunchExplorer={handleLaunchExplorer}
               />
             )}
+            {currentView === 'trajectory' && (
+              <TrajectoryPlannerPage
+                onNavigate={handleNavigate}
+              />
+            )}
           </React.Suspense>
         </div>
       )}
@@ -1363,8 +1379,8 @@ export default function App() {
           onSelectEarthSite={handleSelectEarthSite}
           onOpenMissionExplorer={() => setIsMissionExplorerOpen(true)}
           onOpenSlipSimulator={() => setIsSlipSimulatorOpen(true)}
-          onOpenTransferOrbit={() => setIsTransferOrbitOpen(true)}
-          isTransferOrbitOpen={isTransferOrbitOpen}
+          onOpenTransferOrbit={() => handleNavigate('trajectory')}
+          isTransferOrbitOpen={currentView === 'trajectory' || isTransferOrbitOpen}
           onOpenComparison={() => handleOpenComparison(null)}
           onOpenDte={() => setIsDteOpen(true)}
           isDteOpen={isDteOpen}

@@ -129,9 +129,18 @@ export default function TransferOrbit3DViewport({
   launchSite,
   moonTarget,
   jplEphemeris,
+  cameraMode: externalCameraMode,
+  cameraFocusSeq,
+  onCameraModeChange,
+  hideEmbeddedControls = false,
 }) {
   const mountRef = useRef(null);
-  const [cameraMode, setCameraMode] = useState('overview'); // 'overview' | 'chase' | 'earth' | 'moon'
+  const [internalCameraMode, setInternalCameraMode] = useState('overview'); // 'overview' | 'chase' | 'earth' | 'moon'
+  const cameraMode = externalCameraMode !== undefined ? externalCameraMode : internalCameraMode;
+  const setCameraMode = (mode) => {
+    setInternalCameraMode(mode);
+    onCameraModeChange?.(mode);
+  };
 
   const isBlt = orbitPlan?.profile?.id === 'low-energy';
 
@@ -152,10 +161,34 @@ export default function TransferOrbit3DViewport({
   const earthPadMarkerRef = useRef(null);
   const moonTargetMarkerRef = useRef(null);
 
+  const cameraModeRef = useRef(cameraMode);
+  useEffect(() => {
+    cameraModeRef.current = cameraMode;
+  }, [cameraMode]);
+
+  const cameraTransitionRef = useRef(null);
+
+  const startCameraTransition = (targetCamPos, targetControlsPos, durationMs = 600) => {
+    if (!cameraRef.current || !controlsRef.current) return;
+    cameraTransitionRef.current = {
+      startCam: cameraRef.current.position.clone(),
+      endCam: targetCamPos.clone(),
+      startTarget: controlsRef.current.target.clone(),
+      endTarget: targetControlsPos.clone(),
+      startTime: performance.now(),
+      duration: durationMs,
+    };
+  };
+
   // Interpolated craft state
   const currentState = useMemo(() => {
     return getInterpolatedStateAtFrac(orbitPlan.waypoints, simProgress);
   }, [orbitPlan.waypoints, simProgress]);
+
+  const currentStateRef = useRef(currentState);
+  useEffect(() => {
+    currentStateRef.current = currentState;
+  }, [currentState]);
 
   // Target Moon 3D center (Mission frame: Earth on the left at (0,0,0), Moon on the right at +X)
   const moonCenter3d = useMemo(() => {
@@ -174,14 +207,14 @@ export default function TransferOrbit3DViewport({
   }, [jplEphemeris]);
 
   // ── Overview System Framing Coordinates ──────────────────────────────────
-  // For Direct / Free-Return: Earth at (0, 0, 0), Moon at X=75. Center is at X=37.
+  // For Direct / Free-Return: Earth on the left at (0, 0, 0), Moon on the right at X=75. Center is at X=36.
   // For Low-Energy (BLT): Trajectory extends ~1.45M km (X ≈ 275). Auto-adjust view bounds to 135.
   const OVERVIEW_TARGET = useMemo(
-    () => (isBlt ? new THREE.Vector3(135.0, 15.0, 0.0) : new THREE.Vector3(SCALE_3D.DISTANCE * 0.48, 5.0, 0.0)),
+    () => (isBlt ? new THREE.Vector3(135.0, 15.0, 0.0) : new THREE.Vector3(SCALE_3D.DISTANCE * 0.48, 0.0, 0.0)),
     [isBlt]
   );
   const OVERVIEW_CAM_POS = useMemo(
-    () => (isBlt ? new THREE.Vector3(135.0, 75.0, 360.0) : new THREE.Vector3(SCALE_3D.DISTANCE * 0.48, 16.0, 78.0)),
+    () => (isBlt ? new THREE.Vector3(135.0, 75.0, 360.0) : new THREE.Vector3(SCALE_3D.DISTANCE * 0.48, 12.0, 88.0)),
     [isBlt]
   );
 
@@ -216,18 +249,26 @@ export default function TransferOrbit3DViewport({
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
-    controls.maxDistance = isBlt ? 1200 : 260;
-    controls.minDistance = 3;
+    controls.maxDistance = isBlt ? 1400 : 350;
+    controls.minDistance = 2;
     controls.target.copy(OVERVIEW_TARGET);
     controls.update();
     controlsRef.current = controls;
+
+    // Listen to manual interaction to cancel automatic camera transitions
+    controls.addEventListener('start', () => {
+      cameraTransitionRef.current = null;
+      if (cameraModeRef.current === 'chase') {
+        setCameraMode('overview');
+      }
+    });
 
     // 4. Lighting
     const ambientLight = new THREE.AmbientLight(0x334455, 1.4);
     scene.add(ambientLight);
 
-    const sunLight = new THREE.DirectionalLight(0xffffff, 2.8);
-    sunLight.position.set(-60, 40, 80);
+    const sunLight = new THREE.DirectionalLight(0xffffff, 2.5);
+    sunLight.position.set(20, 50, 100);
     scene.add(sunLight);
 
     // Subtle rim light from opposite side
@@ -313,6 +354,29 @@ export default function TransferOrbit3DViewport({
     });
     const moonMesh = new THREE.Mesh(moonGeo, moonMat);
     moonGroup.add(moonMesh);
+
+    // Glowing Moon Atmosphere / Exosphere Halo
+    const moonHaloGeo = new THREE.SphereGeometry(SCALE_3D.MOON_RADIUS * 1.08, 32, 32);
+    const moonHaloMat = new THREE.MeshBasicMaterial({
+      color: 0x00d2c4,
+      transparent: true,
+      opacity: 0.22,
+      side: THREE.BackSide,
+    });
+    const moonHalo = new THREE.Mesh(moonHaloGeo, moonHaloMat);
+    moonGroup.add(moonHalo);
+
+    // High-Visibility Moon Reticle / Marker Ring (visible from far overview)
+    const moonBeaconRingGeo = new THREE.RingGeometry(1.4, 1.6, 32);
+    const moonBeaconRingMat = new THREE.MeshBasicMaterial({
+      color: 0x00d2c4,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.5,
+    });
+    const moonBeaconRing = new THREE.Mesh(moonBeaconRingGeo, moonBeaconRingMat);
+    moonBeaconRing.rotation.x = Math.PI / 2;
+    moonGroup.add(moonBeaconRing);
 
     // Moon Orbit Ring
     const lunarOrbCurve = new THREE.EllipseCurve(0, 0, SCALE_3D.LUNAR_ORBIT_RADIUS, SCALE_3D.LUNAR_ORBIT_RADIUS, 0, 2 * Math.PI, false, 0);
@@ -498,16 +562,18 @@ export default function TransferOrbit3DViewport({
 
     scene.add(craftGroup);
 
-    // 9. Resize Observer
-    const handleResize = () => {
-      if (!container) return;
-      const w = container.clientWidth;
-      const h = container.clientHeight;
-      camera.aspect = w / h;
-      camera.updateProjectionMatrix();
-      renderer.setSize(w, h);
-    };
-    window.addEventListener('resize', handleResize);
+    // 9. Resize Observer for dynamic, zero-lag viewport scaling
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const { width: w, height: h } = entry.contentRect;
+        if (w > 0 && h > 0) {
+          camera.aspect = w / h;
+          camera.updateProjectionMatrix();
+          renderer.setSize(w, h);
+        }
+      }
+    });
+    resizeObserver.observe(container);
 
     // 10. Animation Render Loop
     let animId;
@@ -525,13 +591,38 @@ export default function TransferOrbit3DViewport({
         beaconDiamondRef.current.position.y = 1.8 + Math.sin(clock * 2) * 0.15;
       }
 
+      // Smooth camera transition (one-shot, non-fighting)
+      if (cameraTransitionRef.current) {
+        const tr = cameraTransitionRef.current;
+        const elapsed = performance.now() - tr.startTime;
+        const p = Math.min(1.0, elapsed / tr.duration);
+        const ease = p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;
+        camera.position.lerpVectors(tr.startCam, tr.endCam, ease);
+        controls.target.lerpVectors(tr.startTarget, tr.endTarget, ease);
+        if (p >= 1.0) {
+          cameraTransitionRef.current = null;
+        }
+      } else if (cameraModeRef.current === 'chase' && currentStateRef.current) {
+        // Rocket chase mode tracking
+        const cur = currentStateRef.current;
+        const craftPos = new THREE.Vector3(cur.x3d, cur.y3d, cur.z3d);
+        const offset = new THREE.Vector3(-10, 4, 6);
+        if (cur.dir3d) {
+          const forward = new THREE.Vector3(cur.dir3d.x, cur.dir3d.y, cur.dir3d.z).normalize();
+          const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(1, 0, 0), forward);
+          offset.applyQuaternion(q);
+        }
+        camera.position.lerp(new THREE.Vector3().addVectors(craftPos, offset), 0.12);
+        controls.target.lerp(craftPos, 0.12);
+      }
+
       controls.update();
       renderer.render(scene, camera);
     };
     animate();
 
     return () => {
-      window.removeEventListener('resize', handleResize);
+      resizeObserver.disconnect();
       cancelAnimationFrame(animId);
       controls.dispose();
       renderer.dispose();
@@ -615,16 +706,14 @@ export default function TransferOrbit3DViewport({
       wsbHelperGroupRef.current.visible = isBlt;
     }
     if (controlsRef.current) {
-      controlsRef.current.maxDistance = isBlt ? 1200 : 260;
+      controlsRef.current.maxDistance = isBlt ? 1400 : 350;
     }
-    if (cameraMode === 'overview' && cameraRef.current && controlsRef.current) {
-      controlsRef.current.target.copy(OVERVIEW_TARGET);
-      cameraRef.current.position.copy(OVERVIEW_CAM_POS);
-      controlsRef.current.update();
+    if (cameraModeRef.current === 'overview') {
+      startCameraTransition(OVERVIEW_CAM_POS, OVERVIEW_TARGET, 600);
     }
-  }, [isBlt, OVERVIEW_TARGET, OVERVIEW_CAM_POS, cameraMode]);
+  }, [isBlt, OVERVIEW_TARGET, OVERVIEW_CAM_POS]);
 
-  // ── Update Spacecraft Position & Camera Tracking ───────────────────────────
+  // ── Update Spacecraft Position & Flame ─────────────────────────────────────
   useEffect(() => {
     if (!spacecraftRef.current || !currentState) return;
 
@@ -649,106 +738,108 @@ export default function TransferOrbit3DViewport({
     if (ionGlowRef.current) {
       ionGlowRef.current.visible = !isBurning;
     }
+  }, [currentState]);
 
-    // Camera follow / tracking modes
-    const camera = cameraRef.current;
-    const controls = controlsRef.current;
-    if (!camera || !controls) return;
-
-    if (cameraMode === 'chase') {
-      // Dynamic chase camera locked right behind rocket
-      const offset = new THREE.Vector3(-10, 4, 6);
-      if (currentState.dir3d) {
-        offset.applyQuaternion(craft.quaternion);
-      }
-      camera.position.lerp(new THREE.Vector3().addVectors(craft.position, offset), 0.12);
-      controls.target.lerp(craft.position, 0.12);
-    } else if (cameraMode === 'earth') {
-      controls.target.lerp(new THREE.Vector3(0, 0, 0), 0.08);
-      camera.position.lerp(new THREE.Vector3(6, 6, 12), 0.08);
-    } else if (cameraMode === 'moon') {
-      controls.target.lerp(moonCenter3d, 0.08);
-      camera.position.lerp(new THREE.Vector3(moonCenter3d.x - 5, moonCenter3d.y + 4, moonCenter3d.z + 6), 0.08);
-    } else if (cameraMode === 'overview') {
-      // Smoothly frames the entire cislunar system (centered on trajectory midpoint)
-      controls.target.lerp(OVERVIEW_TARGET, 0.08);
-      camera.position.lerp(OVERVIEW_CAM_POS, 0.08);
-    }
-  }, [currentState, cameraMode, moonCenter3d, OVERVIEW_TARGET, OVERVIEW_CAM_POS]);
-
-  // Handler to manually re-center whole trajectory
+  // Camera Mode Click Handlers (One-shot smooth transitions with full zoom/pan freedom)
   const handleRecenter = () => {
     setCameraMode('overview');
-    if (cameraRef.current && controlsRef.current) {
-      cameraRef.current.position.copy(OVERVIEW_CAM_POS);
-      controlsRef.current.target.copy(OVERVIEW_TARGET);
-      controlsRef.current.update();
-    }
+    startCameraTransition(OVERVIEW_CAM_POS, OVERVIEW_TARGET, 600);
   };
 
+  const handleFollowRocket = () => {
+    setCameraMode('chase');
+    cameraTransitionRef.current = null;
+  };
+
+  const handleZoomEarth = () => {
+    setCameraMode('earth');
+    startCameraTransition(new THREE.Vector3(-4, 3, 11), new THREE.Vector3(0, 0, 0), 600);
+  };
+
+  const handleZoomMoon = () => {
+    setCameraMode('moon');
+    const moonCam = moonCenter3d.clone().add(new THREE.Vector3(-3.5, 2.2, 5.5));
+    startCameraTransition(moonCam, moonCenter3d, 600);
+  };
+
+  useEffect(() => {
+    if (cameraFocusSeq === undefined || cameraFocusSeq === 0) return;
+    if (cameraMode === 'overview') {
+      handleRecenter();
+    } else if (cameraMode === 'chase') {
+      handleFollowRocket();
+    } else if (cameraMode === 'earth') {
+      handleZoomEarth();
+    } else if (cameraMode === 'moon') {
+      handleZoomMoon();
+    }
+  }, [cameraMode, cameraFocusSeq]);
+
   return (
-    <div className="relative w-full h-[400px] sm:h-[460px] bg-gradient-to-b from-[#02050b] via-[#040813] to-[#020409] rounded-2xl overflow-hidden border border-[#142338]">
+    <div className="relative w-full h-full min-h-0 bg-gradient-to-b from-[#02050b] via-[#040813] to-[#020409] rounded-2xl overflow-hidden border border-[#142338]">
       {/* Three.js Canvas Container */}
       <div ref={mountRef} className="w-full h-full cursor-grab active:cursor-grabbing" />
 
       {/* Camera Mode Toolbar (Pills) */}
-      <div className="absolute top-2.5 left-2.5 sm:top-3 sm:left-3 z-10 flex items-center gap-1.5 bg-[#060B13]/90 backdrop-blur-md border border-[#1b2d45] rounded-xl p-1 text-[11px] font-mono shadow-xl">
-        <button
-          type="button"
-          onClick={handleRecenter}
-          className={`px-3 py-1 rounded-lg flex items-center gap-1.5 transition-all ${
-            cameraMode === 'overview'
-              ? 'bg-[#38BDF8] text-[#060B13] font-bold shadow-[0_0_12px_rgba(56,189,248,0.5)]'
-              : 'text-[#94A3B8] hover:text-white hover:bg-[#152336]'
-          }`}
-          title="Center Full Trajectory (Earth to Moon)"
-        >
-          <Maximize2 className="w-3.5 h-3.5" />
-          <span>Full Trajectory</span>
-        </button>
+      {!hideEmbeddedControls && (
+        <div className="absolute top-2.5 left-2.5 sm:top-3 sm:left-3 z-10 flex items-center gap-1.5 bg-[#060B13]/90 backdrop-blur-md border border-[#1b2d45] rounded-xl p-1 text-[11px] font-mono shadow-xl">
+          <button
+            type="button"
+            onClick={handleRecenter}
+            className={`px-3 py-1 rounded-lg flex items-center gap-1.5 transition-all ${
+              cameraMode === 'overview'
+                ? 'bg-[#38BDF8] text-[#060B13] font-bold shadow-[0_0_12px_rgba(56,189,248,0.5)]'
+                : 'text-[#94A3B8] hover:text-white hover:bg-[#152336]'
+            }`}
+            title="Center Full Trajectory (Earth to Moon)"
+          >
+            <Maximize2 className="w-3.5 h-3.5" />
+            <span>Full Trajectory</span>
+          </button>
 
-        <button
-          type="button"
-          onClick={() => setCameraMode('chase')}
-          className={`px-3 py-1 rounded-lg flex items-center gap-1.5 transition-all ${
-            cameraMode === 'chase'
-              ? 'bg-[#A78BFA] text-[#060B13] font-bold shadow-[0_0_12px_rgba(167,139,250,0.5)]'
-              : 'text-[#94A3B8] hover:text-white hover:bg-[#152336]'
-          }`}
-          title="Lock Camera on Rocket Spacecraft"
-        >
-          <Rocket className="w-3.5 h-3.5" />
-          <span>Follow Rocket</span>
-        </button>
+          <button
+            type="button"
+            onClick={handleFollowRocket}
+            className={`px-3 py-1 rounded-lg flex items-center gap-1.5 transition-all ${
+              cameraMode === 'chase'
+                ? 'bg-[#A78BFA] text-[#060B13] font-bold shadow-[0_0_12px_rgba(167,139,250,0.5)]'
+                : 'text-[#94A3B8] hover:text-white hover:bg-[#152336]'
+            }`}
+            title="Lock Camera on Rocket Spacecraft"
+          >
+            <Rocket className="w-3.5 h-3.5" />
+            <span>Follow Rocket</span>
+          </button>
 
-        <button
-          type="button"
-          onClick={() => setCameraMode('earth')}
-          className={`px-2.5 py-1 rounded-lg flex items-center gap-1.5 transition-all ${
-            cameraMode === 'earth'
-              ? 'bg-[#38BDF8] text-[#060B13] font-bold'
-              : 'text-[#94A3B8] hover:text-white hover:bg-[#152336]'
-          }`}
-          title="Zoom to Earth Departure"
-        >
-          <Globe2 className="w-3.5 h-3.5" />
-          <span>Earth</span>
-        </button>
+          <button
+            type="button"
+            onClick={handleZoomEarth}
+            className={`px-2.5 py-1 rounded-lg flex items-center gap-1.5 transition-all ${
+              cameraMode === 'earth'
+                ? 'bg-[#38BDF8] text-[#060B13] font-bold'
+                : 'text-[#94A3B8] hover:text-white hover:bg-[#152336]'
+            }`}
+            title="Zoom to Earth Departure"
+          >
+            <Globe2 className="w-3.5 h-3.5" />
+            <span>Earth</span>
+          </button>
 
-        <button
-          type="button"
-          onClick={() => setCameraMode('moon')}
-          className={`px-2.5 py-1 rounded-lg flex items-center gap-1.5 transition-all ${
-            cameraMode === 'moon'
-              ? 'bg-[#00D2C4] text-[#060B13] font-bold'
-              : 'text-[#94A3B8] hover:text-white hover:bg-[#152336]'
-          }`}
-          title="Zoom to Moon Arrival"
-        >
-          <Moon className="w-3.5 h-3.5" />
-          <span>Moon</span>
-        </button>
-      </div>
+          <button
+            type="button"
+            onClick={handleZoomMoon}
+            className={`px-2.5 py-1 rounded-lg flex items-center gap-1.5 transition-all ${
+              cameraMode === 'moon'
+                ? 'bg-[#00D2C4] text-[#060B13] font-bold'
+                : 'text-[#94A3B8] hover:text-white hover:bg-[#152336]'
+            }`}
+            title="Zoom to Moon Arrival"
+          >
+            <Moon className="w-3.5 h-3.5" />
+            <span>Moon</span>
+          </button>
+        </div>
+      )}
 
       {/* NASA JPL Horizons Live Ephemeris Badge */}
       <div className="absolute top-2.5 right-2.5 sm:top-3 sm:right-3 z-10 flex items-center gap-2">
@@ -771,7 +862,7 @@ export default function TransferOrbit3DViewport({
         <span className="text-[#94A3B8]">Craft:</span>
         <span className="font-semibold text-[#38BDF8]">{orbitPlan.profile.name} Vehicle</span>
         <span>&middot;</span>
-        <span className="text-amber-400 font-bold">{currentState ? `${currentState.velocityKmS.toFixed(2)} km/s` : ''}</span>
+        <span className="text-amber-400 font-bold">{currentState?.velocityKmS != null ? `${currentState.velocityKmS.toFixed(2)} km/s` : ''}</span>
       </div>
 
       {/* Instructions pill at bottom right */}
