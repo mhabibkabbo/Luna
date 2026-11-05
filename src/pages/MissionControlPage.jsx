@@ -123,6 +123,14 @@ export default function MissionControlPage({
         <div className="flex items-center gap-2.5 shrink-0">
           <button
             type="button"
+            onClick={() => onNavigate('missions')}
+            className="px-4 py-2 rounded-xl border border-cyan-500/40 bg-cyan-950/30 hover:bg-cyan-950/60 text-cyan-300 font-bold text-xs tracking-wide transition-all active:scale-95 flex items-center gap-2"
+          >
+            <span>Mission Catalog</span>
+            <Rocket className="w-4 h-4" />
+          </button>
+          <button
+            type="button"
             onClick={() => onNavigate('explorer')}
             className="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold text-xs tracking-wide transition-all shadow-lg active:scale-95 flex items-center gap-2"
           >

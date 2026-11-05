@@ -1,230 +1,100 @@
-import React, { useState } from 'react';
-import {
-  ArrowUpRight,
-  CalendarDays,
-  CheckCircle2,
-  Clock3,
-  ExternalLink,
-  MapPin,
-  Rocket,
-} from 'lucide-react';
-import CompactClpsModal from '../landing/CompactClpsModal.jsx';
+import React from 'react';
+import { ArrowUpRight, CalendarDays, CheckCircle2, Clock3, MapPin, Rocket, Telescope } from 'lucide-react';
 import PublicPageHeader from '../common/PublicPageHeader.jsx';
 import { CLPS_MISSIONS } from '../../data/clpsMissions.js';
 
-function getMissionImage(mission) {
-  const id = mission.id || '';
-  if (id.includes('im1') || id.includes('odysseus')) return '/pictures/odysseus-malapert-landing.jpg';
-  if (id.includes('bgm1') || id.includes('crisium')) return '/pictures/blue-ghost-mare-crisium.jpg';
-  if (id.includes('earth') || id.includes('marble')) return '/pictures/earth-blue-marble.jpg';
-  if (id.includes('im2') || id.includes('griffin') || id.includes('blueorigin')) return '/pictures/shackleton-polar-ridge.jpg';
-  return '/pictures/lunar-south-pole-horizon.jpg';
+const HISTORIC_MISSIONS = [
+  { id: 'historic-change-6', name: "Chang'e 6", taskOrder: 'CNSA · 2024', provider: 'China National Space Administration', missionStatus: 'completed', latitude: -42, longitude: -154, landingSiteName: 'Apollo Basin (Farside)', launchDate: '2024-05-03', timelineOrder: 20240503, description: 'First sample-return mission from the lunar far side.' },
+  { id: 'historic-slim', name: 'SLIM', taskOrder: 'JAXA · 2023', provider: 'Japan Aerospace Exploration Agency', missionStatus: 'completed', latitude: -13.315, longitude: 25.251, landingSiteName: 'Shioli Crater', launchDate: '2023-09-06', timelineOrder: 20230906, description: 'Japan demonstrated pinpoint lunar landing technology near Shioli crater.' },
+  { id: 'historic-chandrayaan-3', name: 'Chandrayaan-3', taskOrder: 'ISRO · 2023', provider: 'Indian Space Research Organisation', missionStatus: 'completed', latitude: -69.373, longitude: 32.319, landingSiteName: 'Shiv Shakti Point (South Pole region)', launchDate: '2023-07-14', timelineOrder: 20230714, description: 'India demonstrated lunar landing and rover operations near the south pole.' },
+  { id: 'historic-apollo-17', name: 'Apollo 17', taskOrder: 'NASA · 1972', provider: 'NASA', missionStatus: 'completed', latitude: 20.191, longitude: 30.772, landingSiteName: 'Taurus-Littrow', launchDate: '1972-12-07', timelineOrder: 19721207, description: 'The final Apollo lunar landing explored the Taurus-Littrow valley.' },
+  { id: 'historic-apollo-16', name: 'Apollo 16', taskOrder: 'NASA · 1972', provider: 'NASA', missionStatus: 'completed', latitude: -8.973, longitude: 15.501, landingSiteName: 'Descartes Highlands', launchDate: '1972-04-16', timelineOrder: 19720416, description: 'A crewed exploration of the lunar highlands at Descartes.' },
+  { id: 'historic-apollo-15', name: 'Apollo 15', taskOrder: 'NASA · 1971', provider: 'NASA', missionStatus: 'completed', latitude: 26.132, longitude: 3.633, landingSiteName: 'Hadley Rille', launchDate: '1971-07-26', timelineOrder: 19710726, description: 'The first lunar rover extended crewed field exploration at Hadley Rille.' },
+  { id: 'historic-apollo-14', name: 'Apollo 14', taskOrder: 'NASA · 1971', provider: 'NASA', missionStatus: 'completed', latitude: -3.646, longitude: -17.472, landingSiteName: 'Fra Mauro', launchDate: '1971-01-31', timelineOrder: 19710131, description: 'A crewed landing investigated the Fra Mauro formation.' },
+  { id: 'historic-apollo-12', name: 'Apollo 12', taskOrder: 'NASA · 1969', provider: 'NASA', missionStatus: 'completed', latitude: -3.013, longitude: -23.422, landingSiteName: 'Oceanus Procellarum', launchDate: '1969-11-14', timelineOrder: 19691114, description: 'A precision crewed landing in Oceanus Procellarum.' },
+  { id: 'historic-apollo-11', name: 'Apollo 11', taskOrder: 'NASA · 1969', provider: 'NASA', missionStatus: 'completed', latitude: 0.674, longitude: 23.473, landingSiteName: 'Mare Tranquillitatis', launchDate: '1969-07-16', timelineOrder: 19690716, description: 'Humanity’s first crewed lunar landing.' },
+];
+
+function getTimelineOrder(mission) {
+  if (mission.timelineOrder) return mission.timelineOrder;
+  const numericDate = mission.launchDate?.match(/(\d{4})-(\d{2})-(\d{2})/);
+  if (numericDate) return Number(numericDate.slice(1).join(''));
+  const year = mission.launchDate?.match(/(20\d{2})/)?.[1];
+  return year ? Number(`${year}0000`) : 0;
+}
+
+function getTimelineDescription(mission) {
+  return mission.timelineSummary || mission.description?.split(/(?<=\.)\s/)[0] || 'Lunar surface exploration mission.';
 }
 
 function getMissionStatus(mission) {
-  if (mission.missionStatus === 'completed') {
-    return { label: 'Landed', className: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300' };
-  }
-  if (mission.missionStatus === 'failed') {
-    return { label: 'Flight anomaly', className: 'border-rose-500/30 bg-rose-500/10 text-rose-300' };
-  }
-  return { label: 'Planned', className: 'border-amber-500/30 bg-amber-500/10 text-amber-200' };
+  if (mission.missionStatus === 'completed') return { label: 'Landed', className: 'border-emerald-400/30 bg-emerald-400/10 text-emerald-200', icon: CheckCircle2 };
+  if (mission.missionStatus === 'failed') return { label: 'Flight anomaly', className: 'border-rose-400/30 bg-rose-400/10 text-rose-200', icon: Clock3 };
+  return { label: 'Planned', className: 'border-amber-300/30 bg-amber-300/10 text-amber-100', icon: Clock3 };
 }
 
 function formatCoordinates(value, positive, negative) {
   return `${Math.abs(value).toFixed(2)}°${value >= 0 ? positive : negative}`;
 }
 
-export default function MissionsPage({ onLaunchExplorer }) {
-  const [activeMission, setActiveMission] = useState(null);
-  const [expandedMissionId, setExpandedMissionId] = useState(null);
+function MissionEntry({ mission, index, onLaunchExplorer }) {
+  const status = getMissionStatus(mission);
+  const StatusIcon = status.icon;
+  const isLeft = index % 2 === 0;
 
+  return (
+    <li className="relative grid grid-cols-[1fr_2.75rem_1fr] gap-x-3 sm:gap-x-6">
+      <div className={isLeft ? 'col-start-1' : 'col-start-3'}>
+        <button type="button" onClick={() => onLaunchExplorer({ selectedMission: mission, missionId: mission.id })} className="group w-full rounded-2xl border border-[#20344B] bg-[#0A1220]/95 p-4 text-left shadow-[0_12px_35px_rgba(0,0,0,0.16)] transition-all hover:-translate-y-1 hover:border-[#00D2C4]/70 hover:bg-[#0C1728] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00D2C4] sm:p-5" aria-label={`Open ${mission.name} in the lunar explorer`}>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-[9px] font-mono uppercase tracking-[0.18em] text-[#34D399] sm:text-[10px]">{mission.taskOrder} · {mission.provider}</p>
+              <h2 className="mt-1.5 text-base font-semibold leading-tight text-[#F1F5F9] sm:text-xl">{mission.name}</h2>
+            </div>
+            <ArrowUpRight className="mt-0.5 h-4 w-4 shrink-0 text-[#00D2C4] transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+          </div>
+          <p className="mt-3 hidden text-xs leading-relaxed text-[#94A3B8] sm:block" style={{ display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: 2, overflow: 'hidden' }}>{getTimelineDescription(mission)}</p>
+          <div className="mt-3 grid gap-2 border-t border-[#1B3047] pt-3 text-[10px] text-[#A5B4C7] sm:grid-cols-2 sm:text-[11px]">
+            <span className="flex min-w-0 items-center gap-1.5"><CalendarDays className="h-3.5 w-3.5 shrink-0 text-[#00D2C4]" /><span className="truncate">{mission.launchDate}</span></span>
+            <span className="flex min-w-0 items-center gap-1.5"><MapPin className="h-3.5 w-3.5 shrink-0 text-[#00D2C4]" /><span className="truncate">{mission.landingSiteName}</span></span>
+          </div>
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+            <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[9px] font-mono uppercase tracking-wide ${status.className}`}><StatusIcon className="h-3 w-3" /> {status.label}</span>
+            <span className="font-mono text-[9px] text-[#64748B]">{formatCoordinates(mission.latitude, 'N', 'S')} · {formatCoordinates(mission.longitude, 'E', 'W')}</span>
+          </div>
+        </button>
+      </div>
+      <div className="col-start-2 row-start-1 flex flex-col items-center" aria-hidden="true">
+        <span className="mt-5 flex h-8 w-8 items-center justify-center rounded-full border-2 border-sky-300 bg-[#111B29] text-[10px] font-mono font-bold text-sky-300 shadow-[0_0_0_5px_#060B13] sm:h-10 sm:w-10">{String(index + 1).padStart(2, '0')}</span>
+      </div>
+    </li>
+  );
+}
+
+export default function MissionsPage({ onLaunchExplorer }) {
+  const catalogMissions = [...CLPS_MISSIONS, ...HISTORIC_MISSIONS].sort((a, b) => getTimelineOrder(b) - getTimelineOrder(a));
+  const completedCount = catalogMissions.filter((mission) => mission.missionStatus === 'completed').length;
   return (
     <div className="flex h-full min-h-0 w-full flex-col overflow-hidden bg-[#060B13] font-sans text-[#F1F5F9] selection:bg-[#00D2C4]/30">
       <PublicPageHeader currentPage="missions" onLaunchExplorer={onLaunchExplorer} />
-
       <main className="min-h-0 flex-1 overflow-y-auto">
-        <div className="mx-auto w-full max-w-[1400px] space-y-8 px-5 py-9 sm:px-8 sm:py-12 lg:px-12">
-          <div className="space-y-3 border-b border-[#16283C] pb-7">
-            <span className="text-xs font-mono font-semibold uppercase tracking-[0.22em] text-[#00D2C4]">
-              Lunar surface expeditions
-            </span>
-            <h1 className="text-4xl font-semibold tracking-tight text-[#F1F5F9] sm:text-5xl">
-              Missions
-            </h1>
-            <p className="max-w-3xl text-sm leading-relaxed text-[#94A3B8] sm:text-base">
-              Explore NASA Commercial Lunar Payload Services missions, their target regions,
-              spacecraft, timelines, and science payloads.
-            </p>
-            <p className="text-xs font-mono text-[#64748B]">
-              {CLPS_MISSIONS.length} mission records · Select a card for full mission details
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
-            {CLPS_MISSIONS.map((mission) => {
-              const status = getMissionStatus(mission);
-              return (
-                <article
-                  key={mission.id}
-                  className="group flex min-w-0 flex-col overflow-hidden rounded-2xl border border-[#16283C] bg-[#0A1220] transition-all hover:border-[#00D2C4]/50 hover:shadow-xl hover:shadow-cyan-950/20"
-                >
-                  <button
-                    type="button"
-                    onClick={() => setActiveMission(mission)}
-                    aria-label={`View details for ${mission.name}`}
-                    className="relative block aspect-[16/9] w-full overflow-hidden bg-[#070D17] text-left"
-                  >
-                    <img
-                      src={getMissionImage(mission)}
-                      alt={`${mission.name} lunar mission`}
-                      className="h-full w-full object-cover opacity-80 transition duration-500 group-hover:scale-105 group-hover:opacity-100"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#0A1220] via-transparent to-black/20" />
-                    <span className={`absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-mono uppercase tracking-wide ${status.className}`}>
-                      {mission.missionStatus === 'completed' ? (
-                        <CheckCircle2 className="h-3 w-3" />
-                      ) : (
-                        <Clock3 className="h-3 w-3" />
-                      )}
-                      {status.label}
-                    </span>
-                    <span className="absolute bottom-4 left-4 rounded-md border border-white/15 bg-[#060B13]/80 px-2 py-1 text-[10px] font-mono text-[#00D2C4] backdrop-blur">
-                      {mission.taskOrder}
-                    </span>
-                    <span className="absolute bottom-4 right-4 flex h-8 w-8 items-center justify-center rounded-full bg-[#00D2C4] text-[#060B13] shadow-lg">
-                      <ArrowUpRight className="h-4 w-4" />
-                    </span>
-                  </button>
-
-                  <div className="flex flex-1 flex-col p-5">
-                    <p className="text-[10px] font-mono uppercase tracking-[0.16em] text-[#34D399]">
-                      NASA · {mission.provider}
-                    </p>
-                    <h2 className="mt-2 text-xl font-semibold leading-snug text-[#F1F5F9] sm:text-2xl">
-                      {mission.name}
-                    </h2>
-                    <p
-                      className="mt-3 text-xs leading-relaxed text-[#94A3B8]"
-                      style={
-                        expandedMissionId === mission.id
-                          ? undefined
-                          : {
-                              display: '-webkit-box',
-                              WebkitBoxOrient: 'vertical',
-                              WebkitLineClamp: 3,
-                              overflow: 'hidden',
-                            }
-                      }
-                    >
-                      {mission.description}
-                    </p>
-                    {mission.description.length > 180 && (
-                      <button
-                        type="button"
-                        aria-expanded={expandedMissionId === mission.id}
-                        onClick={() =>
-                          setExpandedMissionId((id) => (id === mission.id ? null : mission.id))
-                        }
-                        className="mt-1 self-start text-[10px] font-mono text-[#00D2C4] hover:text-[#34D399]"
-                      >
-                        {expandedMissionId === mission.id ? 'Show less' : 'Read full description'}
-                      </button>
-                    )}
-
-                    <dl className="mt-4 grid grid-cols-2 gap-x-3 gap-y-3 border-t border-[#16283C] pt-4 text-xs">
-                      <div className="min-w-0">
-                        <dt className="flex items-center gap-1 text-[9px] font-mono uppercase tracking-wide text-[#64748B]">
-                          <MapPin className="h-3 w-3 text-[#00D2C4]" /> Target site
-                        </dt>
-                        <dd className="mt-1 truncate font-medium text-[#CBD5E1]" title={mission.landingSiteName}>
-                          {mission.landingSiteName}
-                        </dd>
-                        <dd className="mt-0.5 font-mono text-[10px] text-[#94A3B8]">
-                          {formatCoordinates(mission.latitude, 'N', 'S')},{' '}
-                          {formatCoordinates(mission.longitude, 'E', 'W')}
-                        </dd>
-                      </div>
-                      <div className="min-w-0">
-                        <dt className="flex items-center gap-1 text-[9px] font-mono uppercase tracking-wide text-[#64748B]">
-                          <CalendarDays className="h-3 w-3 text-[#00D2C4]" /> Launch
-                        </dt>
-                        <dd className="mt-1 font-mono text-[11px] text-[#CBD5E1]">
-                          {mission.launchDate}
-                        </dd>
-                        {mission.landingDate && (
-                          <dd className="mt-0.5 text-[10px] text-emerald-300">
-                            Landed {mission.landingDate}
-                          </dd>
-                        )}
-                      </div>
-                      <div className="col-span-2 min-w-0">
-                        <dt className="flex items-center gap-1 text-[9px] font-mono uppercase tracking-wide text-[#64748B]">
-                          <Rocket className="h-3 w-3 text-[#00D2C4]" /> Lander &amp; launch vehicle
-                        </dt>
-                        <dd className="mt-1 text-[11px] text-[#CBD5E1]">
-                          {mission.lander} · {mission.launchVehicle}
-                        </dd>
-                      </div>
-                    </dl>
-
-                    <div className="mt-4 border-t border-[#16283C] pt-3">
-                      <p className="text-[9px] font-mono uppercase tracking-wide text-[#64748B]">
-                        Payloads · {mission.payloads.length}
-                      </p>
-                      <div className="mt-2 flex flex-wrap gap-1.5">
-                        {mission.payloads.slice(0, 4).map((payload) => (
-                          <span
-                            key={payload.name}
-                            title={`${payload.fullName}: ${payload.purpose}`}
-                            className="rounded-md border border-[#16283C] bg-[#060B13] px-2 py-1 text-[9px] font-mono text-[#A5B4C7]"
-                          >
-                            {payload.name}
-                          </span>
-                        ))}
-                        {mission.payloads.length > 4 && (
-                          <span className="rounded-md border border-[#16283C] bg-[#060B13] px-2 py-1 text-[9px] font-mono text-[#64748B]">
-                            +{mission.payloads.length - 4} more
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="mt-auto flex items-center justify-between gap-3 pt-5">
-                      <a
-                        href={mission.sourceUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={(event) => event.stopPropagation()}
-                        className="inline-flex items-center gap-1 text-[10px] font-mono text-[#94A3B8] transition-colors hover:text-[#00D2C4]"
-                      >
-                        NASA source <ExternalLink className="h-3 w-3" />
-                      </a>
-                      <button
-                        type="button"
-                        onClick={() => setActiveMission(mission)}
-                        className="text-[10px] font-mono font-semibold uppercase tracking-wide text-[#00D2C4] hover:text-[#34D399]"
-                      >
-                        Full details
-                      </button>
-                    </div>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
+        <div className="mx-auto w-full max-w-[1280px] px-5 py-9 sm:px-8 sm:py-12 lg:px-12">
+          <section className="relative overflow-hidden rounded-3xl border border-[#294056] bg-[#0A1220] px-6 py-9 sm:px-10 sm:py-12">
+            <div className="absolute -right-20 -top-24 h-64 w-64 rounded-full border border-sky-300/15" /><div className="absolute -right-8 -top-12 h-40 w-40 rounded-full border border-[#00D2C4]/10" />
+            <div className="relative max-w-3xl">
+              <span className="text-xs font-mono font-semibold uppercase tracking-[0.24em] text-[#00D2C4]">Mission catalog</span>
+              <h1 className="mt-3 text-4xl font-semibold tracking-tight text-sky-300 sm:text-6xl">Lunar missions</h1>
+              <p className="mt-4 max-w-2xl text-sm leading-relaxed text-[#A5B4C7] sm:text-base">A living timeline of NASA CLPS expeditions. Choose any mission to move directly to its landing region in the lunar explorer.</p>
+              <div className="mt-6 flex flex-wrap gap-3 text-[10px] font-mono uppercase tracking-wide sm:text-xs"><span className="rounded-full border border-sky-400/30 bg-sky-400/10 px-3 py-1.5 text-sky-200">{catalogMissions.length} missions cataloged</span><span className="rounded-full border border-emerald-400/25 bg-emerald-400/10 px-3 py-1.5 text-emerald-200">{completedCount} successful landings</span></div>
+            </div>
+          </section>
+          <div className="mt-9 flex items-center justify-center gap-2 text-center text-[10px] font-mono uppercase tracking-[0.18em] text-[#64748B]"><Telescope className="h-3.5 w-3.5 text-[#00D2C4]" /> Select a mission to explore its site</div>
+          <ol className="relative mx-auto mt-7 max-w-6xl space-y-5 before:absolute before:bottom-0 before:left-1/2 before:top-0 before:w-px before:-translate-x-1/2 before:bg-gradient-to-b before:from-sky-400/20 before:via-sky-400 before:to-[#00D2C4]/20">
+            {catalogMissions.map((mission, index) => <MissionEntry key={mission.id} mission={mission} index={index} onLaunchExplorer={onLaunchExplorer} />)}
+          </ol>
+          <div className="mx-auto mt-8 flex max-w-2xl items-center justify-center gap-2 rounded-xl border border-[#1B3047] bg-[#08111E] px-4 py-3 text-center text-xs text-[#94A3B8]"><Rocket className="h-4 w-4 shrink-0 text-sky-300" />Every timeline card opens its mission pin, terrain, and analysis tools in the explorer.</div>
         </div>
       </main>
-
-      <CompactClpsModal
-        isOpen={Boolean(activeMission)}
-        mission={activeMission}
-        onClose={() => setActiveMission(null)}
-        onFlyTo={(mission) => {
-          setActiveMission(null);
-          onLaunchExplorer({ selectedMission: mission, missionId: mission.id });
-        }}
-      />
     </div>
   );
 }
