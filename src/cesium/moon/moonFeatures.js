@@ -120,6 +120,8 @@ export function createMoonFeatures({ viewer, container, callbacks, isMobile, fly
         if (selectedEntity.label) {
           selectedEntity.label.distanceDisplayCondition = new Cesium.DistanceDisplayCondition(0.0, prevMaxDist);
           selectedEntity.label.fillColor = Cesium.Color.fromCssColorString('#f8fafc');
+          selectedEntity.label.outlineColor = Cesium.Color.fromCssColorString('#000000');
+          selectedEntity.label.outlineWidth = 2;
         }
       } catch {}
       selectedEntity = null;
@@ -146,9 +148,12 @@ export function createMoonFeatures({ viewer, container, callbacks, isMobile, fly
             new Cesium.DistanceDisplayCondition(0.0, 1.0e9);
         }
         if (target.label) {
-          // Force selected label visible across orbital zooms
+          // Force selected label visible across orbital zooms with high-contrast amber/gold
           target.label.distanceDisplayCondition = new Cesium.DistanceDisplayCondition(0.0, 5.0e7);
-          target.label.fillColor = Cesium.Color.fromCssColorString('#00D2C4');
+          target.label.fillColor = Cesium.Color.fromCssColorString('#FFB020');
+          target.label.outlineColor = Cesium.Color.fromCssColorString('#060B13');
+          target.label.outlineWidth = 3;
+          target.label.style = Cesium.LabelStyle.FILL_AND_OUTLINE;
         }
       } catch {}
     }
@@ -281,8 +286,8 @@ export function createMoonFeatures({ viewer, container, callbacks, isMobile, fly
         text: `${pinTitle}\n${latStr}, ${lonStr}`,
         font: 'bold 12px "Space Mono", monospace',
         style: Cesium.LabelStyle.FILL_AND_OUTLINE,
-        fillColor: Cesium.Color.fromCssColorString('#ffe4e6'),
-        outlineColor: Cesium.Color.fromCssColorString('#881337'),
+        fillColor: Cesium.Color.fromCssColorString('#FDE68A'),
+        outlineColor: Cesium.Color.fromCssColorString('#451A03'),
         outlineWidth: 2,
         showBackground: true,
         backgroundColor: Cesium.Color.fromCssColorString('rgba(15, 23, 42, 0.94)'),
@@ -408,13 +413,8 @@ export function createMoonFeatures({ viewer, container, callbacks, isMobile, fly
       const feature = pickedObject.id.properties.feature.getValue();
       selectFeaturePin(feature.id);
       callbacks.onFeatureSelect?.(feature);
-      const targetHeight =
-        feature.type === 'mare'
-          ? 2600000
-          : feature.type === 'crater' && feature.diameterKm < 50
-          ? 600000
-          : 1200000;
-      flyToCoordinate(feature.longitude, feature.latitude, targetHeight);
+      // Center the site directly under the camera without changing zoom / altitude
+      flyToCoordinate(feature.longitude, feature.latitude);
       return;
     }
 

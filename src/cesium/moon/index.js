@@ -55,45 +55,46 @@ function getLunarMarkerDataUrl(category = 'crater_minor', isSelected = false) {
   ctx.clearRect(0, 0, width, height);
 
   // Configuration per marker type - NASA Greenish-Blue / Cyan-Teal palette
-  let primaryColor = '#00D2C4'; // Vibrant greenish-blue
-  let glowColor = 'rgba(0, 210, 196, 0.5)';
+  // Selected markers use high-contrast warm solar amber (#FF9E00) to contrast with cool cyan and grey regolith
+  let primaryColor = isSelected ? '#FF9E00' : '#00D2C4';
+  let glowColor = isSelected ? 'rgba(255, 158, 0, 0.95)' : 'rgba(0, 210, 196, 0.5)';
 
   switch (category) {
     case 'south_pole':
-      primaryColor = isSelected ? '#FFFFFF' : '#00D2C4';
-      glowColor = 'rgba(0, 210, 196, 0.85)';
+      primaryColor = isSelected ? '#FF9E00' : '#00D2C4';
+      glowColor = isSelected ? 'rgba(255, 158, 0, 0.95)' : 'rgba(0, 210, 196, 0.85)';
       break;
     case 'landing_apollo':
-      primaryColor = isSelected ? '#FFFFFF' : '#00E5FF';
-      glowColor = 'rgba(0, 229, 255, 0.75)';
+      primaryColor = isSelected ? '#FF9E00' : '#00E5FF';
+      glowColor = isSelected ? 'rgba(255, 158, 0, 0.95)' : 'rgba(0, 229, 255, 0.75)';
       break;
     case 'landing_robotic':
-      primaryColor = isSelected ? '#FFFFFF' : '#14B8A6';
-      glowColor = 'rgba(20, 184, 166, 0.7)';
+      primaryColor = isSelected ? '#FF9E00' : '#14B8A6';
+      glowColor = isSelected ? 'rgba(255, 158, 0, 0.95)' : 'rgba(20, 184, 166, 0.7)';
       break;
     case 'crater_major':
-      primaryColor = isSelected ? '#FFFFFF' : '#06B6D4';
-      glowColor = 'rgba(6, 182, 212, 0.65)';
+      primaryColor = isSelected ? '#FF9E00' : '#06B6D4';
+      glowColor = isSelected ? 'rgba(255, 158, 0, 0.95)' : 'rgba(6, 182, 212, 0.65)';
       break;
     case 'crater_minor':
-      primaryColor = isSelected ? '#FFFFFF' : '#0284C7';
-      glowColor = 'rgba(2, 132, 199, 0.55)';
+      primaryColor = isSelected ? '#FF9E00' : '#0284C7';
+      glowColor = isSelected ? 'rgba(255, 158, 0, 0.95)' : 'rgba(2, 132, 199, 0.55)';
       break;
     case 'mountain':
-      primaryColor = isSelected ? '#FFFFFF' : '#38BDF8';
-      glowColor = 'rgba(56, 189, 248, 0.65)';
+      primaryColor = isSelected ? '#FF9E00' : '#38BDF8';
+      glowColor = isSelected ? 'rgba(255, 158, 0, 0.95)' : 'rgba(56, 189, 248, 0.65)';
       break;
     case 'mare':
-      primaryColor = isSelected ? '#FFFFFF' : '#0D9488';
-      glowColor = 'rgba(13, 148, 136, 0.6)';
+      primaryColor = isSelected ? '#FF9E00' : '#0D9488';
+      glowColor = isSelected ? 'rgba(255, 158, 0, 0.95)' : 'rgba(13, 148, 136, 0.6)';
       break;
     case 'valley':
-      primaryColor = isSelected ? '#FFFFFF' : '#22D3EE';
-      glowColor = 'rgba(34, 211, 238, 0.6)';
+      primaryColor = isSelected ? '#FF9E00' : '#22D3EE';
+      glowColor = isSelected ? 'rgba(255, 158, 0, 0.95)' : 'rgba(34, 211, 238, 0.6)';
       break;
     case 'custom_pin':
-      primaryColor = isSelected ? '#FFFFFF' : '#00D2C4';
-      glowColor = 'rgba(0, 210, 196, 0.85)';
+      primaryColor = isSelected ? '#FF9E00' : '#00D2C4';
+      glowColor = isSelected ? 'rgba(255, 158, 0, 0.95)' : 'rgba(0, 210, 196, 0.85)';
       break;
   }
 
@@ -434,11 +435,16 @@ export function createMoon(container, callbacks = {}) {
 
 
   /**
-   * Smoothly animates the camera to a given selenographic coordinate.
+   * Smoothly animates the camera to a given selenographic coordinate,
+   * centering on the site while strictly maintaining the current camera altitude/zoom.
    */
-  const flyToCoordinate = (lon, lat, height = 1400000, duration = 1.6) => {
+  const flyToCoordinate = (lon, lat, height = null, duration = 1.2) => {
+    const currentHeight =
+      viewer.camera.positionCartographic?.height || 1400000;
+    const targetHeight =
+      typeof height === 'number' && height > 100 ? height : currentHeight;
     viewer.camera.flyTo({
-      destination: Cesium.Cartesian3.fromDegrees(lon, lat, height, Cesium.Ellipsoid.MOON),
+      destination: Cesium.Cartesian3.fromDegrees(lon, lat, targetHeight, Cesium.Ellipsoid.MOON),
       duration,
       easingFunction: Cesium.EasingFunction.QUADRATIC_OUT,
     });

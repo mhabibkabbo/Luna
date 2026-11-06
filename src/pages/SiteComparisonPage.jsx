@@ -294,11 +294,7 @@ export default function SiteComparisonPage({
   };
 
   const handleRemoveLocation = (id) => {
-    if (selectedLocations.length <= 2) {
-      notifyWarn('Minimum 2 Locations Required', 'At least 2 locations must remain selected for comparison.');
-      return;
-    }
-    setSelectedLocations((prev) => prev.filter((l) => l.id !== id));
+    comparisonSelectionStore.removeLocation(id);
   };
 
   const handleReorderLocation = (index, direction) => {
@@ -354,7 +350,7 @@ export default function SiteComparisonPage({
     setSortConfig({ paramId: null, direction: 'desc' });
     setActiveCategoryFilter('All');
     setHiddenParamIds(new Set());
-    notifyInfo('Comparison Reset', 'Restored default 2-site 14-day comparison configuration.');
+    notifyInfo('Comparison Cleared', 'All locations cleared from comparison.');
   };
 
   // ── Visible Columns & Row Sorting ─────────────────────────────────────────
@@ -653,13 +649,14 @@ export default function SiteComparisonPage({
               <span>Manual Coordinates</span>
             </button>
 
-            {selectedLocations.length > 2 && (
+            {selectedLocations.length > 0 && (
               <button
                 type="button"
-                onClick={() => setSelectedLocations((prev) => prev.slice(0, 2))}
+                onClick={() => comparisonSelectionStore.resetLocations()}
                 className="px-2.5 py-1.5 rounded-lg bg-[#060B13] hover:bg-rose-950/40 border border-[#1B2C42] hover:border-rose-800/50 text-xs text-slate-400 hover:text-rose-300 transition-colors"
+                title="Clear all selected locations"
               >
-                Keep First 2
+                Clear All
               </button>
             )}
           </div>
@@ -778,7 +775,20 @@ export default function SiteComparisonPage({
       {/* 3. COMPACT SELECTED LOCATIONS BAR (Section 1A/C & Section 9C)       */}
       {/* =================================================================== */}
       <section aria-label="Selected Locations" className="space-y-2">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+        {selectedLocations.length === 0 ? (
+          <div className="p-6 rounded-xl bg-[#0A111D] border border-dashed border-[#17263B] text-center space-y-2">
+            <div className="w-10 h-10 rounded-xl bg-[#00D2C4]/10 border border-[#00D2C4]/30 flex items-center justify-center text-[#00D2C4] mx-auto">
+              <GitCompare className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-white">No Locations Selected for Comparison</h3>
+              <p className="text-xs text-slate-400 mt-1 max-w-md mx-auto">
+                Select landing sites or drop pins on the 3D Moon globe and click &quot;Compare Site&quot;, or choose from predefined sites above.
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
           {evaluations.map((ev, idx) => {
             const loc = selectedLocations[idx];
             const palette = COMPARISON_SITE_PALETTE[idx % COMPARISON_SITE_PALETTE.length];
@@ -903,15 +913,10 @@ export default function SiteComparisonPage({
                         </button>
                         <button
                           type="button"
-                          disabled={selectedLocations.length <= 2}
                           onClick={() => handleRemoveLocation(loc.id)}
-                          title={
-                            selectedLocations.length <= 2
-                              ? 'Minimum 2 locations required'
-                              : 'Remove location'
-                          }
+                          title={`Remove ${ev.name} from comparison`}
                           aria-label={`Remove ${ev.name}`}
-                          className="p-1 text-slate-400 hover:text-rose-400 disabled:opacity-25 disabled:pointer-events-none"
+                          className="p-1 text-slate-400 hover:text-rose-400 transition-colors"
                         >
                           <Trash2 className="w-3 h-3" />
                         </button>
@@ -943,6 +948,7 @@ export default function SiteComparisonPage({
             );
           })}
         </div>
+        )}
       </section>
 
       {/* =================================================================== */}
@@ -1266,101 +1272,112 @@ export default function SiteComparisonPage({
             </thead>
 
             <tbody className="divide-y divide-[#142033]">
-              {sortedEvaluationsWithIndex.map(({ ev, originalIndex, palette }, rowIdx) => {
-                const rowBg = rowIdx % 2 === 0 ? 'bg-[#0A111D]' : 'bg-[#0C1524]';
-
-                return (
-                  <tr
-                    key={ev.id}
-                    className={`${rowBg} hover:bg-[#111E33] transition-colors`}
+              {sortedEvaluationsWithIndex.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={visibleColumns.length + 1}
+                    className="py-12 text-center text-slate-400 font-mono text-xs"
                   >
-                    {/* Sticky First Column: Landing Site Name & Identifier */}
-                    <th
-                      scope="row"
-                      className={`sticky left-0 z-10 ${rowBg} py-3 px-4 border-r border-[#1B2C42] font-sans align-top`}
+                    No lunar locations selected. Select sites on the 3D map or add predefined sites above to compare.
+                  </td>
+                </tr>
+              ) : (
+                sortedEvaluationsWithIndex.map(({ ev, originalIndex, palette }, rowIdx) => {
+                  const rowBg = rowIdx % 2 === 0 ? 'bg-[#0A111D]' : 'bg-[#0C1524]';
+
+                  return (
+                    <tr
+                      key={ev.id}
+                      className={`${rowBg} hover:bg-[#111E33] transition-colors`}
                     >
-                      <div className="flex items-start gap-2.5">
-                        <span
-                          className="w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-mono font-bold text-[#060B13] shrink-0 mt-0.5"
-                          style={{ backgroundColor: palette.hex }}
-                        >
-                          {originalIndex + 1}
-                        </span>
-                        <div className="min-w-0">
-                          <div className="text-xs font-semibold text-white leading-snug break-words">
-                            {ev.name}
-                          </div>
-                          <div className="text-[10.5px] font-mono text-slate-400 mt-0.5">
-                            {ev.completenessStatus}
+                      {/* Sticky First Column: Landing Site Name & Identifier */}
+                      <th
+                        scope="row"
+                        className={`sticky left-0 z-10 ${rowBg} py-3 px-4 border-r border-[#1B2C42] font-sans align-top`}
+                      >
+                        <div className="flex items-start gap-2.5">
+                          <span
+                            className="w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-mono font-bold text-[#060B13] shrink-0 mt-0.5"
+                            style={{ backgroundColor: palette.hex }}
+                          >
+                            {originalIndex + 1}
+                          </span>
+                          <div className="min-w-0">
+                            <div className="text-xs font-semibold text-white leading-snug break-words">
+                              {ev.name}
+                            </div>
+                            <div className="text-[10.5px] font-mono text-slate-400 mt-0.5">
+                              {ev.completenessStatus}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </th>
+                      </th>
 
-                    {/* Parameter Cells */}
-                    {visibleColumns.map((col) => {
-                      const cell = getMatrixCellDisplay(ev, col.id);
-                      const extrema = columnExtrema[col.id];
-                      const isBest =
-                        highlightExtrema &&
-                        extrema &&
-                        !cell.isUnavailable &&
-                        cell.numericValue === extrema.bestVal;
-                      const isWorst =
-                        highlightExtrema &&
-                        extrema &&
-                        !cell.isUnavailable &&
-                        cell.numericValue === extrema.worstVal;
+                      {/* Parameter Cells */}
+                      {visibleColumns.map((col) => {
+                        const cell = getMatrixCellDisplay(ev, col.id);
+                        const extrema = columnExtrema[col.id];
+                        const isBest =
+                          highlightExtrema &&
+                          extrema &&
+                          !cell.isUnavailable &&
+                          cell.numericValue === extrema.bestVal;
+                        const isWorst =
+                          highlightExtrema &&
+                          extrema &&
+                          !cell.isUnavailable &&
+                          cell.numericValue === extrema.worstVal;
 
-                      let textColorClass = 'text-slate-100';
-                      if (cell.isUnavailable) {
-                        textColorClass = 'text-slate-500 italic';
-                      } else if (cell.status === 'favorable') {
-                        textColorClass = 'text-emerald-300';
-                      } else if (cell.status === 'conditional') {
-                        textColorClass = 'text-amber-300';
-                      } else if (cell.status === 'unfavorable') {
-                        textColorClass = 'text-rose-300';
-                      }
+                        let textColorClass = 'text-slate-100';
+                        if (cell.isUnavailable) {
+                          textColorClass = 'text-slate-500 italic';
+                        } else if (cell.status === 'favorable') {
+                          textColorClass = 'text-emerald-300';
+                        } else if (cell.status === 'conditional') {
+                          textColorClass = 'text-amber-300';
+                        } else if (cell.status === 'unfavorable') {
+                          textColorClass = 'text-rose-300';
+                        }
 
-                      return (
-                        <td
-                          key={col.id}
-                          className={`py-3 px-3.5 border-r border-[#142033] last:border-r-0 align-top tabular-nums ${
-                            isBest
-                              ? 'bg-emerald-950/20'
-                              : isWorst
-                              ? 'bg-rose-950/15'
-                              : ''
-                          }`}
-                        >
-                          <div className="flex items-center justify-between gap-1.5">
-                            <span className={`font-semibold ${textColorClass}`}>
-                              {cell.text}
-                            </span>
-                            {/* Non-color-only explicit status tags */}
-                            {isBest && (
-                              <span className="text-[9.5px] font-mono font-bold text-emerald-400 shrink-0">
-                                [BEST]
+                        return (
+                          <td
+                            key={col.id}
+                            className={`py-3 px-3.5 border-r border-[#142033] last:border-r-0 align-top tabular-nums ${
+                              isBest
+                                ? 'bg-emerald-950/20'
+                                : isWorst
+                                ? 'bg-rose-950/15'
+                                : ''
+                            }`}
+                          >
+                            <div className="flex items-center justify-between gap-1.5">
+                              <span className={`font-semibold ${textColorClass}`}>
+                                {cell.text}
                               </span>
-                            )}
-                            {isWorst && !isBest && (
-                              <span className="text-[9.5px] font-mono text-rose-400 shrink-0">
-                                [LOW]
-                              </span>
-                            )}
-                          </div>
-                          {cell.subtext && (
-                            <div className="text-[10.5px] text-slate-400 mt-0.5 leading-tight">
-                              {cell.subtext}
+                              {/* Non-color-only explicit status tags */}
+                              {isBest && (
+                                <span className="text-[9.5px] font-mono font-bold text-emerald-400 shrink-0">
+                                  [BEST]
+                                </span>
+                              )}
+                              {isWorst && !isBest && (
+                                <span className="text-[9.5px] font-mono text-rose-400 shrink-0">
+                                  [LOW]
+                                </span>
+                              )}
                             </div>
-                          )}
-                        </td>
-                      );
-                    })}
-                  </tr>
-                );
-              })}
+                            {cell.subtext && (
+                              <div className="text-[10.5px] text-slate-400 mt-0.5 leading-tight">
+                                {cell.subtext}
+                              </div>
+                            )}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>

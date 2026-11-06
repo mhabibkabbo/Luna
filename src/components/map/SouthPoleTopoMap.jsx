@@ -861,7 +861,7 @@ const SouthPoleTopoMap = forwardRef(function SouthPoleTopoMap(
       ctx.save();
       ctx.beginPath();
       ctx.arc(pt.x, pt.y, dotR, 0, Math.PI * 2);
-      ctx.fillStyle = isSelected || isHovered ? '#EF4444' : '#00E5FF';
+      ctx.fillStyle = isSelected ? '#FF9E00' : isHovered ? '#EF4444' : '#00E5FF';
       ctx.fill();
       ctx.strokeStyle = '#FFFFFF';
       ctx.lineWidth = 1.5;
@@ -931,7 +931,7 @@ const SouthPoleTopoMap = forwardRef(function SouthPoleTopoMap(
         ctx.strokeStyle = 'rgba(7, 10, 16, 0.92)';
         ctx.lineWidth = 3;
         ctx.strokeText(fullText, pos.x, pos.y);
-        ctx.fillStyle = isSelected || isHovered ? '#FCA5A5' : '#FFFFFF';
+        ctx.fillStyle = isSelected ? '#FDE68A' : isHovered ? '#FCA5A5' : '#FFFFFF';
         ctx.fillText(fullText, pos.x, pos.y);
         ctx.restore();
       }
@@ -943,7 +943,7 @@ const SouthPoleTopoMap = forwardRef(function SouthPoleTopoMap(
       ctx.save();
       ctx.beginPath();
       ctx.arc(pt.x, pt.y, 5, 0, Math.PI * 2);
-      ctx.fillStyle = '#EF4444';
+      ctx.fillStyle = '#FF9E00';
       ctx.fill();
       ctx.strokeStyle = '#FFFFFF';
       ctx.lineWidth = 2;
@@ -951,7 +951,7 @@ const SouthPoleTopoMap = forwardRef(function SouthPoleTopoMap(
 
       ctx.beginPath();
       ctx.arc(pt.x, pt.y, 11, 0, Math.PI * 2);
-      ctx.strokeStyle = '#EF4444';
+      ctx.strokeStyle = '#FF9E00';
       ctx.lineWidth = 1.2;
       ctx.stroke();
       ctx.restore();
@@ -1249,6 +1249,7 @@ const SouthPoleTopoMap = forwardRef(function SouthPoleTopoMap(
           name: hit.name,
           isOutOfDemBounds: false,
         });
+        leafletMapRef.current?.panTo([hit.latitude, hit.longitude], { animate: true });
         if (onFeatureSelect) onFeatureSelect(hit);
         return;
       }
@@ -1408,20 +1409,22 @@ const SouthPoleTopoMap = forwardRef(function SouthPoleTopoMap(
       setTimeout(() => drawOverlayCanvas(), 10);
     },
     flyTo: (lon, lat, targetZoom) => {
+      const curZoom = leafletMapRef.current?.getZoom() ?? 3;
       if (typeof lat === 'number' && lat > -79.9) {
         onOutOfDemBounds?.(lat, lon);
-        safeSetView([lat, lon ?? 0], 2, true);
+        safeSetView([lat, lon ?? 0], typeof targetZoom === 'number' ? targetZoom : curZoom, true);
         return;
       }
       const z =
         typeof targetZoom === 'number'
           ? Math.max(1, Math.min(5, Math.round(targetZoom - 2)))
-          : 3;
+          : curZoom;
       safeSetView([lat ?? -90, lon ?? 0], z, true);
     },
     selectFeature: (featureOrId) => {
       const featId = typeof featureOrId === 'string' ? featureOrId : featureOrId?.id;
       const lm = SOUTH_POLE_LANDMARKS.find((l) => l.id === featId);
+      const curZoom = leafletMapRef.current?.getZoom() ?? 3;
       if (lm) {
         setSelectedLocation({
           lat: lm.latitude,
@@ -1431,7 +1434,7 @@ const SouthPoleTopoMap = forwardRef(function SouthPoleTopoMap(
           name: lm.name,
           isOutOfDemBounds: false,
         });
-        safeSetView([lm.latitude, lm.longitude], 3, true);
+        safeSetView([lm.latitude, lm.longitude], curZoom, true);
       } else if (
         typeof featureOrId === 'object' &&
         typeof featureOrId?.latitude === 'number'
@@ -1448,7 +1451,7 @@ const SouthPoleTopoMap = forwardRef(function SouthPoleTopoMap(
           isOutOfDemBounds: isOutOf,
         });
         if (isOutOf) onOutOfDemBounds?.(lat, lon);
-        safeSetView([lat, lon], 3, true);
+        safeSetView([lat, lon], curZoom, true);
       }
     },
     setLayerVisibility: (layerId, visible) => {

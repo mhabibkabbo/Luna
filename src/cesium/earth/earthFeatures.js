@@ -44,10 +44,10 @@ function createSitePinImage(type, selected) {
     throw new Error('Unable to create the Earth communication-site marker canvas.');
   }
 
-  const color = selected ? '#FFFFFF' : SITE_MARKER_COLORS[type] || '#00D2C4';
+  const color = selected ? '#FF9E00' : SITE_MARKER_COLORS[type] || '#00D2C4';
   context.clearRect(0, 0, canvas.width, canvas.height);
   context.save();
-  context.shadowColor = color;
+  context.shadowColor = selected ? 'rgba(255, 158, 0, 0.95)' : color;
   context.shadowBlur = selected ? 24 : 14;
 
   context.beginPath();
@@ -123,10 +123,10 @@ function createPinImage(selected) {
   }
 
   const cx = canvas.width / 2;
-  const primaryColor = selected ? '#FFFFFF' : '#00D2C4';
+  const primaryColor = selected ? '#FF9E00' : '#00D2C4';
 
   context.save();
-  context.shadowColor = 'rgba(0, 210, 196, 0.75)';
+  context.shadowColor = selected ? 'rgba(255, 158, 0, 0.95)' : 'rgba(0, 210, 196, 0.75)';
   context.shadowBlur = selected ? 20 : 12;
 
   context.beginPath();
@@ -205,7 +205,7 @@ export function createEarthFeatures({ viewer, container, callbacks }) {
         entity.label.distanceDisplayCondition = new Cesium.DistanceDisplayCondition(0, EARTH_PIN_STYLE.farDistance);
       }
       entity.label.fillColor = selected
-        ? Cesium.Color.fromCssColorString('#00D2C4')
+        ? Cesium.Color.fromCssColorString('#FFB020')
         : Cesium.Color.fromCssColorString('#FFFFFF');
     }
   };
@@ -577,15 +577,16 @@ export function createEarthFeatures({ viewer, container, callbacks }) {
     if (feature) {
       selectFeaturePin(feature.id);
       callbacks.onFeatureSelect?.(feature);
-      const targetHeight = Math.max(
-        3_500_000,
-        scene.screenSpaceCameraController.minimumZoomDistance
-      );
+      const currentHeight =
+        viewer.camera.positionCartographic?.height || 4_500_000;
       viewer.camera.flyTo({
         destination: Cesium.Cartesian3.fromDegrees(
           feature.longitude,
           feature.latitude,
-          targetHeight,
+          Math.max(
+            currentHeight,
+            scene.screenSpaceCameraController.minimumZoomDistance
+          ),
           Cesium.Ellipsoid.WGS84
         ),
         duration: 0.9,

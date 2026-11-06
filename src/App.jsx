@@ -737,15 +737,15 @@ export default function App() {
       if (viewMode === '3d') {
         globeRef.current?.switchPlanet?.(body);
         globeRef.current?.dropCustomPin?.(lon, lat, feature.name, body);
-        globeRef.current?.flyTo?.(lon, lat, 5.0);
+        globeRef.current?.flyTo?.(lon, lat);
       } else {
-        getActiveController()?.flyTo(lon, lat, 5.0);
+        getActiveController()?.flyTo(lon, lat);
       }
       return;
     }
 
     if (viewMode === 'sp-2d') {
-      southPoleMapRef.current?.flyTo(feature.longitude, feature.latitude, 5.2);
+      southPoleMapRef.current?.flyTo(feature.longitude, feature.latitude);
       southPoleMapRef.current?.selectFeature(feature.id);
       setFeatureSelection(feature, body);
       return;
@@ -754,15 +754,15 @@ export default function App() {
     if (viewMode === '3d') {
       globeRef.current?.switchPlanet?.(body);
       globeRef.current?.selectFeaturePin?.(feature.id, body);
-      globeRef.current?.flyTo?.(feature.longitude, feature.latitude, 5.0);
+      globeRef.current?.flyTo?.(feature.longitude, feature.latitude);
     } else {
       getActiveController()?.selectFeature(feature.id, true);
     }
     setFeatureSelection(feature, body);
   };
 
-  // Quick Expedition Selection (Moon)
-  const handleSelectExpedition = (feature, lon, lat, zoom = 5.0) => {
+  // Quick Expedition Selection (Moon) - centers camera without altering zoom
+  const handleSelectExpedition = (feature, lon, lat) => {
     if (viewMode === '3d' && activePlanet !== 'moon') {
       handlePlanetChange('moon');
     }
@@ -771,10 +771,10 @@ export default function App() {
       globeRef.current?.switchPlanet?.('moon');
       globeRef.current?.selectFeaturePin?.(feature.id, 'moon');
     }
-    getActiveController()?.flyTo(lon, lat, zoom);
+    getActiveController()?.flyTo(lon, lat);
   };
 
-  // Quick Earth DSN Station Selection
+  // Quick Earth DSN Station Selection - centers camera without altering zoom
   const handleSelectEarthSite = (station) => {
     if (viewMode !== '3d') {
       setViewMode('3d');
@@ -787,7 +787,7 @@ export default function App() {
     setTimeout(() => {
       globeRef.current?.switchPlanet?.('earth');
       globeRef.current?.selectFeaturePin?.(station.id, 'earth');
-      globeRef.current?.flyTo?.(station.longitude, station.latitude, 1_500_000);
+      globeRef.current?.flyTo?.(station.longitude, station.latitude);
     }, 120);
   };
 
@@ -861,11 +861,11 @@ export default function App() {
         globeRef.current?.switchPlanet?.('moon');
         globeRef.current?.dropCustomPin?.(lon, lat, mission.name, 'moon');
       }
-      getActiveController()?.flyTo(lon, lat, zoom);
+      getActiveController()?.flyTo(lon, lat);
       return;
     }
 
-    handleSelectExpedition(mission, lon, lat, zoom);
+    handleSelectExpedition(mission, lon, lat);
   };
 
   // Layer toggle handler
@@ -949,14 +949,9 @@ export default function App() {
     mapRef.current?.clearMeasurement?.();
   };
 
-  // Fly to feature from panel
+  // Fly to feature from panel - center view without changing zoom
   const handleZoomHere = (lon, lat) => {
-    if (viewMode === '3d' && activePlanet === 'earth') {
-      getActiveController()?.flyTo(lon, lat, 500_000);
-      return;
-    }
-    const zoom = selectedFeature?.type === 'mare' ? 2.5 : 5.0;
-    getActiveController()?.flyTo(lon, lat, zoom);
+    getActiveController()?.flyTo(lon, lat);
   };
 
   const handleSelectOtherBody = (body) => {
@@ -1191,8 +1186,7 @@ export default function App() {
                       setTimeout(() => {
                         getActiveController()?.flyTo(
                           site.longitude ?? site.lon,
-                          site.latitude ?? site.lat,
-                          4.5
+                          site.latitude ?? site.lat
                         );
                       }, 150);
                     }}
@@ -1216,8 +1210,7 @@ export default function App() {
                       setTimeout(() => {
                         getActiveController()?.flyTo(
                           site.longitude ?? site.lon,
-                          site.latitude ?? site.lat,
-                          4.5
+                          site.latitude ?? site.lat
                         );
                       }, 150);
                     }}
@@ -1399,7 +1392,7 @@ export default function App() {
           selectedEarthFeature={selectedEarthFeature}
           onSelectEarthSite={handleSelectEarthSite}
           onFlyToMoonSite={(lon, lat) => {
-            getActiveController()?.flyTo(lon, lat, 4.5);
+            getActiveController()?.flyTo(lon, lat);
           }}
         />
 
@@ -1438,7 +1431,7 @@ export default function App() {
           onSelectSiteAndDate={(site, targetMs) => {
             handleFeatureSelect(site);
             if (viewMode !== '2d' && viewMode !== 'sp-2d') {
-              getActiveController()?.flyTo(site.longitude, site.latitude, 4.5);
+              getActiveController()?.flyTo(site.longitude, site.latitude);
             }
           }}
         />
@@ -1452,14 +1445,14 @@ export default function App() {
           onNavigateToEarthPad={(site) => {
             if (viewMode !== '3d') setViewMode('3d');
             if (activePlanet !== 'earth') handlePlanetChange('earth');
-            getActiveController()?.flyTo(site.longitude, site.latitude, 1_500_000);
+            getActiveController()?.flyTo(site.longitude, site.latitude);
             notifyNavigation?.(site.name, 'Navigated to Earth departure launch facility.');
           }}
           onNavigateToMoonTarget={(site) => {
             if (viewMode !== '3d') setViewMode('3d');
             if (activePlanet !== 'moon') handlePlanetChange('moon');
             handleFeatureSelect(site);
-            getActiveController()?.flyTo(site.longitude, site.latitude, 4.5);
+            getActiveController()?.flyTo(site.longitude, site.latitude);
             notifyNavigation?.(site.name, 'Navigated to Lunar target landing site.');
           }}
         />

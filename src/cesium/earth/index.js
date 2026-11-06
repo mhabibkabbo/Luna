@@ -461,12 +461,16 @@ export function createEarth(container, callbacks = {}) {
     });
   }
 
-  function flyTo(longitude, latitude, height = 4_500_000) {
+  function flyTo(longitude, latitude, height = null) {
+    const currentHeight =
+      viewer.camera.positionCartographic?.height || 4_500_000;
+    const targetHeight =
+      typeof height === 'number' && height > 100 ? height : currentHeight;
     viewer.camera.flyTo({
       destination: Cesium.Cartesian3.fromDegrees(
         longitude,
         latitude,
-        Math.max(height, EARTH_CAMERA_SETTINGS.minimumZoomDistance),
+        Math.max(targetHeight, EARTH_CAMERA_SETTINGS.minimumZoomDistance),
         Cesium.Ellipsoid.WGS84
       ),
       duration: 1.1,

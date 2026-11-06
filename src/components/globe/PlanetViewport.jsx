@@ -198,13 +198,11 @@ const PlanetViewport = forwardRef(function PlanetViewport(
     },
 
     flyTo: (lon, lat, heightOrZoom) => {
-      const activeId = planetManagerRef.current?.activeId;
-      const defaultHeight = activeId === 'earth' ? 4_200_000 : 1_400_000;
-      const resolvedHeight =
+      const targetHeight =
         typeof heightOrZoom === 'number' && heightOrZoom > 100
           ? heightOrZoom
-          : defaultHeight;
-      planetManagerRef.current?.active.flyTo(lon, lat, resolvedHeight);
+          : null;
+      planetManagerRef.current?.active.flyTo(lon, lat, targetHeight);
     },
 
     dropCustomPin: (lon, lat, name, planetId = planetManagerRef.current?.activeId) => {
@@ -243,11 +241,7 @@ const PlanetViewport = forwardRef(function PlanetViewport(
         LANDING_SITES.find((s) => s.id === featureId);
 
       if (feat) {
-        moon?.flyTo(
-          feat.longitude,
-          feat.latitude,
-          feat.type === 'mare' ? 2_600_000 : 900_000
-        );
+        moon?.flyTo(feat.longitude, feat.latitude);
       }
     },
 

@@ -24,7 +24,7 @@ const updateCoords = () => {
     const rect = targetElement.getBoundingClientRect();
 
     setCoords({
-      top: rect.top + rect.height / 2 -15,
+      top: rect.top + rect.height / 2,
       left: rect.right + 10,
     });
   };

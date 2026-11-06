@@ -1983,18 +1983,10 @@ export const MAX_COMPARISON_LOCATIONS = 8;
 export const MIN_COMPARISON_LOCATIONS = 2;
 
 /**
- * Returns the default 2 lunar landing sites for initial comparison.
+ * Returns initial comparison locations (starts empty so no sites are unexpectedly preselected).
  */
 export function getDefaultComparisonLocations() {
-  const defaultIds = ['landing-artemis3-malapert', 'clps-im2-athena'];
-  const loc1 =
-    PREDEFINED_COMPARISON_SITES.find((s) => s.id === defaultIds[0]) ||
-    PREDEFINED_COMPARISON_SITES[0];
-  const loc2 =
-    PREDEFINED_COMPARISON_SITES.find((s) => s.id === defaultIds[1]) ||
-    PREDEFINED_COMPARISON_SITES[1] ||
-    PREDEFINED_COMPARISON_SITES[0];
-  return [{ ...loc1 }, { ...loc2 }];
+  return [];
 }
 
 /**
@@ -2262,15 +2254,6 @@ function createComparisonSelectionStore() {
       };
     },
     removeLocation(id) {
-      if (state.locations.length <= MIN_COMPARISON_LOCATIONS) {
-        return {
-          ok: false,
-          reason: 'MIN_LIMIT',
-          count: state.locations.length,
-          min: MIN_COMPARISON_LOCATIONS,
-          message: `At least ${MIN_COMPARISON_LOCATIONS} locations are required for comparison.`,
-        };
-      }
       const nextLocations = state.locations.filter((l) => l.id !== id);
       state = { ...state, locations: nextLocations };
       notify();

@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect, useId } from "react";
 import { Eye, HelpCircle, Compass, AlertTriangle, CheckCircle2 } from "lucide-react";
 import {
   computeCelestialState,
@@ -93,6 +93,8 @@ export default function HorizonViewChart({
   currentSun,
   currentEarth,
 }) {
+  const clipId = useId();
+  const earthGradientId = useId();
   const [demTick, setDemTick] = useState(0);
   const [standThereMode, setStandThereMode] = useState(false);
   const [showExplain, setShowExplain] = useState(false);
@@ -290,11 +292,11 @@ export default function HorizonViewChart({
         aria-label="Terrain horizon with the predicted paths of the Sun and Earth over the next 30 days"
       >
         <defs>
-          <linearGradient id="earth-globe" x1="0" x2="1" y1="0" y2="1">
+          <linearGradient id={earthGradientId} x1="0" x2="1" y1="0" y2="1">
             <stop offset="0%" stopColor="#60a5fa" />
             <stop offset="100%" stopColor="#1d4ed8" />
           </linearGradient>
-          <clipPath id="horizon-plot-clip">
+          <clipPath id={clipId}>
             <rect
               x={PAD_LEFT}
               y={PAD_TOP}
@@ -345,7 +347,7 @@ export default function HorizonViewChart({
           strokeWidth="0.8"
         />
 
-        <g clipPath="url(#horizon-plot-clip)">
+        <g clipPath={`url(#${clipId})`}>
           {sunSegments.map((segment, index) => (
             <path
               key={`sun-path-${index}`}
@@ -454,7 +456,7 @@ export default function HorizonViewChart({
                 opacity="0.8"
               />
               <g transform={`translate(${earthX} ${earthIconY})`}>
-                <circle r={standThereMode ? "9.5" : "8"} fill="url(#earth-globe)" stroke="#dbeafe" strokeWidth="1" />
+                <circle r={standThereMode ? "9.5" : "8"} fill={`url(#${earthGradientId})`} stroke="#dbeafe" strokeWidth="1" />
                 <path
                   d="M-5 -3  -2 -6  1 -5  2 -2  5 -1  4 2  1 3  0 6 -3 4 -4 1 -6 0Z M2 4 5 3 6 5 3 7Z"
                   fill="#34d399"

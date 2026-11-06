@@ -198,7 +198,7 @@ describe('Lunar Landing Site Comparison & Mission Evaluation Engine', () => {
   describe('3D Lunar Map Compare Site Selection Store & 8-Site Limit Enforcement', () => {
     it('adds Custom Dropped Pins from the 3D Lunar Map, prevents duplicates, and blocks exceeding 8 locations', () => {
       comparisonSelectionStore.resetLocations();
-      assert.equal(comparisonSelectionStore.get().locations.length, 2);
+      assert.equal(comparisonSelectionStore.get().locations.length, 0);
 
       // Add a Custom Dropped Pin from the 3D Lunar Map
       const pinResult = comparisonSelectionStore.addLocationFromMap({
@@ -210,7 +210,7 @@ describe('Lunar Landing Site Comparison & Mission Evaluation Engine', () => {
         body: 'moon',
       });
       assert.equal(pinResult.ok, true);
-      assert.equal(pinResult.count, 3);
+      assert.equal(pinResult.count, 1);
       assert.match(pinResult.location.name, /Custom Pin \(1\.77°S, 6\.13°W\)/);
 
       // Duplicate check for the same dropped pin
@@ -224,10 +224,10 @@ describe('Lunar Landing Site Comparison & Mission Evaluation Engine', () => {
       });
       assert.equal(dupResult.ok, false);
       assert.equal(dupResult.reason, 'DUPLICATE');
-      assert.equal(dupResult.count, 3);
+      assert.equal(dupResult.count, 1);
 
-      // Fill up to 8 locations
-      for (let i = 0; i < 5; i++) {
+      // Fill up to 8 locations (1 already added + 7 more = 8 total)
+      for (let i = 0; i < 7; i++) {
         const res = comparisonSelectionStore.addLocationFromMap({
           id: `custom-pin-extra-${i}`,
           name: 'Custom Dropped Pin',
@@ -255,6 +255,7 @@ describe('Lunar Landing Site Comparison & Mission Evaluation Engine', () => {
       assert.match(overLimitResult.message, /Cannot add location: Maximum limit of 8/i);
 
       comparisonSelectionStore.resetLocations();
+      assert.equal(comparisonSelectionStore.get().locations.length, 0);
     });
   });
 });

@@ -16,6 +16,7 @@ import {
   ShieldCheck,
   Satellite,
   Compass,
+  RefreshCw,
 } from 'lucide-react';
 import { EARTH_COMMUNICATION_SITES } from '../../data/earthCommunicationSites.js';
 import { celestialTimeStore } from '../../utils/celestialTime.js';
@@ -53,8 +54,23 @@ export default function DteSignalChart({
   const [isComputing, setIsComputing] = useState(false);
   const [sweepResult, setSweepResult] = useState(null);
   const [isProvenanceOpen, setIsProvenanceOpen] = useState(false);
+  const [containerWidth, setContainerWidth] = useState(0);
 
   const [currentMs, setCurrentMs] = useState(() => celestialTimeStore.get().ms);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const updateWidth = () => {
+      const el = containerRef.current;
+      if (el && el.clientWidth > 0) {
+        setContainerWidth(el.clientWidth);
+      }
+    };
+    updateWidth();
+    const ro = new ResizeObserver(updateWidth);
+    ro.observe(containerRef.current);
+    return () => ro.disconnect();
+  }, []);
 
   useEffect(() => {
     const unsub = celestialTimeStore.subscribe(({ ms }) => {
@@ -136,12 +152,11 @@ export default function DteSignalChart({
   useEffect(() => {
     if (!svgRef.current || !containerRef.current || samples.length === 0) return;
 
-    const container = containerRef.current;
-    const width = container.clientWidth || 600;
+    const width = containerWidth || containerRef.current.clientWidth || 420;
     const height = viewMode === 'timeline' ? 140 : 180;
-    const margin = { top: 18, right: 20, bottom: 28, left: 45 };
-    const innerWidth = width - margin.left - margin.right;
-    const innerHeight = height - margin.top - margin.bottom;
+    const margin = { top: 16, right: 16, bottom: 26, left: 38 };
+    const innerWidth = Math.max(120, width - margin.left - margin.right);
+    const innerHeight = Math.max(60, height - margin.top - margin.bottom);
 
     const svg = d3.select(svgRef.current);
     svg.selectAll('*').remove();
@@ -156,10 +171,11 @@ export default function DteSignalChart({
     const timeExtent = d3.extent(samples, (d) => d.timestamp);
     const xScale = d3.scaleTime().domain(timeExtent).range([0, innerWidth]);
 
-    // X Axis
+    // X Axis with dynamic tick spacing to prevent label collision
+    const tickCount = Math.max(3, Math.min(6, Math.floor(innerWidth / 75)));
     const xAxis = d3
       .axisBottom(xScale)
-      .ticks(Math.max(4, Math.floor(innerWidth / 90)))
+      .ticks(tickCount)
       .tickFormat(d3.utcFormat('%b %d'));
 
     g.append('g')
@@ -339,7 +355,7 @@ export default function DteSignalChart({
         hoverLine.style('opacity', 0);
         setHoverData(null);
       });
-  }, [samples, viewMode, durationDays]);
+  }, [samples, viewMode, durationDays, containerWidth]);
 
   return (
     <div className="space-y-3.5">
@@ -376,8 +392,8 @@ export default function DteSignalChart({
         </div>
 
         {/* Configuration Row: Ground Station, Relay Option, and Visualization View Mode */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 border-t border-slate-800/60 text-xs font-mono">
-          {/* Station Selector */}
+        <div className="space-y-2 pt-1 border-t border-slate-800/60 text-xs font-mono">
+          {/* Target Endpoint (Full width for clear, unclipped station names) */}
           <div>
             <label className="text-[10px] text-slate-400 block mb-1">Target Endpoint</label>
             <select
@@ -394,46 +410,47 @@ export default function DteSignalChart({
             </select>
           </div>
 
-          {/* Relay Model Selector */}
-          <div>
-            <label className="text-[10px] text-slate-400 block mb-1">Orbital Relay Option</label>
-            <select
-              value={relayType}
-              onChange={(e) => setRelayType(e.target.value)}
-              className="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-slate-200 focus:outline-none focus:border-cyan-500"
-            >
-              <option value="none">Direct-to-Earth Only (No Relay)</option>
-              <option value="lro">Simulate NASA LRO Passes (50km Polar)</option>
-              <option value="eml2_halo">Simulate Artemis EML-2 Halo Relay</option>
-            </select>
-          </div>
+          {/* Row 2: Relay Option & Graph Format in 2 balanced columns */}
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="text-[10px] text-slate-400 block mb-1">Orbital Relay</label>
+              <select
+                value={relayType}
+                onChange={(e) => setRelayType(e.target.value)}
+                className="w-full px-2 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-slate-200 focus:outline-none focus:border-cyan-500 truncate"
+              >
+                <option value="none">DTE Only (No Relay)</option>
+                <option value="lro">NASA LRO (50km Polar)</option>
+                <option value="eml2_halo">Artemis EML-2 Halo</option>
+              </select>
+            </div>
 
-          {/* View Mode Toggle */}
-          <div>
-            <label className="text-[10px] text-slate-400 block mb-1">Graph Format</label>
-            <div className="grid grid-cols-2 gap-1">
-              <button
-                type="button"
-                onClick={() => setViewMode('timeline')}
-                className={`py-1.5 px-2 rounded-lg text-center transition-colors ${
-                  viewMode === 'timeline'
-                    ? 'bg-cyan-500/20 text-cyan-300 font-bold border border-cyan-500/40'
-                    : 'bg-slate-900/60 text-slate-400 border border-slate-800 hover:text-white'
-                }`}
-              >
-                Swimlane
-              </button>
-              <button
-                type="button"
-                onClick={() => setViewMode('elevation')}
-                className={`py-1.5 px-2 rounded-lg text-center transition-colors ${
-                  viewMode === 'elevation'
-                    ? 'bg-cyan-500/20 text-cyan-300 font-bold border border-cyan-500/40'
-                    : 'bg-slate-900/60 text-slate-400 border border-slate-800 hover:text-white'
-                }`}
-              >
-                LOS Angles
-              </button>
+            <div>
+              <label className="text-[10px] text-slate-400 block mb-1">Graph Format</label>
+              <div className="grid grid-cols-2 gap-1">
+                <button
+                  type="button"
+                  onClick={() => setViewMode('timeline')}
+                  className={`py-1.5 px-1 rounded-lg text-center text-[10.5px] transition-colors ${
+                    viewMode === 'timeline'
+                      ? 'bg-cyan-500/20 text-cyan-300 font-bold border border-cyan-500/40'
+                      : 'bg-slate-900/60 text-slate-400 border border-slate-800 hover:text-white'
+                  }`}
+                >
+                  Swimlane
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewMode('elevation')}
+                  className={`py-1.5 px-1 rounded-lg text-center text-[10.5px] transition-colors ${
+                    viewMode === 'elevation'
+                      ? 'bg-cyan-500/20 text-cyan-300 font-bold border border-cyan-500/40'
+                      : 'bg-slate-900/60 text-slate-400 border border-slate-800 hover:text-white'
+                  }`}
+                >
+                  LOS Angles
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -457,7 +474,14 @@ export default function DteSignalChart({
 
         {/* SVG Timeline */}
         <div className="w-full relative min-h-[140px] flex items-center justify-center">
-          <svg ref={svgRef} className="w-full h-auto block select-none overflow-visible" />
+          {isComputing && samples.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-8 text-xs font-mono text-cyan-400 gap-2">
+              <RefreshCw className="w-5 h-5 animate-spin text-cyan-400" />
+              <span>Computing line-of-sight &amp; DSN visibility...</span>
+            </div>
+          ) : (
+            <svg ref={svgRef} className="w-full h-auto block select-none overflow-visible" />
+          )}
         </div>
 
         {/* Analytical Horizon Banner for coordinates outside LOLA South Pole DEM */}
@@ -501,7 +525,7 @@ export default function DteSignalChart({
 
         {/* Live Hover Tooltip Panel */}
         {hoverData && (
-          <div className="p-2.5 rounded-xl bg-slate-950/95 border border-cyan-500/40 text-xs font-mono grid grid-cols-2 sm:grid-cols-4 gap-2 animate-in fade-in duration-100">
+          <div className="p-2.5 rounded-xl bg-slate-950/95 border border-cyan-500/40 text-xs font-mono grid grid-cols-2 gap-2 animate-in fade-in duration-100">
             <div>
               <span className="text-[10px] text-slate-400 block uppercase">Timestamp</span>
               <span className="font-semibold text-white">{formatUTC(hoverData.timestamp)}</span>
@@ -570,7 +594,7 @@ export default function DteSignalChart({
             </span>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 font-mono text-xs">
+          <div className="grid grid-cols-2 gap-2 font-mono text-xs">
             <div className="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800">
               <span className="text-[10px] text-slate-400 block">Total DTE Access</span>
               <span className="text-base font-bold text-emerald-400 tabular-nums">
