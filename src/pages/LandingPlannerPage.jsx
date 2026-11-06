@@ -47,6 +47,7 @@ import {
   normalizeCelestialTimeMs,
 } from '../utils/celestialTime.js';
 import { notifySuccess, notifyInfo, notifyNavigation } from '../utils/feedbackStore.js';
+import { comparisonSelectionStore } from '../utils/comparisonEngine.js';
 
 // Preset flight windows
 const LUNATION_PRESETS = [
@@ -210,6 +211,7 @@ export default function LandingPlannerPage({
   };
 
   const handleCompareSite = (site) => {
+    comparisonSelectionStore.addLocationFromMap(site);
     if (onSelectSite) onSelectSite(site);
     onNavigate('comparison');
   };

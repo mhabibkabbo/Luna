@@ -9,6 +9,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import {
+  GitCompare,
   FileDown,
   RotateCcw,
   MapPin,
@@ -134,6 +135,13 @@ export default function SiteComparisonPage({
       setSelectedLocationsState(snap.locations);
     });
   }, []);
+
+  // If siteA is passed and store has no locations, ensure siteA is added as the initial location
+  useEffect(() => {
+    if (siteA && comparisonSelectionStore.get().locations.length === 0) {
+      comparisonSelectionStore.addLocationFromMap(siteA);
+    }
+  }, [siteA]);
 
   const setSelectedLocations = (nextOrUpdater) => {
     comparisonSelectionStore.setLocations(nextOrUpdater);
@@ -776,15 +784,36 @@ export default function SiteComparisonPage({
       {/* =================================================================== */}
       <section aria-label="Selected Locations" className="space-y-2">
         {selectedLocations.length === 0 ? (
-          <div className="p-6 rounded-xl bg-[#0A111D] border border-dashed border-[#17263B] text-center space-y-2">
-            <div className="w-10 h-10 rounded-xl bg-[#00D2C4]/10 border border-[#00D2C4]/30 flex items-center justify-center text-[#00D2C4] mx-auto">
-              <GitCompare className="w-5 h-5" />
+          <div className="p-8 rounded-xl bg-[#0A111D] border border-dashed border-[#17263B] text-center space-y-4">
+            <div className="w-12 h-12 rounded-xl bg-[#00D2C4]/10 border border-[#00D2C4]/30 flex items-center justify-center text-[#00D2C4] mx-auto">
+              <GitCompare className="w-6 h-6" />
             </div>
             <div>
-              <h3 className="text-sm font-semibold text-white">No Locations Selected for Comparison</h3>
+              <h3 className="text-base font-semibold text-white">No Locations Selected for Comparison</h3>
               <p className="text-xs text-slate-400 mt-1 max-w-md mx-auto">
-                Select landing sites or drop pins on the 3D Moon globe and click &quot;Compare Site&quot;, or choose from predefined sites above.
+                Select landing sites to compare below, or click any site on the 3D Moon globe.
               </p>
+            </div>
+            <div className="flex flex-wrap items-center justify-center gap-2.5 pt-1">
+              <button
+                type="button"
+                onClick={() => {
+                  const s1 = PREDEFINED_COMPARISON_SITES.find((s) => s.id === 'landing-artemis3-shackleton') || PREDEFINED_COMPARISON_SITES[0];
+                  const s2 = PREDEFINED_COMPARISON_SITES.find((s) => s.id === 'landing-artemis3-malapert') || PREDEFINED_COMPARISON_SITES[1];
+                  comparisonSelectionStore.setLocations([s1, s2]);
+                }}
+                className="px-3.5 py-2 rounded-lg bg-[#00D2C4]/15 hover:bg-[#00D2C4]/25 border border-[#00D2C4]/40 text-xs font-semibold text-[#00D2C4] transition-colors"
+              >
+                Compare Artemis III Polar Sites
+              </button>
+              <button
+                type="button"
+                onClick={handleSelectLocationsFrom3DMap}
+                className="px-3.5 py-2 rounded-lg bg-[#0E1A2C] hover:bg-[#152840] border border-[#1E3554] text-xs font-medium text-slate-200 transition-colors flex items-center gap-1.5"
+              >
+                <MapPin className="w-3.5 h-3.5 text-[#00D2C4]" />
+                Select on 3D Map
+              </button>
             </div>
           </div>
         ) : (
@@ -947,6 +976,37 @@ export default function SiteComparisonPage({
               </div>
             );
           })}
+
+          {/* Quick Add Candidate Card (when under 8 locations) */}
+          {selectedLocations.length < 8 && (
+            <div className="px-3.5 py-2.5 rounded-xl bg-[#070D17]/80 border border-dashed border-[#1C2E46] hover:border-[#00D2C4]/50 flex flex-col justify-center items-center gap-2 text-center transition-colors min-h-[96px]">
+              <div className="text-xs font-medium text-slate-300 flex items-center gap-1.5">
+                <Plus className="w-3.5 h-3.5 text-[#00D2C4]" />
+                <span>
+                  {selectedLocations.length === 1
+                    ? 'Add 2nd Site to Compare'
+                    : `Add Site (${selectedLocations.length}/8)`}
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5 w-full">
+                <select
+                  aria-label="Add comparison site"
+                  value=""
+                  onChange={(e) => handleAddPredefinedSite(e.target.value)}
+                  className="w-full px-2 py-1 rounded bg-[#060B13] border border-[#1E324A] text-xs text-slate-300 focus:outline-none focus:border-[#00D2C4]"
+                >
+                  <option value="">+ Choose Site...</option>
+                  {PREDEFINED_COMPARISON_SITES.filter(
+                    (s) => !selectedLocations.some((l) => l.id === s.id)
+                  ).map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          )}
         </div>
         )}
       </section>

@@ -1237,15 +1237,21 @@ export function evaluateComparisonLocation(location, startMs, durationDays = 14)
 export function computeMultiSiteTradeOffAnalysis(evaluations, durationDays = 14) {
   const validEvals = (evaluations || []).filter((e) => e && e.isValid);
   if (validEvals.length < 2) {
+    const singleLoc = validEvals[0];
     return {
       status: 'Insufficient Locations',
       hasDefensibleWinner: false,
-      recommendationTitle: 'No Defensible Recommendation — Select at Least 2 Locations',
+      recommendationTitle: singleLoc
+        ? `1 Location Selected (${singleLoc.name}) — Add a 2nd Location to Compare`
+        : 'No Defensible Recommendation — Select at Least 2 Locations',
+      recommendationRationale: singleLoc
+        ? `Currently evaluating ${singleLoc.name} (${formatSelenographicCoords(singleLoc.latitude, singleLoc.longitude)}). Select a second landing site to generate comparative trade-off rankings, illumination contrasts, and operational recommendations.`
+        : null,
       bestCandidate: null,
       keyDifferences: [],
       advantagesBySite: [],
-      criticalRisks: [],
-      missingInformation: [],
+      criticalRisks: singleLoc?.risks || [],
+      missingInformation: singleLoc?.dataLimitations || [],
       parametersRequiringInvestigation: [],
     };
   }

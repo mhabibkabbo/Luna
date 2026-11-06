@@ -37,7 +37,7 @@ export default function LeftSidebarNav({
   const isMoon = activePlanet === 'moon';
   const is2DMode = viewMode === '2d' || viewMode === 'sp-2d';
   const content = (
-    <div className="flex flex-col items-center gap-1.5 w-full py-2.5 px-1.5">
+    <div className="flex flex-col items-center gap-1.5 w-full">
       <span className="hidden sr-only">Visualization Controls</span>
 
       {/* Reset View */}
@@ -52,14 +52,14 @@ export default function LeftSidebarNav({
         </button>
       </NavTooltip>
 
-      {/* Orbit / Layer Controls (3D Globe only) */}
-      {isMoon && !is2DMode && (
-        <NavTooltip label="Basemap & Layers" shortcut="L">
+      {/* Map & Layer Controls (3D Globe & 2D Topo Map) */}
+      {isMoon && (
+        <NavTooltip label={is2DMode ? 'Map Layers' : 'Basemap & Layers'} shortcut="L">
           <button
             type="button"
             data-guide="layers"
             onClick={onToggleLayers}
-            aria-label="Toggle basemap and topographic layers"
+            aria-label={is2DMode ? 'Toggle map layers' : 'Toggle basemap and topographic layers'}
             aria-pressed={isLayersOpen}
             className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00D2C4] ${
               isLayersOpen
@@ -71,6 +71,9 @@ export default function LeftSidebarNav({
           </button>
         </NavTooltip>
       )}
+
+      {/* Subtle Divider */}
+      {isMoon && <div className="w-5 h-[1px] bg-[#16283C]/80 my-0.5" />}
 
       {/* Moon View / Display Mode (3D Globe vs 2D Topo) */}
       {isMoon && <div data-guide="view-mode" className="p-0.5 rounded-xl bg-[#0A1220] border border-[#16283C] flex flex-col gap-0.5">
@@ -117,6 +120,9 @@ export default function LeftSidebarNav({
           <Compass className="w-4 h-4" />
         </button>
       </NavTooltip>}
+
+      {/* Subtle Divider */}
+      <div className="w-5 h-[1px] bg-[#16283C]/80 my-0.5" />
 
       {/* Lighting / Display Settings (3D Globe only) */}
       {!is2DMode && (
@@ -198,11 +204,11 @@ export default function LeftSidebarNav({
 
   return (
     <>
-      {/* Desktop Compact Sidebar (overflow-visible ensures emerging tooltips are not clipped) */}
+      {/* Desktop Floating Visualization Dock */}
       <nav
-        aria-label="Visualization toolbar"
+        aria-label="Floating visualization toolbar"
         data-guide="toolbar"
-        className="hidden lg:flex w-14 shrink-0  h-full bg-[#060B13]/95 border-r border-[#16283C]/80 flex-col items-center justify-center z-30 select-none overflow-visible backdrop-blur-md"
+        className="hidden lg:flex absolute left-3.5 sm:left-4 top-1/2 -translate-y-1/2 z-30 select-none overflow-visible flex-col items-center gap-1.5 p-1.5 rounded-2xl bg-[#060B13]/85 backdrop-blur-xl border border-[#16283C]/90 shadow-[0_12px_40px_rgba(0,0,0,0.7),0_0_0_1px_rgba(0,210,196,0.1)] transition-all duration-200 pointer-events-auto"
       >
         {content}
       </nav>

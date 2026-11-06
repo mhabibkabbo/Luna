@@ -255,6 +255,10 @@ export function createMoon(container, callbacks = {}) {
     /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
   );
 
+  if ('default' in Cesium.Ellipsoid) {
+    Cesium.Ellipsoid.default = Cesium.Ellipsoid.MOON;
+  }
+
   // 1. Initialize Cesium.Viewer with Moon Ellipsoid and custom baseLayer (disabling Ion)
   callbacks.onLoadingStageChange?.('Initializing WebGL 3D Planetary Canvas...');
   const moonGlobe = createMoonGlobe();
@@ -417,6 +421,9 @@ export function createMoon(container, callbacks = {}) {
     isMobile,
   });
 
+  // Prevent near-plane frustum slicing into lunar features
+  viewer.camera.frustum.near = 1.0;
+
   // Enable Cesium's built-in Sun
   if (!scene.sun) {
     scene.sun = new Cesium.Sun();
@@ -442,7 +449,7 @@ export function createMoon(container, callbacks = {}) {
     const currentHeight =
       viewer.camera.positionCartographic?.height || 1400000;
     const targetHeight =
-      typeof height === 'number' && height > 100 ? height : currentHeight;
+      typeof height === 'number' && height > 100 ? Math.max(height, 20000) : Math.max(currentHeight, 20000);
     viewer.camera.flyTo({
       destination: Cesium.Cartesian3.fromDegrees(lon, lat, targetHeight, Cesium.Ellipsoid.MOON),
       duration,

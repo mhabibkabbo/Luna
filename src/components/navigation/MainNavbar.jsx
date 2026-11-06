@@ -81,7 +81,7 @@ export default function MainNavbar({
   return (
     <header
       role="banner"
-      className="w-full h-13 min-h-[52px] bg-[#060B13]/95 border-b border-[#16283C]/80 px-3 sm:px-4 flex items-center justify-between z-40 backdrop-blur-md select-none shrink-0 gap-3"
+      className="w-full h-13 min-h-[52px] bg-[#060B13]/95 border-b border-[#16283C]/80 px-3 sm:px-4 flex items-center justify-between z-50 backdrop-blur-md select-none shrink-0 gap-3"
     >
       {/* ── LEFT: Back to Home Button + Workspace Switcher Dropdown + Search ── */}
       <div className="flex items-center gap-2 sm:gap-3 min-w-0">

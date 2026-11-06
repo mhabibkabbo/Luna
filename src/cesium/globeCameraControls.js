@@ -13,8 +13,8 @@
  *    (or fingers) with smoothing. The view direction is never rotated by zooming.
  *  - Right / middle / Ctrl+left drag: orbit around the screen centre
  *    (horizontal = heading, vertical = tilt).
- *  - Releasing a drag keeps a little inertia, and a slightly rotated view eases
- *    back to north-up (never near the poles, where "north" is meaningless).
+ *  - Releasing a drag retains realistic inertia and preserves user-rotated orientation
+ *    without unwanted auto-alignment or camera clipping.
  */
 
 import * as Cesium from 'cesium';
@@ -35,10 +35,7 @@ const TRACKPAD_PINCH_BOOST = 6; // ctrl+wheel (trackpad pinch) sends tiny deltas
 const ZOOM_SMOOTH_MS = 120;
 const MAX_ZOOM_STEP = 4; // max height ratio per single wheel event
 const ORBIT_RAD_PER_PIXEL = 0.005;
-const MAX_TILT = Cesium.Math.toRadians(78);
-const LEVEL_MAX_HEADING = Cesium.Math.toRadians(45);
-const LEVEL_MAX_LATITUDE = Cesium.Math.toRadians(85);
-const LEVEL_SMOOTH_MS = 140;
+const MAX_TILT = Cesium.Math.toRadians(75);
 const MIN_PAN_VELOCITY = 2e-5; // rad / ms
 const MAX_PAN_VELOCITY = 0.01; // rad / ms
 
@@ -93,8 +90,6 @@ export function createGlobeCameraControls(viewer, options) {
 
   const pan = { axis: new Cartesian3(), velocity: 0, lastMoveTime: 0 }; // inertia
   let zoom = null; // { target, anchorWorld, anchorScreen }
-  let levelPending = false;
-  let headingLocked = false; // user deliberately rotated the view
   let lastTick = performance.now();
   let destroyed = false;
 
@@ -121,6 +116,16 @@ export function createGlobeCameraControls(viewer, options) {
     const r = Cartesian3.magnitude(pos);
     if (r === 0) return;
     Cartesian3.multiplyByScalar(pos, (surfaceRadiusAlong(pos) + h) / r, pos);
+  }
+
+  /** Strictly prevents the camera from clipping into the globe or exceeding maxHeight. */
+  function clampHeight() {
+    const currentH = getHeight();
+    if (currentH < minHeight) {
+      setHeight(minHeight);
+    } else if (currentH > maxHeight) {
+      setHeight(maxHeight);
+    }
   }
 
   /** Exact surface hit under a screen position, or undefined. */
@@ -165,6 +170,7 @@ export function createGlobeCameraControls(viewer, options) {
       Cartesian3.subtract(camera.position, point, scratch.v);
       Matrix3.multiplyByVector(m, scratch.v, scratch.v);
       Cartesian3.add(scratch.v, point, camera.position);
+      clampHeight();
     } else {
       Matrix3.multiplyByVector(m, camera.position, camera.position);
     }
@@ -208,7 +214,6 @@ export function createGlobeCameraControls(viewer, options) {
   function stopMotion() {
     pan.velocity = 0;
     zoom = null;
-    levelPending = false;
   }
 
   // ---- gesture start / end ------------------------------------------------
@@ -366,7 +371,6 @@ export function createGlobeCameraControls(viewer, options) {
     } else {
       pan.velocity = 0;
     }
-    levelPending = false;
     scene.requestRender();
   }
 
@@ -376,7 +380,6 @@ export function createGlobeCameraControls(viewer, options) {
     ensureWorldFrame();
     camera.cancelFlight();
     pan.velocity = 0;
-    levelPending = false;
 
     let delta = e.deltaY;
     if (e.deltaMode === 1) delta *= 16;
@@ -408,7 +411,6 @@ export function createGlobeCameraControls(viewer, options) {
     const normal = ellipsoid.geodeticSurfaceNormal(orbitCenter, scratch.axis);
     if (dx) {
       rotateCamera(normal, dx * ORBIT_RAD_PER_PIXEL, orbitCenter);
-      headingLocked = true;
     }
     if (dy) {
       const currentTilt = Math.acos(
@@ -419,21 +421,20 @@ export function createGlobeCameraControls(viewer, options) {
       if (delta) {
         Cartesian3.clone(camera.right, scratch.right);
         rotateCamera(scratch.right, delta, orbitCenter);
-        headingLocked = true;
       }
     }
+    clampHeight();
   }
 
-  // ---- per-frame update: zoom smoothing, inertia, north levelling ---------
+  // ---- per-frame update: zoom smoothing, inertia --------------------------
   function tick() {
     if (destroyed) return;
     const now = performance.now();
     const dt = Math.min(50, Math.max(1, now - lastTick));
     lastTick = now;
 
-    // Flights (flyTo / reset) set their own orientation; forget manual rotation.
+    // Flights (flyTo / reset) set their own orientation
     if (camera._currentFlight !== undefined) {
-      headingLocked = false;
       return;
     }
 
@@ -453,7 +454,6 @@ export function createGlobeCameraControls(viewer, options) {
         setHeight(zoom.target);
         reanchor(zoom.anchorWorld, zoom.anchorScreen);
         zoom = null;
-        levelPending = true;
       } else {
         setHeight(Math.exp(logHeight + diff * (1 - Math.exp(-dt / ZOOM_SMOOTH_MS))));
         reanchor(zoom.anchorWorld, zoom.anchorScreen);
@@ -469,50 +469,16 @@ export function createGlobeCameraControls(viewer, options) {
       pan.velocity *= Math.exp(-dt / inertiaTauMs);
       if (pan.velocity <= MIN_PAN_VELOCITY) {
         pan.velocity = 0;
-        levelPending = true;
       }
     }
 
-    if (levelPending && !busy && pointers.size === 0) {
-      busy = levelNorthStep(dt);
+    // Safety guard: ensure camera altitude never dips below minHeight
+    if (getHeight() < minHeight) {
+      clampHeight();
+      busy = true;
     }
 
     if (busy) scene.requestRender();
-  }
-
-  /** One easing step toward north-up. Returns true while more work remains. */
-  function levelNorthStep(dt) {
-    if (headingLocked) {
-      levelPending = false;
-      return false;
-    }
-    const centre = pickSurface(screenCentre(), new Cartesian3());
-    if (!centre) {
-      levelPending = false;
-      return false;
-    }
-    const carto = ellipsoid.cartesianToCartographic(centre);
-    if (!carto || Math.abs(carto.latitude) > LEVEL_MAX_LATITUDE) {
-      levelPending = false;
-      return false;
-    }
-
-    const enu = Transforms.eastNorthUpToFixedFrame(centre, ellipsoid, scratch.m4);
-    const east = Matrix4.getColumn(enu, 0, new Cesium.Cartesian4());
-    const north = Matrix4.getColumn(enu, 1, new Cesium.Cartesian4());
-    const heading = Math.atan2(
-      camera.up.x * east.x + camera.up.y * east.y + camera.up.z * east.z,
-      camera.up.x * north.x + camera.up.y * north.y + camera.up.z * north.z
-    );
-
-    // A big rotation (e.g. after crossing a pole) is left as the user has it.
-    if (Math.abs(heading) > LEVEL_MAX_HEADING || Math.abs(heading) < 0.0005) {
-      levelPending = false;
-      return false;
-    }
-    const normal = ellipsoid.geodeticSurfaceNormal(centre, new Cartesian3());
-    rotateCamera(normal, heading * (1 - Math.exp(-dt / LEVEL_SMOOTH_MS)), centre);
-    return true;
   }
 
   // ---- wiring -------------------------------------------------------------

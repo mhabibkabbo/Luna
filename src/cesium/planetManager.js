@@ -3,6 +3,7 @@
  * Lazily creates planet controllers and coordinates switching and cleanup.
  */
 
+import * as Cesium from 'cesium';
 import { createEarth } from './earth/index.js';
 import { createMoon } from './moon/index.js';
 import { withDefaults } from './planetController.js';
@@ -80,6 +81,10 @@ export function createPlanetManager({
   function switchTo(id) {
     assertPlanetId(id);
     if (id === activeId) return;
+
+    if ('default' in Cesium.Ellipsoid) {
+      Cesium.Ellipsoid.default = id === 'earth' ? Cesium.Ellipsoid.WGS84 : Cesium.Ellipsoid.MOON;
+    }
 
     // Initialize the target before changing the active viewer, so a failed factory
     // leaves the currently visible planet untouched.

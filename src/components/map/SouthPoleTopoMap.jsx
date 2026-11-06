@@ -277,6 +277,9 @@ const SouthPoleTopoMap = forwardRef(function SouthPoleTopoMap(
     onFeatureSelect,
     selectedFeature,
     isVisible = true,
+    isLayersOpen = false,
+    onToggleLayers,
+    onCloseLayers,
     onMeasurementChange,
     onOutOfDemBounds,
     onSwitchTo3D,
@@ -396,6 +399,23 @@ const SouthPoleTopoMap = forwardRef(function SouthPoleTopoMap(
     if (!selectedFeature) {
       setProbedPin(null);
       setSelectedLocation(null);
+    } else if (selectedFeature.latitude != null && selectedFeature.longitude != null) {
+      setSelectedLocation({
+        lat: selectedFeature.latitude,
+        lon: selectedFeature.longitude,
+        elevation: selectedFeature.elevationMeters ?? null,
+        slope: null,
+        name: selectedFeature.name || 'Selected Site',
+        isOutOfDemBounds: selectedFeature.latitude > -79.9,
+      });
+      if (selectedFeature.isCustomPin || selectedFeature.type === 'custom_pin') {
+        setProbedPin({
+          lat: selectedFeature.latitude,
+          lon: selectedFeature.longitude,
+          elevation: selectedFeature.elevationMeters ?? null,
+          slope: selectedFeature.slopeDeg ?? null,
+        });
+      }
     }
   }, [selectedFeature]);
 
@@ -937,9 +957,22 @@ const SouthPoleTopoMap = forwardRef(function SouthPoleTopoMap(
       }
     }
 
-    // 8. PROBED ALTIMETRY PIN
-    if (probedPin) {
-      const pt = latLonToPx(probedPin.lat, probedPin.lon);
+    // 8. PROBED ALTIMETRY PIN / CUSTOM DROPPED PIN
+    const customPinToDraw = probedPin || (
+      (selectedFeature?.isCustomPin || selectedFeature?.type === 'custom_pin') &&
+      selectedFeature.latitude != null &&
+      selectedFeature.longitude != null
+        ? {
+            lat: selectedFeature.latitude,
+            lon: selectedFeature.longitude,
+            elevation: selectedFeature.elevationMeters ?? null,
+            slope: selectedFeature.slopeDeg ?? null,
+          }
+        : null
+    );
+
+    if (customPinToDraw && customPinToDraw.lat != null && customPinToDraw.lon != null) {
+      const pt = latLonToPx(customPinToDraw.lat, customPinToDraw.lon);
       ctx.save();
       ctx.beginPath();
       ctx.arc(pt.x, pt.y, 5, 0, Math.PI * 2);
@@ -954,6 +987,17 @@ const SouthPoleTopoMap = forwardRef(function SouthPoleTopoMap(
       ctx.strokeStyle = '#FF9E00';
       ctx.lineWidth = 1.2;
       ctx.stroke();
+
+      // Custom Pin Label
+      const pinLabel = selectedFeature?.name || 'Custom Dropped Pin';
+      ctx.font = 'bold 9.5px "Space Mono", monospace';
+      ctx.textAlign = 'left';
+      ctx.strokeStyle = 'rgba(7, 10, 16, 0.92)';
+      ctx.lineWidth = 3;
+      ctx.strokeText(pinLabel, pt.x + 14, pt.y + 3);
+      ctx.fillStyle = '#FDE68A';
+      ctx.fillText(pinLabel, pt.x + 14, pt.y + 3);
+
       ctx.restore();
     }
 
@@ -1179,6 +1223,39 @@ const SouthPoleTopoMap = forwardRef(function SouthPoleTopoMap(
 
     map.on('move zoom viewreset resize', handleViewChange);
 
+    // Track pan/drag motion to prevent trailing click from wiping or moving custom marker
+    let dragStartPos = null;
+    let didDrag = false;
+
+    map.on('mousedown', (e) => {
+      dragStartPos = e.containerPoint ? { x: e.containerPoint.x, y: e.containerPoint.y } : null;
+      didDrag = false;
+    });
+
+    map.on('movestart dragstart', () => {
+      didDrag = true;
+    });
+
+    map.on('move drag', (e) => {
+      if (dragStartPos && e.containerPoint) {
+        const dist = Math.hypot(
+          e.containerPoint.x - dragStartPos.x,
+          e.containerPoint.y - dragStartPos.y
+        );
+        if (dist > 5) {
+          didDrag = true;
+        }
+      }
+    });
+
+    map.on('moveend dragend', () => {
+      // Keep didDrag true briefly so any synthetic/trailing click from drag release is ignored
+      setTimeout(() => {
+        didDrag = false;
+        dragStartPos = null;
+      }, 150);
+    });
+
     // Mouse Move: Pointer coordinates + landmark hover detection (throttled to 40ms)
     map.on('mousemove', (e) => {
       const projected = southPoleCRS.projection.project(e.latlng);
@@ -1204,6 +1281,19 @@ const SouthPoleTopoMap = forwardRef(function SouthPoleTopoMap(
 
     // Click: Distance measurement or Altimetry Probe or landmark select
     map.on('click', (e) => {
+      // Ignore click if the interaction was a pan/drag gesture
+      if (didDrag || (map.dragging && map.dragging.moved())) {
+        return;
+      }
+      if (dragStartPos && e.containerPoint) {
+        const dist = Math.hypot(
+          e.containerPoint.x - dragStartPos.x,
+          e.containerPoint.y - dragStartPos.y
+        );
+        if (dist > 5) {
+          return;
+        }
+      }
       const projected = southPoleCRS.projection.project(e.latlng);
       const { lat, lon } = stereographicMetersToLatLon(projected.x, projected.y);
 
@@ -1450,6 +1540,14 @@ const SouthPoleTopoMap = forwardRef(function SouthPoleTopoMap(
           name: featureOrId.name || 'Selected Site',
           isOutOfDemBounds: isOutOf,
         });
+        if (featureOrId.isCustomPin || featureOrId.type === 'custom_pin') {
+          setProbedPin({
+            lat,
+            lon,
+            elevation: featureOrId.elevationMeters ?? null,
+            slope: featureOrId.slopeDeg ?? null,
+          });
+        }
         if (isOutOf) onOutOfDemBounds?.(lat, lon);
         safeSetView([lat, lon], curZoom, true);
       }
@@ -1493,8 +1591,10 @@ const SouthPoleTopoMap = forwardRef(function SouthPoleTopoMap(
       />
 
       {/* Cartographic Collar Legend HUD */}
-      {isVisible && (
+      {isVisible && isLayersOpen && (
         <SouthPoleLegendHUD
+          isOpen={isLayersOpen}
+          onClose={onCloseLayers}
           selectedLocation={selectedLocation}
           contourInterval={Math.max(200, currentIntervalEntry.intervalM)}
           indexInterval={Math.max(200, currentIntervalEntry.intervalM) * 5}

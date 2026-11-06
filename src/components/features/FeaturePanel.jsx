@@ -615,68 +615,7 @@ export default function FeaturePanel({
       <aside
         aria-label="Minimized Lunar Site Information"
         data-guide="feature-panel-minimized"
-        className="fixed z-35 right-3 sm:right-4 top-15 sm:top-16 bg-[#060b14]/95 backdrop-blur-xl border border-slate-800/90 rounded-2xl shadow-[0_12px_35px_rgba(0,0,0,0.85)] flex items-center justify-between gap-3 px-3 py-2 pointer-events-auto select-none transition-all duration-200 animate-in fade-in slide-in-from-top-2"
-      >
-        <button
-          type="button"
-          onClick={() => setIsMinimized(false)}
-          className="flex items-center gap-2.5 min-w-0 text-left hover:opacity-90 transition-opacity"
-          title="Restore full site details"
-        >
-          <div className="w-7 h-7 rounded-lg bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 shrink-0 shadow-[0_0_12px_rgba(245,158,11,0.25)]">
-            <MapPin className="w-3.5 h-3.5" />
-          </div>
-          <div className="min-w-0">
-            <div className="text-[9px] font-mono uppercase tracking-wider text-amber-400 font-semibold truncate leading-none mb-0.5">
-              {isCustomPin
-                ? 'Custom Waypoint'
-                : isClps
-                ? `NASA CLPS · ${clpsData?.taskOrder || 'Mission'}`
-                : feature.body === 'earth'
-                ? 'Earth Station'
-                : regionInfo?.face || 'Lunar Site'}
-            </div>
-            <h2 className="text-xs sm:text-sm font-bold text-white tracking-tight truncate leading-tight max-w-[130px] sm:max-w-[190px]">
-              {panelTitle}
-            </h2>
-          </div>
-          {localThermal && (
-            <span className="ml-1 hidden sm:inline-flex items-center px-1.5 py-0.5 rounded text-[9.5px] font-mono font-semibold bg-[#0A1220] border border-slate-800 text-slate-300">
-              {localThermal.tempC > 0 ? `+${localThermal.tempC}` : localThermal.tempC}°C
-            </span>
-          )}
-        </button>
-
-        <div className="flex items-center gap-1 shrink-0 ml-1">
-          <button
-            type="button"
-            onClick={() => setIsMinimized(false)}
-            aria-label="Restore full panel"
-            title="Restore full panel"
-            className="p-1.5 rounded-lg bg-[#0A1220] hover:bg-[#121E30] text-slate-300 hover:text-cyan-300 border border-[#16283C] transition-colors"
-          >
-            <Maximize2 className="w-3.5 h-3.5" />
-          </button>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close panel"
-            title="Close panel [Esc]"
-            className="p-1.5 rounded-lg bg-[#0A1220] hover:bg-[#121E30] text-slate-400 hover:text-white border border-[#16283C] transition-colors"
-          >
-            <X className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      </aside>
-    );
-  }
-
-  if (isMinimized) {
-    return (
-      <aside
-        aria-label="Minimized Lunar Site Information"
-        data-guide="feature-panel-minimized"
-        className="fixed z-35 right-3 sm:right-4 top-15 sm:top-16 bg-[#060b14]/95 backdrop-blur-xl border border-slate-800/90 rounded-2xl shadow-[0_12px_35px_rgba(0,0,0,0.85)] flex items-center justify-between gap-3 px-3 py-2 pointer-events-auto select-none transition-all duration-200 animate-in fade-in slide-in-from-top-2"
+        className="fixed z-40 right-3 sm:right-4 top-15 sm:top-16 bg-[#060b14]/95 backdrop-blur-xl border border-slate-800/90 rounded-2xl shadow-[0_12px_35px_rgba(0,0,0,0.85)] flex items-center justify-between gap-3 px-3 py-2 pointer-events-auto select-none transition-all duration-200 animate-in fade-in slide-in-from-top-2"
       >
         <button
           type="button"
@@ -736,7 +675,7 @@ export default function FeaturePanel({
     <aside
       aria-label="Lunar Site Information Panel"
       data-guide="feature-panel"
-      className={`fixed z-35 right-3 sm:right-4 top-15 sm:top-16 ${
+      className={`fixed z-40 right-3 sm:right-4 top-15 sm:top-16 ${
         timelineVisible
           ? 'bottom-[96px] max-h-[calc(100vh-10rem)]'
           : 'bottom-3 sm:bottom-4 max-h-[calc(100vh-5rem)]'
@@ -2269,51 +2208,26 @@ export default function FeaturePanel({
               <button
                 type="button"
                 onClick={() => {
-                  if (isAlreadyAdded) {
-                    setComparisonFeedbackMsg(null);
-                    onCompareMission?.(targetFeature);
-                  } else if (isAtLimit) {
-                    setComparisonFeedbackMsg({
-                      type: 'error',
-                      text: `Cannot add: Limit (${comparisonSnap.maxLocations}/${comparisonSnap.maxLocations}) reached`,
-                    });
-                    onCompareMission?.(targetFeature);
-                  } else {
-                    setComparisonFeedbackMsg(null);
-                    onCompareMission?.(targetFeature);
-                  }
+                  setComparisonFeedbackMsg(null);
+                  onCompareMission?.(targetFeature);
                 }}
                 title={
                   isAlreadyAdded
-                    ? 'Click to deselect and remove this location from Site Comparison'
+                    ? 'View this location in Site Comparison'
                     : isAtLimit
                     ? `Cannot add: Maximum of ${comparisonSnap.maxLocations} locations reached`
-                    : 'Add this location to Site Comparison'
+                    : 'Compare this location in Site Comparison'
                 }
                 className={`h-8 px-1.5 rounded-lg font-mono text-[10.5px] font-medium flex items-center justify-center gap-1 transition-colors whitespace-nowrap border ${
                   isAlreadyAdded
-                    ? 'bg-emerald-950/40 hover:bg-rose-950/50 text-emerald-300 hover:text-rose-200 border-emerald-500/40 hover:border-rose-500/40'
+                    ? 'bg-emerald-950/40 hover:bg-emerald-900/60 text-emerald-300 border-emerald-500/40'
                     : isAtLimit
                     ? 'bg-amber-950/40 hover:bg-amber-950/60 text-amber-300 border-amber-500/40'
                     : 'bg-slate-900 hover:bg-slate-800 text-slate-200 border-slate-800'
                 }`}
               >
-                {isAlreadyAdded ? (
-                  <>
-                    <X className="w-3 h-3 text-rose-400 shrink-0" />
-                    <span>{isCustomPin ? 'Deselect' : `Deselect (${comparisonSnap.locations.length}/${comparisonSnap.maxLocations})`}</span>
-                  </>
-                ) : isAtLimit ? (
-                  <>
-                    <AlertTriangle className="w-3 h-3 text-amber-400 shrink-0" />
-                    <span>{isCustomPin ? 'Limit' : `Limit (${comparisonSnap.locations.length}/${comparisonSnap.maxLocations})`}</span>
-                  </>
-                ) : (
-                  <>
-                    <GitCompare className="w-3 h-3 text-emerald-400 shrink-0" />
-                    <span>{isCustomPin ? 'Compare' : 'Compare Site'}</span>
-                  </>
-                )}
+                <GitCompare className="w-3 h-3 text-emerald-400 shrink-0" />
+                <span>{isAlreadyAdded ? 'In Comparison →' : isCustomPin ? 'Compare' : 'Compare Site'}</span>
               </button>
 
               <button

@@ -11,6 +11,8 @@ import {
   Radio,
   ExternalLink,
   Sliders,
+  Minus,
+  Maximize2,
 } from 'lucide-react';
 import { TOPO_STYLE } from '../../constants/topoStyle.js';
 import {
@@ -24,6 +26,8 @@ import {
  * 2D Lunar South Pole Topographic Map (80°S–90°S).
  */
 export default function SouthPoleLegendHUD({
+  isOpen = true,
+  onClose,
   selectedLocation,
   contourInterval = 200,
   indexInterval = 1000,
@@ -48,6 +52,7 @@ export default function SouthPoleLegendHUD({
   selectedFeature,
   onSwitchTo3D,
 }) {
+  const [isMinimized, setIsMinimized] = useState(false);
   const [isExpanded, setIsExpanded] = useState(true);
   const [activeTab, setActiveTab] = useState('layers'); // 'layers' | 'legend' | 'metadata'
 
@@ -72,11 +77,39 @@ export default function SouthPoleLegendHUD({
     (l) => l.type !== 'vector'
   );
 
+  if (isOpen === false) return null;
+
+  if (isMinimized) {
+    if (onClose) return null;
+    return (
+      <div className="absolute top-4 left-14 sm:left-16 z-20 pointer-events-auto select-none animate-in fade-in duration-150">
+        <button
+          type="button"
+          onClick={() => setIsMinimized(false)}
+          className="h-9 px-3 rounded-xl bg-[#070C15]/95 hover:bg-[#0E1726] border border-[#16283C] hover:border-cyan-500/50 text-xs font-mono text-cyan-300 flex items-center gap-2.5 shadow-[0_12px_35px_rgba(0,0,0,0.85)] backdrop-blur-xl transition-all group"
+          title="Restore South Pole 2D GIS Layers & Legend"
+          aria-label="Restore South Pole 2D GIS Layers & Legend"
+        >
+          <div className="w-5 h-5 rounded-md flex items-center justify-center border border-cyan-500/40 bg-cyan-500/10 text-cyan-400 group-hover:scale-105 transition-transform">
+            <Layers className="w-3 h-3" />
+          </div>
+          <span className="font-semibold text-slate-100 group-hover:text-cyan-300">
+            9 Map Layers
+          </span>
+          <span className="text-[9.5px] px-1.5 py-0.5 rounded border border-cyan-500/30 bg-cyan-950/60 text-cyan-200">
+            80°S–90°S
+          </span>
+          <Maximize2 className="w-3.5 h-3.5 text-slate-400 group-hover:text-cyan-300 ml-0.5" />
+        </button>
+      </div>
+    );
+  }
+
   return (
-    <div className="absolute top-14 sm:top-16 left-14 sm:left-16 z-20 pointer-events-auto select-none w-[310px] sm:w-[356px] max-w-[calc(100vw-4.5rem)]">
-      <div className="rounded-xl border border-slate-800/95 bg-[#070C15]/95 shadow-[0_16px_40px_rgba(0,0,0,0.85)] backdrop-blur-xl p-3 text-slate-100 transition-all">
+    <div className="absolute top-4 sm:top-4 left-16 sm:left-16 z-20 pointer-events-auto select-none w-[310px] sm:w-[356px] max-w-[calc(100vw-4.5rem)] max-h-[calc(100%-8rem)] flex flex-col animate-in fade-in duration-150">
+      <div className="rounded-xl border border-slate-800/95 bg-[#070C15]/95 shadow-[0_16px_40px_rgba(0,0,0,0.85)] backdrop-blur-xl p-3 text-slate-100 transition-all flex flex-col max-h-full overflow-hidden">
         {/* Header Collar */}
-        <div className="flex items-center justify-between pb-2 border-b border-slate-800 gap-2">
+        <div className="flex items-center justify-between pb-2 border-b border-slate-800 gap-2 shrink-0">
           <div className="flex items-center gap-2 min-w-0">
             <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 border border-cyan-500/30 bg-cyan-500/10 text-cyan-400">
               <Compass className="w-4 h-4" />
@@ -94,23 +127,28 @@ export default function SouthPoleLegendHUD({
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={() => setIsExpanded(!isExpanded)}
-            aria-label={isExpanded ? 'Collapse map legend' : 'Expand map legend'}
-            className="p-1 rounded-md text-slate-400 hover:text-white hover:bg-slate-800/80 transition-colors shrink-0"
-            title={isExpanded ? 'Collapse Collar' : 'Expand Collar'}
-          >
-            {isExpanded ? (
-              <ChevronUp className="w-4 h-4" />
-            ) : (
-              <ChevronDown className="w-4 h-4" />
-            )}
-          </button>
+          <div className="flex items-center gap-1 shrink-0">
+            <button
+              type="button"
+              onClick={() => {
+                if (onClose) {
+                  onClose();
+                } else {
+                  setIsMinimized(true);
+                }
+              }}
+              aria-label="Close map layers panel"
+              title="Close map layers panel"
+              className="p-1 rounded-md text-slate-400 hover:text-white hover:bg-slate-800/80 transition-colors"
+            >
+              <Minus className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
         {isExpanded && (
-          <div className="mt-2.5 space-y-2.5">
+          <>
+            <div className="mt-2.5 space-y-2.5 flex-1 min-h-0 overflow-y-auto custom-scrollbar pr-1">
             {/* Active Layer Quantitative Color Ramp & Provenance */}
             <div className="space-y-1.5 bg-[#0B1220] p-2.5 rounded-lg border border-slate-800/90">
               <div className="flex items-center justify-between gap-1 text-[10px] font-mono">
@@ -202,7 +240,7 @@ export default function SouthPoleLegendHUD({
 
             {/* TAB 1: 9 SCIENTIFIC LAYERS SELECTOR & OPACITY */}
             {activeTab === 'layers' && (
-              <div className="space-y-2 max-h-[290px] overflow-y-auto custom-scrollbar pr-0.5">
+              <div className="space-y-2 pr-0.5">
                 {/* Primary Raster Synthesis Selector (8 Scientific Raster Modes) */}
                 <div className="space-y-1">
                   <div className="flex items-center justify-between text-[9.5px] font-mono uppercase tracking-wider text-slate-400">
@@ -444,77 +482,78 @@ export default function SouthPoleLegendHUD({
                 </div>
               </div>
             )}
+          </div>
 
-            {/* LIVE ALTIMETRY & SLOPE PROBE READOUT */}
-            <div className="pt-2 border-t border-slate-800 text-[10px] font-mono space-y-1">
-              {isOutOfDemBounds ? (
-                <div className="p-2 rounded-lg bg-amber-950/40 border border-amber-800/60 text-amber-200 flex items-start gap-2">
-                  <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
-                  <div>
-                    <div className="font-bold text-[10.5px]">
-                      Outside 80°S–90°S Polar DEM
-                    </div>
-                    <div className="text-[9px] text-amber-300/80">
-                      High-resolution 2D polar grid covers 80°S–90°S. No synthetic values shown.
-                    </div>
-                    {onSwitchTo3D && (
-                      <button
-                        type="button"
-                        onClick={onSwitchTo3D}
-                        className="mt-1.5 px-2 py-0.5 rounded bg-amber-800/60 hover:bg-amber-700/80 text-[9px] font-bold text-white transition-colors"
-                      >
-                        Switch to 3D Globe [1]
-                      </button>
-                    )}
+          {/* LIVE ALTIMETRY & SLOPE PROBE READOUT */}
+          <div className="pt-2 mt-2 border-t border-slate-800 text-[10px] font-mono space-y-1 shrink-0">
+            {isOutOfDemBounds ? (
+              <div className="p-2 rounded-lg bg-amber-950/40 border border-amber-800/60 text-amber-200 flex items-start gap-2">
+                <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+                <div>
+                  <div className="font-bold text-[10.5px]">
+                    Outside 80°S–90°S Polar DEM
                   </div>
+                  <div className="text-[9px] text-amber-300/80">
+                    High-resolution 2D polar grid covers 80°S–90°S. No synthetic values shown.
+                  </div>
+                  {onSwitchTo3D && (
+                    <button
+                      type="button"
+                      onClick={onSwitchTo3D}
+                      className="mt-1.5 px-2 py-0.5 rounded bg-amber-800/60 hover:bg-amber-700/80 text-[9px] font-bold text-white transition-colors"
+                    >
+                      Switch to 3D Globe [1]
+                    </button>
+                  )}
                 </div>
-              ) : selectedLocation || selectedFeature ? (
-                <div className="flex items-center justify-between">
-                  <div className="min-w-0 pr-2">
-                    <span className="text-slate-400 block text-[9px] truncate">
-                      {selectedLocation?.name ||
-                        selectedFeature?.name ||
-                        'Sampled LOLA Position'}
-                    </span>
-                    <span className="text-white text-[9.5px] tabular-nums">
-                      {selectedLocation?.lat != null
-                        ? `${Math.abs(selectedLocation.lat).toFixed(3)}°S, ${
-                            selectedLocation.lon >= 0
-                              ? `${selectedLocation.lon.toFixed(3)}°E`
-                              : `${Math.abs(selectedLocation.lon).toFixed(3)}°W`
-                          }`
-                        : 'Surface Coordinate'}
-                    </span>
-                  </div>
-                  <div className="text-right shrink-0 tabular-nums">
-                    <span className="text-xs font-bold block text-cyan-300">
-                      {typeof elevValue === 'number'
-                        ? `${elevValue > 0 ? '+' : ''}${elevValue.toLocaleString()} m`
-                        : 'Coverage N/A'}
-                    </span>
-                    {typeof slopeValue === 'number' && (
-                      <span
-                        className={`text-[9.5px] font-bold ${
-                          slopeValue >= 15 ? 'text-rose-400' : 'text-emerald-400'
-                        }`}
-                      >
-                        Slope: {slopeValue.toFixed(1)}°
-                        {slopeValue >= 15 ? ' (✖ Hazard)' : ' (● Safe)'}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                <div className="flex items-center justify-between text-slate-400">
-                  <span>Altimetry Probe:</span>
-                  <span className="text-[9.5px] text-cyan-300">
-                    Click surface to sample LOLA DEM
+              </div>
+            ) : selectedLocation || selectedFeature ? (
+              <div className="flex items-center justify-between">
+                <div className="min-w-0 pr-2">
+                  <span className="text-slate-400 block text-[9px] truncate">
+                    {selectedLocation?.name ||
+                      selectedFeature?.name ||
+                      'Sampled LOLA Position'}
+                  </span>
+                  <span className="text-white text-[9.5px] tabular-nums">
+                    {selectedLocation?.lat != null
+                      ? `${Math.abs(selectedLocation.lat).toFixed(3)}°S, ${
+                          selectedLocation.lon >= 0
+                            ? `${selectedLocation.lon.toFixed(3)}°E`
+                            : `${Math.abs(selectedLocation.lon).toFixed(3)}°W`
+                        }`
+                      : 'Surface Coordinate'}
                   </span>
                 </div>
-              )}
-            </div>
+                <div className="text-right shrink-0 tabular-nums">
+                  <span className="text-xs font-bold block text-cyan-300">
+                    {typeof elevValue === 'number'
+                      ? `${elevValue > 0 ? '+' : ''}${elevValue.toLocaleString()} m`
+                      : 'Coverage N/A'}
+                  </span>
+                  {typeof slopeValue === 'number' && (
+                    <span
+                      className={`text-[9.5px] font-bold ${
+                        slopeValue >= 15 ? 'text-rose-400' : 'text-emerald-400'
+                      }`}
+                    >
+                      Slope: {slopeValue.toFixed(1)}°
+                      {slopeValue >= 15 ? ' (✖ Hazard)' : ' (● Safe)'}
+                    </span>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between text-slate-400">
+                <span>Altimetry Probe:</span>
+                <span className="text-[9.5px] text-cyan-300">
+                  Click surface to sample LOLA DEM
+                </span>
+              </div>
+            )}
           </div>
-        )}
+        </>
+      )}
       </div>
     </div>
   );
