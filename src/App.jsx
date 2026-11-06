@@ -1209,7 +1209,7 @@ export default function App() {
       {/* FLOATING NOTIFICATIONS: Under navbar in top-left corner                   */}
       {/* ========================================================================= */}
       <ToastFeedback
-        maxItems={3}
+        maxItems={1}
         className="fixed top-20 left-5 sm:left-15 z-50 items-start select-none max-w-[calc(100vw-24px)] sm:max-w-xs"
       />
 

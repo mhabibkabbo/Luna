@@ -35,9 +35,9 @@ const COLOR_MAP = {
 /**
  * Toast feedback notification container.
  * Subscribes to feedbackStore and displays non-intrusive status updates to the user.
- * Displays at most maxItems (defaults to 2) simultaneously in a compact, discrete footprint.
+ * Displays at most maxItems (defaults to 1) simultaneously in a compact, discrete footprint.
  */
-export default function ToastFeedback({ maxItems = 2, className = '' }) {
+export default function ToastFeedback({ maxItems = 1, className = '' }) {
   const [items, setItems] = useState([]);
 
   useEffect(() => {

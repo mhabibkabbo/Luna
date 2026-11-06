@@ -647,13 +647,13 @@ export default function FeaturePanel({
           )}
         </button>
 
-        <div className="flex items-center gap-1 shrink-0 ml-1">
+        <div className="flex items-center gap-1.5 shrink-0 ml-1">
           <button
             type="button"
             onClick={() => setIsMinimized(false)}
             aria-label="Restore full panel"
             title="Restore full panel"
-            className="p-1.5 rounded-lg bg-[#0A1220] hover:bg-[#121E30] text-slate-300 hover:text-cyan-300 border border-[#16283C] transition-colors"
+            className="p-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 hover:text-emerald-300 border border-emerald-500/30 transition-colors shadow-[0_0_8px_rgba(16,185,129,0.12)]"
           >
             <Maximize2 className="w-3.5 h-3.5" />
           </button>
@@ -662,7 +662,7 @@ export default function FeaturePanel({
             onClick={onClose}
             aria-label="Close panel"
             title="Close panel [Esc]"
-            className="p-1.5 rounded-lg bg-[#0A1220] hover:bg-[#121E30] text-slate-400 hover:text-white border border-[#16283C] transition-colors"
+            className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 hover:text-rose-300 border border-rose-500/30 transition-colors shadow-[0_0_8px_rgba(244,63,94,0.12)]"
           >
             <X className="w-3.5 h-3.5" />
           </button>
@@ -681,9 +681,9 @@ export default function FeaturePanel({
           : 'bottom-3 sm:bottom-4 max-h-[calc(100vh-5rem)]'
       } ${
         isExpanded
-          ? 'w-[calc(100vw-1.5rem)] sm:w-[36rem]'
+          ? 'w-[calc(100vw-1.5rem)] sm:w-[60vw] max-w-[60vw]'
           : 'w-[calc(100vw-1.5rem)] sm:w-[29.5rem]'
-      } bg-[#060b14]/95 backdrop-blur-xl border border-slate-800/90 rounded-2xl flex flex-col shadow-[0_20px_50px_rgba(0,0,0,0.85)] overflow-hidden transition-all duration-200 ease-out pointer-events-auto select-none`}
+      } bg-[#060b14]/95 backdrop-blur-xl border border-slate-800/90 rounded-2xl flex flex-col shadow-[0_20px_50px_rgba(0,0,0,0.85)] overflow-hidden transition-all duration-300 ease-out pointer-events-auto select-none`}
     >
       {/* =================================================================== */}
       {/* 1. COMPACT HEADER: Pin Icon + Title + Expand/Collapse + Close       */}
@@ -711,36 +711,22 @@ export default function FeaturePanel({
           </div>
         </div>
 
-        <div className="flex items-center gap-1 shrink-0">
+        <div className="flex items-center gap-1.5 shrink-0">
           <button
             type="button"
             onClick={() => setIsMinimized(true)}
             aria-label="Minimize panel"
             title="Minimize to compact bar"
-            className="p-1.5 rounded-lg bg-[#0A1220] hover:bg-[#121E30] text-slate-300 hover:text-cyan-300 border border-[#16283C] transition-colors"
+            className="p-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 hover:text-amber-300 border border-amber-500/30 transition-colors shadow-[0_0_8px_rgba(245,158,11,0.12)]"
           >
             <Minus className="w-3.5 h-3.5" />
-          </button>
-          <button
-            type="button"
-            onClick={() => setIsExpanded((prev) => !prev)}
-            aria-expanded={isExpanded}
-            aria-label={isExpanded ? 'Collapse width to standard' : 'Expand full workspace width'}
-            title={isExpanded ? 'Collapse width to standard' : 'Expand full workspace width'}
-            className="p-1.5 rounded-lg bg-[#0A1220] hover:bg-[#121E30] text-slate-300 hover:text-cyan-300 border border-[#16283C] transition-colors"
-          >
-            {isExpanded ? (
-              <Minimize2 className="w-3.5 h-3.5" />
-            ) : (
-              <Maximize2 className="w-3.5 h-3.5" />
-            )}
           </button>
           <button
             type="button"
             onClick={onClose}
             aria-label="Close panel"
             title="Close panel [Esc]"
-            className="p-1.5 rounded-lg bg-[#0A1220] hover:bg-[#121E30] text-slate-400 hover:text-white border border-[#16283C] transition-colors"
+            className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 hover:text-rose-300 border border-rose-500/30 transition-colors shadow-[0_0_8px_rgba(244,63,94,0.12)]"
           >
             <X className="w-3.5 h-3.5" />
           </button>
@@ -2194,7 +2180,7 @@ export default function FeaturePanel({
               </div>
             )}
 
-            <div className={`px-3 py-2 border-t border-slate-800/90 bg-[#080f1d] grid ${isCustomPin ? 'grid-cols-4' : 'grid-cols-3'} gap-1.5 shrink-0`}>
+            <div className={`px-3 py-2 border-t border-slate-800/90 bg-[#080f1d] grid ${isCustomPin && isEarthFeature ? 'grid-cols-4' : 'grid-cols-3'} gap-1.5 shrink-0`}>
               <button
                 type="button"
                 onClick={() => onZoomHere?.(featLon, featLat)}
@@ -2249,11 +2235,11 @@ export default function FeaturePanel({
                 )}
               </button>
 
-              {isCustomPin && onClearCustomPin && (
+              {isCustomPin && isEarthFeature && onClearCustomPin && (
                 <button
                   type="button"
-                  onClick={() => onClearCustomPin(isEarthFeature ? 'earth' : 'moon')}
-                  title="Remove custom pin from lunar surface"
+                  onClick={() => onClearCustomPin('earth')}
+                  title="Remove custom pin from surface"
                   className="h-8 px-1.5 rounded-lg bg-rose-950/30 hover:bg-rose-900/50 text-rose-300 border border-rose-500/30 font-mono text-[10.5px] font-medium flex items-center justify-center gap-1 transition-colors whitespace-nowrap"
                 >
                   <Trash2 className="w-3 h-3 text-rose-400 shrink-0" />

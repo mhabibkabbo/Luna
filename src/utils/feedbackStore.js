@@ -44,9 +44,8 @@ export function notify({
     action,
   };
 
-  // Keep up to 2 notifications on screen, newest first
-  const current = feedbackStore.get();
-  feedbackStore.set([newItem, ...current.slice(0, 1)]);
+  // Keep at most 1 notification on screen, newest replaces previous
+  feedbackStore.set([newItem]);
 
   if (durationMs > 0) {
     setTimeout(() => {
@@ -63,7 +62,9 @@ export function notify({
  */
 export function dismissNotification(id) {
   const current = feedbackStore.get();
-  feedbackStore.set(current.filter((item) => item.id !== id));
+  if (current.some((item) => item.id === id)) {
+    feedbackStore.set(current.filter((item) => item.id !== id));
+  }
 }
 
 /**

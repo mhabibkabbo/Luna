@@ -193,26 +193,11 @@ export default function MainNavbar({
           </>
         )}
       </div>
-
-      {/* ── RIGHT: Time + (Explorer-only: Earth/Moon Switch + Guide Button) ── */}
-      <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
-        {/* Live Ephemeris Time Badge */}
-        <div
-          title="Current Mission Celestial Ephemeris UTC Timestamp"
-          className={`${
-            currentView === 'explorer' ? 'hidden xl:flex' : 'hidden sm:flex'
-          } items-center gap-1.5 px-2.5 py-1 rounded-xl bg-[#080E18] border border-[#16283C] text-[10.5px] font-mono text-slate-300`}
-        >
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-          <Clock className="w-3 h-3 text-[#00D2C4]" />
-          <span className="tabular-nums">{formattedUtc}</span>
-        </div>
-
-        {currentView === 'explorer' && (
+{currentView === 'explorer' && (
           <>
             {/* Earth / Moon Toggle Switch */}
             <div
-              className="flex items-center p-0.5 rounded-xl bg-[#080E18] border border-[#16283C] text-xs font-mono"
+              className="ml-[-10rem] flex items-center p-0.5 rounded-xl bg-[#080E18] border border-[#16283C] text-xs font-mono"
               role="group"
               aria-label="Target Celestial Body"
             >
@@ -252,13 +237,29 @@ export default function MainNavbar({
                 <span className="hidden sm:inline">Earth DSN</span>
               </button>
             </div>
+          </>
+        )}
+      {/* ── RIGHT: Time + (Explorer-only: Earth/Moon Switch + Guide Button) ── */}
+      <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+        {/* Live Ephemeris Time Badge */}
+        <div
+          title="Current Mission Celestial Ephemeris UTC Timestamp"
+          className={`${
+            currentView === 'explorer' ? 'hidden xl:flex' : 'hidden sm:flex'
+          } items-center h-7 gap-1.5 px-2.5 py-1 rounded-xl bg-[#080E18] border border-[#16283C] text-[10.5px] font-mono text-slate-300`}
+        >
+          <Clock className="w-3 h-3 text-[#00D2C4]" />
+          <span className="tabular-nums">{formattedUtc}</span>
+        </div>
 
+        {currentView === 'explorer' && (
+          <>
             {/* ── Guide Button (in distinct amber color, Explorer Only) ────── */}
             <button
               type="button"
               onClick={onOpenGuide}
               aria-label="Open user guide"
-              className="h-9 px-2 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 hover:border-amber-400 text-amber-300 hover:text-amber-200 text-xs font-mono font-semibold flex items-center gap-1.5 transition-all shadow-[0_0_12px_rgba(245,158,11,0.25)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 shrink-0"
+              className="h-7 px-2 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 hover:border-amber-400 text-amber-300 hover:text-amber-200 text-xs font-mono font-semibold flex items-center gap-1.5 transition-all shadow-[0_0_12px_rgba(245,158,11,0.25)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 shrink-0"
             >
               <span>Guide</span>
             </button>
