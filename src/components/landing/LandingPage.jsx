@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { ArrowUpRight } from 'lucide-react';
 import RealisticMoon from './RealisticMoon.jsx';
-import LunaBrandLogo from '../common/LunaBrandLogo.jsx';
 import ExpandableText from '../common/ExpandableText.jsx';
 import { CLPS_MISSIONS } from '../../data/clpsMissions.js';
 
@@ -14,29 +13,31 @@ export default function LandingPage({ onLaunchExplorer }) {
   return (
     <div className="h-screen w-full overflow-x-hidden overflow-y-auto bg-[#060B13] text-[#F1F5F9] font-sans selection:bg-[#00D2C4]/30 selection:text-[#F1F5F9] flex flex-col justify-between">
       {/* ===================================================================== */}
-      {/* HEADER: Luna Logo in Corner, Center Navigation, Open Explorer on Right */}
+      {/* HEADER: Center Nav (Home, Missions, About), Right CTA                 */}
       {/* ===================================================================== */}
       <header
         role="banner"
-        className="fixed top-0 left-0 right-0 z-50 px-4 sm:px-8 lg:px-12 h-16 flex items-center justify-between pointer-events-none bg-gradient-to-b from-black/80 to-transparent backdrop-blur-[2px]"
+        className="fixed top-0 left-0 right-0 z-50 px-4 sm:px-8 lg:px-12 h-16 grid grid-cols-2 sm:grid-cols-3 items-center pointer-events-none bg-gradient-to-b from-black/80 to-transparent backdrop-blur-[2px]"
       >
-        {/* Left: Luna Branding Logo */}
-        <div className="pointer-events-auto">
-          <LunaBrandLogo
-            asButton
-            onClick={() => onLaunchExplorer({ viewMode: '3d' })}
-            title="Luna — Lunar Mission & Site Studio"
-          />
-        </div>
+        {/* Left spacer for balanced centered nav on desktop */}
+        <div className="hidden sm:block" aria-hidden="true" />
 
         {/* Center Navigation Container */}
         <nav
           aria-label="Main page links"
-          className="pointer-events-auto flex items-center gap-6 bg-[#0A1220]/80 px-6 py-2 rounded-full border border-white/[0.08] backdrop-blur-md shadow-xl mx-auto sm:mx-0"
+          className="pointer-events-auto justify-self-start sm:justify-self-center flex items-center gap-4 sm:gap-6 bg-[#0A1220]/80 px-4 sm:px-6 py-2 rounded-full border border-white/[0.08] backdrop-blur-md shadow-xl"
         >
           <a
+            href="#landing"
+            aria-current="page"
+            className="text-[10px] sm:text-xs font-mono uppercase tracking-[0.12em] sm:tracking-[0.18em] text-[#00D2C4] transition-colors relative py-1 after:absolute after:bottom-0 after:left-0 after:w-full after:h-[1.5px] after:bg-[#00D2C4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00D2C4] rounded"
+          >
+            <span>Home</span>
+          </a>
+
+          <a
             href="#missions"
-            className="text-xs font-mono uppercase tracking-[0.18em] text-[#94A3B8] hover:text-[#00D2C4] transition-colors relative py-1 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00D2C4] rounded"
+            className="text-[10px] sm:text-xs font-mono uppercase tracking-[0.12em] sm:tracking-[0.18em] text-[#94A3B8] hover:text-[#00D2C4] transition-colors relative py-1 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00D2C4] rounded"
           >
             <span>Missions</span>
             <span className="absolute bottom-0 left-0 w-0 h-[1.5px] bg-[#00D2C4] group-hover:w-full transition-all duration-300" />
@@ -44,7 +45,7 @@ export default function LandingPage({ onLaunchExplorer }) {
 
           <a
             href="#about"
-            className="text-xs font-mono uppercase tracking-[0.18em] text-[#94A3B8] hover:text-[#00D2C4] transition-colors py-1 relative group cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00D2C4] rounded"
+            className="text-[10px] sm:text-xs font-mono uppercase tracking-[0.12em] sm:tracking-[0.18em] text-[#94A3B8] hover:text-[#00D2C4] transition-colors py-1 relative group cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00D2C4] rounded"
           >
             <span>About</span>
             <span className="absolute bottom-0 left-0 w-0 h-[1.5px] bg-[#00D2C4] group-hover:w-full transition-all duration-300" />
@@ -52,7 +53,7 @@ export default function LandingPage({ onLaunchExplorer }) {
         </nav>
 
         {/* Right CTA Button */}
-        <div className="pointer-events-auto">
+        <div className="pointer-events-auto justify-self-end">
           <button
             type="button"
             onClick={() => onLaunchExplorer({ viewMode: '3d' })}
@@ -84,9 +85,6 @@ export default function LandingPage({ onLaunchExplorer }) {
         <div className="my-auto grid grid-cols-1 lg:grid-cols-12 gap-8 items-center max-w-[1400px] w-full mx-auto">
           {/* Left Text Block */}
           <div className="lg:col-span-6 space-y-6 z-10">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#00D2C4]/10 border border-[#00D2C4]/30 text-[#00D2C4] text-[11px] font-mono uppercase tracking-wider">
-              <span>NASA CLPS &amp; Artemis GIS Platform</span>
-            </div>
 
             <h1 className="text-4xl font-semibold sm:text-5xl xl:text-[4.2rem] leading-[1.02] tracking-[-0.02em] text-[#F1F5F9]">
               The <span className="italic text-[#00D2C4]">lunar</span> surface

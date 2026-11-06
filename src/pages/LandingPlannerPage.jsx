@@ -209,11 +209,6 @@ export default function LandingPlannerPage({
     }
   };
 
-  const handleDeepAnalysis = (site) => {
-    if (onSelectSite) onSelectSite(site);
-    onNavigate('site-analysis');
-  };
-
   const handleCompareSite = (site) => {
     if (onSelectSite) onSelectSite(site);
     onNavigate('comparison');
@@ -816,15 +811,6 @@ export default function LandingPlannerPage({
                     >
                       <Globe2 className="w-3.5 h-3.5 text-cyan-400" />
                       <span>View on 3D Moon</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => handleDeepAnalysis(c)}
-                      className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium flex items-center gap-1.5 transition"
-                    >
-                      <Mountain className="w-3.5 h-3.5 text-amber-400" />
-                      <span>Deep Site Analysis</span>
                     </button>
 
                     <button

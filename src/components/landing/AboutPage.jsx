@@ -47,10 +47,10 @@ function PlaceholderPortrait({ name, colors }) {
   );
 }
 
-export default function AboutPage({ onLaunchExplorer }) {
+export default function AboutPage({ onLaunchExplorer, onNavigate }) {
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden bg-[#060B13] text-[#F1F5F9]">
-      <PublicPageHeader currentPage="about" onLaunchExplorer={onLaunchExplorer} />
+      <PublicPageHeader currentPage="about" onLaunchExplorer={onLaunchExplorer} onNavigate={onNavigate} />
 
       <main className="min-h-0 flex-1 overflow-y-auto">
       <div className="mx-auto max-w-5xl space-y-12 px-6 py-10 sm:px-10 sm:py-16">

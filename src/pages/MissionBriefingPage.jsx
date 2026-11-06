@@ -480,16 +480,10 @@ Generated via LUNA — Lunar Landing Site Navigator (NASA Space Apps Challenge)
         </span>
         <div className="flex items-center gap-3">
           <button
-            onClick={() => onNavigate && onNavigate('site-analysis')}
+            onClick={() => onNavigate && onNavigate('comparison')}
             className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 transition"
           >
-            Open Site Topography Analysis
-          </button>
-          <button
-            onClick={() => onNavigate && onNavigate('communication')}
-            className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 transition"
-          >
-            Open DSN Ground Stations
+            Compare Landing Sites
           </button>
           <button
             onClick={() => onNavigate && onNavigate('explorer')}

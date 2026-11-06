@@ -71,12 +71,12 @@ function MissionEntry({ mission, index, onLaunchExplorer }) {
   );
 }
 
-export default function MissionsPage({ onLaunchExplorer }) {
-  const catalogMissions = [...CLPS_MISSIONS, ...HISTORIC_MISSIONS].sort((a, b) => getTimelineOrder(b) - getTimelineOrder(a));
+export default function MissionsPage({ onLaunchExplorer, onNavigate }) {
+  const catalogMissions = [...CLPS_MISSIONS, ...HISTORIC_MISSIONS].sort((a, b) => getTimelineOrder(a) - getTimelineOrder(b));
   const completedCount = catalogMissions.filter((mission) => mission.missionStatus === 'completed').length;
   return (
     <div className="flex h-full min-h-0 w-full flex-col overflow-hidden bg-[#060B13] font-sans text-[#F1F5F9] selection:bg-[#00D2C4]/30">
-      <PublicPageHeader currentPage="missions" onLaunchExplorer={onLaunchExplorer} />
+      <PublicPageHeader currentPage="missions" onLaunchExplorer={onLaunchExplorer} onNavigate={onNavigate} />
       <main className="min-h-0 flex-1 overflow-y-auto">
         <div className="mx-auto w-full max-w-[1280px] px-5 py-9 sm:px-8 sm:py-12 lg:px-12">
           <section className="relative overflow-hidden rounded-3xl border border-[#294056] bg-[#0A1220] px-6 py-9 sm:px-10 sm:py-12">

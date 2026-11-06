@@ -403,6 +403,38 @@ test('Audit Verification: LOLA Worker 0.5 m Vertical Scaling & Unified Planner E
   assert.equal(crisium.isPartialScore, true, 'Non-polar site must be flagged as partial 3-criterion score');
 });
 
+test('South Polar Stereographic Pan Bounds: Symmetric 4-Quadrant Coverage Including Top Half (Y > 0)', async () => {
+  const proj4 = (await import('proj4')).default;
+  const SP_PROJ4_DEF =
+    '+proj=stere +lat_0=-90 +lon_0=0 +k=1 +a=1737400 +b=1737400 +units=m +no_defs';
+  const LUNAR_LONLAT_DEF = '+proj=longlat +a=1737400 +b=1737400 +no_defs';
+
+  const extentM = 600000;
+  const [swLon, swLat] = proj4(SP_PROJ4_DEF, LUNAR_LONLAT_DEF, [-extentM, -extentM]);
+  const [neLon, neLat] = proj4(SP_PROJ4_DEF, LUNAR_LONLAT_DEF, [extentM, extentM]);
+
+  // Verify Leaflet LatLngBounds SW (minLat, minLon) and NE (maxLat, maxLon) project back to [-600km, -600km] and [+600km, +600km]
+  const minLat = Math.min(swLat, neLat);
+  const maxLat = Math.max(swLat, neLat);
+  const minLon = Math.min(swLon, neLon);
+  const maxLon = Math.max(swLon, neLon);
+
+  const [projSwX, projSwY] = proj4(LUNAR_LONLAT_DEF, SP_PROJ4_DEF, [minLon, minLat]);
+  const [projNeX, projNeY] = proj4(LUNAR_LONLAT_DEF, SP_PROJ4_DEF, [maxLon, maxLat]);
+
+  assert.ok(Math.abs(projSwX - -extentM) < 1, 'Projected SW X must be -600 km');
+  assert.ok(Math.abs(projSwY - -extentM) < 1, 'Projected SW Y must be -600 km');
+  assert.ok(Math.abs(projNeX - extentM) < 1, 'Projected NE X must be +600 km');
+  assert.ok(Math.abs(projNeY - extentM) < 1, 'Projected NE Y must be +600 km (top half accessible)');
+
+  // Verify top-half landmarks (e.g. Malapert A at 80.13°S, 1.44°E and Malapert Massif at 86.02°S, 2.7°E) lie well within projected pan bounds
+  const [malapertAX, malapertAY] = proj4(LUNAR_LONLAT_DEF, SP_PROJ4_DEF, [1.44, -80.13]);
+  assert.ok(malapertAY > 0, 'Malapert A lies in the top half (Y > 0)');
+  assert.ok(malapertAX >= projSwX && malapertAX <= projNeX);
+  assert.ok(malapertAY >= projSwY && malapertAY <= projNeY);
+});
+
+
 
 
 

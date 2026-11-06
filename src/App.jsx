@@ -13,7 +13,6 @@ import MeasurementToolbar from './components/measurements/MeasurementToolbar.jsx
 import CelestialPanel from './components/celestial/CelestialPanel.jsx';
 import MainNavbar from './components/navigation/MainNavbar.jsx';
 import LeftSidebarNav from './components/navigation/LeftSidebarNav.jsx';
-import MissionExplorerModal from './components/missions/MissionExplorerModal.jsx';
 import MissionComparisonModal from './components/missions/MissionComparisonModal.jsx';
 import SlipSimulatorModal from './components/missions/SlipSimulatorModal.jsx';
 import TransferOrbitModal from './components/trajectory/TransferOrbitModal.jsx';
@@ -36,15 +35,11 @@ import {
   skipGuide,
 } from './guide/guideStore.js';
 
-// Lazy-load dedicated lunar mission workspaces for maximum performance and code splitting
-const MissionControlPage = React.lazy(() => import('./pages/MissionControlPage.jsx'));
-const SiteAnalysisPage = React.lazy(() => import('./pages/SiteAnalysisPage.jsx'));
-const CommunicationPage = React.lazy(() => import('./pages/CommunicationPage.jsx'));
-const LandingPlannerPage = React.lazy(() => import('./pages/LandingPlannerPage.jsx'));
-const SiteComparisonPage = React.lazy(() => import('./pages/SiteComparisonPage.jsx'));
-const MissionBriefingPage = React.lazy(() => import('./pages/MissionBriefingPage.jsx'));
-const MissionLibraryPage = React.lazy(() => import('./pages/MissionLibraryPage.jsx'));
-const TrajectoryPlannerPage = React.lazy(() => import('./pages/TrajectoryPlannerPage.jsx'));
+import LandingPlannerPage from './pages/LandingPlannerPage.jsx';
+import SiteComparisonPage from './pages/SiteComparisonPage.jsx';
+import MissionBriefingPage from './pages/MissionBriefingPage.jsx';
+import MissionLibraryPage from './pages/MissionLibraryPage.jsx';
+import TrajectoryPlannerPage from './pages/TrajectoryPlannerPage.jsx';
 import { CLPS_MISSIONS } from './data/clpsMissions.js';
 import { LANDING_SITES } from './data/landingSites.js';
 import { LUNAR_LAYERS_CATALOG } from './services/nasa/layers.js';
@@ -62,6 +57,8 @@ import {
   notifyNavigation,
   notifyWarn,
 } from './utils/feedbackStore.js';
+import { comparisonSelectionStore } from './utils/comparisonEngine.js';
+
 export default function App() {
   const mapRef = useRef(null);
   const southPoleMapRef = useRef(null);
@@ -87,9 +84,6 @@ export default function App() {
       }
       if (hash === 'missions') return 'missions';
       if (hash === 'about') return 'about';
-      if (hash === 'mission-control') return 'mission-control';
-      if (hash === 'site-analysis' || hash === 'analysis') return 'site-analysis';
-      if (hash === 'communication' || hash === 'comms') return 'communication';
       if (hash === 'planner') return 'planner';
       if (hash === 'comparison' || hash === 'compare') return 'comparison';
       if (hash === 'briefing') return 'briefing';
@@ -163,12 +157,6 @@ export default function App() {
         setCurrentView('missions');
       } else if (hash === 'about') {
         setCurrentView('about');
-      } else if (hash === 'mission-control') {
-        setCurrentView('mission-control');
-      } else if (hash === 'site-analysis' || hash === 'analysis') {
-        setCurrentView('site-analysis');
-      } else if (hash === 'communication' || hash === 'comms') {
-        setCurrentView('communication');
       } else if (hash === 'planner') {
         setCurrentView('planner');
       } else if (hash === 'comparison' || hash === 'compare') {
@@ -177,6 +165,8 @@ export default function App() {
         setCurrentView('briefing');
       } else if (hash === 'library' || hash === 'guide') {
         setCurrentView('library');
+      } else if (hash === 'trajectory' || hash === 'orbit' || hash === 'transfer') {
+        setCurrentView('trajectory');
       } else if (hash === '' || hash === 'landing') {
         setCurrentView('landing');
       }
@@ -188,9 +178,7 @@ export default function App() {
   // Centralized navigation dispatcher
   const handleNavigate = useCallback((pageId) => {
     const normalized =
-      pageId === 'comms'
-        ? 'communication'
-        : pageId === 'site-comparison'
+      pageId === 'site-comparison'
         ? 'comparison'
         : pageId === 'orbit' || pageId === 'transfer'
         ? 'trajectory'
@@ -225,6 +213,8 @@ export default function App() {
       }
       if (viewMode === '2d' || viewMode === 'sp-2d') {
         setHasVisited2D(true);
+        setIsLayersOpen(false);
+        setIsCelestialOpen(false);
       }
     }
   }, [currentView, viewMode]);
@@ -286,7 +276,6 @@ export default function App() {
   const [layers, setLayers] = useState(LUNAR_LAYERS_CATALOG);
   const [isLayersOpen, setIsLayersOpen] = useState(false);
   const [isCelestialOpen, setIsCelestialOpen] = useState(false);
-  const [isMissionExplorerOpen, setIsMissionExplorerOpen] = useState(false);
   const [isComparisonOpen, setIsComparisonOpen] = useState(false);
   const [comparisonMissionA, setComparisonMissionA] = useState(null);
 
@@ -465,8 +454,6 @@ export default function App() {
           setIsSlipSimulatorOpen(false);
         } else if (isTransferOrbitOpen) {
           setIsTransferOrbitOpen(false);
-        } else if (isMissionExplorerOpen) {
-          setIsMissionExplorerOpen(false);
         } else if (isCelestialOpen) {
           setIsCelestialOpen(false);
         } else if (isLayersOpen) {
@@ -489,12 +476,12 @@ export default function App() {
         }
       } else if (e.key === 's' || e.key === 'S') {
         handleGoToSouthPole();
-      } else if (e.key === 'l' || e.key === 'L') {
+      } else if ((e.key === 'l' || e.key === 'L') && viewMode === '3d') {
         setIsLayersOpen((prev) => {
           notifyInfo(!prev ? 'Layers Panel Opened [L]' : 'Layers Panel Closed [L]', 'Toggled lunar basemaps and datasets.');
           return !prev;
         });
-      } else if (e.key === 'e' || e.key === 'E') {
+      } else if ((e.key === 'e' || e.key === 'E') && viewMode === '3d') {
         setIsCelestialOpen((prev) => {
           const next = !prev;
           if (next) setIsLayersOpen(false);
@@ -529,7 +516,6 @@ export default function App() {
     isGuideActive,
     currentView,
     isComparisonOpen,
-    isMissionExplorerOpen,
     isCelestialOpen,
     isLayersOpen,
     isDteOpen,
@@ -806,8 +792,36 @@ export default function App() {
   };
 
   const handleOpenComparison = (initialMission = null) => {
-    setComparisonMissionA(initialMission || selectedMoonFeature || null);
-    setIsComparisonOpen(true);
+    const target = initialMission || selectedMoonFeature || selectedFeature || null;
+    if (!target) {
+      notifyWarn('No Location Selected', 'Select a site or drop a pin on the 3D Lunar Map first.');
+      return;
+    }
+    if (comparisonSelectionStore.isFeatureInComparison(target)) {
+      const removed = comparisonSelectionStore.removeLocationFromMap(target);
+      if (removed.ok) {
+        notifyInfo(
+          `Deselected from Site Comparison (${removed.count} / ${removed.max})`,
+          `${removed.location.name} removed from Site Comparison.`
+        );
+      }
+      return;
+    }
+    const res = comparisonSelectionStore.addLocationFromMap(target);
+    if (res.ok) {
+      setComparisonMissionA(res.location);
+      notifySuccess(
+        `Added to Site Comparison (${res.count} / ${res.max})`,
+        `${res.location.name} added. Select more locations on the globe or click "Back to Comparison".`
+      );
+    } else if (res.reason === 'LIMIT_REACHED') {
+      notifyWarn(
+        `Cannot Add Location — Limit Reached (${res.max} / ${res.max})`,
+        res.message
+      );
+    } else {
+      notifyWarn('Cannot Add Location', res.message);
+    }
   };
 
   const handleSelectMissionFromModal = (mission) => {
@@ -1049,6 +1063,7 @@ export default function App() {
     return (
       <LandingPage
         onLaunchExplorer={handleLaunchExplorer}
+        onNavigate={handleNavigate}
       />
     );
   }
@@ -1063,8 +1078,8 @@ export default function App() {
         Skip to main content
       </a>
 
-      {/* The Explorer has its own workspace toolbar. Public pages use PublicPageHeader. */}
-      {currentView === 'explorer' && (
+      {/* Global Mission Workspace Navbar (rendered on all workspace pages; public pages use PublicPageHeader) */}
+      {currentView !== 'missions' && currentView !== 'about' && (
         <MainNavbar
           currentView={currentView}
           viewMode={viewMode}
@@ -1085,6 +1100,7 @@ export default function App() {
           onToggleMobileMenu={() => setIsMobileNavOpen((prev) => !prev)}
         />
       )}
+
 
       {/* ========================================================================= */}
       {/* FLOATING NOTIFICATIONS: Upper right corner                                */}
@@ -1147,7 +1163,6 @@ export default function App() {
               ensureExplorerView();
               handleResetOverview();
             }}
-            onOpenMissionExplorer={() => setIsMissionExplorerOpen(true)}
             isMobileOpen={isMobileNavOpen}
             onCloseMobile={() => setIsMobileNavOpen(false)}
           />
@@ -1166,33 +1181,6 @@ export default function App() {
                   </div>
                 }
               >
-                {currentView === 'mission-control' && (
-                  <MissionControlPage
-                    onNavigate={handleNavigate}
-                    activeMission={activeMission}
-                    onSelectMission={(m) => {
-                      setActiveMission(m);
-                      handleSelectMissionFromModal(m);
-                    }}
-                    selectedFeature={selectedMoonFeature || selectedFeature}
-                    onSelectFeature={handleFeatureSelect}
-                  />
-                )}
-                {currentView === 'site-analysis' && (
-                  <SiteAnalysisPage
-                    selectedSite={selectedMoonFeature || selectedFeature}
-                    onSelectSite={handleFeatureSelect}
-                    onNavigate={handleNavigate}
-                  />
-                )}
-                {currentView === 'communication' && (
-                  <CommunicationPage
-                    selectedSite={selectedMoonFeature || selectedFeature}
-                    onSelectSite={handleFeatureSelect}
-                    onNavigate={handleNavigate}
-                    onSelectStation={handleSelectEarthSite}
-                  />
-                )}
                 {currentView === 'planner' && (
                   <LandingPlannerPage
                     onNavigate={handleNavigate}
@@ -1217,6 +1205,11 @@ export default function App() {
                     onSelectSiteA={setComparisonMissionA}
                     onSelectSiteB={setComparisonMissionB}
                     onNavigate={handleNavigate}
+                    onSelectFrom3DMap={() => {
+                      if (viewMode !== '3d') setViewMode('3d');
+                      if (activePlanet !== 'moon') handlePlanetChange('moon');
+                      handleNavigate('explorer');
+                    }}
                     onSelectSiteForView={(site) => {
                       handleFeatureSelect(site);
                       handleNavigate('explorer');
@@ -1250,10 +1243,14 @@ export default function App() {
                 {currentView === 'missions' && (
                   <MissionsPage
                     onLaunchExplorer={handleLaunchExplorer}
+                    onNavigate={handleNavigate}
                   />
                 )}
                 {currentView === 'about' && (
-                  <AboutPage onLaunchExplorer={handleLaunchExplorer} />
+                  <AboutPage
+                    onLaunchExplorer={handleLaunchExplorer}
+                    onNavigate={handleNavigate}
+                  />
                 )}
                 {currentView === 'trajectory' && (
                   <TrajectoryPlannerPage
@@ -1320,21 +1317,19 @@ export default function App() {
           )}
         </div>
 
-        {/* Real-time Earth & Sun Ephemeris Drawer (Active in both 3D & 2D Mode) */}
+        {/* Real-time Earth & Sun Ephemeris Drawer (3D Mode) */}
         <CelestialPanel
           globeRef={globeRef}
-          isActive={true}
-          isOpen={isCelestialOpen}
+          isActive={viewMode === '3d'}
+          isOpen={isCelestialOpen && viewMode === '3d'}
           onClose={() => setIsCelestialOpen(false)}
           vectorsVisible={isVectorsVisible}
           onToggleVectors={handleToggleVectors}
         />
 
-        {/* Celestial Panel vectors */}
-
-        {/* Floating Layer Management Panel */}
+        {/* Floating Layer Management Panel (3D Mode) */}
         <LayerPanel
-          isOpen={isLayersOpen}
+          isOpen={isLayersOpen && viewMode === '3d'}
           onClose={() => setIsLayersOpen(false)}
           layers={layers}
           onToggleLayer={handleToggleLayer}
@@ -1351,6 +1346,7 @@ export default function App() {
           onMeasureFromHere={handleMeasureFromFeature}
           onClearCustomPin={handleClearCustomPin}
           onCompareMission={(mission) => handleOpenComparison(mission)}
+          onReturnToComparison={() => handleNavigate('comparison')}
           onSelectOtherBody={handleSelectOtherBody}
           onOpenSiteAnalysis={(feat) => {
             if (feat) setFeatureSelection(feat, feat.body || 'moon');
@@ -1382,18 +1378,6 @@ export default function App() {
             onClear={handleClearMeasurement}
           />
         )}
-
-        {/* Dedicated NASA CLPS Mission Explorer Dialog */}
-        <MissionExplorerModal
-          isOpen={isMissionExplorerOpen}
-          onClose={() => setIsMissionExplorerOpen(false)}
-          onSelectMission={handleSelectMissionFromModal}
-          onCompareMission={(mission) => {
-            setIsMissionExplorerOpen(false);
-            handleOpenComparison(mission);
-          }}
-          currentSelectedId={selectedFeature?.id}
-        />
 
         {/* Side-by-side CLPS & Custom Landing Site Comparison Modal */}
         <MissionComparisonModal
@@ -1500,7 +1484,6 @@ export default function App() {
         }}
         isOtherModalOpen={
           isComparisonOpen ||
-          isMissionExplorerOpen ||
           isDteOpen ||
           isSiteAnalysisOpen ||
           isWeatherOpen ||

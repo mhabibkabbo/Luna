@@ -338,16 +338,6 @@ export default function MissionLibraryPage({
                 <Compass className="w-4 h-4" />
                 Inspect Target Site in 3D Explorer
               </button>
-              <button
-                onClick={() => {
-                  if (onSelectMission) onSelectMission(selectedMission);
-                  if (onNavigate) onNavigate('site-analysis');
-                }}
-                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium text-xs flex items-center gap-2 transition"
-              >
-                <Layers className="w-4 h-4" />
-                Analyze Topography & Sun
-              </button>
             </div>
           </div>
         </div>

@@ -30,6 +30,7 @@ import { ensurePolarDemLoaded } from '../../utils/horizons.js';
  */
 const LUNAR_RADIUS_M = 1737400;
 const HALF_EXTENT_M = 304000;
+const MAX_PAN_EXTENT_M = 600000;
 const SP_PROJ4_DEF =
   '+proj=stere +lat_0=-90 +lon_0=0 +k=1 +a=1737400 +b=1737400 +units=m +no_defs';
 const LUNAR_LONLAT_DEF = '+proj=longlat +a=1737400 +b=1737400 +no_defs';
@@ -52,6 +53,16 @@ export function latLonToStereographicMeters(lat, lon) {
 export function stereographicMetersToLatLon(x, y) {
   const [lon, lat] = proj4(SP_PROJ4_DEF, LUNAR_LONLAT_DEF, [x, y]);
   return { lat, lon };
+}
+
+/**
+ * Computes symmetric stereographic corner coordinates in selenographic (lat, lon)
+ * so Leaflet's projected pixel maxBounds spans [-extentM, +extentM] across all 4 quadrants.
+ */
+export function getPolarStereographicPanBounds(extentM = MAX_PAN_EXTENT_M) {
+  const sw = stereographicMetersToLatLon(-extentM, -extentM);
+  const ne = stereographicMetersToLatLon(extentM, extentM);
+  return { sw, ne, extentM };
 }
 
 /**
@@ -1091,6 +1102,8 @@ const SouthPoleTopoMap = forwardRef(function SouthPoleTopoMap(
       ),
     });
 
+    const { sw: panSw, ne: panNe } = getPolarStereographicPanBounds(MAX_PAN_EXTENT_M);
+
     const map = L.map(container, {
       crs: southPoleCRS,
       center: [-90, 0],
@@ -1099,8 +1112,11 @@ const SouthPoleTopoMap = forwardRef(function SouthPoleTopoMap(
       maxZoom: 6,
       zoomControl: false,
       attributionControl: false,
-      maxBounds: L.latLngBounds(L.latLng(-90, -180), L.latLng(-78, 180)),
-      maxBoundsViscosity: 0.5,
+      maxBounds: L.latLngBounds(
+        L.latLng(panSw.lat, panSw.lon),
+        L.latLng(panNe.lat, panNe.lon)
+      ),
+      maxBoundsViscosity: 0.7,
     });
 
     leafletMapRef.current = map;
@@ -1340,14 +1356,22 @@ const SouthPoleTopoMap = forwardRef(function SouthPoleTopoMap(
         if (!leafletMapRef.current || !map._loaded || !map._mapPane) return;
         map.invalidateSize();
         const center = map.getCenter();
-        if (!center || center.lat > -78 || Number.isNaN(center.lat)) {
+        if (!center || Number.isNaN(center.lat) || Number.isNaN(center.lng)) {
           safeSetView([-90, 0], 1, false);
+        } else {
+          const projCenter = latLonToStereographicMeters(center.lat, center.lng);
+          if (
+            Math.abs(projCenter.x) > MAX_PAN_EXTENT_M ||
+            Math.abs(projCenter.y) > MAX_PAN_EXTENT_M
+          ) {
+            safeSetView([-90, 0], 1, false);
+          }
         }
         drawOverlayCanvas();
       }, 70);
       return () => clearTimeout(timer);
     }
-  }, [isVisible, drawOverlayCanvas, safeSetView]);
+  }, [isVisible, safeSetView]);
 
   // Expose Imperative Controller API
   useImperativeHandle(ref, () => ({
