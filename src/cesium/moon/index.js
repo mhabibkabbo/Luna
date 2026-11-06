@@ -54,47 +54,46 @@ function getLunarMarkerDataUrl(category = 'crater_minor', isSelected = false) {
 
   ctx.clearRect(0, 0, width, height);
 
-  // Configuration per marker type - NASA Greenish-Blue / Cyan-Teal palette
-  // Selected markers use high-contrast warm solar amber (#FF9E00) to contrast with cool cyan and grey regolith
-  let primaryColor = isSelected ? '#FF9E00' : '#00D2C4';
-  let glowColor = isSelected ? 'rgba(255, 158, 0, 0.95)' : 'rgba(0, 210, 196, 0.5)';
+  // Keep selected marker fills and glows yellow so the pin itself matches its highlighted label.
+  let primaryColor = isSelected ? '#FDE047' : '#00D2C4';
+  let glowColor = isSelected ? 'rgba(253, 224, 71, 0.95)' : 'rgba(0, 210, 196, 0.5)';
 
   switch (category) {
     case 'south_pole':
-      primaryColor = isSelected ? '#FF9E00' : '#00D2C4';
-      glowColor = isSelected ? 'rgba(255, 158, 0, 0.95)' : 'rgba(0, 210, 196, 0.85)';
+      primaryColor = isSelected ? '#FDE047' : '#00D2C4';
+      glowColor = isSelected ? 'rgba(253, 224, 71, 0.95)' : 'rgba(0, 210, 196, 0.85)';
       break;
     case 'landing_apollo':
-      primaryColor = isSelected ? '#FF9E00' : '#00E5FF';
-      glowColor = isSelected ? 'rgba(255, 158, 0, 0.95)' : 'rgba(0, 229, 255, 0.75)';
+      primaryColor = isSelected ? '#FDE047' : '#00E5FF';
+      glowColor = isSelected ? 'rgba(253, 224, 71, 0.95)' : 'rgba(0, 229, 255, 0.75)';
       break;
     case 'landing_robotic':
-      primaryColor = isSelected ? '#FF9E00' : '#14B8A6';
-      glowColor = isSelected ? 'rgba(255, 158, 0, 0.95)' : 'rgba(20, 184, 166, 0.7)';
+      primaryColor = isSelected ? '#FDE047' : '#14B8A6';
+      glowColor = isSelected ? 'rgba(253, 224, 71, 0.95)' : 'rgba(20, 184, 166, 0.7)';
       break;
     case 'crater_major':
-      primaryColor = isSelected ? '#FF9E00' : '#06B6D4';
-      glowColor = isSelected ? 'rgba(255, 158, 0, 0.95)' : 'rgba(6, 182, 212, 0.65)';
+      primaryColor = isSelected ? '#FDE047' : '#06B6D4';
+      glowColor = isSelected ? 'rgba(253, 224, 71, 0.95)' : 'rgba(6, 182, 212, 0.65)';
       break;
     case 'crater_minor':
-      primaryColor = isSelected ? '#FF9E00' : '#0284C7';
-      glowColor = isSelected ? 'rgba(255, 158, 0, 0.95)' : 'rgba(2, 132, 199, 0.55)';
+      primaryColor = isSelected ? '#FDE047' : '#0284C7';
+      glowColor = isSelected ? 'rgba(253, 224, 71, 0.95)' : 'rgba(2, 132, 199, 0.55)';
       break;
     case 'mountain':
-      primaryColor = isSelected ? '#FF9E00' : '#38BDF8';
-      glowColor = isSelected ? 'rgba(255, 158, 0, 0.95)' : 'rgba(56, 189, 248, 0.65)';
+      primaryColor = isSelected ? '#FDE047' : '#38BDF8';
+      glowColor = isSelected ? 'rgba(253, 224, 71, 0.95)' : 'rgba(56, 189, 248, 0.65)';
       break;
     case 'mare':
-      primaryColor = isSelected ? '#FF9E00' : '#0D9488';
-      glowColor = isSelected ? 'rgba(255, 158, 0, 0.95)' : 'rgba(13, 148, 136, 0.6)';
+      primaryColor = isSelected ? '#FDE047' : '#0D9488';
+      glowColor = isSelected ? 'rgba(253, 224, 71, 0.95)' : 'rgba(13, 148, 136, 0.6)';
       break;
     case 'valley':
-      primaryColor = isSelected ? '#FF9E00' : '#22D3EE';
-      glowColor = isSelected ? 'rgba(255, 158, 0, 0.95)' : 'rgba(34, 211, 238, 0.6)';
+      primaryColor = isSelected ? '#FDE047' : '#22D3EE';
+      glowColor = isSelected ? 'rgba(253, 224, 71, 0.95)' : 'rgba(34, 211, 238, 0.6)';
       break;
     case 'custom_pin':
-      primaryColor = isSelected ? '#FF9E00' : '#00D2C4';
-      glowColor = isSelected ? 'rgba(255, 158, 0, 0.95)' : 'rgba(0, 210, 196, 0.85)';
+      primaryColor = isSelected ? '#FDE047' : '#00D2C4';
+      glowColor = isSelected ? 'rgba(253, 224, 71, 0.95)' : 'rgba(0, 210, 196, 0.85)';
       break;
   }
 

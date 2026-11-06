@@ -365,8 +365,9 @@ export function createMoonFeatures({ viewer, container, callbacks, isMobile, fly
           if (hoveredEntity) {
             const prevBase = hoveredEntity.properties.baseScale?.getValue() || 0.55;
             const prevType = hoveredEntity.properties.markerType?.getValue() || 'crater_minor';
-            hoveredEntity.billboard.scale = prevBase;
-            hoveredEntity.billboard.image = getLunarMarkerDataUrl(prevType, false);
+            const remainsSelected = hoveredEntity === selectedEntity;
+            hoveredEntity.billboard.scale = remainsSelected ? prevBase * 1.4 : prevBase;
+            hoveredEntity.billboard.image = getLunarMarkerDataUrl(prevType, remainsSelected);
           }
           hoveredEntity = pickedObject.id;
           hoveredEntity.billboard.scale = baseScale * 1.35;
@@ -379,8 +380,10 @@ export function createMoonFeatures({ viewer, container, callbacks, isMobile, fly
         container.style.cursor = 'default';
         const prevBase = hoveredEntity.properties.baseScale?.getValue() || 0.55;
         const prevType = hoveredEntity.properties.markerType?.getValue() || 'crater_minor';
-        hoveredEntity.billboard.scale = prevBase;
-        hoveredEntity.billboard.image = getLunarMarkerDataUrl(prevType, false);
+        // Hover ending must not remove the highlight from a still-selected catalog pin.
+        const remainsSelected = hoveredEntity === selectedEntity;
+        hoveredEntity.billboard.scale = remainsSelected ? prevBase * 1.4 : prevBase;
+        hoveredEntity.billboard.image = getLunarMarkerDataUrl(prevType, remainsSelected);
         hoveredEntity = null;
         scene.requestRender();
         callbacks.onFeatureHover?.(null, 0, 0);

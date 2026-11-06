@@ -5,7 +5,7 @@ import PublicPageHeader from '../common/PublicPageHeader.jsx';
 const team = [
   { name: 'Mishkatul Habib Kabbo', role: 'Presenter & Video Person', colors: ['#0E7490', '#22D3EE'] },
   { name: 'Nahid Iqbal', role: 'Data Person', colors: ['#047857', '#34D399'] },
-  { name: 'Rafid Muammar', role: 'Designer', colors: ['#4338CA', '#818CF8'] },
+  { name: 'Rafid Muammar', role: 'Certified Nigga', colors: ['#4338CA', '#818CF8'] },
   { name: 'Yeasin Anzam Rifat', role: 'Builder', colors: ['#B45309', '#FBBF24'] },
 ];
 
