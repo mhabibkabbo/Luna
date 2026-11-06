@@ -35,7 +35,7 @@ export default function LayerPanel({
   return (
     <div
       id={activePlanet === 'earth' ? 'earth-layer-panel' : 'lunar-layer-panel'}
-      className="absolute top-20 sm:top-35 left-3 sm:left-16 lg:left-20 z-35 w-[min(20rem,calc(100vw-1.5rem))] max-h-[calc(100vh-15rem)] flex flex-col bg-[#060b14]/96 backdrop-blur-2xl border border-slate-800 rounded-xl shadow-[0_16px_40px_rgba(0,0,0,0.85)] overflow-hidden pointer-events-auto transition-all animate-in fade-in slide-in-from-left-2 duration-250 select-none"
+      className="absolute top-20 sm:top-35 left-3 sm:left-16 lg:left-20 z-35 w-[min(20rem,calc(100vw-1.5rem))] max-h-[calc(100vh-15rem)] flex flex-col bg-[#050507]/96 backdrop-blur-2xl border border-slate-800 rounded-xl shadow-[0_16px_40px_rgba(0,0,0,0.85)] overflow-hidden pointer-events-auto transition-all animate-in fade-in slide-in-from-left-2 duration-250 select-none"
     >
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800 bg-slate-950/50">

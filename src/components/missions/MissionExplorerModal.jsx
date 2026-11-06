@@ -87,9 +87,9 @@ export default function MissionExplorerModal({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="relative w-full max-w-4xl max-h-[90vh] flex flex-col bg-[#050811] border border-slate-800 rounded-2xl shadow-2xl overflow-hidden text-slate-100">
+      <div className="relative w-full max-w-4xl max-h-[90vh] flex flex-col bg-[#050507] border border-slate-800 rounded-2xl shadow-2xl overflow-hidden text-slate-100">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 pb-3 border-b border-slate-800 bg-[#070d18]/80">
+        <div className="flex items-center justify-between p-4 pb-3 border-b border-slate-800 bg-[#050507]/80">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl bg-cyan-950/80 border border-cyan-500/40 flex items-center justify-center text-cyan-300 shadow-md">
               <Rocket className="w-4 h-4" />
@@ -116,7 +116,7 @@ export default function MissionExplorerModal({
         </div>
 
         {/* Filter & Search Bar */}
-        <div className="p-3.5 border-b border-slate-800/80 bg-[#060b14] flex flex-col sm:flex-row gap-2.5">
+        <div className="p-3.5 border-b border-slate-800/80 bg-[#050507] flex flex-col sm:flex-row gap-2.5">
           {/* Search field */}
           <div className="relative flex-1">
             <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
@@ -196,7 +196,7 @@ export default function MissionExplorerModal({
         </div>
 
         {/* Results Count Banner */}
-        <div className="px-4 py-1.5 bg-[#070c17] border-b border-slate-800/60 flex items-center justify-between text-[11px] font-mono text-slate-400">
+        <div className="px-4 py-1.5 bg-[#050507] border-b border-slate-800/60 flex items-center justify-between text-[11px] font-mono text-slate-400">
           <span>
             Showing <strong className="text-cyan-400">{filteredMissions.length}</strong> of {CLPS_MISSIONS.length} NASA Task Orders
           </span>
@@ -236,7 +236,7 @@ export default function MissionExplorerModal({
                   className={`p-3.5 rounded-xl border transition-all ${
                     isSelected
                       ? 'bg-slate-900/90 border-cyan-500/60 shadow-lg shadow-cyan-950/40'
-                      : 'bg-[#060b14]/90 border-slate-800 hover:border-slate-700 hover:bg-slate-900/50'
+                      : 'bg-[#050507]/90 border-slate-800 hover:border-slate-700 hover:bg-slate-900/50'
                   }`}
                 >
                   {/* Optional Photo Hero Thumbnail */}
@@ -247,7 +247,7 @@ export default function MissionExplorerModal({
                         alt={photo.title}
                         className="w-full h-full object-cover"
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-[#060b14] via-transparent to-black/20" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#050507] via-transparent to-black/20" />
                       <div className="absolute bottom-1.5 left-2.5 text-[9.5px] font-mono text-cyan-300">
                         {photo.credit}
                       </div>

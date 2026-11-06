@@ -281,7 +281,7 @@ export default function CelestialPanel({
   return (
     <div
       id="celestial-panel"
-      className="fixed top-[100px] left-[60px] -translate-y-1/2 z-75 w-[min(23rem,calc(100vw-4.5rem))] max-h-[calc(100vh-4rem)] flex flex-col bg-[#060b14]/96 backdrop-blur-2xl border border-slate-800/90 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.85)] overflow-hidden pointer-events-auto transition-all animate-in fade-in slide-in-from-left-4 duration-200 ease-out select-none"
+      className="fixed top-[100px] left-[60px] -translate-y-1/2 z-75 w-[min(23rem,calc(100vw-4.5rem))] max-h-[calc(100vh-4rem)] flex flex-col bg-[#050507]/96 backdrop-blur-2xl border border-slate-800/90 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.85)] overflow-hidden pointer-events-auto transition-all animate-in fade-in slide-in-from-left-4 duration-200 ease-out select-none"
     >
       {/* Header */}
       <div className="flex items-center justify-between gap-2 px-3.5 py-2.5 border-b border-slate-800 bg-slate-900/60">

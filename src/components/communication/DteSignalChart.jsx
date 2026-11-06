@@ -360,7 +360,7 @@ export default function DteSignalChart({
   return (
     <div className="space-y-3.5">
       {/* Header & Controls */}
-      <div className="p-3.5 rounded-2xl bg-[#090D15] border border-slate-800/80 space-y-3">
+      <div className="p-3.5 rounded-2xl bg-[#0C0D12] border border-slate-800/80 space-y-3">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
           <div>
             <div className="flex items-center gap-1.5 text-xs font-mono font-semibold text-white">
@@ -459,7 +459,7 @@ export default function DteSignalChart({
       {/* Main Interactive Timeline Canvas */}
       <div
         ref={containerRef}
-        className="p-3 rounded-2xl bg-[#090D15] border border-slate-800/80 relative space-y-2"
+        className="p-3 rounded-2xl bg-[#0C0D12] border border-slate-800/80 relative space-y-2"
       >
         <div className="flex items-center justify-between text-[11px] font-mono px-1">
           <span className="text-slate-400">
@@ -584,7 +584,7 @@ export default function DteSignalChart({
 
       {/* Requirement 5: Minimal Communication Statistics Panel */}
       {stats && (
-        <div className="p-3.5 rounded-2xl bg-[#090D15] border border-slate-800/80 space-y-2">
+        <div className="p-3.5 rounded-2xl bg-[#0C0D12] border border-slate-800/80 space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-xs font-mono font-semibold uppercase text-slate-300 tracking-wider">
               Calculated Telemetry Metrics ({durationDays} Days)
@@ -654,7 +654,7 @@ export default function DteSignalChart({
       )}
 
       {/* Requirement 6 & 10: Collapsible Technical Data Sources & Methodology Section */}
-      <div className="rounded-2xl bg-[#090D15] border border-slate-800/80 overflow-hidden">
+      <div className="rounded-2xl bg-[#0C0D12] border border-slate-800/80 overflow-hidden">
         <button
           type="button"
           onClick={() => setIsProvenanceOpen(!isProvenanceOpen)}

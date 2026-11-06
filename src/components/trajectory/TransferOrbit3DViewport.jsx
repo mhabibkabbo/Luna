@@ -776,20 +776,20 @@ export default function TransferOrbit3DViewport({
   }, [cameraMode, cameraFocusSeq]);
 
   return (
-    <div className="relative w-full h-full min-h-0 bg-gradient-to-b from-[#02050b] via-[#040813] to-[#020409] rounded-2xl overflow-hidden border border-[#142338]">
+    <div className="relative w-full h-full min-h-0 bg-gradient-to-b from-[#050507] via-[#050507] to-[#050507] rounded-2xl overflow-hidden border border-[#1E2028]">
       {/* Three.js Canvas Container */}
       <div ref={mountRef} className="w-full h-full cursor-grab active:cursor-grabbing" />
 
       {/* Camera Mode Toolbar (Pills) */}
       {!hideEmbeddedControls && (
-        <div className="absolute top-2.5 left-2.5 sm:top-3 sm:left-3 z-10 flex items-center gap-1.5 bg-[#060B13]/90 backdrop-blur-md border border-[#1b2d45] rounded-xl p-1 text-[11px] font-mono shadow-xl">
+        <div className="absolute top-2.5 left-2.5 sm:top-3 sm:left-3 z-10 flex items-center gap-1.5 bg-[#050507]/90 backdrop-blur-md border border-[#1E2028] rounded-xl p-1 text-[11px] font-mono shadow-xl">
           <button
             type="button"
             onClick={handleRecenter}
             className={`px-3 py-1 rounded-lg flex items-center gap-1.5 transition-all ${
               cameraMode === 'overview'
-                ? 'bg-[#38BDF8] text-[#060B13] font-bold shadow-[0_0_12px_rgba(56,189,248,0.5)]'
-                : 'text-[#94A3B8] hover:text-white hover:bg-[#152336]'
+                ? 'bg-[#38BDF8] text-[#050507] font-bold shadow-[0_0_12px_rgba(56,189,248,0.5)]'
+                : 'text-[#94A3B8] hover:text-white hover:bg-[#14161D]'
             }`}
             title="Center Full Trajectory (Earth to Moon)"
           >
@@ -802,8 +802,8 @@ export default function TransferOrbit3DViewport({
             onClick={handleFollowRocket}
             className={`px-3 py-1 rounded-lg flex items-center gap-1.5 transition-all ${
               cameraMode === 'chase'
-                ? 'bg-[#A78BFA] text-[#060B13] font-bold shadow-[0_0_12px_rgba(167,139,250,0.5)]'
-                : 'text-[#94A3B8] hover:text-white hover:bg-[#152336]'
+                ? 'bg-[#A78BFA] text-[#050507] font-bold shadow-[0_0_12px_rgba(167,139,250,0.5)]'
+                : 'text-[#94A3B8] hover:text-white hover:bg-[#14161D]'
             }`}
             title="Lock Camera on Rocket Spacecraft"
           >
@@ -816,8 +816,8 @@ export default function TransferOrbit3DViewport({
             onClick={handleZoomEarth}
             className={`px-2.5 py-1 rounded-lg flex items-center gap-1.5 transition-all ${
               cameraMode === 'earth'
-                ? 'bg-[#38BDF8] text-[#060B13] font-bold'
-                : 'text-[#94A3B8] hover:text-white hover:bg-[#152336]'
+                ? 'bg-[#38BDF8] text-[#050507] font-bold'
+                : 'text-[#94A3B8] hover:text-white hover:bg-[#14161D]'
             }`}
             title="Zoom to Earth Departure"
           >
@@ -830,8 +830,8 @@ export default function TransferOrbit3DViewport({
             onClick={handleZoomMoon}
             className={`px-2.5 py-1 rounded-lg flex items-center gap-1.5 transition-all ${
               cameraMode === 'moon'
-                ? 'bg-[#00D2C4] text-[#060B13] font-bold'
-                : 'text-[#94A3B8] hover:text-white hover:bg-[#152336]'
+                ? 'bg-white text-[#050507] font-bold'
+                : 'text-[#94A3B8] hover:text-white hover:bg-[#14161D]'
             }`}
             title="Zoom to Moon Arrival"
           >
@@ -844,7 +844,7 @@ export default function TransferOrbit3DViewport({
       {/* NASA JPL Horizons Live Ephemeris Badge */}
       <div className="absolute top-2.5 right-2.5 sm:top-3 sm:right-3 z-10 flex items-center gap-2">
         {jplEphemeris && (
-          <div className="bg-[#060B13]/90 backdrop-blur-md border border-[#1b2d45] rounded-xl px-3 py-1 text-[10px] font-mono text-[#94A3B8] flex items-center gap-2 shadow-xl">
+          <div className="bg-[#050507]/90 backdrop-blur-md border border-[#1E2028] rounded-xl px-3 py-1 text-[10px] font-mono text-[#94A3B8] flex items-center gap-2 shadow-xl">
             <Radio className={`w-3.5 h-3.5 ${jplEphemeris.isLive ? 'text-emerald-400 animate-pulse' : 'text-cyan-400'}`} />
             <span className="text-white font-medium">
               {jplEphemeris.isLive ? 'NASA JPL Horizons Ephemeris' : 'IAU Ephemeris'}
@@ -857,7 +857,7 @@ export default function TransferOrbit3DViewport({
       </div>
 
       {/* Rocket Active Locator HUD pill */}
-      <div className="absolute bottom-2.5 left-2.5 z-10 flex items-center gap-2 bg-[#060B13]/85 backdrop-blur-md px-3 py-1.5 rounded-xl border border-[#1b2d45] text-[11px] font-mono text-white shadow-xl">
+      <div className="absolute bottom-2.5 left-2.5 z-10 flex items-center gap-2 bg-[#050507]/85 backdrop-blur-md px-3 py-1.5 rounded-xl border border-[#1E2028] text-[11px] font-mono text-white shadow-xl">
         <div className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-ping" />
         <span className="text-[#94A3B8]">Craft:</span>
         <span className="font-semibold text-[#38BDF8]">{orbitPlan.profile.name} Vehicle</span>
@@ -866,7 +866,7 @@ export default function TransferOrbit3DViewport({
       </div>
 
       {/* Instructions pill at bottom right */}
-      <div className="absolute bottom-2.5 right-2.5 z-10 pointer-events-none hidden sm:flex items-center gap-2 text-[10px] font-mono text-[#64748B] bg-[#060B13]/70 px-2.5 py-1 rounded-lg border border-[#16283C]/70">
+      <div className="absolute bottom-2.5 right-2.5 z-10 pointer-events-none hidden sm:flex items-center gap-2 text-[10px] font-mono text-[#64748B] bg-[#050507]/70 px-2.5 py-1 rounded-lg border border-[#1E2028]/70">
         <span>Drag: Orbit</span>
         <span>&middot;</span>
         <span>Right-click: Pan</span>

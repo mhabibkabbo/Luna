@@ -227,12 +227,12 @@ export default function TransparentLunarSearch({
   };
 
   const getTypeIcon = (item) => {
-    if (item.type === 'coordinate') return <MapPin className="w-3.5 h-3.5 text-[#E59A6D]" />;
+    if (item.type === 'coordinate') return <MapPin className="w-3.5 h-3.5 text-[#F8FAFC]" />;
     if (item.isClps || item.type === 'clps-mission' || item.category === 'Landing Site')
-      return <Rocket className="w-3.5 h-3.5 text-[#E59A6D]" />;
+      return <Rocket className="w-3.5 h-3.5 text-[#F8FAFC]" />;
     if (item.type === 'mountain') return <Mountain className="w-3.5 h-3.5 text-[#88B38A]" />;
     if (item.type === 'mare') return <Compass className="w-3.5 h-3.5 text-[#88B38A]" />;
-    return <CircleDot className="w-3.5 h-3.5 text-[#E59A6D]" />;
+    return <CircleDot className="w-3.5 h-3.5 text-[#F8FAFC]" />;
   };
 
   return (
@@ -249,7 +249,7 @@ export default function TransparentLunarSearch({
         <button
           type="button"
           onClick={() => setIsExpanded(true)}
-          className="w-9 h-9 rounded-full bg-[#12110D]/85 hover:bg-[#181711] border border-white/15 hover:border-[#E59A6D] text-[#E59A6D] flex items-center justify-center shadow-2xl backdrop-blur-md transition-all active:scale-90"
+          className="w-9 h-9 rounded-full bg-[#050507]/85 hover:bg-[#0C0D12] border border-white/15 hover:border-white/30 text-[#F8FAFC] flex items-center justify-center shadow-2xl backdrop-blur-md transition-all active:scale-90"
           title="Search lunar places, craters, maria, missions & coordinates"
           aria-label="Search lunar features"
         >
@@ -257,9 +257,9 @@ export default function TransparentLunarSearch({
         </button>
       ) : (
         /* Expanded Compact Translucent Search Bar */
-        <div className="w-64 sm:w-72 bg-[#12110D]/95 backdrop-blur-2xl border border-white/15 rounded-2xl shadow-2xl p-2 flex flex-col gap-1.5 transition-all animate-in fade-in zoom-in-95 duration-150">
+        <div className="w-64 sm:w-72 bg-[#050507]/95 backdrop-blur-2xl border border-white/15 rounded-2xl shadow-2xl p-2 flex flex-col gap-1.5 transition-all animate-in fade-in zoom-in-95 duration-150">
           <div className="relative flex items-center">
-            <Search className="w-3.5 h-3.5 absolute left-2.5 text-[#E59A6D] pointer-events-none" />
+            <Search className="w-3.5 h-3.5 absolute left-2.5 text-[#F8FAFC] pointer-events-none" />
 
             <input
               ref={inputRef}
@@ -268,14 +268,14 @@ export default function TransparentLunarSearch({
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Search place, mission, coordinates..."
-              className="w-full h-8 pl-8 pr-6 bg-[#181711]/90 border border-[#2D2A22] focus:border-[#E59A6D] rounded-xl text-xs text-[#F4EFE6] placeholder-[#A8A193]/60 focus:outline-none transition-all font-sans"
+              className="w-full h-8 pl-8 pr-6 bg-[#0C0D12]/90 border border-[#1E2028] focus:border-white/40 rounded-xl text-xs text-[#F8FAFC] placeholder-[#A8A193]/60 focus:outline-none transition-all font-sans"
             />
 
             <div className="absolute right-2 flex items-center">
               <button
                 type="button"
                 onClick={() => setIsExpanded(false)}
-                className="p-1 text-[#A8A193] hover:text-[#F4EFE6] rounded hover:bg-white/10"
+                className="p-1 text-[#8E95A5] hover:text-white rounded hover:bg-white/10"
                 aria-label="Close search"
               >
                 <X className="w-3.5 h-3.5" />
@@ -293,7 +293,7 @@ export default function TransparentLunarSearch({
 
           {/* Autocomplete Results Dropdown */}
           {results.length > 0 ? (
-            <div className="mt-0.5 border-t border-[#2D2A22] pt-1.5 max-h-64 overflow-y-auto custom-scrollbar space-y-1">
+            <div className="mt-0.5 border-t border-[#1E2028] pt-1.5 max-h-64 overflow-y-auto custom-scrollbar space-y-1">
               {results.map((item, idx) => {
                 const isFocused = idx === activeIndex;
 
@@ -303,33 +303,33 @@ export default function TransparentLunarSearch({
                     onClick={() => handleSelect(item)}
                     className={`px-2.5 py-1.5 rounded-lg cursor-pointer flex items-center justify-between gap-2 transition-all ${
                       isFocused
-                        ? 'bg-[#E59A6D]/20 border border-[#E59A6D]/50 text-[#F4EFE6]'
-                        : 'bg-[#181711]/60 hover:bg-[#26231B] border border-transparent text-[#D0C9BD]'
+                        ? 'bg-white/[0.08] border border-white/25 text-[#F8FAFC]'
+                        : 'bg-[#0C0D12]/60 hover:bg-[#14161D] border border-transparent text-[#8E95A5]'
                     }`}
                   >
                     <div className="flex items-center gap-2 min-w-0">
-                      <div className="p-1 rounded bg-[#26231B] text-[#E59A6D] shrink-0">
+                      <div className="p-1 rounded bg-[#14161D] text-[#F8FAFC] shrink-0">
                         {getTypeIcon(item)}
                       </div>
 
                       <div className="flex flex-col min-w-0">
-                        <span className="text-[11px] font-semibold text-[#F4EFE6] truncate">
+                        <span className="text-[11px] font-semibold text-[#F8FAFC] truncate">
                           {item.name}
                         </span>
-                        <span className="text-[9.5px] font-mono text-[#A8A193] truncate">
+                        <span className="text-[9.5px] font-mono text-[#8E95A5] truncate">
                           {item.category || item.provider || 'Lunar Location'}
                         </span>
                       </div>
                     </div>
 
-                    <Navigation className="w-3 h-3 text-[#A8A193] shrink-0" />
+                    <Navigation className="w-3 h-3 text-[#8E95A5] shrink-0" />
                   </div>
                 );
               })}
             </div>
           ) : (
             query.trim() && (
-              <div className="p-2 text-center text-[11px] font-mono text-[#A8A193]">
+              <div className="p-2 text-center text-[11px] font-mono text-[#8E95A5]">
                 No matching lunar feature or coordinates found.
               </div>
             )

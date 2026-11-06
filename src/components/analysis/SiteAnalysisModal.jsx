@@ -380,7 +380,7 @@ export default function SiteAnalysisModal({
       summaryText = `Site has severe communication or thermal constraints (e.g. Farside or deep PSR). Requires dedicated orbital relay satellite and cryogenic lander survival systems.`;
     } else if (compositeScore < 80) {
       statusLabel = 'VIABLE WITH OPERATIONAL WINDOWS';
-      badgeClass = 'bg-[#00D2C4]/20 text-[#00D2C4] border-[#00D2C4]/40';
+      badgeClass = 'bg-white/[0.08] text-[#F8FAFC] border-white/25';
       summaryText = `Site is viable during targeted illumination windows. Mission architecture must schedule landing to align with the peak sunlit cycle.`;
     }
 
@@ -407,16 +407,16 @@ export default function SiteAnalysisModal({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="relative w-full max-w-2xl max-h-[92vh] bg-[#0A111C] border border-[#16283C] rounded-3xl shadow-2xl overflow-hidden flex flex-col text-[#F8FAFC] font-sans">
+      <div className="relative w-full max-w-2xl max-h-[92vh] bg-[#0C0D12] border border-[#1E2028] rounded-3xl shadow-2xl overflow-hidden flex flex-col text-[#F8FAFC] font-sans">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#16283C] bg-[#060B13] shrink-0">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[#1E2028] bg-[#050507] shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-[#00D2C4]/15 border border-[#00D2C4]/30 flex items-center justify-center text-[#00D2C4]">
+            <div className="w-9 h-9 rounded-xl bg-white/[0.08] border border-white/25 flex items-center justify-center text-[#F8FAFC]">
               <Compass className="w-4 h-4" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-mono uppercase tracking-wider text-[#00D2C4]">
+                <span className="text-[10px] font-mono uppercase tracking-wider text-[#F8FAFC]">
                   {isCustomPin
                     ? 'CUSTOM WAYPOINT'
                     : isClps
@@ -442,20 +442,20 @@ export default function SiteAnalysisModal({
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-full bg-[#101F33] hover:bg-[#16283C] text-[#94A3B8] hover:text-[#F8FAFC] transition-colors"
+            className="p-1.5 rounded-full bg-[#14161D] hover:bg-[#1E2028] text-[#94A3B8] hover:text-[#F8FAFC] transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Tab Navigation (Overview + Terrain Horizon & Sun + Payloads if applicable) */}
-        <div className="px-6 py-2.5 border-b border-[#16283C] bg-[#060B13] flex items-center gap-2 overflow-x-auto custom-scrollbar shrink-0">
+        <div className="px-6 py-2.5 border-b border-[#1E2028] bg-[#050507] flex items-center gap-2 overflow-x-auto custom-scrollbar shrink-0">
           <button
             type="button"
             onClick={() => setActiveTab('overview')}
             className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-colors whitespace-nowrap ${
               activeTab === 'overview'
-                ? 'bg-[#101F33] text-[#00D2C4] font-semibold border border-[#00D2C4]/50'
+                ? 'bg-[#14161D] text-[#F8FAFC] font-semibold border border-white/25'
                 : 'text-[#94A3B8] hover:text-[#F8FAFC]'
             }`}
           >
@@ -468,7 +468,7 @@ export default function SiteAnalysisModal({
               onClick={() => setActiveTab('horizon')}
               className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-colors whitespace-nowrap ${
                 activeTab === 'horizon'
-                  ? 'bg-[#101F33] text-[#00D2C4] font-semibold border border-[#00D2C4]/50'
+                  ? 'bg-[#14161D] text-[#F8FAFC] font-semibold border border-white/25'
                   : 'text-[#94A3B8] hover:text-[#F8FAFC]'
               }`}
             >
@@ -482,7 +482,7 @@ export default function SiteAnalysisModal({
               onClick={() => setActiveTab('payloads')}
               className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-colors whitespace-nowrap ${
                 activeTab === 'payloads'
-                  ? 'bg-[#101F33] text-[#00D2C4] font-semibold border border-[#00D2C4]/50'
+                  ? 'bg-[#14161D] text-[#F8FAFC] font-semibold border border-white/25'
                   : 'text-[#94A3B8] hover:text-[#F8FAFC]'
               }`}
             >
@@ -497,8 +497,8 @@ export default function SiteAnalysisModal({
             <div className="space-y-5">
               {/* 1. Scientific Landing Site Assessment & Multi-Day Window Verdict Card */}
               {feature.body !== 'earth' && (
-                <div className="p-4 rounded-2xl bg-[#060B13] border border-[#16283C] space-y-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#16283C] pb-3">
+                <div className="p-4 rounded-2xl bg-[#050507] border border-[#1E2028] space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#1E2028] pb-3">
                     <div className="flex items-center gap-2">
                       <ShieldCheck className="w-5 h-5 text-[#34D399]" />
                       <div>
@@ -512,7 +512,7 @@ export default function SiteAnalysisModal({
                     </div>
 
                     {/* Window Duration Selector */}
-                    <div className="flex items-center gap-1.5 bg-[#0A111C] p-1 rounded-xl border border-[#16283C]">
+                    <div className="flex items-center gap-1.5 bg-[#0C0D12] p-1 rounded-xl border border-[#1E2028]">
                       <span className="text-[10px] font-mono text-[#94A3B8] pl-1.5 pr-1">Window:</span>
                       {[7, 14, 28].map((days) => (
                         <button
@@ -521,7 +521,7 @@ export default function SiteAnalysisModal({
                           onClick={() => setMissionWindowDays(days)}
                           className={`px-2 py-0.5 rounded-lg text-[11px] font-mono transition-colors ${
                             missionWindowDays === days
-                              ? 'bg-[#00D2C4] text-[#060B13] font-bold'
+                              ? 'bg-white text-[#050507] font-bold'
                               : 'text-[#94A3B8] hover:text-white'
                           }`}
                         >
@@ -532,11 +532,11 @@ export default function SiteAnalysisModal({
                   </div>
 
                   {/* Dual Score Presentation: Mission Window vs Current Instant */}
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-[#0A111C] p-3.5 rounded-xl border border-[#16283C]">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-[#0C0D12] p-3.5 rounded-xl border border-[#1E2028]">
                     <div className="flex items-center gap-3">
                       {/* Mission Window Primary Score */}
-                      <div className="w-16 h-16 rounded-2xl border-2 border-[#00D2C4] bg-[#060B13] flex flex-col items-center justify-center font-mono shrink-0 shadow-[0_0_15px_rgba(0,210,196,0.2)]">
-                        <span className="text-2xl font-black text-[#00D2C4] leading-none">
+                      <div className="w-16 h-16 rounded-2xl border-2 border-white/25 bg-[#050507] flex flex-col items-center justify-center font-mono shrink-0 shadow-sm">
+                        <span className="text-2xl font-black text-[#F8FAFC] leading-none">
                           {landingVerdict.windowScore}
                         </span>
                         <span className="text-[9px] font-mono text-[#94A3B8] mt-0.5">{missionWindowDays}d Window</span>
@@ -556,14 +556,14 @@ export default function SiteAnalysisModal({
                     </div>
 
                     {missionWindowAssessment && (
-                      <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs font-mono sm:border-l sm:border-[#16283C] sm:pl-4">
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs font-mono sm:border-l sm:border-[#1E2028] sm:pl-4">
                         <div>
                           <span className="text-[10px] text-[#94A3B8] block">Max Sunlit Streak</span>
                           <span className="text-[#34D399] font-bold">{missionWindowAssessment.longestSunlitHours} hrs</span>
                         </div>
                         <div>
                           <span className="text-[10px] text-[#94A3B8] block">DSN Network Up</span>
-                          <span className="text-[#00D2C4] font-bold">{missionWindowAssessment.dsnRatio}%</span>
+                          <span className="text-[#F8FAFC] font-bold">{missionWindowAssessment.dsnRatio}%</span>
                         </div>
                         <div>
                           <span className="text-[10px] text-[#94A3B8] block">Window Sunlight</span>
@@ -588,9 +588,9 @@ export default function SiteAnalysisModal({
                         {missionWindowAssessment.dailyScores.map((day) => {
                           const barBg =
                             day.score >= 80
-                              ? 'bg-[#34D399] text-[#060B13]'
+                              ? 'bg-[#34D399] text-[#050507]'
                               : day.score >= 50
-                              ? 'bg-[#00D2C4] text-[#060B13]'
+                              ? 'bg-white text-[#050507]'
                               : 'bg-rose-500/70 text-white';
                           return (
                             <div
@@ -614,14 +614,14 @@ export default function SiteAnalysisModal({
                     {landingVerdict.keyFactors.map((factor, idx) => (
                       <div
                         key={idx}
-                        className="p-2.5 rounded-xl bg-[#0A111C] border border-[#16283C] flex items-center gap-2 text-[11px]"
+                        className="p-2.5 rounded-xl bg-[#0C0D12] border border-[#1E2028] flex items-center gap-2 text-[11px]"
                       >
                         {factor.positive ? (
                           <CheckCircle2 className="w-3.5 h-3.5 text-[#34D399] shrink-0" />
                         ) : (
-                          <AlertTriangle className="w-3.5 h-3.5 text-[#00D2C4] shrink-0" />
+                          <AlertTriangle className="w-3.5 h-3.5 text-[#F8FAFC] shrink-0" />
                         )}
-                        <span className={factor.positive ? 'text-[#F8FAFC]' : 'text-[#00D2C4]'}>
+                        <span className={factor.positive ? 'text-[#F8FAFC]' : 'text-[#F8FAFC]'}>
                           {factor.text}
                         </span>
                       </div>
@@ -634,13 +634,13 @@ export default function SiteAnalysisModal({
               {feature.body !== 'earth' && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {/* Weather / Thermal Card */}
-                  <div className="p-4 rounded-2xl bg-[#060B13] border border-[#16283C] space-y-2.5">
+                  <div className="p-4 rounded-2xl bg-[#050507] border border-[#1E2028] space-y-2.5">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold text-[#F8FAFC] flex items-center gap-2">
-                        <Thermometer className="w-4 h-4 text-[#00D2C4]" />
+                        <Thermometer className="w-4 h-4 text-[#F8FAFC]" />
                         <span>Surface Weather &amp; Thermal</span>
                       </span>
-                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#101F33] text-[#34D399]">
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#14161D] text-[#34D399]">
                         {localThermal?.isDaylight ? 'Sunlit' : localThermal?.isPSR ? 'PSR' : 'Lunar Night'}
                       </span>
                     </div>
@@ -654,7 +654,7 @@ export default function SiteAnalysisModal({
                       </div>
                       <div>
                         <span className="text-[10px] text-[#94A3B8] block">Solar Exposure</span>
-                        <span className="font-bold text-[#00D2C4]">
+                        <span className="font-bold text-[#F8FAFC]">
                           {localThermal?.isPSR ? '0% (Shadowed)' : localThermal?.isDaylight ? '100% (Daylight)' : '0% (Night)'}
                         </span>
                       </div>
@@ -662,7 +662,7 @@ export default function SiteAnalysisModal({
                   </div>
 
                   {/* DTE Communication Summary Card with Combined DSN as Default */}
-                  <div className="p-4 rounded-2xl bg-[#060B13] border border-[#16283C] space-y-2.5">
+                  <div className="p-4 rounded-2xl bg-[#050507] border border-[#1E2028] space-y-2.5">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold text-[#F8FAFC] flex items-center gap-2">
                         <Radio className="w-4 h-4 text-[#34D399]" />
@@ -685,7 +685,7 @@ export default function SiteAnalysisModal({
                       <select
                         value={selectedStationId}
                         onChange={(e) => setSelectedStationId(e.target.value)}
-                        className="w-full h-8 px-2.5 bg-[#0A111C] border border-[#16283C] focus:border-[#00D2C4] rounded-xl text-xs font-mono text-white focus:outline-none"
+                        className="w-full h-8 px-2.5 bg-[#0C0D12] border border-[#1E2028] focus:border-white/40 rounded-xl text-xs font-mono text-white focus:outline-none"
                       >
                         <option value="">Combined NASA DSN Network (Goldstone + Madrid + Canberra)</option>
                         {EARTH_COMMUNICATION_SITES.map((st) => (
@@ -705,7 +705,7 @@ export default function SiteAnalysisModal({
                       </div>
                       <div>
                         <span className="text-[10px] text-[#94A3B8] block">RF Elevation Margin</span>
-                        <span className="font-bold text-[#00D2C4]">
+                        <span className="font-bold text-[#F8FAFC]">
                           {activeStation
                             ? `${stationLink.marginDeg >= 0 ? '+' : ''}${stationLink.marginDeg.toFixed(1)}°`
                             : `${dsnLinksInstant.bestMarginDeg >= 0 ? '+' : ''}${dsnLinksInstant.bestMarginDeg.toFixed(1)}°`}
@@ -721,7 +721,7 @@ export default function SiteAnalysisModal({
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-[#F8FAFC] flex items-center gap-2">
-                      <Sun className="w-4 h-4 text-[#00D2C4]" />
+                      <Sun className="w-4 h-4 text-[#F8FAFC]" />
                       <span>360° Terrain Horizon &amp; Sun Ephemeris</span>
                     </span>
                     <span className="text-[10px] font-mono text-[#94A3B8]">
@@ -740,15 +740,15 @@ export default function SiteAnalysisModal({
 
               {/* 4. Coordinates & Region Grid */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div className="p-3.5 rounded-2xl bg-[#060B13] border border-[#16283C] space-y-0.5">
+                <div className="p-3.5 rounded-2xl bg-[#050507] border border-[#1E2028] space-y-0.5">
                   <span className="text-[10px] font-mono text-[#94A3B8] block">Latitude</span>
                   <div className="font-mono text-base font-bold text-[#F8FAFC]">
                     {featLat >= 0 ? `${featLat.toFixed(4)}°N` : `${Math.abs(featLat).toFixed(4)}°S`}
                   </div>
-                  <span className="text-[9.5px] font-mono text-[#00D2C4]">{latStr}</span>
+                  <span className="text-[9.5px] font-mono text-[#F8FAFC]">{latStr}</span>
                 </div>
 
-                <div className="p-3.5 rounded-2xl bg-[#060B13] border border-[#16283C] space-y-0.5">
+                <div className="p-3.5 rounded-2xl bg-[#050507] border border-[#1E2028] space-y-0.5">
                   <span className="text-[10px] font-mono text-[#94A3B8] block">Longitude</span>
                   <div className="font-mono text-base font-bold text-[#F8FAFC]">
                     {featLon >= 0 ? `${featLon.toFixed(4)}°E` : `${Math.abs(featLon).toFixed(4)}°W`}
@@ -756,7 +756,7 @@ export default function SiteAnalysisModal({
                   <span className="text-[9.5px] font-mono text-[#34D399]">{lonStr}</span>
                 </div>
 
-                <div className="p-3.5 rounded-2xl bg-[#060B13] border border-[#16283C] space-y-0.5">
+                <div className="p-3.5 rounded-2xl bg-[#050507] border border-[#1E2028] space-y-0.5">
                   <span className="text-[10px] font-mono text-[#94A3B8] block">Hemisphere / Face</span>
                   <div className="text-xs font-medium text-[#F8FAFC] truncate">
                     {regionInfo?.face || 'Nearside'}
@@ -766,7 +766,7 @@ export default function SiteAnalysisModal({
                   </span>
                 </div>
 
-                <div className="p-3.5 rounded-2xl bg-[#060B13] border border-[#16283C] space-y-0.5">
+                <div className="p-3.5 rounded-2xl bg-[#050507] border border-[#1E2028] space-y-0.5">
                   <span className="text-[10px] font-mono text-[#94A3B8] block">1-Way Light Delay</span>
                   <div className="font-mono text-base font-bold text-[#34D399]">
                     {lightTravelSec} s
@@ -779,9 +779,9 @@ export default function SiteAnalysisModal({
 
               {/* Nearest cataloged lunar landmark */}
               {feature.nearestFeature && (
-                <div className="p-3.5 rounded-2xl bg-[#060B13] border border-[#16283C] flex items-center justify-between text-xs">
+                <div className="p-3.5 rounded-2xl bg-[#050507] border border-[#1E2028] flex items-center justify-between text-xs">
                   <div className="flex items-center gap-2">
-                    <Compass className="w-4 h-4 text-[#00D2C4]" />
+                    <Compass className="w-4 h-4 text-[#F8FAFC]" />
                     <span className="text-[#94A3B8]">
                       Nearest Landmark:{' '}
                       <strong className="text-[#F8FAFC]">{feature.nearestFeature}</strong>
@@ -797,9 +797,9 @@ export default function SiteAnalysisModal({
 
               {/* Mission Details (If CLPS / Apollo) */}
               {isClps && clpsData && (
-                <div className="p-4 rounded-2xl bg-[#060B13] border border-[#16283C] space-y-3">
+                <div className="p-4 rounded-2xl bg-[#050507] border border-[#1E2028] space-y-3">
                   <span className="text-xs font-semibold text-[#F8FAFC] flex items-center gap-2">
-                    <Rocket className="w-3.5 h-3.5 text-[#00D2C4]" />
+                    <Rocket className="w-3.5 h-3.5 text-[#F8FAFC]" />
                     <span>Flight Architecture &amp; Provider</span>
                   </span>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
@@ -809,7 +809,7 @@ export default function SiteAnalysisModal({
                     </div>
                     <div>
                       <span className="text-[10px] text-[#94A3B8] block font-mono">Lander Vehicle</span>
-                      <span className="font-medium text-[#00D2C4]">{clpsData.lander}</span>
+                      <span className="font-medium text-[#F8FAFC]">{clpsData.lander}</span>
                     </div>
                     <div>
                       <span className="text-[10px] text-[#94A3B8] block font-mono">Launch Date</span>
@@ -825,7 +825,7 @@ export default function SiteAnalysisModal({
 
               {/* Description & Science Objectives */}
               {(clpsData?.objectives || feature.description) && (
-                <div className="p-4 rounded-2xl bg-[#060B13] border border-[#16283C] space-y-1.5">
+                <div className="p-4 rounded-2xl bg-[#050507] border border-[#1E2028] space-y-1.5">
                   <span className="text-[10px] font-mono uppercase tracking-wider text-[#94A3B8]">
                     Scientific Context &amp; Objectives
                   </span>
@@ -839,9 +839,9 @@ export default function SiteAnalysisModal({
 
           {activeTab === 'horizon' && feature.body !== 'earth' && (
             <div className="space-y-4">
-              <div className="p-4 rounded-2xl bg-[#060B13] border border-[#16283C] space-y-1.5">
+              <div className="p-4 rounded-2xl bg-[#050507] border border-[#1E2028] space-y-1.5">
                 <h3 className="text-sm font-bold text-[#F8FAFC] flex items-center gap-2">
-                  <Sun className="w-4 h-4 text-[#00D2C4]" />
+                  <Sun className="w-4 h-4 text-[#F8FAFC]" />
                   <span>360° Local Terrain Horizon Profile &amp; Solar Ephemeris</span>
                 </h3>
                 <p className="text-xs text-[#94A3B8] leading-relaxed">
@@ -868,11 +868,11 @@ export default function SiteAnalysisModal({
                 const pPurpose = typeof payload === 'object' ? payload.purpose : '';
 
                 return (
-                  <div key={idx} className="p-4 rounded-2xl bg-[#060B13] border border-[#16283C] space-y-1">
+                  <div key={idx} className="p-4 rounded-2xl bg-[#050507] border border-[#1E2028] space-y-1">
                     <div className="flex items-center justify-between">
-                      <span className="font-mono font-bold text-sm text-[#00D2C4]">{pName}</span>
+                      <span className="font-mono font-bold text-sm text-[#F8FAFC]">{pName}</span>
                       {pAgency && (
-                        <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#101F33] text-[#94A3B8]">
+                        <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#14161D] text-[#94A3B8]">
                           {pAgency}
                         </span>
                       )}
@@ -887,7 +887,7 @@ export default function SiteAnalysisModal({
         </div>
 
         {/* Action Buttons Footer */}
-        <div className="px-6 py-4 border-t border-[#16283C] bg-[#060B13] flex flex-wrap items-center justify-between gap-3 shrink-0">
+        <div className="px-6 py-4 border-t border-[#1E2028] bg-[#050507] flex flex-wrap items-center justify-between gap-3 shrink-0">
           <div className="flex items-center gap-2">
             <button
               type="button"
@@ -895,7 +895,7 @@ export default function SiteAnalysisModal({
                 onClose();
                 onZoomHere(featLon, featLat);
               }}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#00D2C4] text-[#060B13] font-bold text-xs hover:bg-[#00e6d6] transition-colors shadow-lg active:scale-95"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white text-[#050507] font-bold text-xs hover:bg-[#E2E8F0] transition-colors shadow-lg active:scale-95"
             >
               <Navigation className="w-3.5 h-3.5" />
               <span>Center on Map</span>
@@ -908,7 +908,7 @@ export default function SiteAnalysisModal({
                   onClose();
                   onCompareMission(clpsData || feature);
                 }}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#101F33] hover:bg-[#16283C] text-[#F8FAFC] font-medium text-xs border border-[#16283C] transition-colors"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#14161D] hover:bg-[#1E2028] text-[#F8FAFC] font-medium text-xs border border-[#1E2028] transition-colors"
               >
                 <GitCompare className="w-3.5 h-3.5 text-[#34D399]" />
                 <span>Compare Sites</span>

@@ -47,7 +47,7 @@ function ExpandableParagraph({ text, className }) {
           type="button"
           aria-expanded={expanded}
           onClick={() => setExpanded((value) => !value)}
-          className="mt-2 text-[10px] font-mono text-[#00D2C4] hover:text-[#34D399]"
+          className="mt-2 text-[10px] font-mono text-[#F8FAFC] hover:text-[#34D399]"
         >
           {expanded ? 'Show less' : 'Read full description'}
         </button>
@@ -132,7 +132,7 @@ export default function CompactClpsModal({ isOpen, mission, onClose, onFlyTo, on
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-3xl h-[90dvh] max-h-[90dvh] flex flex-col rounded-3xl bg-[#0A111C] border border-[#16283C] text-left shadow-2xl overflow-hidden"
+        className="relative w-full max-w-3xl h-[90dvh] max-h-[90dvh] flex flex-col rounded-3xl bg-[#0C0D12] border border-[#1E2028] text-left shadow-2xl overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Top Header / Banner Photo */}
@@ -142,7 +142,7 @@ export default function CompactClpsModal({ isOpen, mission, onClose, onFlyTo, on
             alt={activeMission.name}
             className="w-full h-full object-cover opacity-80"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#0A111C] via-[#0A111C]/40 to-black/60" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0C0D12] via-[#0C0D12]/40 to-black/60" />
 
           {/* Close Button */}
           <button
@@ -158,7 +158,7 @@ export default function CompactClpsModal({ isOpen, mission, onClose, onFlyTo, on
           <div className="absolute bottom-4 left-6 right-6 flex flex-col sm:flex-row sm:items-end justify-between gap-3">
             <div>
               <div className="flex items-center gap-2 mb-1.5">
-                <span className="px-2 py-0.5 rounded bg-[#00D2C4]/20 border border-[#00D2C4]/40 text-[#00D2C4] text-[10px] font-mono uppercase tracking-widest font-semibold">
+                <span className="px-2 py-0.5 rounded bg-white/[0.08] border border-white/25 text-[#F8FAFC] text-[10px] font-mono uppercase tracking-widest font-semibold">
                   {activeMission.taskOrder}
                 </span>
                 <span className="text-xs font-mono text-[#94A3B8] uppercase">{agencyLabel}</span>
@@ -172,13 +172,13 @@ export default function CompactClpsModal({ isOpen, mission, onClose, onFlyTo, on
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex items-center gap-1 px-6 pt-3 border-b border-[#16283C] bg-[#060B13] shrink-0 text-xs font-medium">
+        <div className="flex items-center gap-1 px-6 pt-3 border-b border-[#1E2028] bg-[#050507] shrink-0 text-xs font-medium">
           <button
             type="button"
             onClick={() => setActiveTab('overview')}
             className={`px-4 py-2.5 border-b-2 transition-all flex items-center gap-2 ${
               activeTab === 'overview'
-                ? 'border-[#00D2C4] text-[#00D2C4]'
+                ? 'border-white/25 text-[#F8FAFC]'
                 : 'border-transparent text-[#94A3B8] hover:text-[#F8FAFC]'
             }`}
           >
@@ -191,7 +191,7 @@ export default function CompactClpsModal({ isOpen, mission, onClose, onFlyTo, on
             onClick={() => setActiveTab('payloads')}
             className={`px-4 py-2.5 border-b-2 transition-all flex items-center gap-2 ${
               activeTab === 'payloads'
-                ? 'border-[#00D2C4] text-[#00D2C4]'
+                ? 'border-white/25 text-[#F8FAFC]'
                 : 'border-transparent text-[#94A3B8] hover:text-[#F8FAFC]'
             }`}
           >
@@ -204,7 +204,7 @@ export default function CompactClpsModal({ isOpen, mission, onClose, onFlyTo, on
             onClick={() => setActiveTab('location')}
             className={`px-4 py-2.5 border-b-2 transition-all flex items-center gap-2 ${
               activeTab === 'location'
-                ? 'border-[#00D2C4] text-[#00D2C4]'
+                ? 'border-white/25 text-[#F8FAFC]'
                 : 'border-transparent text-[#94A3B8] hover:text-[#F8FAFC]'
             }`}
           >
@@ -218,7 +218,7 @@ export default function CompactClpsModal({ isOpen, mission, onClose, onFlyTo, on
           {activeTab === 'overview' && (
             <div className="space-y-5">
               <div>
-                <h4 className="text-xs font-mono uppercase tracking-widest text-[#00D2C4] mb-2 font-semibold">
+                <h4 className="text-xs font-mono uppercase tracking-widest text-[#F8FAFC] mb-2 font-semibold">
                   Mission Summary
                 </h4>
                 <ExpandableParagraph
@@ -227,7 +227,7 @@ export default function CompactClpsModal({ isOpen, mission, onClose, onFlyTo, on
                 />
               </div>
 
-              <div className="p-4 rounded-2xl bg-[#060B13] border border-[#16283C] space-y-2">
+              <div className="p-4 rounded-2xl bg-[#050507] border border-[#1E2028] space-y-2">
                 <h4 className="text-xs font-mono uppercase tracking-widest text-[#34D399] font-semibold">
                   Primary Scientific Objective
                 </h4>
@@ -238,9 +238,9 @@ export default function CompactClpsModal({ isOpen, mission, onClose, onFlyTo, on
               </div>
 
               {/* Data & Catalog Attribution */}
-              <div className="pt-2 border-t border-[#16283C]/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-[#94A3B8]">
+              <div className="pt-2 border-t border-[#1E2028]/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-[#94A3B8]">
                 <div>
-                  <span className="font-mono text-[#00D2C4]">Dataset Source:</span>{' '}
+                  <span className="font-mono text-[#F8FAFC]">Dataset Source:</span>{' '}
                   {activeMission.source}
                 </div>
                 {activeMission.sourceUrl && (
@@ -248,7 +248,7 @@ export default function CompactClpsModal({ isOpen, mission, onClose, onFlyTo, on
                     href={activeMission.sourceUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 text-[#00D2C4] hover:underline"
+                    className="inline-flex items-center gap-1.5 text-[#F8FAFC] hover:underline"
                   >
                     <span>Official NASA Catalog Reference</span>
                     <ExternalLink className="w-3 h-3" />
@@ -260,7 +260,7 @@ export default function CompactClpsModal({ isOpen, mission, onClose, onFlyTo, on
 
           {activeTab === 'payloads' && (
             <div className="space-y-4">
-              <div className="text-xs font-mono uppercase tracking-widest text-[#00D2C4] font-semibold">
+              <div className="text-xs font-mono uppercase tracking-widest text-[#F8FAFC] font-semibold">
                 Manifested Payloads &amp; Science Instruments
               </div>
 
@@ -268,10 +268,10 @@ export default function CompactClpsModal({ isOpen, mission, onClose, onFlyTo, on
                 {activeMission.payloads?.map((p, idx) => (
                   <div
                     key={p.name || idx}
-                    className="p-3.5 rounded-2xl bg-[#060B13] border border-[#16283C] hover:border-[#00D2C4]/40 transition-colors space-y-1.5"
+                    className="p-3.5 rounded-2xl bg-[#050507] border border-[#1E2028] hover:border-white/30 transition-colors space-y-1.5"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="font-mono text-xs font-bold text-[#F8FAFC] bg-[#16283C] px-2 py-0.5 rounded">
+                      <span className="font-mono text-xs font-bold text-[#F8FAFC] bg-[#1E2028] px-2 py-0.5 rounded">
                         {p.name}
                       </span>
                       <span className="text-[10px] font-mono text-[#34D399]">{p.agency}</span>
@@ -287,8 +287,8 @@ export default function CompactClpsModal({ isOpen, mission, onClose, onFlyTo, on
           {activeTab === 'location' && (
             <div className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="p-4 rounded-2xl bg-[#060B13] border border-[#16283C] space-y-2">
-                  <span className="text-[10px] font-mono uppercase tracking-widest text-[#00D2C4]">
+                <div className="p-4 rounded-2xl bg-[#050507] border border-[#1E2028] space-y-2">
+                  <span className="text-[10px] font-mono uppercase tracking-widest text-[#F8FAFC]">
                     Geographical Target
                   </span>
                   <div className="text-lg font-serif text-[#F8FAFC]">
@@ -303,8 +303,8 @@ export default function CompactClpsModal({ isOpen, mission, onClose, onFlyTo, on
                   </div>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-[#060B13] border border-[#16283C] space-y-2">
-                  <span className="text-[10px] font-mono uppercase tracking-widest text-[#00D2C4]">
+                <div className="p-4 rounded-2xl bg-[#050507] border border-[#1E2028] space-y-2">
+                  <span className="text-[10px] font-mono uppercase tracking-widest text-[#F8FAFC]">
                     Spacecraft &amp; Launch
                   </span>
                   <div className="text-base font-semibold text-[#F8FAFC]">
@@ -323,7 +323,7 @@ export default function CompactClpsModal({ isOpen, mission, onClose, onFlyTo, on
         </div>
 
         {/* Modal Footer Controls */}
-        <div className="px-6 py-4 border-t border-[#16283C] bg-[#060B13] shrink-0 flex items-center justify-between">
+        <div className="px-6 py-4 border-t border-[#1E2028] bg-[#050507] shrink-0 flex items-center justify-between">
           <div className="text-xs font-mono text-[#94A3B8]">
             Target: <span className="text-[#F8FAFC]">{activeMission.landingSiteName}</span>
           </div>
@@ -332,7 +332,7 @@ export default function CompactClpsModal({ isOpen, mission, onClose, onFlyTo, on
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-full border border-[#16283C] hover:border-[#94A3B8] text-xs font-semibold text-[#94A3B8] hover:text-[#F8FAFC] transition-colors"
+              className="px-4 py-2 rounded-full border border-[#1E2028] hover:border-[#94A3B8] text-xs font-semibold text-[#94A3B8] hover:text-[#F8FAFC] transition-colors"
             >
               Close
             </button>
@@ -340,7 +340,7 @@ export default function CompactClpsModal({ isOpen, mission, onClose, onFlyTo, on
             <button
               type="button"
               onClick={handleNavigateToMap}
-              className="flex items-center gap-2 px-5 py-2 rounded-full bg-[#00D2C4] hover:bg-[#00e6d6] text-[#060B13] font-bold text-xs shadow-lg transition-all active:scale-95"
+              className="flex items-center gap-2 px-5 py-2 rounded-full bg-white hover:bg-[#E2E8F0] text-[#050507] font-bold text-xs shadow-lg transition-all active:scale-95"
             >
               <Rocket className="w-3.5 h-3.5" />
               <span>Fly to Mission on 3D Map</span>

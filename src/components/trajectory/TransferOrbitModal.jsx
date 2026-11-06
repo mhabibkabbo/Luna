@@ -217,11 +217,11 @@ export default function TransferOrbitModal({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="relative w-full max-w-6xl max-h-[96vh] bg-[#0A111C] border border-[#16283C] rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col text-[#F8FAFC] font-sans my-auto">
+      <div className="relative w-full max-w-6xl max-h-[96vh] bg-[#0C0D12] border border-[#1E2028] rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col text-[#F8FAFC] font-sans my-auto">
         {/* ── Modal Header ────────────────────────────────────────────────────── */}
-        <div className="flex items-center justify-between px-4 sm:px-6 py-2.5 border-b border-[#16283C] bg-[#060B13]/95 flex-shrink-0">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-2.5 border-b border-[#1E2028] bg-[#050507]/95 flex-shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-[#152336] border border-[#A78BFA]/40 flex items-center justify-center text-[#A78BFA] shadow-[0_0_15px_rgba(167,139,250,0.25)]">
+            <div className="w-8 h-8 rounded-xl bg-[#14161D] border border-[#A78BFA]/40 flex items-center justify-center text-[#A78BFA] shadow-[0_0_15px_rgba(167,139,250,0.25)]">
               <Orbit className="w-4 h-4 animate-pulse" />
             </div>
             <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-[#A78BFA]/15 text-[#A78BFA] border border-[#A78BFA]/30">
@@ -231,13 +231,13 @@ export default function TransferOrbitModal({
 
           <div className="flex items-center gap-3">
             {/* 3D / 2D View Dimension Toggle */}
-            <div className="flex items-center bg-[#152336] rounded-xl p-0.5 border border-[#223854] text-xs font-mono">
+            <div className="flex items-center bg-[#14161D] rounded-xl p-0.5 border border-[#1E2028] text-xs font-mono">
               <button
                 type="button"
                 onClick={() => setViewDimension('3d')}
                 className={`px-3 py-1 rounded-lg flex items-center gap-1.5 transition-all ${
                   viewDimension === '3d'
-                    ? 'bg-[#A78BFA] text-[#060B13] font-bold shadow-[0_0_10px_rgba(167,139,250,0.3)]'
+                    ? 'bg-[#A78BFA] text-[#050507] font-bold shadow-[0_0_10px_rgba(167,139,250,0.3)]'
                     : 'text-[#94A3B8] hover:text-white'
                 }`}
                 title="Switch to Interactive 3D Cislunar Space"
@@ -250,7 +250,7 @@ export default function TransferOrbitModal({
                 onClick={() => setViewDimension('2d')}
                 className={`px-3 py-1 rounded-lg flex items-center gap-1.5 transition-all ${
                   viewDimension === '2d'
-                    ? 'bg-[#38BDF8] text-[#060B13] font-bold shadow-[0_0_10px_rgba(56,189,248,0.3)]'
+                    ? 'bg-[#38BDF8] text-[#050507] font-bold shadow-[0_0_10px_rgba(56,189,248,0.3)]'
                     : 'text-[#94A3B8] hover:text-white'
                 }`}
                 title="Switch to 2D Mission Flight Diagram"
@@ -263,7 +263,7 @@ export default function TransferOrbitModal({
             <button
               type="button"
               onClick={onClose}
-              className="p-2 rounded-full text-[#94A3B8] hover:text-white hover:bg-[#16283C] transition-colors"
+              className="p-2 rounded-full text-[#94A3B8] hover:text-white hover:bg-[#1E2028] transition-colors"
               title="Close Planner [Esc]"
               aria-label="Close"
             >
@@ -275,7 +275,7 @@ export default function TransferOrbitModal({
         {/* ── Modal Body: Controls & Visualizer ───────────────────────────────── */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
           {/* ── Flattened Trajectory Profile Selector ────────────────────────── */}
-          <div className="bg-[#0d1624] border border-[#1b2d45] rounded-2xl p-3 sm:p-4">
+          <div className="bg-[#14161D] border border-[#1E2028] rounded-2xl p-3 sm:p-4">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
               <div className="flex items-center gap-2 text-xs font-semibold text-[#A78BFA] uppercase tracking-wider flex-shrink-0">
                 <Sparkles className="w-4 h-4 text-[#A78BFA]" />
@@ -293,7 +293,7 @@ export default function TransferOrbitModal({
                       className={`p-2.5 px-3.5 rounded-xl border text-left flex items-center justify-between transition-all ${
                         isSelected
                           ? 'bg-[#A78BFA]/20 border-[#A78BFA] text-white shadow-[0_0_12px_rgba(167,139,250,0.25)] ring-1 ring-[#A78BFA]/50'
-                          : 'bg-[#152336]/60 border-[#223854] text-[#94A3B8] hover:text-white hover:bg-[#152336]'
+                          : 'bg-[#14161D]/60 border-[#1E2028] text-[#94A3B8] hover:text-white hover:bg-[#14161D]'
                       }`}
                     >
                       <div>
@@ -309,7 +309,7 @@ export default function TransferOrbitModal({
               </div>
             </div>
 
-            <div className="mt-2.5 pt-2 border-t border-[#1b2d45]/70 flex items-center justify-between text-[11px] font-mono text-[#94A3B8]">
+            <div className="mt-2.5 pt-2 border-t border-[#1E2028]/70 flex items-center justify-between text-[11px] font-mono text-[#94A3B8]">
               <div className="flex items-center gap-2">
                 <span className="text-[#38BDF8] font-semibold">{orbitPlan.profile.name}:</span>
                 <span className="text-[#94A3B8]">{orbitPlan.profile.description}</span>
@@ -321,12 +321,12 @@ export default function TransferOrbitModal({
           </div>
 
           {/* ── Main Trajectory Visualizer (3D or 2D) ─────────────────────────── */}
-          <div className="relative bg-[#060B13] border border-[#16283C] rounded-2xl sm:rounded-3xl p-3 sm:p-4 overflow-hidden">
+          <div className="relative bg-[#050507] border border-[#1E2028] rounded-2xl sm:rounded-3xl p-3 sm:p-4 overflow-hidden">
             {/* Visualizer Header Bar */}
-            <div className="flex flex-wrap items-center justify-between gap-3 mb-2.5 pb-2.5 border-b border-[#16283C]/80">
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-2.5 pb-2.5 border-b border-[#1E2028]/80">
               <div className="flex items-center gap-3">
                 <span className="text-xs font-mono font-medium text-white flex items-center gap-1.5">
-                  <Activity className="w-3.5 h-3.5 text-[#22D3EE]" />
+                  <Activity className="w-3.5 h-3.5 text-[#F8FAFC]" />
                   <span>
                     {viewDimension === '3d' ? '3D Cislunar Orbital Flight Simulation' : '2D Translunar Transfer Diagram'}
                   </span>
@@ -342,7 +342,7 @@ export default function TransferOrbitModal({
                 <button
                   type="button"
                   onClick={() => setIsPlaying(!isPlaying)}
-                  className="p-1.5 px-3 rounded-lg bg-[#152336] hover:bg-[#223854] text-white text-xs flex items-center gap-1.5 font-mono transition-colors"
+                  className="p-1.5 px-3 rounded-lg bg-[#14161D] hover:bg-[#1E2028] text-white text-xs flex items-center gap-1.5 font-mono transition-colors"
                   title={isPlaying ? 'Pause Simulation' : 'Play Simulation'}
                 >
                   {isPlaying ? <Pause className="w-3.5 h-3.5 text-amber-400" /> : <Play className="w-3.5 h-3.5 text-emerald-400" />}
@@ -352,20 +352,20 @@ export default function TransferOrbitModal({
                 <button
                   type="button"
                   onClick={() => setSimProgress(0)}
-                  className="p-1.5 rounded-lg bg-[#152336] hover:bg-[#223854] text-[#94A3B8] hover:text-white transition-colors"
+                  className="p-1.5 rounded-lg bg-[#14161D] hover:bg-[#1E2028] text-[#94A3B8] hover:text-white transition-colors"
                   title="Reset to Departure"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
                 </button>
 
-                <div className="flex items-center bg-[#152336] rounded-lg p-0.5 border border-[#223854] text-[10px] font-mono">
+                <div className="flex items-center bg-[#14161D] rounded-lg p-0.5 border border-[#1E2028] text-[10px] font-mono">
                   {[1, 3, 8].map((speed) => (
                     <button
                       key={speed}
                       type="button"
                       onClick={() => setSimSpeed(speed)}
                       className={`px-2 py-0.5 rounded-md transition-all ${
-                        simSpeed === speed ? 'bg-[#A78BFA] text-[#060B13] font-bold' : 'text-[#94A3B8] hover:text-white'
+                        simSpeed === speed ? 'bg-[#A78BFA] text-[#050507] font-bold' : 'text-[#94A3B8] hover:text-white'
                       }`}
                     >
                       {speed}x
@@ -385,7 +385,7 @@ export default function TransferOrbitModal({
                 jplEphemeris={jplEphemeris}
               />
             ) : (
-              <div className="relative w-full aspect-[21/9] sm:aspect-[22/9] max-h-[420px] bg-gradient-to-b from-[#03060d] via-[#050914] to-[#03060c] rounded-2xl overflow-hidden border border-[#142338] p-3 flex flex-col justify-between">
+              <div className="relative w-full aspect-[21/9] sm:aspect-[22/9] max-h-[420px] bg-gradient-to-b from-[#050507] via-[#050507] to-[#050507] rounded-2xl overflow-hidden border border-[#1E2028] p-3 flex flex-col justify-between">
                 {/* 2D Projection Frame Header & Phase Legend */}
                 <div className="flex flex-wrap items-center justify-between gap-2 mb-1 z-10">
                   <div className="flex items-center gap-2">
@@ -756,7 +756,7 @@ export default function TransferOrbitModal({
 
                 {/* 2D Interactive Milestone Click-Seek Strip */}
                 {projection2d.milestones?.length > 0 && (
-                  <div className="mt-2 pt-2 border-t border-[#142338] flex flex-wrap items-center justify-between gap-1.5 z-10 text-[10px] font-mono">
+                  <div className="mt-2 pt-2 border-t border-[#1E2028] flex flex-wrap items-center justify-between gap-1.5 z-10 text-[10px] font-mono">
                     <span className="text-[#64748B] flex items-center gap-1">
                       <Sparkles className="w-3 h-3 text-[#A78BFA]" />
                       <span>Milestones:</span>
@@ -776,7 +776,7 @@ export default function TransferOrbitModal({
                             className={`px-2 py-0.5 rounded-lg border transition-all flex items-center gap-1 ${
                               isActive
                                 ? 'bg-white/20 text-white font-bold border-white'
-                                : 'bg-[#0d1624] text-[#94A3B8] border-[#1b2d45] hover:text-white hover:border-[#38BDF8]'
+                                : 'bg-[#14161D] text-[#94A3B8] border-[#1E2028] hover:text-white hover:border-[#38BDF8]'
                             }`}
                             title={`Jump to ${m.label} (T+${formatTransitTime(m.t)})`}
                           >
@@ -793,7 +793,7 @@ export default function TransferOrbitModal({
 
             {/* Floating Real-Time Flight Telemetry HUD Overlay */}
             {currentState && (
-              <div className="mt-2.5 bg-[#060B13]/90 backdrop-blur-md border border-[#1b2d45] rounded-xl px-3 py-2 text-[11px] font-mono text-[#F8FAFC] shadow-xl flex flex-wrap items-center justify-between gap-3">
+              <div className="mt-2.5 bg-[#050507]/90 backdrop-blur-md border border-[#1E2028] rounded-xl px-3 py-2 text-[11px] font-mono text-[#F8FAFC] shadow-xl flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-1.5">
                   <Clock className="w-3.5 h-3.5 text-[#38BDF8]" />
                   <span className="text-[#94A3B8]">Mission MET:</span>
@@ -801,9 +801,9 @@ export default function TransferOrbitModal({
                 </div>
 
                 <div className="flex items-center gap-1.5">
-                  <Gauge className="w-3.5 h-3.5 text-[#22D3EE]" />
+                  <Gauge className="w-3.5 h-3.5 text-[#F8FAFC]" />
                   <span className="text-[#94A3B8]">Velocity:</span>
-                  <span className="font-bold text-[#22D3EE]">{(currentState.velocityKmS ?? 1.0).toFixed(2)} km/s</span>
+                  <span className="font-bold text-[#F8FAFC]">{(currentState.velocityKmS ?? 1.0).toFixed(2)} km/s</span>
                 </div>
 
                 <div className="flex items-center gap-1.5">
@@ -813,9 +813,9 @@ export default function TransferOrbitModal({
                 </div>
 
                 <div className="flex items-center gap-1.5">
-                  <Moon className="w-3.5 h-3.5 text-[#00D2C4]" />
+                  <Moon className="w-3.5 h-3.5 text-[#F8FAFC]" />
                   <span className="text-[#94A3B8]">To Moon:</span>
-                  <span className="font-bold text-[#00D2C4]">{Math.round(currentState.distMoonKm).toLocaleString()} km</span>
+                  <span className="font-bold text-[#F8FAFC]">{Math.round(currentState.distMoonKm).toLocaleString()} km</span>
                 </div>
               </div>
             )}
@@ -833,7 +833,7 @@ export default function TransferOrbitModal({
                   setIsPlaying(false);
                   setSimProgress(parseFloat(e.target.value));
                 }}
-                className="flex-1 accent-[#A78BFA] h-1.5 bg-[#16283C] rounded-lg appearance-none cursor-pointer"
+                className="flex-1 accent-[#A78BFA] h-1.5 bg-[#1E2028] rounded-lg appearance-none cursor-pointer"
               />
               <span className="text-[#94A3B8] text-[10px]">
                 {orbitPlan.transfer.transitLabel || formatTransitTime(orbitPlan.transfer.transitTimeS)}
@@ -842,7 +842,7 @@ export default function TransferOrbitModal({
           </div>
 
           {/* ── Select Vehicle & NASA JPL Horizons Strip (Bottom of Simulation, Ahead of Info) ── */}
-          <div className="bg-[#0d1624] border border-[#1b2d45] rounded-2xl p-3 flex flex-wrap items-center justify-between gap-3 text-xs">
+          <div className="bg-[#14161D] border border-[#1E2028] rounded-2xl p-3 flex flex-wrap items-center justify-between gap-3 text-xs">
             {/* Rocket Launcher Selector */}
             <div className="flex items-center gap-2.5 flex-wrap">
               <span className="font-mono text-[#F59E0B] flex items-center gap-1.5 font-semibold uppercase text-[11px]">
@@ -858,7 +858,7 @@ export default function TransferOrbitModal({
                     className={`text-[11px] font-mono px-2.5 py-1 rounded-lg border transition-all ${
                       selectedRocketId === r.id
                         ? 'bg-[#F59E0B]/20 border-[#F59E0B] text-white font-medium shadow-[0_0_8px_rgba(245,158,11,0.3)] ring-1 ring-[#F59E0B]/40'
-                        : 'bg-[#152336]/60 border-[#223854] text-[#94A3B8] hover:text-white hover:border-[#38BDF8]'
+                        : 'bg-[#14161D]/60 border-[#1E2028] text-[#94A3B8] hover:text-white hover:border-[#38BDF8]'
                     }`}
                   >
                     {r.name}
@@ -869,7 +869,7 @@ export default function TransferOrbitModal({
 
             {/* NASA JPL Horizons Ephemeris API Status */}
             <div className="flex items-center gap-2 font-mono text-[11px]">
-              <div className="flex items-center gap-1.5 bg-[#152336] px-2.5 py-1 rounded-lg border border-[#223854]">
+              <div className="flex items-center gap-1.5 bg-[#14161D] px-2.5 py-1 rounded-lg border border-[#1E2028]">
                 <Radio className={`w-3.5 h-3.5 ${jplEphemeris?.isLive ? 'text-emerald-400 animate-pulse' : 'text-cyan-400'}`} />
                 <span className="text-[#94A3B8]">API:</span>
                 <span className="text-white font-semibold">
@@ -886,7 +886,7 @@ export default function TransferOrbitModal({
                 type="button"
                 onClick={loadJplData}
                 disabled={isLoadingJpl}
-                className="p-1 px-2 rounded-lg bg-[#152336] hover:bg-[#223854] text-[#94A3B8] hover:text-white transition-colors"
+                className="p-1 px-2 rounded-lg bg-[#14161D] hover:bg-[#1E2028] text-[#94A3B8] hover:text-white transition-colors"
                 title="Refresh Live NASA JPL Horizons Ephemeris"
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${isLoadingJpl ? 'animate-spin text-cyan-400' : ''}`} />
@@ -897,7 +897,7 @@ export default function TransferOrbitModal({
           {/* ── Flight Telemetry & Delta-V Budget Deck ─────────────────────────── */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3.5">
             {/* 1. Transit Duration */}
-            <div className="bg-[#0d1624] border border-[#1b2d45] rounded-2xl p-3.5 flex flex-col justify-between">
+            <div className="bg-[#14161D] border border-[#1E2028] rounded-2xl p-3.5 flex flex-col justify-between">
               <div className="flex items-center justify-between text-xs font-mono text-[#94A3B8]">
                 <span>Estimated Transit Time</span>
                 <Clock className="w-4 h-4 text-[#38BDF8]" />
@@ -911,7 +911,7 @@ export default function TransferOrbitModal({
             </div>
 
             {/* 2. Total Delta-V Budget */}
-            <div className="bg-[#0d1624] border border-[#1b2d45] rounded-2xl p-3.5 flex flex-col justify-between">
+            <div className="bg-[#14161D] border border-[#1E2028] rounded-2xl p-3.5 flex flex-col justify-between">
               <div className="flex items-center justify-between text-xs font-mono text-[#94A3B8]">
                 <span>Total Mission &Delta;V</span>
                 <Fuel className="w-4 h-4 text-[#F59E0B]" />
@@ -926,7 +926,7 @@ export default function TransferOrbitModal({
             </div>
 
             {/* 3. Rocket Payload to TLI */}
-            <div className="bg-[#0d1624] border border-[#1b2d45] rounded-2xl p-3.5 flex flex-col justify-between">
+            <div className="bg-[#14161D] border border-[#1E2028] rounded-2xl p-3.5 flex flex-col justify-between">
               <div className="flex items-center justify-between text-xs font-mono text-[#94A3B8]">
                 <span>TLI Payload Capacity</span>
                 <Rocket className="w-4 h-4 text-[#EF4444]" />
@@ -941,30 +941,30 @@ export default function TransferOrbitModal({
             </div>
 
             {/* 4. Lunar Insertion & Descent */}
-            <div className="bg-[#0d1624] border border-[#1b2d45] rounded-2xl p-3.5 flex flex-col justify-between">
+            <div className="bg-[#14161D] border border-[#1E2028] rounded-2xl p-3.5 flex flex-col justify-between">
               <div className="flex items-center justify-between text-xs font-mono text-[#94A3B8]">
                 <span>Lunar Capture &amp; Descent</span>
-                <ShieldCheck className="w-4 h-4 text-[#00D2C4]" />
+                <ShieldCheck className="w-4 h-4 text-[#F8FAFC]" />
               </div>
               <div className="mt-2 text-2xl font-bold font-mono text-white tracking-wide">
                 {(((orbitPlan.lunarArrival?.orbitInsertionDvKmS ?? 0) + (orbitPlan.descentDvKmS ?? 0)) * 1000).toFixed(0)}{' '}
                 <span className="text-sm font-normal text-[#94A3B8]">m/s &Delta;V</span>
               </div>
-              <div className="mt-1 text-[11px] font-mono text-[#00D2C4]">
+              <div className="mt-1 text-[11px] font-mono text-[#F8FAFC]">
                 LOI: {((orbitPlan.lunarArrival?.orbitInsertionDvKmS ?? 0) * 1000).toFixed(0)} m/s &middot; Descent: {((orbitPlan.descentDvKmS ?? 0) * 1000).toFixed(0)} m/s
               </div>
             </div>
           </div>
 
           {/* ── Flight Phase Milestones Timeline ──────────────────────────────── */}
-          <div className="bg-[#0d1624] border border-[#1b2d45] rounded-2xl p-3.5">
+          <div className="bg-[#14161D] border border-[#1E2028] rounded-2xl p-3.5">
             <h3 className="text-xs font-semibold text-white uppercase tracking-wider mb-2.5 flex items-center gap-2">
               <Compass className="w-4 h-4 text-[#A78BFA]" />
               <span>Mission Flight Profile &amp; Burn Sequence</span>
             </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-5 gap-2.5">
-              <div className="bg-[#152336]/60 border border-[#223854] rounded-xl p-2.5">
+              <div className="bg-[#14161D]/60 border border-[#1E2028] rounded-xl p-2.5">
                 <div className="text-[10px] font-mono text-[#38BDF8] font-bold">PHASE 1 &middot; LIFTOFF</div>
                 <div className="text-xs font-semibold text-white mt-0.5">{launchSite.name}</div>
                 <div className="text-[10px] font-mono text-[#94A3B8] mt-1 leading-tight">
@@ -972,7 +972,7 @@ export default function TransferOrbitModal({
                 </div>
               </div>
 
-              <div className="bg-[#152336]/60 border border-[#223854] rounded-xl p-2.5">
+              <div className="bg-[#14161D]/60 border border-[#1E2028] rounded-xl p-2.5">
                 <div className="text-[10px] font-mono text-[#F59E0B] font-bold">PHASE 2 &middot; TLI BURN</div>
                 <div className="text-xs font-semibold text-white mt-0.5">Trans-Lunar Injection</div>
                 <div className="text-[10px] font-mono text-[#94A3B8] mt-1 leading-tight">
@@ -980,7 +980,7 @@ export default function TransferOrbitModal({
                 </div>
               </div>
 
-              <div className="bg-[#152336]/60 border border-[#223854] rounded-xl p-2.5">
+              <div className="bg-[#14161D]/60 border border-[#1E2028] rounded-xl p-2.5">
                 <div className="text-[10px] font-mono text-[#34D399] font-bold">PHASE 3 &middot; TRANSLUNAR COAST</div>
                 <div className="text-xs font-semibold text-white mt-0.5">Cislunar Transit</div>
                 <div className="text-[11px] font-mono text-[#94A3B8] mt-1 leading-tight">
@@ -988,7 +988,7 @@ export default function TransferOrbitModal({
                 </div>
               </div>
 
-              <div className="bg-[#152336]/60 border border-[#223854] rounded-xl p-2.5">
+              <div className="bg-[#14161D]/60 border border-[#1E2028] rounded-xl p-2.5">
                 <div className="text-[10px] font-mono text-[#EC4899] font-bold">PHASE 4 &middot; LUNAR CAPTURE</div>
                 <div className="text-xs font-semibold text-white mt-0.5">Lunar Orbit Insertion</div>
                 <div className="text-[10px] font-mono text-[#94A3B8] mt-1 leading-tight">
@@ -996,8 +996,8 @@ export default function TransferOrbitModal({
                 </div>
               </div>
 
-              <div className="bg-[#152336]/60 border border-[#223854] rounded-xl p-2.5">
-                <div className="text-[10px] font-mono text-[#00D2C4] font-bold">PHASE 5 &middot; TOUCHDOWN</div>
+              <div className="bg-[#14161D]/60 border border-[#1E2028] rounded-xl p-2.5">
+                <div className="text-[10px] font-mono text-[#F8FAFC] font-bold">PHASE 5 &middot; TOUCHDOWN</div>
                 <div className="text-xs font-semibold text-white mt-0.5">{moonTarget?.name ?? 'Moon'}</div>
                 <div className="text-[10px] font-mono text-[#94A3B8] mt-1 leading-tight">
                   Deorbit burn and terminal powered descent of ~{((orbitPlan.descentDvKmS ?? 0) * 1000).toFixed(0)} m/s to surface touchdown.
@@ -1008,19 +1008,19 @@ export default function TransferOrbitModal({
         </div>
 
         {/* ── Modal Footer ────────────────────────────────────────────────────── */}
-        <div className="flex items-center justify-between px-5 sm:px-6 py-3 border-t border-[#16283C] bg-[#060B13]/95 flex-shrink-0 text-xs font-mono text-[#94A3B8]">
+        <div className="flex items-center justify-between px-5 sm:px-6 py-3 border-t border-[#1E2028] bg-[#050507]/95 flex-shrink-0 text-xs font-mono text-[#94A3B8]">
           <div className="flex items-center gap-2">
             <span>NASA JPL Horizons &middot; DE440/441</span>
             <span>&middot;</span>
             <span className="text-[#38BDF8]">{launchSite.name.split(' ')[0]}</span>
             <ArrowRight className="w-3.5 h-3.5 text-[#A78BFA]" />
-            <span className="text-[#00D2C4]">{moonTarget.name.split(' ')[0]}</span>
+            <span className="text-[#F8FAFC]">{moonTarget.name.split(' ')[0]}</span>
           </div>
 
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-1.5 rounded-xl bg-[#152336] hover:bg-[#223854] text-white font-sans text-xs transition-colors"
+            className="px-4 py-1.5 rounded-xl bg-[#14161D] hover:bg-[#1E2028] text-white font-sans text-xs transition-colors"
           >
             Close Planner
           </button>

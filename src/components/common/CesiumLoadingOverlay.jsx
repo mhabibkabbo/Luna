@@ -57,7 +57,7 @@ export default function CesiumLoadingOverlay({
           role="status"
           aria-live="polite"
           aria-label={`Loading 3D ${planet === 'earth' ? 'Earth' : 'Lunar'} Environment`}
-          className={`absolute inset-0 z-40 flex flex-col items-center justify-center bg-[#060B13] text-[#F1F5F9] select-none transition-opacity duration-300 ease-out ${
+          className={`absolute inset-0 z-40 flex flex-col items-center justify-center bg-[#050507] text-[#F8FAFC] select-none transition-opacity duration-300 ease-out ${
             fadeComplete || !isInitializing
               ? 'opacity-0 pointer-events-none'
               : 'opacity-100 pointer-events-auto'
@@ -74,14 +74,14 @@ export default function CesiumLoadingOverlay({
                   cx="40"
                   cy="40"
                   r="36"
-                  stroke="#2E2B22"
+                  stroke="#1E2028"
                   strokeWidth="1.5"
                 />
                 <circle
                   cx="40"
                   cy="40"
                   r="36"
-                  stroke="#00D2C4"
+                  stroke="#F8FAFC"
                   strokeWidth="2"
                   strokeDasharray="40 180"
                   strokeLinecap="round"
@@ -97,57 +97,57 @@ export default function CesiumLoadingOverlay({
                   cx="32"
                   cy="32"
                   r="28"
-                  stroke="#34D399"
+                  stroke="#94A3B8"
                   strokeWidth="1.5"
                   strokeDasharray="20 40"
                   strokeOpacity="0.65"
                 />
               </svg>
 
-              <div className="w-10 h-10 rounded-full bg-[#0D1726] border border-[#16283C] flex items-center justify-center text-[#00D2C4]">
+              <div className="w-10 h-10 rounded-full bg-[#0C0D12] border border-white/[0.1] flex items-center justify-center text-white">
                 {planet === 'earth' ? (
-                  <Globe className="w-5 h-5 text-[#34D399]" />
+                  <Globe className="w-5 h-5 text-white" />
                 ) : (
-                  <Moon className="w-5 h-5 text-[#00D2C4]" />
+                  <Moon className="w-5 h-5 text-white" />
                 )}
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <h2 className="text-xl font-editorial italic text-[#F1F5F9]">
+              <h2 className="text-lg font-medium tracking-[-0.015em] text-white">
                 {planet === 'earth'
                   ? 'Preparing 3D Earth & Deep Space Network'
                   : 'Preparing 3D Lunar Topography'}
               </h2>
-              <p className="text-[11px] font-mono text-[#00D2C4] min-h-[1.25rem]">
+              <p className="text-[11px] font-mono text-[#8E95A5] min-h-[1.25rem]">
                 {stage}
               </p>
             </div>
 
             <div className="w-full max-w-[240px] space-y-1.5">
-              <div className="h-1 w-full bg-[#16283C] rounded-full overflow-hidden">
+              <div className="h-1 w-full bg-[#181A20] rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-gradient-to-r from-[#00D2C4] to-[#34D399] rounded-full transition-all duration-300 shadow-[0_0_8px_rgba(0,210,196,0.5)]"
+                  className="h-full bg-white rounded-full transition-all duration-300"
                   style={{
                     width: `${tileProgressPct}%`,
                   }}
                 />
               </div>
 
-              <div className="flex items-center justify-between text-[10px] font-mono text-[#94A3B8] tabular-nums">
+              <div className="flex items-center justify-between text-[10px] font-mono text-[#8E95A5] tabular-nums">
                 <span>{planet === 'earth' ? 'WGS84 Ellipsoid' : 'IAU Moon Datum'}</span>
                 {pendingTiles > 0 ? (
-                  <span className="text-[#00D2C4]">
+                  <span className="text-white">
                     {pendingTiles} tiles queued ({tileProgressPct}%)
                   </span>
                 ) : (
-                  <span className="text-[#34D399]">Surface Ready (100%)</span>
+                  <span className="text-[#CBD5E1]">Surface Ready (100%)</span>
                 )}
               </div>
             </div>
 
-            <div className="pt-2 border-t border-[#16283C] text-[10px] text-[#94A3B8] flex items-center justify-center gap-1.5">
-              <Database className="w-3 h-3 text-[#00D2C4] shrink-0" />
+            <div className="pt-2 border-t border-white/[0.08] text-[10px] text-[#8E95A5] flex items-center justify-center gap-1.5">
+              <Database className="w-3 h-3 text-[#8E95A5] shrink-0" />
               <span>
                 {planet === 'earth'
                   ? 'NASA Blue Marble & DSN Ground Stations'
@@ -163,12 +163,12 @@ export default function CesiumLoadingOverlay({
           role="status"
           aria-live="polite"
           aria-label="Streaming planetary tiles"
-          className="absolute bottom-9 left-3 sm:left-4 z-20 flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#060B13]/95 border border-[#16283C] text-[11px] font-mono text-[#F8FAFC] shadow-xl pointer-events-none"
+          className="absolute bottom-9 left-3 sm:left-4 z-20 flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#0A0B0E]/95 border border-white/[0.1] text-[11px] font-mono text-[#F8FAFC] shadow-xl pointer-events-none"
         >
-          <Loader2 className="w-3 h-3 text-[#00D2C4] animate-spin shrink-0" />
+          <Loader2 className="w-3 h-3 text-white animate-spin shrink-0" />
           <span>
             Streaming Tiles:{' '}
-            <strong className="text-[#00D2C4] tabular-nums">{pendingTiles}</strong>
+            <strong className="text-white tabular-nums">{pendingTiles}</strong>
           </span>
         </aside>
       )}

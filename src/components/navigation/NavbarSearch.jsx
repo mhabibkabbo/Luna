@@ -239,12 +239,12 @@ export default function NavbarSearch({
   };
 
   const getTypeIcon = (item) => {
-    if (item.type === 'coordinate') return <MapPin className="w-3.5 h-3.5 text-[#00D2C4]" />;
+    if (item.type === 'coordinate') return <MapPin className="w-3.5 h-3.5 text-white/80" />;
     if (item.isClps || item.type === 'clps-mission' || item.category === 'Landing Site')
-      return <Rocket className="w-3.5 h-3.5 text-[#34D399]" />;
-    if (item.type === 'mountain') return <Mountain className="w-3.5 h-3.5 text-[#A78BFA]" />;
-    if (item.type === 'mare') return <Compass className="w-3.5 h-3.5 text-[#38BDF8]" />;
-    return <CircleDot className="w-3.5 h-3.5 text-[#00D2C4]" />;
+      return <Rocket className="w-3.5 h-3.5 text-[#CBD5E1]" />;
+    if (item.type === 'mountain') return <Mountain className="w-3.5 h-3.5 text-[#94A3B8]" />;
+    if (item.type === 'mare') return <Compass className="w-3.5 h-3.5 text-[#CBD5E1]" />;
+    return <CircleDot className="w-3.5 h-3.5 text-white/80" />;
   };
 
   return (
@@ -256,7 +256,7 @@ export default function NavbarSearch({
     >
       {/* Direct Interactive Search Input Field in the Navbar */}
       <div className="relative flex items-center">
-        <Search className="w-3.5 h-3.5 absolute left-2.5 text-[#00D2C4] pointer-events-none" />
+        <Search className="w-3.5 h-3.5 absolute left-2.5 text-[#8E95A5] pointer-events-none" />
 
         <input
           ref={inputRef}
@@ -276,7 +276,7 @@ export default function NavbarSearch({
           aria-label="Search lunar locations, missions, and coordinates"
           aria-autocomplete="list"
           aria-expanded={isOpen && (results.length > 0 || !!coordError)}
-          className="h-8 w-36 sm:w-52 md:w-64 lg:w-72 pl-8 pr-7 bg-[#080E18] hover:bg-[#0A1220] focus:bg-[#0A1220] border border-[#16283C] hover:border-[#00D2C4]/40 focus:border-[#00D2C4] rounded-xl text-xs text-[#F1F5F9] placeholder-slate-500 focus:outline-none transition-all font-sans shadow-sm"
+          className="h-8 w-36 sm:w-52 md:w-64 lg:w-72 pl-8 pr-7 bg-[#0C0D12] hover:bg-[#11131A] focus:bg-[#11131A] border border-white/[0.08] hover:border-white/[0.16] focus:border-white/[0.3] rounded-lg text-xs text-white placeholder-[#8E95A5] focus:outline-none transition-all font-sans"
         />
 
         {query ? (
@@ -287,13 +287,13 @@ export default function NavbarSearch({
               setIsOpen(false);
               inputRef.current?.focus();
             }}
-            className="absolute right-2 p-0.5 text-slate-400 hover:text-white rounded"
+            className="absolute right-2 p-0.5 text-[#8E95A5] hover:text-white rounded"
             aria-label="Clear search input"
           >
             <X className="w-3 h-3" />
           </button>
         ) : (
-          <kbd className="hidden lg:inline-flex items-center absolute right-2 px-1.5 py-0.2 rounded bg-[#0D1726] border border-[#16283C] text-[9.5px] font-mono text-[#00D2C4] pointer-events-none">
+          <kbd className="hidden lg:inline-flex items-center absolute right-2 px-1.5 py-0.5 rounded bg-[#050507] border border-white/[0.08] text-[9.5px] font-mono text-[#8E95A5] pointer-events-none">
             /
           </kbd>
         )}
@@ -304,7 +304,7 @@ export default function NavbarSearch({
         <div
           role="listbox"
           aria-label="Search suggestions"
-          className="absolute left-0 top-full mt-1.5 w-72 sm:w-80 md:w-96 bg-[#080E18]/95 backdrop-blur-2xl border border-[#16283C] rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.85)] p-2 z-50 animate-in fade-in zoom-in-95 duration-150 flex flex-col gap-1.5 max-h-80 overflow-y-auto custom-scrollbar"
+          className="absolute left-0 top-full mt-1.5 w-72 sm:w-80 md:w-96 bg-[#0A0B0E]/95 backdrop-blur-2xl border border-white/[0.1] rounded-xl shadow-[0_16px_48px_rgba(0,0,0,0.85)] p-2 z-50 animate-in fade-in zoom-in-95 duration-150 flex flex-col gap-1 max-h-80 overflow-y-auto custom-scrollbar"
         >
           {coordError && (
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-rose-950/60 border border-rose-500/30 text-rose-300 text-[10px] font-mono">
@@ -322,31 +322,31 @@ export default function NavbarSearch({
                 role="option"
                 aria-selected={isFocused}
                 onClick={() => handleSelect(item)}
-                className={`p-2 rounded-xl cursor-pointer transition-colors flex items-start gap-2.5 ${
+                className={`p-2 rounded-lg cursor-pointer transition-colors flex items-start gap-2.5 ${
                   isFocused
-                    ? 'bg-[#00D2C4]/15 border border-[#00D2C4]/40 text-white'
-                    : 'hover:bg-[#0E1A2C] border border-transparent text-slate-300'
+                    ? 'bg-white/[0.08] border border-white/[0.16] text-white'
+                    : 'hover:bg-white/[0.04] border border-transparent text-[#CBD5E1]'
                 }`}
               >
-                <div className="mt-0.5 p-1 rounded-lg bg-[#060B13] border border-[#16283C] shrink-0">
+                <div className="mt-0.5 p-1 rounded-md bg-[#050507] border border-white/[0.08] shrink-0">
                   {getTypeIcon(item)}
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between gap-1">
-                    <span className="text-xs font-semibold text-[#F1F5F9] truncate font-sans">
+                    <span className="text-xs font-medium text-white truncate font-sans">
                       {item.name}
                     </span>
-                    <span className="text-[9.5px] font-mono text-cyan-400 shrink-0 uppercase">
+                    <span className="text-[9.5px] font-mono text-[#8E95A5] shrink-0 uppercase">
                       {item.category || item.type}
                     </span>
                   </div>
                   {item.description && (
-                    <p className="text-[10px] text-slate-400 truncate mt-0.5 font-sans">
+                    <p className="text-[10px] text-[#8E95A5] truncate mt-0.5 font-sans">
                       {item.description}
                     </p>
                   )}
                   {Number.isFinite(item.latitude) && Number.isFinite(item.longitude) && (
-                    <span className="text-[9px] font-mono text-slate-500 block mt-0.5">
+                    <span className="text-[9px] font-mono text-[#64748B] block mt-0.5">
                       {item.latitude.toFixed(2)}°, {item.longitude.toFixed(2)}°
                     </span>
                   )}

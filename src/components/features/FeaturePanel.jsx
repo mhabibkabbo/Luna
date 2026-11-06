@@ -615,7 +615,7 @@ export default function FeaturePanel({
       <aside
         aria-label="Minimized Lunar Site Information"
         data-guide="feature-panel-minimized"
-        className="fixed z-40 right-3 sm:right-4 top-15 sm:top-16 bg-[#060b14]/95 backdrop-blur-xl border border-slate-800/90 rounded-2xl shadow-[0_12px_35px_rgba(0,0,0,0.85)] flex items-center justify-between gap-3 px-3 py-2 pointer-events-auto select-none transition-all duration-200 animate-in fade-in slide-in-from-top-2"
+        className="fixed z-40 right-3 sm:right-4 top-15 sm:top-16 bg-[#050507]/95 backdrop-blur-xl border border-slate-800/90 rounded-2xl shadow-[0_12px_35px_rgba(0,0,0,0.85)] flex items-center justify-between gap-3 px-3 py-2 pointer-events-auto select-none transition-all duration-200 animate-in fade-in slide-in-from-top-2"
       >
         <button
           type="button"
@@ -641,7 +641,7 @@ export default function FeaturePanel({
             </h2>
           </div>
           {localThermal && (
-            <span className="ml-1 hidden sm:inline-flex items-center px-1.5 py-0.5 rounded text-[9.5px] font-mono font-semibold bg-[#0A1220] border border-slate-800 text-slate-300">
+            <span className="ml-1 hidden sm:inline-flex items-center px-1.5 py-0.5 rounded text-[9.5px] font-mono font-semibold bg-[#0C0D12] border border-slate-800 text-slate-300">
               {localThermal.tempC > 0 ? `+${localThermal.tempC}` : localThermal.tempC}°C
             </span>
           )}
@@ -683,19 +683,19 @@ export default function FeaturePanel({
         isExpanded
           ? 'w-[calc(100vw-1.5rem)] sm:w-[60vw] max-w-[60vw]'
           : 'w-[calc(100vw-1.5rem)] sm:w-[29.5rem]'
-      } bg-[#060b14]/95 backdrop-blur-xl border border-slate-800/90 rounded-2xl flex flex-col shadow-[0_20px_50px_rgba(0,0,0,0.85)] overflow-hidden transition-all duration-300 ease-out pointer-events-auto select-none`}
+      } bg-[#050507]/95 backdrop-blur-xl border border-slate-800/90 rounded-2xl flex flex-col shadow-[0_20px_50px_rgba(0,0,0,0.85)] overflow-hidden transition-all duration-300 ease-out pointer-events-auto select-none`}
     >
       {/* =================================================================== */}
       {/* 1. COMPACT HEADER: Pin Icon + Title + Expand/Collapse + Close       */}
       {/* =================================================================== */}
-      <div className="px-3.5 py-2.5 border-b border-[#16283C]/80 flex items-center justify-between gap-2 bg-[#080F1D] shrink-0">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-7 h-7 rounded-lg bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 shrink-0 shadow-[0_0_12px_rgba(245,158,11,0.25)]">
-            <MapPin className="w-3.5 h-3.5" />
+      <div className="px-4 py-3 border-b border-white/[0.08] flex items-center justify-between gap-3 bg-[#0C0D12] shrink-0">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-8 h-8 rounded-lg bg-amber-500/15 border border-amber-500/35 flex items-center justify-center text-amber-400 shrink-0">
+            <MapPin className="w-4 h-4" />
           </div>
           <div className="min-w-0">
-            <div className="flex items-center gap-1.5 leading-none mb-0.5">
-              <span className="text-[9.5px] font-mono uppercase tracking-wider text-amber-400 font-semibold truncate">
+            <div className="flex items-center gap-1.5 leading-none mb-1">
+              <span className="text-[10px] font-mono font-medium uppercase tracking-[0.08em] text-amber-400/90 truncate">
                 {isCustomPin
                   ? 'Custom Waypoint'
                   : isClps
@@ -705,7 +705,7 @@ export default function FeaturePanel({
                   : regionInfo?.face || 'Lunar Site'}
               </span>
             </div>
-            <h2 className="text-sm font-bold text-white tracking-tight truncate leading-tight">
+            <h2 className="text-[15px] font-display font-semibold text-white tracking-[-0.015em] truncate leading-tight">
               {panelTitle}
             </h2>
           </div>
@@ -717,7 +717,7 @@ export default function FeaturePanel({
             onClick={() => setIsMinimized(true)}
             aria-label="Minimize panel"
             title="Minimize to compact bar"
-            className="p-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 hover:text-amber-300 border border-amber-500/30 transition-colors shadow-[0_0_8px_rgba(245,158,11,0.12)]"
+            className="p-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-[#94A3B8] hover:text-white border border-white/[0.08] transition-colors"
           >
             <Minus className="w-3.5 h-3.5" />
           </button>
@@ -726,7 +726,7 @@ export default function FeaturePanel({
             onClick={onClose}
             aria-label="Close panel"
             title="Close panel [Esc]"
-            className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 hover:text-rose-300 border border-rose-500/30 transition-colors shadow-[0_0_8px_rgba(244,63,94,0.12)]"
+            className="p-1.5 rounded-lg bg-white/[0.04] hover:bg-rose-500/15 text-[#94A3B8] hover:text-rose-300 border border-white/[0.08] hover:border-rose-500/30 transition-colors"
           >
             <X className="w-3.5 h-3.5" />
           </button>
@@ -740,7 +740,7 @@ export default function FeaturePanel({
         <div
           role="tablist"
           aria-label="Lunar site analysis tabs"
-          className="grid grid-cols-5 border-b border-[#16283C]/80 bg-[#070D19] p-1 gap-1 shrink-0"
+          className="grid grid-cols-5 border-b border-white/[0.08] bg-[#050507] p-1.5 gap-1 shrink-0"
         >
           {TABS.map((tab) => {
             const isActive = activeTab === tab.id;
@@ -752,13 +752,13 @@ export default function FeaturePanel({
                 type="button"
                 aria-selected={isActive}
                 onClick={() => handleTabSelect(tab.id)}
-                className={`py-1.5 px-1 rounded-lg text-[10.5px] font-mono flex items-center justify-center gap-1 transition-all whitespace-nowrap ${
+                className={`py-1.5 px-1.5 rounded-lg text-[11.5px] font-sans flex items-center justify-center gap-1.5 transition-all whitespace-nowrap ${
                   isActive
-                    ? 'bg-[#00D2C4]/15 border border-[#00D2C4]/40 text-[#00D2C4] font-bold shadow-[0_0_10px_rgba(0,210,196,0.2)]'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-[#0A1220] border border-transparent'
+                    ? 'bg-white text-[#050507] font-semibold shadow-sm'
+                    : 'text-[#8E95A5] hover:text-white hover:bg-[#0C0D12] font-medium'
                 }`}
               >
-                {Icon && <Icon className="w-3 h-3 shrink-0" />}
+                {Icon && <Icon className="w-3.5 h-3.5 shrink-0" />}
                 <span>{tab.label}</span>
               </button>
             );
@@ -770,12 +770,12 @@ export default function FeaturePanel({
       {/* 3. TAB CONTENT AREA                                                 */}
       {/* =================================================================== */}
       <div
-        className="px-3.5 py-3 space-y-2.5 overflow-y-auto custom-scrollbar flex-1 min-h-0"
+        className="px-4 py-3.5 space-y-3 overflow-y-auto custom-scrollbar flex-1 min-h-0"
       >
         {/* EARTH FEATURE FALLBACK VIEW */}
         {isEarthFeature && (
           <div className="space-y-2.5">
-            <div className="p-2.5 rounded-xl bg-[#0A121E] border border-slate-800/90 flex items-center justify-between">
+            <div className="p-2.5 rounded-xl bg-[#0C0D12] border border-slate-800/90 flex items-center justify-between">
               <div className="text-[11px] font-mono text-slate-300">
                 {latStr} · {lonStr}
               </div>
@@ -819,21 +819,21 @@ export default function FeaturePanel({
             )}
 
             {/* Compact Coordinates & Surface Elevation Strip */}
-            <div className="px-2.5 py-2 rounded-xl bg-[#0A121E] border border-slate-800/80 flex items-center justify-between gap-2">
+            <div className="p-3 rounded-xl bg-[#0C0D12] border border-white/[0.08] flex items-center justify-between gap-3">
               <div className="min-w-0">
-                <div className="text-[10px] font-mono uppercase tracking-wider text-slate-400">
+                <div className="text-[10.5px] font-sans font-medium uppercase tracking-[0.06em] text-[#8E95A5]">
                   Coordinates · {regionInfo?.face || 'Nearside'}
                 </div>
-                <div className="font-mono text-xs font-semibold text-white tabular-nums whitespace-nowrap">
+                <div className="font-mono text-[13px] font-medium text-white tabular-nums whitespace-nowrap mt-0.5">
                   {Math.abs(featLat).toFixed(3)}°{featLat >= 0 ? 'N' : 'S'},{' '}
                   {Math.abs(featLon).toFixed(3)}°{featLon >= 0 ? 'E' : 'W'}
                 </div>
               </div>
-              <div className="flex items-center gap-2 shrink-0">
+              <div className="flex items-center gap-2.5 shrink-0">
                 {terrainMetrics && (
-                  <div className="text-right font-mono">
-                    <span className="text-[10px] text-slate-400 block">Elev / Slope</span>
-                    <span className="text-xs font-semibold text-cyan-300 tabular-nums whitespace-nowrap">
+                  <div className="text-right">
+                    <span className="text-[10.5px] font-sans font-medium text-[#8E95A5] block">Elev / Slope</span>
+                    <span className="text-[12.5px] font-mono font-medium text-[#E2E8F0] tabular-nums whitespace-nowrap mt-0.5 block">
                       {terrainMetrics.elevationM != null && terrainMetrics.slopeDeg != null ? (
                         <>
                           {terrainMetrics.elevationM > 0 ? '+' : ''}
@@ -841,7 +841,7 @@ export default function FeaturePanel({
                           {terrainMetrics.slopeDeg.toFixed(1)}°
                         </>
                       ) : (
-                        <span className="text-slate-400 text-[11px]">Not present in loaded dataset</span>
+                        <span className="font-sans font-normal text-[#8E95A5] text-[11.5px]">Not present in loaded dataset</span>
                       )}
                     </span>
                   </div>
@@ -850,7 +850,7 @@ export default function FeaturePanel({
                   type="button"
                   onClick={handleCopyCoords}
                   title="Copy coordinates"
-                  className="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-cyan-300 border border-slate-800 transition-colors"
+                  className="p-1.5 rounded-lg bg-[#050507] hover:bg-white/[0.06] text-[#94A3B8] hover:text-white border border-white/[0.08] transition-colors"
                 >
                   {copied ? (
                     <Check className="w-3.5 h-3.5 text-emerald-400" />
@@ -863,9 +863,9 @@ export default function FeaturePanel({
 
             {/* NASA Provenance & Coverage Confidence Strip */}
             {terrainMetrics?.uncertainty && (
-              <div className="px-2.5 py-1.5 rounded-xl bg-[#080f1c] border border-slate-800/80 flex items-center justify-between gap-2 text-[10px] font-mono">
+              <div className="px-3 py-2 rounded-xl bg-[#0C0D12] border border-white/[0.08] flex items-center justify-between gap-2.5 text-[11px]">
                 <span
-                  className={`px-1.5 py-0.5 rounded border ${
+                  className={`px-2 py-0.5 rounded font-mono text-[10px] font-medium uppercase tracking-[0.04em] shrink-0 border ${
                     PROVENANCE_BADGES[terrainMetrics.uncertainty.provenanceType]?.badgeClass ||
                     PROVENANCE_BADGES.NASA_MEASURED.badgeClass
                   }`}
@@ -873,23 +873,23 @@ export default function FeaturePanel({
                   {PROVENANCE_BADGES[terrainMetrics.uncertainty.provenanceType]?.shortLabel ||
                     'NASA MEASURED'}
                 </span>
-                <span className={`text-slate-300 ${showFullCardData ? 'whitespace-normal break-words' : 'truncate'}`}>
+                <span className={`font-sans text-[#94A3B8] ${showFullCardData ? 'whitespace-normal break-words' : 'truncate'}`}>
                   {terrainMetrics.dataSource} · {terrainMetrics.uncertainty.verticalAccuracy}
                 </span>
               </div>
             )}
 
             {/* Primary Dual Telemetry Grid: Sun Position & Earth Visibility */}
-            <div className="grid grid-cols-2 gap-2 font-mono">
+            <div className="grid grid-cols-2 gap-2.5">
               {/* Sun Position Card */}
-              <div className="p-2.5 rounded-xl bg-[#0A121E] border border-slate-800/80 space-y-1">
-                <div className="flex items-center justify-between text-[10px]">
-                  <span className="flex items-center gap-1 text-slate-300 font-semibold">
+              <div className="p-3 rounded-xl bg-[#0C0D12] border border-white/[0.08] space-y-1.5">
+                <div className="flex items-center justify-between text-[11.5px]">
+                  <span className="flex items-center gap-1.5 text-[#E2E8F0] font-sans font-medium">
                     <Sun className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                     <span>Sun Position</span>
                   </span>
                   <span
-                    className={`px-1.5 py-0.5 rounded text-[9px] font-bold whitespace-nowrap border ${
+                    className={`px-1.5 py-0.5 rounded text-[10px] font-sans font-semibold whitespace-nowrap border ${
                       sunStatusMeta.label === 'Sunlit'
                         ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
                         : sunStatusMeta.label === 'Terrain Masked'
@@ -903,15 +903,15 @@ export default function FeaturePanel({
                   </span>
                 </div>
                 <div className="flex items-baseline justify-between tabular-nums pt-0.5">
-                  <span className="text-sm font-bold text-white">
+                  <span className="text-[16px] font-mono font-semibold text-white">
                     {sun?.elevationDeg != null ? `${sun.elevationDeg.toFixed(1)}°` : '—'}
-                    <span className="text-[10px] font-normal text-slate-400 ml-1">el</span>
+                    <span className="text-[11px] font-sans font-normal text-[#8E95A5] ml-1">el</span>
                   </span>
-                  <span className="text-[11px] text-slate-300">
+                  <span className="text-[11.5px] font-mono font-medium text-[#CBD5E1]">
                     Az {sun?.azimuthDeg != null ? `${sun.azimuthDeg.toFixed(0)}°` : '—'}
                   </span>
                 </div>
-                <div className="text-[10px] text-slate-400 leading-snug break-words">
+                <div className="text-[11px] font-sans text-[#8E95A5] leading-snug break-words">
                   {solarTransition.timeUntilMs === null
                     ? solarTransition.isCurrentlySunlit
                       ? 'Continuous Sunlight'
@@ -921,14 +921,14 @@ export default function FeaturePanel({
               </div>
 
               {/* Earth Visibility Card */}
-              <div className="p-2.5 rounded-xl bg-[#0A121E] border border-slate-800/80 space-y-1">
-                <div className="flex items-center justify-between text-[10px]">
-                  <span className="flex items-center gap-1 text-slate-300 font-semibold">
+              <div className="p-3 rounded-xl bg-[#0C0D12] border border-white/[0.08] space-y-1.5">
+                <div className="flex items-center justify-between text-[11.5px]">
+                  <span className="flex items-center gap-1.5 text-[#E2E8F0] font-sans font-medium">
                     <Radio className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                     <span>Earth Direct</span>
                   </span>
                   <span
-                    className={`px-1.5 py-0.5 rounded text-[9px] font-bold whitespace-nowrap border ${
+                    className={`px-1.5 py-0.5 rounded text-[10px] font-sans font-semibold whitespace-nowrap border ${
                       earthStatusMeta.label === 'Link Active'
                         ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
                         : earthStatusMeta.label === 'Marginal'
@@ -940,17 +940,17 @@ export default function FeaturePanel({
                   </span>
                 </div>
                 <div className="flex items-baseline justify-between tabular-nums pt-0.5">
-                  <span className="text-sm font-bold text-white">
+                  <span className="text-[16px] font-mono font-semibold text-white">
                     {earthLook?.elevationDeg != null
                       ? `${earthLook.elevationDeg.toFixed(1)}°`
                       : '—'}
-                    <span className="text-[10px] font-normal text-slate-400 ml-1">el</span>
+                    <span className="text-[11px] font-sans font-normal text-[#8E95A5] ml-1">el</span>
                   </span>
-                  <span className="text-[11px] text-slate-300">
+                  <span className="text-[11.5px] font-mono font-medium text-[#CBD5E1]">
                     Az {earthLook?.azimuthDeg != null ? `${earthLook.azimuthDeg.toFixed(0)}°` : '—'}
                   </span>
                 </div>
-                <div className="text-[10px] text-slate-400 leading-snug break-words">
+                <div className="text-[11px] font-sans text-[#8E95A5] leading-snug break-words">
                   {earthTransition.timeUntilMs === null
                     ? earthTransition.isAboveHorizon
                       ? 'Continuous Visibility'
@@ -961,7 +961,7 @@ export default function FeaturePanel({
             </div>
 
             {/* Lunar Surface & Space Weather Telemetry Card */}
-            <div className="p-2.5 rounded-xl bg-[#0A121E] border border-slate-800/80 space-y-2">
+            <div className="p-2.5 rounded-xl bg-[#0C0D12] border border-slate-800/80 space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold text-white flex items-center gap-1.5">
                   <Thermometer className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
@@ -988,7 +988,7 @@ export default function FeaturePanel({
                     onClick={() => loadWeather(true)}
                     disabled={isWeatherLoading}
                     title="Refresh live NOAA SWPC telemetry"
-                    className="p-1 rounded-md bg-[#060b14] hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800 transition-colors"
+                    className="p-1 rounded-md bg-[#050507] hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800 transition-colors"
                   >
                     <RefreshCw className={`w-3 h-3 ${isWeatherLoading ? 'animate-spin' : ''}`} />
                   </button>
@@ -998,7 +998,7 @@ export default function FeaturePanel({
               {/* 4-Metric Grid: Surface Temperature, Solar Wind, Proton Density, IMF */}
               <div className="grid grid-cols-2 gap-1.5 font-mono text-xs">
                 {/* 1. Surface Temperature */}
-                <div className="p-2 rounded-lg bg-[#060b14] border border-slate-800/70 space-y-0.5">
+                <div className="p-2 rounded-lg bg-[#050507] border border-slate-800/70 space-y-0.5">
                   <div className="flex items-center justify-between text-[9.5px] text-slate-400">
                     <span>Surface Temp</span>
                     <span className="text-[9px] text-slate-500">Regolith {localThermal?.subsurfaceTempC ?? -45}°C</span>
@@ -1026,7 +1026,7 @@ export default function FeaturePanel({
                 </div>
 
                 {/* 2. Solar Wind Speed */}
-                <div className="p-2 rounded-lg bg-[#060b14] border border-slate-800/70 space-y-0.5">
+                <div className="p-2 rounded-lg bg-[#050507] border border-slate-800/70 space-y-0.5">
                   <div className="flex items-center justify-between text-[9.5px]">
                     <span className="text-slate-400">Solar Wind</span>
                     <span
@@ -1054,7 +1054,7 @@ export default function FeaturePanel({
                 </div>
 
                 {/* 3. Proton Density */}
-                <div className="p-2 rounded-lg bg-[#060b14] border border-slate-800/70 space-y-0.5">
+                <div className="p-2 rounded-lg bg-[#050507] border border-slate-800/70 space-y-0.5">
                   <div className="text-[9.5px] text-slate-400">Proton Density</div>
                   <div className="text-xs font-bold text-cyan-300 tabular-nums">
                     {spaceWeather?.density != null ? (
@@ -1070,7 +1070,7 @@ export default function FeaturePanel({
                 </div>
 
                 {/* 4. IMF Bz / Bt */}
-                <div className="p-2 rounded-lg bg-[#060b14] border border-slate-800/70 space-y-0.5">
+                <div className="p-2 rounded-lg bg-[#050507] border border-slate-800/70 space-y-0.5">
                   <div className="flex items-center justify-between text-[9.5px] text-slate-400">
                     <span>IMF Bz / Bt</span>
                     <span className="text-[9px] text-slate-500">
@@ -1099,7 +1099,7 @@ export default function FeaturePanel({
                 <span className="truncate max-w-[220px]">
                   {spaceWeather?.source || 'NOAA Space Weather Prediction Center'}
                 </span>
-                <span className="px-1.5 py-0.2 rounded bg-[#060b14] border border-slate-800 text-slate-300 text-[9px]">
+                <span className="px-1.5 py-0.2 rounded bg-[#050507] border border-slate-800 text-slate-300 text-[9px]">
                   {spaceWeather?.isFallback ? 'Simulated Model' : 'Live NOAA SWPC'}
                 </span>
               </div>
@@ -1142,7 +1142,7 @@ export default function FeaturePanel({
             {isExpanded && (
               <div className="space-y-2.5 pt-1 border-t border-slate-800/80">
                 <div className="grid grid-cols-3 gap-2 font-mono text-xs">
-                  <div className="p-2.5 rounded-xl bg-[#0A121E] border border-slate-800/80">
+                  <div className="p-2.5 rounded-xl bg-[#0C0D12] border border-slate-800/80">
                     <span className="text-[10px] text-slate-400 block">Plasma Temp</span>
                     <span className="text-sm font-bold text-white tabular-nums">
                       {spaceWeather?.temperature != null
@@ -1151,14 +1151,14 @@ export default function FeaturePanel({
                     </span>
                     <span className="text-[10px] text-slate-400 block">Ion Temperature</span>
                   </div>
-                  <div className="p-2.5 rounded-xl bg-[#0A121E] border border-slate-800/80">
+                  <div className="p-2.5 rounded-xl bg-[#0C0D12] border border-slate-800/80">
                     <span className="text-[10px] text-slate-400 block">Horizon Mask</span>
                     <span className="text-sm font-bold text-cyan-300 tabular-nums">
                       {sunTerrainHorizon != null ? `${sunTerrainHorizon.toFixed(1)}°` : '—'}
                     </span>
                     <span className="text-[10px] text-slate-400 block">Solar Azimuth</span>
                   </div>
-                  <div className="p-2.5 rounded-xl bg-[#0A121E] border border-slate-800/80">
+                  <div className="p-2.5 rounded-xl bg-[#0C0D12] border border-slate-800/80">
                     <span className="text-[10px] text-slate-400 block">1-Way RF Delay</span>
                     <span className="text-sm font-bold text-emerald-300 tabular-nums">
                       {lightTravelSec} s
@@ -1180,7 +1180,7 @@ export default function FeaturePanel({
           terrainMetrics ? (
             <div className="space-y-2.5">
               {/* Terrain Classification Banner */}
-              <div className="p-2.5 rounded-xl bg-[#0A121E] border border-slate-800/80 flex items-center justify-between gap-2">
+              <div className="p-2.5 rounded-xl bg-[#0C0D12] border border-slate-800/80 flex items-center justify-between gap-2">
                 <div>
                   <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 block">
                     Terrain Classification
@@ -1220,7 +1220,7 @@ export default function FeaturePanel({
               )}
 
             {/* Configurable Radius Selector for Roughness & Local Relief */}
-            <div className="p-2 rounded-xl bg-[#0A121E] border border-slate-800/80 flex items-center justify-between gap-1 text-[10px] font-mono">
+            <div className="p-2 rounded-xl bg-[#0C0D12] border border-slate-800/80 flex items-center justify-between gap-1 text-[10px] font-mono">
               <span className="text-slate-400">Analysis Radius:</span>
               <div className="flex items-center gap-1">
                 {[500, 1000, 2000, 5000, 10000].map((r) => (
@@ -1243,7 +1243,7 @@ export default function FeaturePanel({
             {/* 4-Card Quantitative Terrain Grid */}
             <div className="grid grid-cols-2 gap-2 font-mono">
               {/* Card 1: Elevation */}
-              <div className="p-2.5 rounded-xl bg-[#0A121E] border border-slate-800/80">
+              <div className="p-2.5 rounded-xl bg-[#0C0D12] border border-slate-800/80">
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] text-slate-400 block">Surface Elevation</span>
                   {terrainMetrics.elevationM !== null && (
@@ -1272,7 +1272,7 @@ export default function FeaturePanel({
               </div>
 
               {/* Card 2: Slope Angle */}
-              <div className="p-2.5 rounded-xl bg-[#0A121E] border border-slate-800/80">
+              <div className="p-2.5 rounded-xl bg-[#0C0D12] border border-slate-800/80">
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] text-slate-400 block">Local Slope Angle</span>
                   {terrainMetrics.slopeDeg !== null && (
@@ -1305,7 +1305,7 @@ export default function FeaturePanel({
               </div>
 
               {/* Card 3: Surface Roughness (RMS) */}
-              <div className="p-2.5 rounded-xl bg-[#0A121E] border border-slate-800/80">
+              <div className="p-2.5 rounded-xl bg-[#0C0D12] border border-slate-800/80">
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] text-slate-400 block">Surface Roughness</span>
                   <span className="text-[9px] font-mono text-slate-400">
@@ -1330,7 +1330,7 @@ export default function FeaturePanel({
               </div>
 
               {/* Card 4: Local Relief within configurable radius */}
-              <div className="p-2.5 rounded-xl bg-[#0A121E] border border-slate-800/80">
+              <div className="p-2.5 rounded-xl bg-[#0C0D12] border border-slate-800/80">
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] text-slate-400 block">Local Relief (Δz)</span>
                   <span className="text-[9px] font-mono text-slate-400">
@@ -1356,7 +1356,7 @@ export default function FeaturePanel({
             </div>
 
             {/* Selenographic Region, Nearest Landmark & Uncertainty */}
-            <div className="p-2.5 rounded-xl bg-[#0A121E] border border-slate-800/80 space-y-1.5 text-xs">
+            <div className="p-2.5 rounded-xl bg-[#0C0D12] border border-slate-800/80 space-y-1.5 text-xs">
               <div className="flex items-center justify-between">
                 <span className="text-[10px] font-mono text-slate-400">Geologic Region</span>
                 <span className="font-mono text-slate-200 text-right">
@@ -1396,7 +1396,7 @@ export default function FeaturePanel({
 
             {/* Radial Elevation Profile (-10 km to +10 km N-S & W-E Cross-Section) */}
             {terrainMetrics.radialProfile ? (
-              <div className="p-2.5 rounded-xl bg-[#0A121E] border border-slate-800/80 space-y-1.5">
+              <div className="p-2.5 rounded-xl bg-[#0C0D12] border border-slate-800/80 space-y-1.5">
                 <div className="flex items-center justify-between text-[10px] font-mono">
                   <span className="text-slate-200 font-semibold">
                     Radial Elevation Profile (±10 km Cross-Section)
@@ -1427,7 +1427,7 @@ export default function FeaturePanel({
                   return (
                     <svg
                       viewBox={`0 0 ${w} ${h}`}
-                      className="w-full h-20 bg-[#060b14] rounded-lg border border-slate-800/80"
+                      className="w-full h-20 bg-[#050507] rounded-lg border border-slate-800/80"
                     >
                       <line
                         x1={w / 2}
@@ -1492,7 +1492,7 @@ export default function FeaturePanel({
                 </div>
               </div>
             ) : (
-              <div className="p-2.5 rounded-xl bg-[#0A121E] border border-slate-800/80 text-xs font-mono text-slate-400 space-y-1">
+              <div className="p-2.5 rounded-xl bg-[#0C0D12] border border-slate-800/80 text-xs font-mono text-slate-400 space-y-1">
                 <div className="flex items-center gap-1.5 text-slate-300 font-semibold">
                   <Mountain className="w-3.5 h-3.5 text-cyan-400" />
                   <span>Radial Elevation Profile: Not present in loaded dataset</span>
@@ -1548,7 +1548,7 @@ export default function FeaturePanel({
             </div>
 
             {/* Collapsible Data Sources Section (Requirement 10) */}
-            <div className="rounded-xl bg-[#0A121E] border border-slate-800/80 overflow-hidden">
+            <div className="rounded-xl bg-[#0C0D12] border border-slate-800/80 overflow-hidden">
               <button
                 type="button"
                 onClick={() => setIsDataSourcesOpen(!isDataSourcesOpen)}
@@ -1616,7 +1616,7 @@ export default function FeaturePanel({
             </div>
           </div>
         ) : (
-          <div className="p-6 rounded-xl bg-[#0A121E] border border-slate-800/80 text-xs font-mono text-slate-400 space-y-2.5 text-center my-4">
+          <div className="p-6 rounded-xl bg-[#0C0D12] border border-slate-800/80 text-xs font-mono text-slate-400 space-y-2.5 text-center my-4">
             <Mountain className="w-8 h-8 text-cyan-400 mx-auto opacity-70" />
             <div className="text-slate-200 font-semibold text-sm">Terrain Telemetry Unavailable</div>
             <p className="text-[11px] text-slate-400 max-w-xs mx-auto leading-relaxed">
@@ -1632,7 +1632,7 @@ export default function FeaturePanel({
           <div className="space-y-2.5">
             {/* Illumination & Shadow Summary Grid */}
             <div className="grid grid-cols-2 gap-2 font-mono">
-              <div className="p-2.5 rounded-xl bg-[#0A121E] border border-slate-800/80 space-y-1">
+              <div className="p-2.5 rounded-xl bg-[#0C0D12] border border-slate-800/80 space-y-1">
                 <div className="flex items-center justify-between text-[10px]">
                   <span className="text-slate-400">Sun Elevation / Az</span>
                   <span
@@ -1655,7 +1655,7 @@ export default function FeaturePanel({
                 </div>
               </div>
 
-              <div className="p-2.5 rounded-xl bg-[#0A121E] border border-slate-800/80 space-y-1">
+              <div className="p-2.5 rounded-xl bg-[#0C0D12] border border-slate-800/80 space-y-1">
                 <div className="flex items-center justify-between text-[10px]">
                   <span className="text-slate-400">Shadow / Masking</span>
                   <span className="text-cyan-300 font-bold">
@@ -1678,7 +1678,7 @@ export default function FeaturePanel({
             </div>
 
             {/* Earth Visibility & Observation Conditions */}
-            <div className="p-2.5 rounded-xl bg-[#0A121E] border border-slate-800/80 grid grid-cols-3 gap-2 font-mono text-xs">
+            <div className="p-2.5 rounded-xl bg-[#0C0D12] border border-slate-800/80 grid grid-cols-3 gap-2 font-mono text-xs">
               <div>
                 <span className="text-[10px] text-slate-400 block">Earth Elevation</span>
                 <span className="font-bold text-white tabular-nums">
@@ -1712,7 +1712,7 @@ export default function FeaturePanel({
 
             {/* Surface Radiative Thermal Regime (Calculated — Analytical Radiative Balance Model) */}
             {localThermal && (
-              <div className="p-2.5 rounded-xl bg-[#0A121E] border border-slate-800/80 space-y-2">
+              <div className="p-2.5 rounded-xl bg-[#0C0D12] border border-slate-800/80 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold text-white flex items-center gap-1.5">
                     <Thermometer className="w-3.5 h-3.5 text-cyan-400" />
@@ -1735,7 +1735,7 @@ export default function FeaturePanel({
                   </span>
                 </div>
                 <div className="grid grid-cols-3 gap-2 font-mono text-xs">
-                  <div className="p-2 rounded-lg bg-[#060b14] border border-slate-800/70">
+                  <div className="p-2 rounded-lg bg-[#050507] border border-slate-800/70">
                     <span className="text-[10px] text-slate-400 block">Bolometric Temp</span>
                     <span className="text-sm font-bold text-white tabular-nums">
                       {localThermal.tempC > 0 ? `+${localThermal.tempC}` : localThermal.tempC}°C
@@ -1744,14 +1744,14 @@ export default function FeaturePanel({
                       {localThermal.tempK} K
                     </span>
                   </div>
-                  <div className="p-2 rounded-lg bg-[#060b14] border border-slate-800/70">
+                  <div className="p-2 rounded-lg bg-[#050507] border border-slate-800/70">
                     <span className="text-[10px] text-slate-400 block">Subsurface (0.5m)</span>
                     <span className="text-sm font-bold text-cyan-300 tabular-nums">
                       {localThermal.subsurfaceTempC ?? -45}°C
                     </span>
                     <span className="text-[10px] text-slate-400 block">Regolith Equilibrium</span>
                   </div>
-                  <div className="p-2 rounded-lg bg-[#060b14] border border-slate-800/70">
+                  <div className="p-2 rounded-lg bg-[#050507] border border-slate-800/70">
                     <span className="text-[10px] text-slate-400 block">Thermal Regime</span>
                     <span className="text-[11px] font-bold text-amber-300 block mt-0.5">
                       {localThermal.isPSR
@@ -1767,7 +1767,7 @@ export default function FeaturePanel({
             )}
 
             {/* 360° Interactive Horizon Chart */}
-            <div className="p-2.5 rounded-xl bg-[#0A121E] border border-slate-800/80 space-y-2">
+            <div className="p-2.5 rounded-xl bg-[#0C0D12] border border-slate-800/80 space-y-2">
               <div className="flex items-center justify-between text-[10px] font-mono text-slate-400">
                 <span className="text-white font-semibold">
                   360° Horizon Mask, Sun Track &amp; Libration Zone
@@ -1798,19 +1798,19 @@ export default function FeaturePanel({
             </div>
             {/* Core DTE Metrics Grid */}
             <div className="grid grid-cols-4 gap-1.5 font-mono">
-              <div className="p-2 rounded-xl bg-[#0A121E] border border-slate-800/80">
+              <div className="p-2 rounded-xl bg-[#0C0D12] border border-slate-800/80">
                 <span className="text-[9.5px] text-slate-400 block">Earth Elev</span>
                 <span className="text-xs font-bold text-white tabular-nums">
                   {earthLook?.elevationDeg != null ? `${earthLook.elevationDeg.toFixed(1)}°` : '—'}
                 </span>
               </div>
-              <div className="p-2 rounded-xl bg-[#0A121E] border border-slate-800/80">
+              <div className="p-2 rounded-xl bg-[#0C0D12] border border-slate-800/80">
                 <span className="text-[9.5px] text-slate-400 block">Earth Az</span>
                 <span className="text-xs font-bold text-white tabular-nums">
                   {earthLook?.azimuthDeg != null ? `${earthLook.azimuthDeg.toFixed(1)}°` : '—'}
                 </span>
               </div>
-              <div className="p-2 rounded-xl bg-[#0A121E] border border-slate-800/80">
+              <div className="p-2 rounded-xl bg-[#0C0D12] border border-slate-800/80">
                 <span className="text-[9.5px] text-slate-400 block">Link Margin</span>
                 <span
                   className={`text-xs font-bold tabular-nums ${
@@ -1825,7 +1825,7 @@ export default function FeaturePanel({
                   ) : '—'}
                 </span>
               </div>
-              <div className="p-2 rounded-xl bg-[#0A121E] border border-slate-800/80">
+              <div className="p-2 rounded-xl bg-[#0C0D12] border border-slate-800/80">
                 <span className="text-[9.5px] text-slate-400 block">1-Way Delay</span>
                 <span className="text-xs font-bold text-cyan-300 tabular-nums">
                   {lightTravelSec} s
@@ -1864,7 +1864,7 @@ export default function FeaturePanel({
                       className={`px-2.5 py-1.5 rounded-xl border transition-colors cursor-pointer flex items-center justify-between gap-2 text-xs ${
                         isSelected
                           ? 'bg-cyan-950/30 border-cyan-500/50'
-                          : 'bg-[#0A121E] border-slate-800/80 hover:border-slate-700'
+                          : 'bg-[#0C0D12] border-slate-800/80 hover:border-slate-700'
                       }`}
                     >
                       <div className="min-w-0">
@@ -1902,13 +1902,13 @@ export default function FeaturePanel({
         {!isEarthFeature && activeTab === 'dossier' && (
           <div className="space-y-2.5">
             {/* Multi-Day Landing Window Suitability Verdict */}
-            <div className="p-2.5 rounded-xl bg-[#0A121E] border border-slate-800/80 space-y-2.5">
+            <div className="p-2.5 rounded-xl bg-[#0C0D12] border border-slate-800/80 space-y-2.5">
               <div className="flex items-center justify-between gap-2">
                 <span className="text-xs font-semibold text-white flex items-center gap-1.5">
                   <ShieldCheck className="w-4 h-4 text-emerald-400" />
                   <span>Landing Feasibility Verdict</span>
                 </span>
-                <div className="flex items-center gap-1 bg-[#060b14] p-0.5 rounded-lg border border-slate-800">
+                <div className="flex items-center gap-1 bg-[#050507] p-0.5 rounded-lg border border-slate-800">
                   {[7, 14, 28].map((days) => (
                     <button
                       key={days}
@@ -1928,7 +1928,7 @@ export default function FeaturePanel({
 
               {missionWindowAssessment && (
                 <>
-                  <div className="flex items-center justify-between gap-3 p-2.5 rounded-lg bg-[#060b14] border border-slate-800/80 font-mono">
+                  <div className="flex items-center justify-between gap-3 p-2.5 rounded-lg bg-[#050507] border border-slate-800/80 font-mono">
                     <div className="flex items-center gap-2.5">
                       <div className="w-12 h-12 rounded-xl border border-cyan-400/60 bg-cyan-950/30 flex flex-col items-center justify-center shrink-0">
                         <span className="text-lg font-bold text-cyan-300 leading-none tabular-nums">
@@ -2001,7 +2001,7 @@ export default function FeaturePanel({
 
             {/* CLPS Flight Architecture & Payloads if available */}
             {isClps && clpsData && (
-              <div className="p-2.5 rounded-xl bg-[#0A121E] border border-slate-800/80 space-y-2">
+              <div className="p-2.5 rounded-xl bg-[#0C0D12] border border-slate-800/80 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold text-white flex items-center gap-1.5">
                     <Rocket className="w-3.5 h-3.5 text-cyan-400" />
@@ -2022,7 +2022,7 @@ export default function FeaturePanel({
                         return (
                           <span
                             key={idx}
-                            className="text-[10px] font-mono text-cyan-300 bg-[#060b14] px-2 py-0.5 rounded border border-slate-800"
+                            className="text-[10px] font-mono text-cyan-300 bg-[#050507] px-2 py-0.5 rounded border border-slate-800"
                           >
                             {pName}
                           </span>
@@ -2035,7 +2035,7 @@ export default function FeaturePanel({
             )}
 
             {/* Scientific Context & Physical Description */}
-            <div className="p-2.5 rounded-xl bg-[#0A121E] border border-slate-800/80 space-y-1.5">
+            <div className="p-2.5 rounded-xl bg-[#0C0D12] border border-slate-800/80 space-y-1.5">
               <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 block">
                 Site Context &amp; Provenance
               </span>
@@ -2085,7 +2085,7 @@ export default function FeaturePanel({
             </div>
 
             {/* NOAA SWPC Space Weather Telemetry */}
-            <div className="p-2.5 rounded-xl bg-[#0A121E] border border-slate-800/80 space-y-2">
+            <div className="p-2.5 rounded-xl bg-[#0C0D12] border border-slate-800/80 space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold text-white flex items-center gap-1.5">
                   <Wind className="w-3.5 h-3.5 text-cyan-400" />
@@ -2096,13 +2096,13 @@ export default function FeaturePanel({
                   onClick={() => loadWeather(true)}
                   disabled={isWeatherLoading}
                   title="Refresh space weather feeds"
-                  className="p-1 rounded-md bg-[#060b14] hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800 transition-colors"
+                  className="p-1 rounded-md bg-[#050507] hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800 transition-colors"
                 >
                   <RefreshCw className={`w-3 h-3 ${isWeatherLoading ? 'animate-spin' : ''}`} />
                 </button>
               </div>
               <div className="grid grid-cols-3 gap-1.5 font-mono text-xs">
-                <div className="p-2 rounded-lg bg-[#060b14] border border-slate-800/70">
+                <div className="p-2 rounded-lg bg-[#050507] border border-slate-800/70">
                   <span className="text-[9.5px] text-slate-400 block">Solar Wind</span>
                   <div className="text-xs font-bold text-white tabular-nums mt-0.5">
                     {spaceWeather.speed != null ? `${spaceWeather.speed} km/s` : 'Standby'}
@@ -2111,14 +2111,14 @@ export default function FeaturePanel({
                     {spaceWeather.speedStatus}
                   </span>
                 </div>
-                <div className="p-2 rounded-lg bg-[#060b14] border border-slate-800/70">
+                <div className="p-2 rounded-lg bg-[#050507] border border-slate-800/70">
                   <span className="text-[9.5px] text-slate-400 block">Proton Density</span>
                   <div className="text-xs font-bold text-white tabular-nums mt-0.5">
                     {spaceWeather.density != null ? `${spaceWeather.density} p/cm³` : '—'}
                   </div>
                   <span className="text-[9px] text-slate-400 block">Plasma stream</span>
                 </div>
-                <div className="p-2 rounded-lg bg-[#060b14] border border-slate-800/70">
+                <div className="p-2 rounded-lg bg-[#050507] border border-slate-800/70">
                   <span className="text-[9.5px] text-slate-400 block">IMF Bz / Bt</span>
                   <div className="text-xs font-bold text-amber-300 tabular-nums mt-0.5">
                     {spaceWeather.bz != null ? `${spaceWeather.bz} nT` : '—'}
@@ -2154,13 +2154,13 @@ export default function FeaturePanel({
         return (
           <>
             {showComparisonBar && (
-              <div className="px-3 py-1.5 border-t border-slate-800/90 bg-[#060B13] flex items-center justify-between gap-2 shrink-0 animate-in fade-in duration-150">
+              <div className="px-3 py-1.5 border-t border-slate-800/90 bg-[#050507] flex items-center justify-between gap-2 shrink-0 animate-in fade-in duration-150">
                 <div className="min-w-0 flex items-center gap-1.5">
                   <span
                     className={`text-[10px] font-mono font-semibold truncate ${
                       comparisonFeedbackMsg?.type === 'error'
                         ? 'text-amber-300'
-                        : 'text-[#00D2C4]'
+                        : 'text-[#F8FAFC]'
                     }`}
                   >
                     {comparisonFeedbackMsg?.type === 'error'
@@ -2172,7 +2172,7 @@ export default function FeaturePanel({
                   <button
                     type="button"
                     onClick={onReturnToComparison}
-                    className="px-2 py-1 rounded bg-[#00D2C4]/15 hover:bg-[#00D2C4]/25 border border-[#00D2C4]/40 text-[10px] font-mono font-semibold text-[#00D2C4] whitespace-nowrap transition-colors"
+                    className="px-2 py-1 rounded bg-white/[0.08] hover:bg-white/[0.12] border border-white/25 text-[10px] font-mono font-semibold text-[#F8FAFC] whitespace-nowrap transition-colors"
                   >
                     Back to Comparison ({comparisonSnap.locations.length}/{comparisonSnap.maxLocations}) →
                   </button>
@@ -2180,14 +2180,14 @@ export default function FeaturePanel({
               </div>
             )}
 
-            <div className={`px-3 py-2 border-t border-slate-800/90 bg-[#080f1d] grid ${isCustomPin && isEarthFeature ? 'grid-cols-4' : 'grid-cols-3'} gap-1.5 shrink-0`}>
+            <div className={`px-4 py-2.5 border-t border-white/[0.08] bg-[#0C0D12] grid ${isCustomPin && isEarthFeature ? 'grid-cols-4' : 'grid-cols-3'} gap-2 shrink-0`}>
               <button
                 type="button"
                 onClick={() => onZoomHere?.(featLon, featLat)}
                 title="Center map view on this pin"
-                className="h-8 px-1.5 rounded-lg bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-500/30 font-mono text-[10.5px] font-semibold flex items-center justify-center gap-1 transition-colors whitespace-nowrap"
+                className="h-8.5 py-1.5 px-2.5 rounded-lg bg-white/[0.08] hover:bg-white/[0.14] text-white border border-white/[0.14] font-sans text-[12px] font-medium flex items-center justify-center gap-1.5 transition-colors whitespace-nowrap"
               >
-                <Navigation className="w-3 h-3 shrink-0" />
+                <Navigation className="w-3.5 h-3.5 shrink-0" />
                 <span>{isCustomPin ? 'Center' : 'Center View'}</span>
               </button>
 
@@ -2204,15 +2204,15 @@ export default function FeaturePanel({
                     ? `Cannot add: Maximum of ${comparisonSnap.maxLocations} locations reached`
                     : 'Compare this location in Site Comparison'
                 }
-                className={`h-8 px-1.5 rounded-lg font-mono text-[10.5px] font-medium flex items-center justify-center gap-1 transition-colors whitespace-nowrap border ${
+                className={`h-8.5 py-1.5 px-2.5 rounded-lg font-sans text-[12px] font-medium flex items-center justify-center gap-1.5 transition-colors whitespace-nowrap border ${
                   isAlreadyAdded
                     ? 'bg-emerald-950/40 hover:bg-emerald-900/60 text-emerald-300 border-emerald-500/40'
                     : isAtLimit
                     ? 'bg-amber-950/40 hover:bg-amber-950/60 text-amber-300 border-amber-500/40'
-                    : 'bg-slate-900 hover:bg-slate-800 text-slate-200 border-slate-800'
+                    : 'bg-[#050507] hover:bg-white/[0.05] text-[#E2E8F0] border-white/[0.08]'
                 }`}
               >
-                <GitCompare className="w-3 h-3 text-emerald-400 shrink-0" />
+                <GitCompare className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                 <span>{isAlreadyAdded ? 'In Comparison →' : isCustomPin ? 'Compare' : 'Compare Site'}</span>
               </button>
 
@@ -2220,16 +2220,16 @@ export default function FeaturePanel({
                 type="button"
                 onClick={handleShareLocation}
                 title="Copy shareable permalink"
-                className="h-8 px-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-800 font-mono text-[10.5px] font-medium flex items-center justify-center gap-1 transition-colors whitespace-nowrap"
+                className="h-8.5 py-1.5 px-2.5 rounded-lg bg-[#050507] hover:bg-white/[0.05] text-[#E2E8F0] border border-white/[0.08] font-sans text-[12px] font-medium flex items-center justify-center gap-1.5 transition-colors whitespace-nowrap"
               >
                 {shared ? (
                   <>
-                    <Check className="w-3 h-3 text-emerald-400 shrink-0" />
+                    <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                     <span className="text-emerald-300">Copied</span>
                   </>
                 ) : (
                   <>
-                    <Share2 className="w-3 h-3 text-cyan-400 shrink-0" />
+                    <Share2 className="w-3.5 h-3.5 text-[#94A3B8] shrink-0" />
                     <span>Share</span>
                   </>
                 )}
@@ -2240,9 +2240,9 @@ export default function FeaturePanel({
                   type="button"
                   onClick={() => onClearCustomPin('earth')}
                   title="Remove custom pin from surface"
-                  className="h-8 px-1.5 rounded-lg bg-rose-950/30 hover:bg-rose-900/50 text-rose-300 border border-rose-500/30 font-mono text-[10.5px] font-medium flex items-center justify-center gap-1 transition-colors whitespace-nowrap"
+                  className="h-8.5 py-1.5 px-2.5 rounded-lg bg-rose-950/30 hover:bg-rose-900/50 text-rose-300 border border-rose-500/30 font-sans text-[12px] font-medium flex items-center justify-center gap-1.5 transition-colors whitespace-nowrap"
                 >
-                  <Trash2 className="w-3 h-3 text-rose-400 shrink-0" />
+                  <Trash2 className="w-3.5 h-3.5 text-rose-400 shrink-0" />
                   <span>Clear Pin</span>
                 </button>
               )}

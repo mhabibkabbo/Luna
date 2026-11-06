@@ -34,20 +34,20 @@ export function createMoonFeatures({ viewer, container, callbacks, isMobile, fly
     let maxBillboardDist = 2.8e6;
     let maxLabelDist = 9.0e5;
     let baseScale = 0.20;
-    let labelFont = '600 11px system-ui, -apple-system, sans-serif';
+    let labelFont = '600 22px "Inter", -apple-system, BlinkMacSystemFont, sans-serif';
     let labelOffset = -18;
 
     if (tier === 1) {
       maxBillboardDist = 2.5e7;
       maxLabelDist = 5.2e6; // Only top missions (Apollo 11, Odysseus CLPS, South Pole) visible from orbit
       baseScale = 0.28;
-      labelFont = '700 12px system-ui, -apple-system, sans-serif';
+      labelFont = '600 24px "Inter", -apple-system, BlinkMacSystemFont, sans-serif';
       labelOffset = -22;
     } else if (tier === 2) {
       maxBillboardDist = 7.0e6;
       maxLabelDist = 2.2e6; // Regional landmarks visible when zooming closer
       baseScale = 0.23;
-      labelFont = '600 11px system-ui, -apple-system, sans-serif';
+      labelFont = '600 22px "Inter", -apple-system, BlinkMacSystemFont, sans-serif';
       labelOffset = -20;
     }
 
@@ -70,17 +70,15 @@ export function createMoonFeatures({ viewer, container, callbacks, isMobile, fly
       label: {
         text: shortName,
         font: labelFont,
-        style: Cesium.LabelStyle.FILL_AND_OUTLINE,
-        fillColor: Cesium.Color.fromCssColorString('#f8fafc'),
-        outlineColor: Cesium.Color.fromCssColorString('#020617'),
-        outlineWidth: 2.5,
+        style: Cesium.LabelStyle.FILL,
+        fillColor: Cesium.Color.fromCssColorString('#F8FAFC'),
         showBackground: true,
-        backgroundColor: Cesium.Color.fromCssColorString('rgba(6, 11, 22, 0.88)'),
-        backgroundPadding: new Cesium.Cartesian2(6, 3),
+        backgroundColor: Cesium.Color.fromCssColorString('rgba(10, 11, 14, 0.90)'),
+        backgroundPadding: new Cesium.Cartesian2(14, 8),
         verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
         pixelOffset: new Cesium.Cartesian2(0, labelOffset),
         eyeOffset: new Cesium.Cartesian3(0, 0, -30),
-        scale: 1.0,
+        scale: 0.5,
         distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0.0, maxLabelDist),
         scaleByDistance: new Cesium.NearFarScalar(1.0e5, 1.0, 1.8e7, 0.9),
       },
@@ -119,9 +117,8 @@ export function createMoonFeatures({ viewer, container, callbacks, isMobile, fly
         }
         if (selectedEntity.label) {
           selectedEntity.label.distanceDisplayCondition = new Cesium.DistanceDisplayCondition(0.0, prevMaxDist);
-          selectedEntity.label.fillColor = Cesium.Color.fromCssColorString('#f8fafc');
-          selectedEntity.label.outlineColor = Cesium.Color.fromCssColorString('#000000');
-          selectedEntity.label.outlineWidth = 2;
+          selectedEntity.label.fillColor = Cesium.Color.fromCssColorString('#F8FAFC');
+          selectedEntity.label.style = Cesium.LabelStyle.FILL;
         }
       } catch {}
       selectedEntity = null;
@@ -148,12 +145,10 @@ export function createMoonFeatures({ viewer, container, callbacks, isMobile, fly
             new Cesium.DistanceDisplayCondition(0.0, 1.0e9);
         }
         if (target.label) {
-          // Force selected label visible across orbital zooms with high-contrast amber/gold
+          // Force selected label visible across orbital zooms with crisp high-contrast fill
           target.label.distanceDisplayCondition = new Cesium.DistanceDisplayCondition(0.0, 5.0e7);
-          target.label.fillColor = Cesium.Color.fromCssColorString('#FFB020');
-          target.label.outlineColor = Cesium.Color.fromCssColorString('#060B13');
-          target.label.outlineWidth = 3;
-          target.label.style = Cesium.LabelStyle.FILL_AND_OUTLINE;
+          target.label.fillColor = Cesium.Color.fromCssColorString('#FDE68A');
+          target.label.style = Cesium.LabelStyle.FILL;
         }
       } catch {}
     }
@@ -284,18 +279,16 @@ export function createMoonFeatures({ viewer, container, callbacks, isMobile, fly
       },
       label: {
         text: `${pinTitle}\n${latStr}, ${lonStr}`,
-        font: 'bold 12px "Space Mono", monospace',
-        style: Cesium.LabelStyle.FILL_AND_OUTLINE,
-        fillColor: Cesium.Color.fromCssColorString('#FDE68A'),
-        outlineColor: Cesium.Color.fromCssColorString('#451A03'),
-        outlineWidth: 2,
+        font: '600 23px "Inter", -apple-system, BlinkMacSystemFont, sans-serif',
+        style: Cesium.LabelStyle.FILL,
+        fillColor: Cesium.Color.fromCssColorString('#F8FAFC'),
         showBackground: true,
-        backgroundColor: Cesium.Color.fromCssColorString('rgba(15, 23, 42, 0.94)'),
-        backgroundPadding: new Cesium.Cartesian2(7, 4),
+        backgroundColor: Cesium.Color.fromCssColorString('rgba(10, 11, 14, 0.92)'),
+        backgroundPadding: new Cesium.Cartesian2(16, 10),
         verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
         pixelOffset: new Cesium.Cartesian2(0, -42),
         eyeOffset: new Cesium.Cartesian3(0, 0, -30),
-        scale: 1.0,
+        scale: 0.5,
         scaleByDistance: new Cesium.NearFarScalar(1.0e5, 1.0, 1.8e7, 0.9),
       },
       properties: {

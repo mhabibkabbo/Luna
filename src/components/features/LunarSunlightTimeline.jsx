@@ -419,53 +419,53 @@ export default function LunarSunlightTimeline({ feature, earthFeature = null }) 
     <section
       id="lunar-sunlight-timeline"
       data-guide="timeline"
-      className="absolute bottom-0 left-0 right-0 z-40 border-t border-slate-700/80 bg-slate-950/95 px-2 pt-1.5 pb-1 shadow-[0_-8px_30px_rgba(0,0,0,0.45)] backdrop-blur-xl sm:px-4 h-[84px]"
+      className="absolute bottom-0 left-0 right-0 z-40 border-t border-white/[0.08] bg-[#050507]/95 px-3 pt-2 pb-1.5 shadow-[0_-8px_30px_rgba(0,0,0,0.65)] backdrop-blur-xl sm:px-5 h-[86px]"
       aria-label={`${rangeDays.toFixed(rangeDays < 1 ? 2 : 1)}-day sunlight & DTE timeline for ${feature.name}`}
     >
-      <div className="mb-1 flex items-center justify-between gap-2">
-        <div className="flex min-w-0 items-center gap-2">
+      <div className="mb-1.5 flex items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-2.5 font-sans">
           <Sun className="h-3.5 w-3.5 shrink-0 text-lime-400" />
-          <span className="truncate text-[10px] font-semibold uppercase tracking-wider text-slate-200 sm:text-[11px]">
+          <span className="truncate text-[11px] font-semibold uppercase tracking-[0.06em] text-[#F8FAFC]">
             {feature.name}
           </span>
-          <span className="hidden items-center gap-2 text-[10px] text-slate-300 sm:flex">
-            <span className="inline-flex items-center gap-1">
+          <span className="hidden items-center gap-2.5 text-[11px] font-medium text-[#94A3B8] sm:flex">
+            <span className="inline-flex items-center gap-1.5">
               <i className="h-2 w-2 rounded-sm bg-lime-500" /> Sunlit
             </span>
-            <span className="inline-flex items-center gap-1">
+            <span className="inline-flex items-center gap-1.5">
               <i className="h-2 w-2 rounded-sm" style={{ backgroundColor: SUNLIGHT_TIMELINE_COLORS.blocked }} /> Terrain
             </span>
-            <span className="inline-flex items-center gap-1">
+            <span className="inline-flex items-center gap-1.5">
               <i className="h-2 w-2 rounded-sm bg-slate-600" /> Night
             </span>
-            <span className="mx-0.5 h-2.5 border-l border-slate-700" />
-            <span className="inline-flex items-center gap-1 text-slate-200">
+            <span className="mx-1 h-3 border-l border-white/[0.1]" />
+            <span className="inline-flex items-center gap-1.5 text-[#E2E8F0] font-medium">
               <Radio className="h-3 w-3 text-emerald-400" /> {activeCommLabel}
             </span>
-            <span className="inline-flex items-center gap-1">
+            <span className="inline-flex items-center gap-1.5">
               <i className="h-2 w-2 rounded-sm" style={{ backgroundColor: COMMUNICATION_TIMELINE_COLORS.clear }} /> Link
             </span>
-            <span className="inline-flex items-center gap-1">
+            <span className="inline-flex items-center gap-1.5">
               <i className="h-2 w-2 rounded-sm" style={{ backgroundColor: COMMUNICATION_TIMELINE_COLORS.doubtful }} /> Marginal
             </span>
-            <span className="inline-flex items-center gap-1">
+            <span className="inline-flex items-center gap-1.5">
               <i className="h-2 w-2 rounded-sm" style={{ backgroundColor: COMMUNICATION_TIMELINE_COLORS.blocked }} /> Blocked
             </span>
           </span>
         </div>
 
-        <div className="flex shrink-0 items-center gap-1.5 font-mono text-[10px] text-slate-200 sm:text-[11px]">
+        <div className="flex shrink-0 items-center gap-2 font-mono text-[11px] font-medium text-[#E2E8F0] tabular-nums">
           {error ? (
-            <span className="text-rose-300">Forecast unavailable</span>
+            <span className="font-sans text-rose-300">Forecast unavailable</span>
           ) : forecast ? (
             <span>
-              {sunlitPct.toFixed(0)}% sun · dark {longestDark.toFixed(1)} h
+              {sunlitPct.toFixed(0)}% sun <span className="text-[#636978]">·</span> dark {longestDark.toFixed(1)} h
             </span>
           ) : (
-            <span>Calculating…</span>
+            <span className="font-sans text-[#8E95A5]">Calculating…</span>
           )}
           {communicationError && (
-            <span className="text-rose-300" title={communicationError.message}>
+            <span className="font-sans text-rose-300" title={communicationError.message}>
               LOS unavailable
             </span>
           )}
@@ -475,11 +475,11 @@ export default function LunarSunlightTimeline({ feature, earthFeature = null }) 
             disabled={zoomLevel === 0}
             aria-label="Zoom out timeline"
             title="Show a longer forecast range"
-            className="flex h-5 w-5 items-center justify-center rounded border border-slate-700 text-slate-200 hover:border-lime-500/60 hover:text-lime-300 disabled:cursor-not-allowed disabled:opacity-40"
+            className="flex h-5 w-5 items-center justify-center rounded border border-white/[0.12] bg-[#0C0D12] text-[#E2E8F0] hover:border-white/30 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
           >
             <ZoomOut className="h-3 w-3" />
           </button>
-          <span className="min-w-[38px] text-center text-slate-400">
+          <span className="min-w-[36px] text-center text-[#94A3B8]">
             {rangeDays >= 1 ? `${rangeDays.toFixed(rangeDays % 1 ? 1 : 0)}d` : `${Math.round(rangeDays * 24)}h`}
           </span>
           <button
@@ -488,7 +488,7 @@ export default function LunarSunlightTimeline({ feature, earthFeature = null }) 
             disabled={zoomLevel === MAX_ZOOM_LEVEL}
             aria-label="Zoom in timeline"
             title="Zoom around the playhead"
-            className="flex h-5 w-5 items-center justify-center rounded border border-slate-700 text-slate-200 hover:border-lime-500/60 hover:text-lime-300 disabled:cursor-not-allowed disabled:opacity-40"
+            className="flex h-5 w-5 items-center justify-center rounded border border-white/[0.12] bg-[#0C0D12] text-[#E2E8F0] hover:border-white/30 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
           >
             <ZoomIn className="h-3 w-3" />
           </button>
@@ -497,7 +497,7 @@ export default function LunarSunlightTimeline({ feature, earthFeature = null }) 
             onClick={() => setPlaying((value) => !value)}
             disabled={!forecast}
             aria-label={playing ? 'Pause ephemeris time' : 'Play ephemeris time'}
-            className="flex h-5 w-5 items-center justify-center rounded border border-slate-700 text-slate-200 hover:border-lime-500/60 hover:text-lime-300 disabled:cursor-not-allowed disabled:opacity-40"
+            className="flex h-5 w-5 items-center justify-center rounded border border-white/[0.12] bg-[#0C0D12] text-[#E2E8F0] hover:border-white/30 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
           >
             {playing ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3" />}
           </button>
@@ -576,12 +576,12 @@ export default function LunarSunlightTimeline({ feature, earthFeature = null }) 
         />
       </div>
 
-      <div className="mt-1 flex items-center justify-between gap-2 font-mono text-[10px] text-slate-300 sm:text-[11px]">
-        <span className="truncate">{formatUTC(anchorMs)}</span>
-        <span className="max-w-[65%] truncate text-center text-[11px] font-bold text-white sm:text-xs">
-          Current Viewport Time: {formatUTC(currentMs)}
+      <div className="mt-1.5 flex items-center justify-between gap-2 text-[11px]">
+        <span className="truncate font-mono text-[#8E95A5] tabular-nums">{formatUTC(anchorMs)}</span>
+        <span className="max-w-[65%] truncate text-center text-[11.5px] font-sans font-medium text-[#94A3B8]">
+          Current Viewport Time: <strong className="font-mono font-semibold text-[#F8FAFC] tabular-nums ml-1">{formatUTC(currentMs)}</strong>
         </span>
-        <span className="truncate text-right">{formatUTC(endMs)}</span>
+        <span className="truncate text-right font-mono text-[#8E95A5] tabular-nums">{formatUTC(endMs)}</span>
       </div>
     </section>
   );

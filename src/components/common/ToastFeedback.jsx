@@ -62,7 +62,7 @@ export default function ToastFeedback({ maxItems = 1, className = '' }) {
           <div
             key={item.id}
             role="status"
-            className={`pointer-events-auto flex items-start gap-2 px-2.5 py-1.5 bg-[#060b14]/95 backdrop-blur-xl border ${colors.border} rounded-lg shadow-xl shadow-black/60 text-slate-100 max-w-[280px] sm:max-w-xs transition-all duration-150 animate-in fade-in slide-in-from-top-1 select-none`}
+            className={`pointer-events-auto flex items-start gap-2 px-2.5 py-1.5 bg-[#0A0B0E]/95 backdrop-blur-xl border ${colors.border} rounded-lg shadow-xl shadow-black/60 text-slate-100 max-w-[280px] sm:max-w-xs transition-all duration-150 animate-in fade-in slide-in-from-top-1 select-none`}
           >
             <div className={`mt-0.5 shrink-0 ${colors.icon}`}>
               <IconComponent className="w-3.5 h-3.5" />

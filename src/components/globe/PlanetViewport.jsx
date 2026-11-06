@@ -281,7 +281,7 @@ const PlanetViewport = forwardRef(function PlanetViewport(
     <div
       role="region"
       aria-label="Interactive 3D planetary globe viewer"
-      className="relative w-full h-full overflow-hidden select-none bg-[#060B13]"
+      className="relative w-full h-full overflow-hidden select-none bg-[#050507]"
     >
       {/* Space Starfield Backdrop */}
       <div
@@ -319,14 +319,14 @@ const PlanetViewport = forwardRef(function PlanetViewport(
       {/* Floating Hover Feature Tooltip */}
       {hoveredInfo?.feature && (
         <div
-          className="fixed z-50 pointer-events-none transform -translate-x-1/2 -translate-y-full mb-3 px-3.5 py-2 bg-[#060B13]/95 backdrop-blur-xl border border-[#16283C] rounded-xl shadow-2xl flex flex-col gap-0.5 animate-in fade-in zoom-in-95 duration-150"
+          className="fixed z-50 pointer-events-none transform -translate-x-1/2 -translate-y-full mb-3 px-3.5 py-2 bg-[#050507]/95 backdrop-blur-xl border border-[#1E2028] rounded-xl shadow-2xl flex flex-col gap-0.5 animate-in fade-in zoom-in-95 duration-150"
           style={{
             left: `${hoveredInfo.x}px`,
             top: `${hoveredInfo.y - 12}px`,
           }}
         >
           <div className="flex items-center gap-1.5">
-            <MapPin className="w-3.5 h-3.5 text-[#00D2C4] shrink-0" />
+            <MapPin className="w-3.5 h-3.5 text-[#F8FAFC] shrink-0" />
             <span className="text-xs font-bold text-[#F8FAFC] tracking-wide">
               {hoveredInfo.feature.name}
             </span>

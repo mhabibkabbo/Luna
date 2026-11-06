@@ -166,16 +166,16 @@ export default function TrajectoryPlannerPage({ onNavigate }) {
   const phaseInfo = getPhaseInfo(currentState?.phase);
 
   return (
-    <div className="flex-1 w-full h-full overflow-y-auto custom-scrollbar px-2 sm:px-4 lg:px-6 py-2.5 pb-8 space-y-3 bg-[#07090e] text-[#F8FAFC] scroll-smooth">
+    <div className="flex-1 w-full h-full overflow-y-auto custom-scrollbar px-2 sm:px-4 lg:px-6 py-2.5 pb-8 space-y-3 bg-[#050507] text-[#F8FAFC] scroll-smooth">
       {/* ── Main Workspace: Display on Left, Unified Controls on Right ─────── */}
       <div className="flex flex-col lg:flex-row gap-3 items-stretch h-auto lg:h-[calc(100vh-4.75rem)] lg:min-h-[500px]">
 
         {/* Left: 3D / 2D Visualizer Display (Auto-readjusts to fit display height) */}
-        <div className="flex-1 lg:w-[62%] xl:w-[65%] min-w-0 flex flex-col bg-[#060B13] border border-[#16283C] rounded-2xl p-2.5 sm:p-3 overflow-hidden shadow-2xl">
+        <div className="flex-1 lg:w-[62%] xl:w-[65%] min-w-0 flex flex-col bg-[#050507] border border-[#1E2028] rounded-2xl p-2.5 sm:p-3 overflow-hidden shadow-2xl">
           {/* Visualizer Status Bar */}
-          <div className="flex items-center justify-between gap-3 mb-2 pb-2 border-b border-[#16283C]/80 flex-shrink-0">
+          <div className="flex items-center justify-between gap-3 mb-2 pb-2 border-b border-[#1E2028]/80 flex-shrink-0">
             <div className="flex items-center gap-2 min-w-0">
-              <Activity className="w-3.5 h-3.5 text-[#22D3EE] flex-shrink-0" />
+              <Activity className="w-3.5 h-3.5 text-[#F8FAFC] flex-shrink-0" />
               <span className="text-xs font-mono font-medium text-white truncate">
                 {viewDimension === '3d' ? '3D Cislunar Orbital Flight Simulation' : '2D Translunar Transfer Diagram'}
               </span>
@@ -199,7 +199,7 @@ export default function TrajectoryPlannerPage({ onNavigate }) {
                 hideEmbeddedControls={true}
               />
             ) : (
-              <div className="relative w-full h-full min-h-0 bg-gradient-to-b from-[#03060d] via-[#050914] to-[#03060c] rounded-xl overflow-hidden border border-[#142338] p-3 flex flex-col justify-between">
+              <div className="relative w-full h-full min-h-0 bg-gradient-to-b from-[#050507] via-[#050507] to-[#050507] rounded-xl overflow-hidden border border-[#1E2028] p-3 flex flex-col justify-between">
                 {projection2d && (
                   <>
                     {/* 2D Projection Header & Mode Badge */}
@@ -413,27 +413,27 @@ export default function TrajectoryPlannerPage({ onNavigate }) {
         </div>
 
         {/* Right: Unified Single Flexbox for Controls (Auto-readjusted & Aligned) */}
-        <div className="lg:w-[38%] xl:w-[35%] flex flex-col justify-between gap-2 bg-[#0d1624] border border-[#1b2d45] rounded-2xl p-3 sm:p-3.5 shadow-2xl overflow-y-auto min-h-0">
-          <div className="space-y-2.5">
+        <div className="lg:w-[38%] xl:w-[35%] flex flex-col justify-between gap-2.5 bg-[#0C0D12] border border-[#1E2028] rounded-2xl p-3.5 sm:p-4 shadow-2xl overflow-y-auto min-h-0">
+          <div className="space-y-3">
             {/* 1. 2D / 3D Dimension Toggle */}
             <div>
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-[10px] font-mono uppercase text-[#94A3B8] font-semibold tracking-wider flex items-center gap-1.5">
-                  <Layers className="w-3 h-3 text-[#38BDF8]" />
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-[11px] font-sans uppercase text-[#8E95A5] font-semibold tracking-[0.08em] flex items-center gap-1.5">
+                  <Layers className="w-3.5 h-3.5 text-[#F8FAFC]" />
                   <span>View Dimension</span>
                 </span>
-                <span className="text-[10px] font-mono text-[#38BDF8]">
+                <span className="text-[11px] font-mono text-[#E2E8F0]">
                   {viewDimension === '3d' ? '3D WebGL' : '2D Plane'}
                 </span>
               </div>
-              <div className="grid grid-cols-2 gap-1.5 bg-[#152336] p-1 rounded-xl border border-[#223854]">
+              <div className="grid grid-cols-2 gap-1.5 bg-[#050507] p-1 rounded-xl border border-[#1E2028]">
                 <button
                   type="button"
                   onClick={() => setViewDimension('3d')}
-                  className={`py-1.5 px-2.5 rounded-lg text-xs font-mono font-semibold flex items-center justify-center gap-1.5 transition-all ${
+                  className={`py-1.5 px-2.5 rounded-lg text-xs font-sans flex items-center justify-center gap-1.5 transition-all ${
                     viewDimension === '3d'
-                      ? 'bg-[#A78BFA] text-[#060B13] font-bold shadow-[0_0_10px_rgba(167,139,250,0.35)]'
-                      : 'text-[#94A3B8] hover:text-white hover:bg-[#1f344f]'
+                      ? 'bg-white text-[#050507] font-semibold shadow-sm'
+                      : 'text-[#8E95A5] font-medium hover:text-white hover:bg-[#14161D]'
                   }`}
                   title="Switch to Interactive 3D Cislunar Space"
                 >
@@ -443,10 +443,10 @@ export default function TrajectoryPlannerPage({ onNavigate }) {
                 <button
                   type="button"
                   onClick={() => setViewDimension('2d')}
-                  className={`py-1.5 px-2.5 rounded-lg text-xs font-mono font-semibold flex items-center justify-center gap-1.5 transition-all ${
+                  className={`py-1.5 px-2.5 rounded-lg text-xs font-sans flex items-center justify-center gap-1.5 transition-all ${
                     viewDimension === '2d'
-                      ? 'bg-[#38BDF8] text-[#060B13] font-bold shadow-[0_0_10px_rgba(56,189,248,0.35)]'
-                      : 'text-[#94A3B8] hover:text-white hover:bg-[#1f344f]'
+                      ? 'bg-white text-[#050507] font-semibold shadow-sm'
+                      : 'text-[#8E95A5] font-medium hover:text-white hover:bg-[#14161D]'
                   }`}
                   title="Switch to 2D Mission Flight Diagram"
                 >
@@ -458,12 +458,12 @@ export default function TrajectoryPlannerPage({ onNavigate }) {
 
             {/* 2. Trajectory Profile Selection (Path Selection) */}
             <div>
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-[10px] font-mono uppercase text-[#A78BFA] font-semibold tracking-wider flex items-center gap-1.5">
-                  <Sparkles className="w-3 h-3 text-[#A78BFA]" />
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-[11px] font-sans uppercase text-[#8E95A5] font-semibold tracking-[0.08em] flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-[#F8FAFC]" />
                   <span>Path Selection</span>
                 </span>
-                <span className="text-[10px] font-mono text-[#38BDF8]">
+                <span className="text-[11px] font-mono tabular-nums text-[#E2E8F0]">
                   {orbitPlan.transfer?.transitLabel || ''}
                 </span>
               </div>
@@ -476,24 +476,24 @@ export default function TrajectoryPlannerPage({ onNavigate }) {
                       key={p.id}
                       type="button"
                       onClick={() => setProfileId(p.id)}
-                      className={`p-2 rounded-xl border text-left flex items-center justify-between transition-all ${
+                      className={`p-2.5 rounded-xl border text-left flex items-center justify-between transition-all ${
                         isSelected
-                          ? 'bg-[#A78BFA]/20 border-[#A78BFA] text-white shadow-[0_0_10px_rgba(167,139,250,0.25)] ring-1 ring-[#A78BFA]/50'
-                          : 'bg-[#152336]/60 border-[#223854] text-[#94A3B8] hover:text-white hover:bg-[#152336]'
+                          ? 'bg-[#14161D] border-white/40 text-white shadow-sm'
+                          : 'bg-[#050507] border-[#1E2028] text-[#8E95A5] hover:text-white hover:bg-[#14161D]/60'
                       }`}
                     >
                       <div>
-                        <div className="font-semibold text-xs text-white leading-tight">{p.name}</div>
-                        <div className="text-[10px] font-mono text-[#A78BFA] mt-0.5">{p.subtitle}</div>
+                        <div className="font-sans font-semibold text-xs text-white leading-tight">{p.name}</div>
+                        <div className="text-[11px] font-sans text-[#8E95A5] mt-0.5">{p.subtitle}</div>
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-                        <span className="text-[10px] font-mono text-[#94A3B8] hidden sm:inline">
+                        <span className="text-[11px] font-mono tabular-nums text-[#E2E8F0] hidden sm:inline">
                           {p.transitNote}
                         </span>
                         {isSelected ? (
-                          <div className="w-2 h-2 rounded-full bg-[#A78BFA] shadow-[0_0_6px_#A78BFA]" />
+                          <div className="w-2 h-2 rounded-full bg-white" />
                         ) : (
-                          <div className="w-2 h-2 rounded-full border border-[#94A3B8]/40" />
+                          <div className="w-2 h-2 rounded-full border border-[#8E95A5]/40" />
                         )}
                       </div>
                     </button>
@@ -502,20 +502,20 @@ export default function TrajectoryPlannerPage({ onNavigate }) {
               </div>
 
               {/* Path description summary */}
-              <div className="mt-1.5 text-[10px] font-mono text-[#94A3B8] bg-[#152336]/40 border border-[#223854]/60 rounded-lg p-2 leading-tight">
-                <span className="text-[#38BDF8] font-semibold">{orbitPlan.profile.name}: </span>
+              <div className="mt-2 text-[11.5px] font-sans text-[#CBD5E1] bg-[#050507] border border-[#1E2028] rounded-lg p-2.5 leading-relaxed">
+                <span className="text-white font-semibold">{orbitPlan.profile.name}: </span>
                 {orbitPlan.profile.description}
               </div>
             </div>
 
             {/* 3. Camera Focus Controls (Earth, Moon, Follow Rocket, Full Trajectory) */}
             <div>
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-[10px] font-mono uppercase text-[#38BDF8] font-semibold tracking-wider flex items-center gap-1.5">
-                  <Camera className="w-3 h-3 text-[#38BDF8]" />
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-[11px] font-sans uppercase text-[#8E95A5] font-semibold tracking-[0.08em] flex items-center gap-1.5">
+                  <Camera className="w-3.5 h-3.5 text-[#F8FAFC]" />
                   <span>Camera Focus</span>
                 </span>
-                <span className="text-[10px] font-mono text-[#94A3B8]">
+                <span className="text-[11px] font-sans font-medium text-[#8E95A5]">
                   {viewDimension === '3d' ? '3D View' : 'Fixed 2D'}
                 </span>
               </div>
@@ -524,38 +524,38 @@ export default function TrajectoryPlannerPage({ onNavigate }) {
                 <button
                   type="button"
                   onClick={() => handleSetCameraMode('overview')}
-                  className={`py-1.5 px-2 rounded-lg border text-[11px] font-mono font-medium flex items-center justify-center gap-1.5 transition-all ${
+                  className={`py-1.5 px-2 rounded-lg border text-xs font-sans flex items-center justify-center gap-1.5 transition-all ${
                     cameraMode === 'overview'
-                      ? 'bg-[#38BDF8] text-[#060B13] border-[#38BDF8] font-bold shadow-[0_0_10px_rgba(56,189,248,0.4)]'
-                      : 'bg-[#152336]/70 border-[#223854] text-[#94A3B8] hover:text-white hover:bg-[#152336]'
+                      ? 'bg-white text-[#050507] border-white font-semibold shadow-sm'
+                      : 'bg-[#050507] border-[#1E2028] text-[#8E95A5] font-medium hover:text-white hover:bg-[#14161D]'
                   }`}
                   title="Center entire Earth to Moon trajectory"
                 >
-                  <Maximize2 className="w-3 h-3" />
+                  <Maximize2 className="w-3.5 h-3.5" />
                   <span>Full Path</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => handleSetCameraMode('chase')}
-                  className={`py-1.5 px-2 rounded-lg border text-[11px] font-mono font-medium flex items-center justify-center gap-1.5 transition-all ${
+                  className={`py-1.5 px-2 rounded-lg border text-xs font-sans flex items-center justify-center gap-1.5 transition-all ${
                     cameraMode === 'chase'
-                      ? 'bg-[#A78BFA] text-[#060B13] border-[#A78BFA] font-bold shadow-[0_0_10px_rgba(167,139,250,0.4)]'
-                      : 'bg-[#152336]/70 border-[#223854] text-[#94A3B8] hover:text-white hover:bg-[#152336]'
+                      ? 'bg-white text-[#050507] border-white font-semibold shadow-sm'
+                      : 'bg-[#050507] border-[#1E2028] text-[#8E95A5] font-medium hover:text-white hover:bg-[#14161D]'
                   }`}
                   title="Lock camera to follow the rocket"
                 >
-                  <Rocket className="w-3 h-3" />
+                  <Rocket className="w-3.5 h-3.5" />
                   <span>Rocket</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => handleSetCameraMode('earth')}
-                  className={`py-1.5 px-2 rounded-lg border text-[11px] font-mono font-medium flex items-center justify-center gap-1.5 transition-all ${
+                  className={`py-1.5 px-2 rounded-lg border text-xs font-sans flex items-center justify-center gap-1.5 transition-all ${
                     cameraMode === 'earth'
-                      ? 'bg-[#38BDF8] text-[#060B13] border-[#38BDF8] font-bold shadow-[0_0_10px_rgba(56,189,248,0.4)]'
-                      : 'bg-[#152336]/70 border-[#223854] text-[#94A3B8] hover:text-white hover:bg-[#152336]'
+                      ? 'bg-white text-[#050507] border-white font-semibold shadow-sm'
+                      : 'bg-[#050507] border-[#1E2028] text-[#8E95A5] font-medium hover:text-white hover:bg-[#14161D]'
                   }`}
                   title="Focus on Earth departure and parking orbit"
                 >
@@ -566,10 +566,10 @@ export default function TrajectoryPlannerPage({ onNavigate }) {
                 <button
                   type="button"
                   onClick={() => handleSetCameraMode('moon')}
-                  className={`py-1.5 px-2 rounded-lg border text-[11px] font-mono font-medium flex items-center justify-center gap-1.5 transition-all ${
+                  className={`py-1.5 px-2 rounded-lg border text-xs font-sans flex items-center justify-center gap-1.5 transition-all ${
                     cameraMode === 'moon'
-                      ? 'bg-[#00D2C4] text-[#060B13] border-[#00D2C4] font-bold shadow-[0_0_10px_rgba(0,210,196,0.4)]'
-                      : 'bg-[#152336]/70 border-[#223854] text-[#94A3B8] hover:text-white hover:bg-[#152336]'
+                      ? 'bg-white text-[#050507] border-white font-semibold shadow-sm'
+                      : 'bg-[#050507] border-[#1E2028] text-[#8E95A5] font-medium hover:text-white hover:bg-[#14161D]'
                   }`}
                   title="Focus on Moon arrival and orbit insertion"
                 >
@@ -581,13 +581,13 @@ export default function TrajectoryPlannerPage({ onNavigate }) {
           </div>
 
           {/* 4. Playback Controls (Play / Pause / Reset / Speed / Timeline Scrubber) */}
-          <div className="pt-2 border-t border-[#1b2d45]/80 space-y-2 flex-shrink-0">
+          <div className="pt-2.5 border-t border-[#1E2028] space-y-2 flex-shrink-0">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-mono uppercase text-[#38BDF8] font-semibold tracking-wider flex items-center gap-1.5">
-                <Clock className="w-3 h-3 text-[#38BDF8]" />
+              <span className="text-[11px] font-sans uppercase text-[#8E95A5] font-semibold tracking-[0.08em] flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5 text-[#F8FAFC]" />
                 <span>Playback Controls</span>
               </span>
-              <span className="text-[10px] font-mono text-[#F59E0B] truncate">
+              <span className="text-[11px] font-sans font-medium text-[#F59E0B] truncate">
                 {phaseInfo.label}
               </span>
             </div>
@@ -597,10 +597,10 @@ export default function TrajectoryPlannerPage({ onNavigate }) {
               <button
                 type="button"
                 onClick={() => setIsPlaying(!isPlaying)}
-                className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-mono font-bold flex items-center justify-center gap-1.5 transition-all ${
+                className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-sans font-semibold flex items-center justify-center gap-1.5 transition-all ${
                   isPlaying
-                    ? 'bg-amber-500 hover:bg-amber-400 text-black shadow-[0_0_12px_rgba(245,158,11,0.4)]'
-                    : 'bg-emerald-500 hover:bg-emerald-400 text-black shadow-[0_0_12px_rgba(16,185,129,0.4)]'
+                    ? 'bg-amber-500 hover:bg-amber-400 text-[#050507]'
+                    : 'bg-white hover:bg-[#E2E8F0] text-[#050507]'
                 }`}
                 title={isPlaying ? 'Pause Simulation' : 'Play Simulation'}
               >
@@ -620,20 +620,20 @@ export default function TrajectoryPlannerPage({ onNavigate }) {
               <button
                 type="button"
                 onClick={() => setSimProgress(0)}
-                className="p-1.5 rounded-lg bg-[#152336] hover:bg-[#223854] text-[#94A3B8] hover:text-white border border-[#223854] transition-colors"
+                className="p-1.5 rounded-lg bg-[#050507] hover:bg-[#14161D] text-[#8E95A5] hover:text-white border border-[#1E2028] transition-colors"
                 title="Reset to LEO Liftoff"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
               </button>
 
-              <div className="flex items-center bg-[#152336] rounded-lg p-0.5 border border-[#223854] text-xs font-mono">
+              <div className="flex items-center bg-[#050507] rounded-lg p-0.5 border border-[#1E2028] text-xs font-mono tabular-nums">
                 {[1, 3, 8].map((spd) => (
                   <button
                     key={spd}
                     type="button"
                     onClick={() => setSimSpeed(spd)}
                     className={`px-2 py-1 rounded text-[11px] transition-colors ${
-                      simSpeed === spd ? 'bg-[#38BDF8] text-[#060B13] font-bold' : 'text-[#94A3B8] hover:text-white'
+                      simSpeed === spd ? 'bg-white text-[#050507] font-semibold' : 'text-[#8E95A5] hover:text-white'
                     }`}
                   >
                     {spd}x
@@ -643,17 +643,17 @@ export default function TrajectoryPlannerPage({ onNavigate }) {
             </div>
 
             {/* Timeline Progress Scrubber & MET Time readout */}
-            <div className="bg-[#152336]/60 border border-[#223854] rounded-lg p-2 space-y-1">
-              <div className="flex items-center justify-between text-[11px] font-mono">
+            <div className="bg-[#050507] border border-[#1E2028] rounded-lg p-2.5 space-y-1.5">
+              <div className="flex items-center justify-between text-xs font-sans">
                 <span className="flex items-center gap-1.5 text-white">
-                  <Clock className="w-3 h-3 text-[#38BDF8]" />
-                  <span>MET:</span>
-                  <span className="text-[#38BDF8] font-bold">
+                  <Clock className="w-3.5 h-3.5 text-[#F8FAFC]" />
+                  <span className="text-[#8E95A5]">MET:</span>
+                  <span className="font-mono tabular-nums font-semibold text-white">
                     {currentState ? formatTransitTime(currentState.t) : '0h 0m'}
                   </span>
                 </span>
-                <span className="text-[#94A3B8]">
-                  Progress: <strong className="text-white">{(simProgress * 100).toFixed(1)}%</strong>
+                <span className="text-[#8E95A5]">
+                  Progress: <strong className="font-mono tabular-nums text-white">{(simProgress * 100).toFixed(1)}%</strong>
                 </span>
               </div>
 
@@ -664,7 +664,7 @@ export default function TrajectoryPlannerPage({ onNavigate }) {
                 step="0.001"
                 value={simProgress}
                 onChange={(e) => setSimProgress(parseFloat(e.target.value))}
-                className="w-full h-1.5 bg-[#060B13] rounded-lg appearance-none cursor-pointer accent-[#38BDF8]"
+                className="w-full h-1.5 bg-[#14161D] rounded-lg appearance-none cursor-pointer accent-white"
               />
             </div>
           </div>
@@ -672,111 +672,111 @@ export default function TrajectoryPlannerPage({ onNavigate }) {
       </div>
 
       {/* ── Flight Telemetry & Delta-V Budget Deck ─────────────────────────────── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3.5 snap-start scroll-mt-2.5">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 snap-start scroll-mt-2.5">
         {/* 1. Transit Duration */}
-        <div className="bg-[#0d1624] border border-[#1b2d45] rounded-2xl p-4 flex flex-col justify-between">
-          <div className="flex items-center justify-between text-xs font-mono text-[#94A3B8]">
+        <div className="bg-[#0C0D12] border border-[#1E2028] rounded-xl p-5 flex flex-col justify-between">
+          <div className="flex items-center justify-between text-[11px] font-sans font-semibold uppercase tracking-[0.08em] text-[#8E95A5]">
             <span>Estimated Transit Time</span>
             <Clock className="w-4 h-4 text-[#38BDF8]" />
           </div>
-          <div className="mt-2 text-2xl font-bold font-mono text-white">
+          <div className="mt-2.5 text-2xl font-semibold font-mono tabular-nums text-white">
             {orbitPlan.transfer?.transitLabel || formatTransitTime(orbitPlan.transfer?.transitTimeS ?? 0)}
           </div>
-          <div className="mt-1 text-[11px] font-mono text-[#38BDF8]">
+          <div className="mt-1.5 text-xs font-mono tabular-nums text-[#8E95A5]">
             Epoch: Day {(orbitPlan.transfer?.transitTimeS != null ? orbitPlan.transfer.transitTimeS / 86400 : 5).toFixed(1)} &middot; e = {orbitPlan.transfer?.eccentricity?.toFixed(3) ?? '0.966'}
           </div>
         </div>
 
         {/* 2. TLI Delta-V */}
-        <div className="bg-[#0d1624] border border-[#1b2d45] rounded-2xl p-4 flex flex-col justify-between">
-          <div className="flex items-center justify-between text-xs font-mono text-[#94A3B8]">
+        <div className="bg-[#0C0D12] border border-[#1E2028] rounded-xl p-5 flex flex-col justify-between">
+          <div className="flex items-center justify-between text-[11px] font-sans font-semibold uppercase tracking-[0.08em] text-[#8E95A5]">
             <span>Trans-Lunar Injection (TLI)</span>
             <Flame className="w-4 h-4 text-[#F59E0B]" />
           </div>
-          <div className="mt-2 text-2xl font-bold font-mono text-[#F59E0B]">
-            +{((orbitPlan.tli?.deltaVKmS ?? 3.15) * 1000).toFixed(0)} <span className="text-sm font-normal text-[#94A3B8]">m/s</span>
+          <div className="mt-2.5 text-2xl font-semibold font-mono tabular-nums text-[#F59E0B]">
+            +{((orbitPlan.tli?.deltaVKmS ?? 3.15) * 1000).toFixed(0)} <span className="text-sm font-sans font-normal text-[#8E95A5]">m/s</span>
           </div>
-          <div className="mt-1 text-[11px] font-mono text-[#94A3B8]">
+          <div className="mt-1.5 text-xs font-mono tabular-nums text-[#8E95A5]">
             v_LEO: {orbitPlan.parkingOrbit?.velocityKmS?.toFixed(2) ?? '7.79'} km/s &rarr; v_TLI: {(orbitPlan.tli?.velocityPostBurnKmS ?? orbitPlan.tli?.velocityKmS ?? 10.93).toFixed(2)} km/s
           </div>
         </div>
 
         {/* 3. Lunar Insertion Delta-V */}
-        <div className="bg-[#0d1624] border border-[#1b2d45] rounded-2xl p-4 flex flex-col justify-between">
-          <div className="flex items-center justify-between text-xs font-mono text-[#94A3B8]">
+        <div className="bg-[#0C0D12] border border-[#1E2028] rounded-xl p-5 flex flex-col justify-between">
+          <div className="flex items-center justify-between text-[11px] font-sans font-semibold uppercase tracking-[0.08em] text-[#8E95A5]">
             <span>Lunar Orbit Insertion (LOI)</span>
-            <Gauge className="w-4 h-4 text-[#00D2C4]" />
+            <Gauge className="w-4 h-4 text-[#F8FAFC]" />
           </div>
-          <div className="mt-2 text-2xl font-bold font-mono text-[#00D2C4]">
+          <div className="mt-2.5 text-2xl font-semibold font-mono tabular-nums text-[#F8FAFC]">
             {(orbitPlan.lunarArrival?.orbitInsertionDvKmS ?? 0) > 0
               ? `-${((orbitPlan.lunarArrival?.orbitInsertionDvKmS ?? 0) * 1000).toFixed(0)} m/s`
               : '0 m/s (Flyby)'}
           </div>
-          <div className="mt-1 text-[11px] font-mono text-[#94A3B8]">
+          <div className="mt-1.5 text-xs font-mono tabular-nums text-[#8E95A5]">
             Approach: {orbitPlan.lunarArrival?.approachVelocityKmS?.toFixed(2) ?? '2.32'} km/s &rarr; Orbit: {orbitPlan.lunarArrival?.orbitVelocityKmS?.toFixed(2) ?? '1.63'} km/s
           </div>
         </div>
 
         {/* 4. Total Mission Delta-V */}
-        <div className="bg-[#0d1624] border border-[#1b2d45] rounded-2xl p-4 flex flex-col justify-between">
-          <div className="flex items-center justify-between text-xs font-mono text-[#94A3B8]">
+        <div className="bg-[#0C0D12] border border-[#1E2028] rounded-xl p-5 flex flex-col justify-between">
+          <div className="flex items-center justify-between text-[11px] font-sans font-semibold uppercase tracking-[0.08em] text-[#8E95A5]">
             <span>Total ΔV Budget</span>
             <Fuel className="w-4 h-4 text-[#EC4899]" />
           </div>
-          <div className="mt-2 text-2xl font-bold font-mono text-[#EC4899]">
-            {((orbitPlan.totalDeltaVKmS ?? 4.0) * 1000).toFixed(0)} <span className="text-sm font-normal text-[#94A3B8]">m/s</span>
+          <div className="mt-2.5 text-2xl font-semibold font-mono tabular-nums text-[#EC4899]">
+            {((orbitPlan.totalDeltaVKmS ?? 4.0) * 1000).toFixed(0)} <span className="text-sm font-sans font-normal text-[#8E95A5]">m/s</span>
           </div>
-          <div className="mt-1 text-[11px] font-mono text-[#94A3B8]">
+          <div className="mt-1.5 text-xs font-mono tabular-nums text-[#8E95A5]">
             LOI: {((orbitPlan.lunarArrival?.orbitInsertionDvKmS ?? 0) * 1000).toFixed(0)} m/s &middot; Descent: {((orbitPlan.descentDvKmS ?? 0) * 1000).toFixed(0)} m/s
           </div>
         </div>
       </div>
 
       {/* ── Flight Phase Milestones Timeline ──────────────────────────────────── */}
-      <div className="bg-[#0d1624] border border-[#1b2d45] rounded-2xl p-4 snap-start scroll-mt-2.5">
-        <h3 className="text-xs font-semibold text-white uppercase tracking-wider mb-3 flex items-center gap-2">
-          <Compass className="w-4 h-4 text-[#A78BFA]" />
+      <div className="bg-[#0C0D12] border border-[#1E2028] rounded-xl p-5 snap-start scroll-mt-2.5">
+        <h3 className="text-sm font-display font-semibold text-white mb-3.5 flex items-center gap-2">
+          <Compass className="w-4 h-4 text-[#F8FAFC]" />
           <span>Mission Flight Profile &amp; Burn Sequence</span>
         </h3>
 
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
-          <div className="bg-[#152336]/60 border border-[#223854] rounded-xl p-3">
-            <div className="text-[10px] font-mono text-[#38BDF8] font-bold">PHASE 1 &middot; LIFTOFF</div>
-            <div className="text-xs font-semibold text-white mt-1">LEO Parking Orbit</div>
-            <div className="text-[11px] font-mono text-[#94A3B8] mt-1 leading-tight">
-              Launch via Payload Rocket into {orbitPlan.parkingOrbit?.altKm ?? 185} km LEO orbit (v = {orbitPlan.parkingOrbit?.velocityKmS?.toFixed(2) ?? '7.79'} km/s).
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-3.5">
+          <div className="bg-[#050507] border border-[#1E2028] rounded-xl p-3.5">
+            <div className="text-[10.5px] font-sans font-semibold tracking-wider text-[#38BDF8] uppercase">PHASE 1 &middot; LIFTOFF</div>
+            <div className="text-[13px] font-display font-semibold text-white mt-1">LEO Parking Orbit</div>
+            <div className="text-xs font-sans text-[#8E95A5] mt-1.5 leading-relaxed">
+              Launch via Payload Rocket into <span className="font-mono text-[#E2E8F0]">{orbitPlan.parkingOrbit?.altKm ?? 185} km</span> LEO orbit (<span className="font-mono text-[#E2E8F0]">v = {orbitPlan.parkingOrbit?.velocityKmS?.toFixed(2) ?? '7.79'} km/s</span>).
             </div>
           </div>
 
-          <div className="bg-[#152336]/60 border border-[#223854] rounded-xl p-3">
-            <div className="text-[10px] font-mono text-[#F59E0B] font-bold">PHASE 2 &middot; TLI BURN</div>
-            <div className="text-xs font-semibold text-white mt-1">Trans-Lunar Injection</div>
-            <div className="text-[11px] font-mono text-[#94A3B8] mt-1 leading-tight">
-              Upper stage prograde burn of +{((orbitPlan.tli?.deltaVKmS ?? 3.15) * 1000).toFixed(0)} m/s into transfer ellipse (e = {orbitPlan.transfer?.eccentricity?.toFixed(3) ?? '0.966'}).
+          <div className="bg-[#050507] border border-[#1E2028] rounded-xl p-3.5">
+            <div className="text-[10.5px] font-sans font-semibold tracking-wider text-[#F59E0B] uppercase">PHASE 2 &middot; TLI BURN</div>
+            <div className="text-[13px] font-display font-semibold text-white mt-1">Trans-Lunar Injection</div>
+            <div className="text-xs font-sans text-[#8E95A5] mt-1.5 leading-relaxed">
+              Upper stage prograde burn of <span className="font-mono text-[#E2E8F0]">+{((orbitPlan.tli?.deltaVKmS ?? 3.15) * 1000).toFixed(0)} m/s</span> into transfer ellipse (<span className="font-mono text-[#E2E8F0]">e = {orbitPlan.transfer?.eccentricity?.toFixed(3) ?? '0.966'}</span>).
             </div>
           </div>
 
-          <div className="bg-[#152336]/60 border border-[#223854] rounded-xl p-3">
-            <div className="text-[10px] font-mono text-[#34D399] font-bold">PHASE 3 &middot; TRANSLUNAR COAST</div>
-            <div className="text-xs font-semibold text-white mt-1">Cislunar Transit</div>
-            <div className="text-[11px] font-mono text-[#94A3B8] mt-1 leading-tight">
-              {orbitPlan.transfer?.transitLabel || formatTransitTime(orbitPlan.transfer?.transitTimeS ?? 0)} coast with PTC roll and mid-course correction (MCC) burns.
+          <div className="bg-[#050507] border border-[#1E2028] rounded-xl p-3.5">
+            <div className="text-[10.5px] font-sans font-semibold tracking-wider text-[#34D399] uppercase">PHASE 3 &middot; TRANSLUNAR COAST</div>
+            <div className="text-[13px] font-display font-semibold text-white mt-1">Cislunar Transit</div>
+            <div className="text-xs font-sans text-[#8E95A5] mt-1.5 leading-relaxed">
+              <span className="font-mono text-[#E2E8F0]">{orbitPlan.transfer?.transitLabel || formatTransitTime(orbitPlan.transfer?.transitTimeS ?? 0)}</span> coast with PTC roll and mid-course correction (MCC) burns.
             </div>
           </div>
 
-          <div className="bg-[#152336]/60 border border-[#223854] rounded-xl p-3">
-            <div className="text-[10px] font-mono text-[#EC4899] font-bold">PHASE 4 &middot; LUNAR CAPTURE</div>
-            <div className="text-xs font-semibold text-white mt-1">Lunar Orbit Insertion</div>
-            <div className="text-[11px] font-mono text-[#94A3B8] mt-1 leading-tight">
-              LOI retro-burn of -{((orbitPlan.lunarArrival?.orbitInsertionDvKmS ?? 0) * 1000).toFixed(0)} m/s into {orbitPlan.lunarArrival?.orbitAltKm ?? 100} km polar/equatorial orbit.
+          <div className="bg-[#050507] border border-[#1E2028] rounded-xl p-3.5">
+            <div className="text-[10.5px] font-sans font-semibold tracking-wider text-[#EC4899] uppercase">PHASE 4 &middot; LUNAR CAPTURE</div>
+            <div className="text-[13px] font-display font-semibold text-white mt-1">Lunar Orbit Insertion</div>
+            <div className="text-xs font-sans text-[#8E95A5] mt-1.5 leading-relaxed">
+              LOI retro-burn of <span className="font-mono text-[#E2E8F0]">-{((orbitPlan.lunarArrival?.orbitInsertionDvKmS ?? 0) * 1000).toFixed(0)} m/s</span> into <span className="font-mono text-[#E2E8F0]">{orbitPlan.lunarArrival?.orbitAltKm ?? 100} km</span> polar/equatorial orbit.
             </div>
           </div>
 
-          <div className="bg-[#152336]/60 border border-[#223854] rounded-xl p-3">
-            <div className="text-[10px] font-mono text-[#00D2C4] font-bold">PHASE 5 &middot; TOUCHDOWN</div>
-            <div className="text-xs font-semibold text-white mt-1">Target Landing Site</div>
-            <div className="text-[11px] font-mono text-[#94A3B8] mt-1 leading-tight">
-              Deorbit burn and terminal powered descent of ~{((orbitPlan.descentDvKmS ?? 0) * 1000).toFixed(0)} m/s to surface touchdown.
+          <div className="bg-[#050507] border border-[#1E2028] rounded-xl p-3.5">
+            <div className="text-[10.5px] font-sans font-semibold tracking-wider text-[#F8FAFC] uppercase">PHASE 5 &middot; TOUCHDOWN</div>
+            <div className="text-[13px] font-display font-semibold text-white mt-1">Target Landing Site</div>
+            <div className="text-xs font-sans text-[#8E95A5] mt-1.5 leading-relaxed">
+              Deorbit burn and terminal powered descent of <span className="font-mono text-[#E2E8F0]">~{((orbitPlan.descentDvKmS ?? 0) * 1000).toFixed(0)} m/s</span> to surface touchdown.
             </div>
           </div>
         </div>

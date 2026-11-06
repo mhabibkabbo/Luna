@@ -81,17 +81,17 @@ export default function MainNavbar({
   return (
     <header
       role="banner"
-      className="w-full h-13 min-h-[52px] bg-[#060B13]/95 border-b border-[#16283C]/80 px-3 sm:px-4 flex items-center justify-between z-50 backdrop-blur-md select-none shrink-0 gap-3"
+      className="w-full h-14 min-h-[56px] bg-[#050507]/95 border-b border-white/[0.08] px-4 sm:px-6 flex items-center justify-between z-50 backdrop-blur-md select-none shrink-0 gap-3"
     >
       {/* ── LEFT: Back to Home Button + Workspace Switcher Dropdown + Search ── */}
-      <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+      <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
         {/* Mobile menu hamburger toggle button */}
         {currentView === 'explorer' && (
           <button
             type="button"
             onClick={onToggleMobileMenu}
             aria-label={isMobileMenuOpen ? 'Close visualization toolbar' : 'Open visualization toolbar'}
-            className="lg:hidden p-1.5 rounded-lg text-slate-400 hover:text-white bg-[#0A1220] border border-[#16283C] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00D2C4]"
+            className="lg:hidden p-2 rounded-lg text-[#8E95A5] hover:text-white bg-[#0C0D12] border border-white/[0.08] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
           >
             {isMobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
           </button>
@@ -103,14 +103,14 @@ export default function MainNavbar({
           onClick={() => onNavigate?.('landing')}
           aria-label="Back to Home page"
           title="Back to Home page"
-          className="h-8 px-2.5 sm:px-3 rounded-xl bg-[#080E18] hover:bg-[#0E1726] border border-[#16283C] hover:border-[#00D2C4]/50 text-xs font-mono font-medium text-slate-200 hover:text-white flex items-center gap-1.5 shadow-md transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00D2C4] shrink-0"
+          className="h-8 px-3 rounded-lg bg-[#0C0D12] hover:bg-[#14161D] border border-white/[0.08] hover:border-white/[0.18] text-[12.5px] font-sans font-medium text-[#E2E8F0] hover:text-white flex items-center gap-1.5 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 shrink-0"
         >
-          <Home className="w-3.5 h-3.5 text-[#00D2C4] shrink-0" />
+          <Home className="w-3.5 h-3.5 text-white/75 shrink-0" />
           <span>Home</span>
         </button>
 
         {/* Subtle Vertical Divider */}
-        <div className="hidden sm:block w-[1px] h-6 bg-[#16283C]/80 shrink-0" />
+        <div className="hidden sm:block w-[1px] h-4 bg-white/[0.08] shrink-0" />
 
         {/* ── Dropdown: Workspace Switcher (Top-Left on Every Page) ───── */}
         <div ref={dropdownRef} className="relative shrink-0" data-guide="workspace-switcher">
@@ -120,14 +120,14 @@ export default function MainNavbar({
             aria-label="Select mission workspace"
             aria-haspopup="listbox"
             aria-expanded={isDropdownOpen}
-            className="h-8 px-2.5 sm:px-3 rounded-xl bg-[#080E18] hover:bg-[#0E1726] border border-[#16283C] hover:border-[#00D2C4]/50 text-xs font-medium text-[#F1F5F9] flex items-center gap-2 shadow-md transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00D2C4]"
+            className="h-8 px-3 rounded-lg bg-[#0C0D12] hover:bg-[#14161D] border border-white/[0.08] hover:border-white/[0.18] text-[12.5px] font-sans font-medium text-white flex items-center gap-2 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
           >
-            <ActiveIcon className="w-3.5 h-3.5 text-[#00D2C4] shrink-0" />
-            <span className="truncate max-w-[120px] sm:max-w-[170px] md:max-w-[200px] text-xs font-mono text-cyan-300">
+            <ActiveIcon className="w-3.5 h-3.5 text-white/75 shrink-0" />
+            <span className="truncate max-w-[130px] sm:max-w-[180px] md:max-w-[210px] text-[12.5px] font-sans font-medium text-[#F8FAFC]">
               {activePageInfo.label}
             </span>
             <ChevronDown
-              className={`w-3 h-3 text-slate-400 transition-transform duration-200 ${
+              className={`w-3.5 h-3.5 text-[#8E95A5] transition-transform duration-200 ${
                 isDropdownOpen ? 'rotate-180' : ''
               }`}
             />
@@ -138,9 +138,9 @@ export default function MainNavbar({
             <div
               role="listbox"
               aria-label="Mission Workspaces"
-              className="absolute left-0 top-full mt-2 w-64 sm:w-72 bg-[#080E18]/95 backdrop-blur-2xl border border-[#16283C] rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.9)] p-1.5 z-50 animate-in fade-in zoom-in-95 duration-150 space-y-0.5"
+              className="absolute left-0 top-full mt-2 w-64 sm:w-72 bg-[#0A0B0E]/95 backdrop-blur-2xl border border-white/[0.1] rounded-xl shadow-[0_16px_48px_rgba(0,0,0,0.85)] p-1.5 z-50 animate-in fade-in zoom-in-95 duration-150 space-y-0.5"
             >
-              <div className="px-2.5 py-1 text-[10px] font-mono uppercase tracking-wider text-slate-500 border-b border-[#16283C]/60 mb-1">
+              <div className="px-3 py-1.5 text-[10px] font-mono font-medium uppercase tracking-[0.12em] text-[#8E95A5] border-b border-white/[0.06] mb-1">
                 Mission Workspaces
               </div>
               {WORKSPACE_PAGES.map((page) => {
@@ -154,22 +154,22 @@ export default function MainNavbar({
                     role="option"
                     aria-selected={isSelected}
                     onClick={() => handleSelectWorkspace(page.id)}
-                    className={`w-full px-2.5 py-2 rounded-xl flex items-center justify-between text-left transition-all ${
+                    className={`w-full px-3 py-2 rounded-lg flex items-center justify-between text-left transition-all ${
                       isSelected
-                        ? 'bg-[#00D2C4]/15 border border-[#00D2C4]/40 text-[#00D2C4] font-semibold'
-                        : 'text-slate-300 hover:text-white hover:bg-[#0E1A2C] border border-transparent'
+                        ? 'bg-white/[0.08] border border-white/[0.14] text-white font-semibold'
+                        : 'text-[#94A3B8] hover:text-white hover:bg-white/[0.04] border border-transparent font-medium'
                     }`}
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
                       <IconComp
                         className={`w-4 h-4 shrink-0 ${
-                          isSelected ? 'text-[#00D2C4]' : 'text-slate-400'
+                          isSelected ? 'text-white' : 'text-[#8E95A5]'
                         }`}
                       />
-                      <span className="text-xs font-mono truncate">{page.label}</span>
+                      <span className="text-[12.5px] font-sans truncate">{page.label}</span>
                     </div>
                     {page.shortcut && (
-                      <kbd className="px-1.5 py-0.2 rounded bg-[#060B13] border border-[#16283C] text-[9.5px] font-mono text-slate-400">
+                      <kbd className="px-1.5 py-0.5 rounded bg-[#050507] border border-white/[0.08] text-[10px] font-mono text-[#8E95A5]">
                         {page.shortcut}
                       </kbd>
                     )}
@@ -183,7 +183,7 @@ export default function MainNavbar({
         {currentView === 'explorer' && (
           <>
             {/* Subtle Vertical Divider */}
-            <div className="hidden md:block w-[1px] h-6 bg-[#16283C]/80 shrink-0" />
+            <div className="hidden md:block w-[1px] h-4 bg-white/[0.08] shrink-0" />
 
             {/* ── Search Bar (Explorer Only) ─────────────────────────── */}
             <NavbarSearch
@@ -193,77 +193,73 @@ export default function MainNavbar({
           </>
         )}
       </div>
-{currentView === 'explorer' && (
-          <>
-            {/* Earth / Moon Toggle Switch */}
-            <div
-              className="ml-[-10rem] flex items-center p-0.5 rounded-xl bg-[#080E18] border border-[#16283C] text-xs font-mono"
-              role="group"
-              aria-label="Target Celestial Body"
-            >
-              <button
-                type="button"
-                onClick={() => {
-                  if (viewMode !== '3d') onViewModeChange?.('3d');
-                  onPlanetChange?.('moon');
-                }}
-                aria-label="Switch to Moon"
-                aria-pressed={activePlanet === 'moon'}
-                className={`px-2 py-1 rounded-lg flex items-center gap-1.5 text-xs transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#00D2C4] ${
-                  activePlanet === 'moon'
-                    ? 'bg-[#00D2C4] text-[#060B13] font-bold shadow-[0_0_8px_rgba(0,210,196,0.4)]'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                <Moon className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Moon</span>
-              </button>
 
-              <button
-                type="button"
-                onClick={() => {
-                  if (viewMode !== '3d') onViewModeChange?.('3d');
-                  onPlanetChange?.('earth');
-                }}
-                aria-label="Switch to Earth Deep Space Network"
-                aria-pressed={activePlanet === 'earth'}
-                className={`px-2 py-1 rounded-lg flex items-center gap-1.5 text-xs transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#00D2C4] ${
-                  activePlanet === 'earth'
-                    ? 'bg-[#34D399] text-[#060B13] font-bold shadow-[0_0_8px_rgba(52,211,153,0.3)]'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                <Globe2 className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Earth DSN</span>
-              </button>
-            </div>
-          </>
+      {/* ── RIGHT: (Explorer-only: Earth/Moon Switch) + Time + Guide Button ── */}
+      <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
+        {currentView === 'explorer' && (
+          <div
+            className="flex items-center p-0.5 rounded-lg bg-[#0C0D12] border border-white/[0.08] text-xs font-sans"
+            role="group"
+            aria-label="Target Celestial Body"
+          >
+            <button
+              type="button"
+              onClick={() => {
+                if (viewMode !== '3d') onViewModeChange?.('3d');
+                onPlanetChange?.('moon');
+              }}
+              aria-label="Switch to Moon"
+              aria-pressed={activePlanet === 'moon'}
+              className={`px-2.5 py-1 rounded-md flex items-center gap-1.5 text-[12px] font-sans transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/50 ${
+                activePlanet === 'moon'
+                  ? 'bg-white text-[#050507] font-semibold'
+                  : 'text-[#8E95A5] hover:text-white font-medium'
+              }`}
+            >
+              <Moon className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Moon</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                if (viewMode !== '3d') onViewModeChange?.('3d');
+                onPlanetChange?.('earth');
+              }}
+              aria-label="Switch to Earth Deep Space Network"
+              aria-pressed={activePlanet === 'earth'}
+              className={`px-2.5 py-1 rounded-md flex items-center gap-1.5 text-[12px] font-sans transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/50 ${
+                activePlanet === 'earth'
+                  ? 'bg-white text-[#050507] font-semibold'
+                  : 'text-[#8E95A5] hover:text-white font-medium'
+              }`}
+            >
+              <Globe2 className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Earth DSN</span>
+            </button>
+          </div>
         )}
-      {/* ── RIGHT: Time + (Explorer-only: Earth/Moon Switch + Guide Button) ── */}
-      <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+
         {/* Live Ephemeris Time Badge */}
         <div
           title="Current Mission Celestial Ephemeris UTC Timestamp"
           className={`${
             currentView === 'explorer' ? 'hidden xl:flex' : 'hidden sm:flex'
-          } items-center h-7 gap-1.5 px-2.5 py-1 rounded-xl bg-[#080E18] border border-[#16283C] text-[10.5px] font-mono text-slate-300`}
+          } items-center h-8 gap-1.5 px-3 rounded-lg bg-[#0C0D12] border border-white/[0.08] text-[11px] font-mono font-medium text-[#CBD5E1]`}
         >
-          <Clock className="w-3 h-3 text-[#00D2C4]" />
+          <Clock className="w-3.5 h-3.5 text-[#8E95A5]" />
           <span className="tabular-nums">{formattedUtc}</span>
         </div>
 
         {currentView === 'explorer' && (
-          <>
-            {/* ── Guide Button (in distinct amber color, Explorer Only) ────── */}
-            <button
-              type="button"
-              onClick={onOpenGuide}
-              aria-label="Open user guide"
-              className="h-7 px-2 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 hover:border-amber-400 text-amber-300 hover:text-amber-200 text-xs font-mono font-semibold flex items-center gap-1.5 transition-all shadow-[0_0_12px_rgba(245,158,11,0.25)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 shrink-0"
-            >
-              <span>Guide</span>
-            </button>
-          </>
+          <button
+            type="button"
+            onClick={onOpenGuide}
+            aria-label="Open user guide"
+            className="h-8 px-3 rounded-lg bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.12] hover:border-white/[0.22] text-[#F8FAFC] hover:text-white text-[12px] font-sans font-medium flex items-center gap-1.5 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 shrink-0"
+          >
+            <span>Guide</span>
+          </button>
         )}
       </div>
     </header>

@@ -59,20 +59,19 @@ const updateCoords = () => {
               top: `${coords.top}px`,
               left: `${coords.left}px`,
             }}
-            // Changed z-100 (invalid Tailwind) to z-[100]
-            className="fixed -translate-y-1/2 z-[100] pointer-events-none rounded-xl bg-[#080E18]/95 border border-[#16283C] shadow-[0_8px_25px_rgba(0,0,0,0.85),0_0_12px_rgba(0,210,196,0.18)] backdrop-blur-xl px-2.5 py-1.5 flex items-center gap-2 whitespace-nowrap animate-in fade-in zoom-in-95 slide-in-from-left-2 duration-100 ease-out"
+            className="fixed -translate-y-1/2 z-[100] pointer-events-none rounded-lg bg-[#0A0B0E]/95 border border-white/[0.12] shadow-[0_8px_25px_rgba(0,0,0,0.85)] backdrop-blur-xl px-2.5 py-1.5 flex items-center gap-2 whitespace-nowrap animate-in fade-in zoom-in-95 slide-in-from-left-2 duration-100 ease-out"
           >
             {/* Subtle pointer arrow pointing back to the button */}
-            <div className="absolute -left-1 top-1/2 -translate-y-1/2 w-2 h-2 bg-[#080E18] border-l border-b border-[#16283C] rotate-45 pointer-events-none" />
+            <div className="absolute -left-1 top-1/2 -translate-y-1/2 w-2 h-2 bg-[#0A0B0E] border-l border-b border-white/[0.12] rotate-45 pointer-events-none" />
 
             {/* Label name */}
-            <span className="text-xs font-semibold font-sans text-white tracking-tight">
+            <span className="text-xs font-medium font-sans text-white tracking-tight">
               {label}
             </span>
 
             {/* Optional keyboard shortcut */}
             {shortcut && (
-              <kbd className="px-1.5 py-0.5 rounded bg-[#0D1726] border border-[#16283C] text-[#00D2C4] text-[9.5px] font-mono font-bold leading-none shrink-0 shadow-inner">
+              <kbd className="px-1.5 py-0.5 rounded bg-[#050507] border border-white/[0.1] text-[#CBD5E1] text-[9.5px] font-mono font-medium leading-none shrink-0">
                 {shortcut}
               </kbd>
             )}

@@ -143,7 +143,7 @@ export default function MissionControlPage({
       {/* 2. Key Live Astronomical Status Matrix */}
       {celestial && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <div className="p-4 rounded-2xl bg-[#050813] border border-slate-800/90 shadow-sm">
+          <div className="p-4 rounded-2xl bg-[#050507] border border-slate-800/90 shadow-sm">
             <span className="text-[10px] font-mono uppercase tracking-wider text-slate-500 block mb-1">
               Earth-Moon Distance
             </span>
@@ -158,7 +158,7 @@ export default function MissionControlPage({
             </span>
           </div>
 
-          <div className="p-4 rounded-2xl bg-[#050813] border border-slate-800/90 shadow-sm">
+          <div className="p-4 rounded-2xl bg-[#050507] border border-slate-800/90 shadow-sm">
             <span className="text-[10px] font-mono uppercase tracking-wider text-slate-500 block mb-1">
               Sun Distance (AU)
             </span>
@@ -171,7 +171,7 @@ export default function MissionControlPage({
             </span>
           </div>
 
-          <div className="p-4 rounded-2xl bg-[#050813] border border-slate-800/90 shadow-sm">
+          <div className="p-4 rounded-2xl bg-[#050507] border border-slate-800/90 shadow-sm">
             <span className="text-[10px] font-mono uppercase tracking-wider text-slate-500 block mb-1">
               South Pole Environment
             </span>
@@ -184,7 +184,7 @@ export default function MissionControlPage({
             </span>
           </div>
 
-          <div className="p-4 rounded-2xl bg-[#050813] border border-slate-800/90 shadow-sm">
+          <div className="p-4 rounded-2xl bg-[#050507] border border-slate-800/90 shadow-sm">
             <span className="text-[10px] font-mono uppercase tracking-wider text-slate-500 block mb-1">
               Active Evaluation Site
             </span>
@@ -215,7 +215,7 @@ export default function MissionControlPage({
           <button
             type="button"
             onClick={() => onNavigate('explorer')}
-            className="p-5 rounded-2xl bg-[#050813] hover:bg-[#080d1a] border border-slate-800/90 hover:border-cyan-500/50 text-left transition-all duration-150 group shadow-sm flex flex-col justify-between"
+            className="p-5 rounded-2xl bg-[#050507] hover:bg-[#14161D] border border-slate-800/90 hover:border-cyan-500/50 text-left transition-all duration-150 group shadow-sm flex flex-col justify-between"
           >
             <div>
               <div className="w-10 h-10 rounded-xl bg-cyan-950/70 border border-cyan-500/40 text-cyan-400 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
@@ -238,7 +238,7 @@ export default function MissionControlPage({
           <button
             type="button"
             onClick={() => onNavigate('planner')}
-            className="p-5 rounded-2xl bg-[#050813] hover:bg-[#080d1a] border border-cyan-500/40 hover:border-cyan-400 text-left transition-all duration-150 group shadow-sm flex flex-col justify-between ring-1 ring-cyan-500/20"
+            className="p-5 rounded-2xl bg-[#050507] hover:bg-[#14161D] border border-cyan-500/40 hover:border-cyan-400 text-left transition-all duration-150 group shadow-sm flex flex-col justify-between ring-1 ring-cyan-500/20"
           >
             <div>
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-950/90 to-blue-950/90 border border-cyan-400/60 text-cyan-300 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
@@ -263,7 +263,7 @@ export default function MissionControlPage({
           <button
             type="button"
             onClick={() => onNavigate('site-analysis')}
-            className="p-5 rounded-2xl bg-[#050813] hover:bg-[#080d1a] border border-slate-800/90 hover:border-amber-500/50 text-left transition-all duration-150 group shadow-sm flex flex-col justify-between"
+            className="p-5 rounded-2xl bg-[#050507] hover:bg-[#14161D] border border-slate-800/90 hover:border-amber-500/50 text-left transition-all duration-150 group shadow-sm flex flex-col justify-between"
           >
             <div>
               <div className="w-10 h-10 rounded-xl bg-amber-950/70 border border-amber-500/40 text-amber-400 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
@@ -286,7 +286,7 @@ export default function MissionControlPage({
           <button
             type="button"
             onClick={() => onNavigate('communication')}
-            className="p-5 rounded-2xl bg-[#050813] hover:bg-[#080d1a] border border-slate-800/90 hover:border-blue-500/50 text-left transition-all duration-150 group shadow-sm flex flex-col justify-between"
+            className="p-5 rounded-2xl bg-[#050507] hover:bg-[#14161D] border border-slate-800/90 hover:border-blue-500/50 text-left transition-all duration-150 group shadow-sm flex flex-col justify-between"
           >
             <div>
               <div className="w-10 h-10 rounded-xl bg-blue-950/70 border border-blue-500/40 text-blue-400 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
@@ -334,7 +334,7 @@ export default function MissionControlPage({
                 className={`p-4 rounded-2xl border transition-all flex flex-col justify-between ${
                   isSelected
                     ? 'bg-cyan-950/60 border-cyan-500/60 shadow-md'
-                    : 'bg-[#050813] border-slate-800/90 hover:border-slate-700'
+                    : 'bg-[#050507] border-slate-800/90 hover:border-slate-700'
                 }`}
               >
                 <div>

@@ -132,8 +132,8 @@ export const HERO_ORBITAL_MISSIONS = [
     siteName: 'Malapert A Rim',
     region: 'Lunar South Pole',
     status: 'Completed soft landing',
-    color: 0x00d2c4, // Greenish-Blue / Cyan-Teal
-    accentHex: '#00D2C4',
+    color: 0xf8fafc,
+    accentHex: '#F8FAFC',
     payloadCount: 7,
   },
   {
@@ -147,8 +147,8 @@ export const HERO_ORBITAL_MISSIONS = [
     siteName: 'Mare Crisium Basin',
     region: 'Eastern Nearside',
     status: 'Confirmed surface operations',
-    color: 0x34d399, // Mint Emerald
-    accentHex: '#34D399',
+    color: 0xe2e8f0,
+    accentHex: '#E2E8F0',
     payloadCount: 10,
   },
   {
@@ -162,8 +162,8 @@ export const HERO_ORBITAL_MISSIONS = [
     siteName: 'Shackleton Ridge',
     region: 'Lunar South Pole',
     status: 'Polar volatile ice drill',
-    color: 0x00d2c4,
-    accentHex: '#00D2C4',
+    color: 0xf8fafc,
+    accentHex: '#F8FAFC',
     payloadCount: 3,
   },
   {
@@ -177,8 +177,8 @@ export const HERO_ORBITAL_MISSIONS = [
     siteName: 'Tranquility Base',
     region: 'Mare Tranquillitatis',
     status: 'First crewed landing (1969)',
-    color: 0xf4efe6, // Soft Ivory
-    accentHex: '#F4EFE6',
+    color: 0xf8fafc,
+    accentHex: '#F8FAFC',
     payloadCount: 2,
     isApollo: true,
   },
@@ -193,8 +193,8 @@ export const HERO_ORBITAL_MISSIONS = [
     siteName: 'Mons Mouton Plateau',
     region: 'Lunar South Pole',
     status: 'Medium-class polar lander',
-    color: 0x88b38a,
-    accentHex: '#88B38A',
+    color: 0xcbd5e1,
+    accentHex: '#CBD5E1',
     payloadCount: 4,
   },
 ];
@@ -275,7 +275,7 @@ export default function RealisticMoon({
     renderer.toneMappingExposure = 1.12;
     container.appendChild(renderer.domElement);
 
-    // 3. Warm Astronomical Starfield
+    // 3. Astronomical Starfield
     const starCount = 620;
     const starGeometry = new THREE.BufferGeometry();
     const starPositions = new Float32Array(starCount * 3);
@@ -288,14 +288,11 @@ export default function RealisticMoon({
 
       const spectral = Math.random();
       if (spectral > 0.78) {
-        // Warm terracotta tint
-        starColors[i] = 0.90; starColors[i + 1] = 0.65; starColors[i + 2] = 0.48;
+        starColors[i] = 0.85; starColors[i + 1] = 0.88; starColors[i + 2] = 0.94;
       } else if (spectral < 0.22) {
-        // Soft sage tint
-        starColors[i] = 0.65; starColors[i + 1] = 0.80; starColors[i + 2] = 0.66;
+        starColors[i] = 0.75; starColors[i + 1] = 0.80; starColors[i + 2] = 0.88;
       } else {
-        // Warm cream starlight
-        starColors[i] = 0.96; starColors[i + 1] = 0.94; starColors[i + 2] = 0.90;
+        starColors[i] = 0.96; starColors[i + 1] = 0.97; starColors[i + 2] = 0.99;
       }
     }
 
@@ -303,10 +300,10 @@ export default function RealisticMoon({
     starGeometry.setAttribute('color', new THREE.BufferAttribute(starColors, 3));
 
     const starMaterial = new THREE.PointsMaterial({
-      size: 0.03,
+      size: 0.028,
       vertexColors: true,
       transparent: true,
-      opacity: 0.72,
+      opacity: 0.65,
     });
     const starPoints = new THREE.Points(starGeometry, starMaterial);
     scene.add(starPoints);
@@ -330,7 +327,7 @@ export default function RealisticMoon({
       map: proceduralTexture,
       roughness: 0.91,
       metalness: 0.04,
-      color: new THREE.Color('#f4efe6'),
+      color: new THREE.Color('#e2e8f0'),
     });
 
     const moonMesh = new THREE.Mesh(sphereGeometry, moonMaterial);
@@ -368,7 +365,7 @@ export default function RealisticMoon({
       moonMaterial.needsUpdate = true;
     });
 
-    // 6. South-Pole Target Highlight (80°S - 90°S) in Warm Terracotta
+    // 6. South-Pole Target Highlight (80°S - 90°S)
     const southPoleRingGeo = new THREE.BufferGeometry();
     const ringPoints = [];
     const polarLatRad = (-80 * Math.PI) / 180;
@@ -387,21 +384,21 @@ export default function RealisticMoon({
     }
     southPoleRingGeo.setFromPoints(ringPoints);
     const southPoleRingMat = new THREE.LineBasicMaterial({
-      color: 0x00d2c4,
+      color: 0xe2e8f0,
       transparent: true,
-      opacity: 0.65,
+      opacity: 0.45,
     });
     const southPoleRing = new THREE.Line(southPoleRingGeo, southPoleRingMat);
     moonMesh.add(southPoleRing);
 
     // Polar center crosshair pin (Shackleton South Pole 90°S)
     const spCenterGeo = new THREE.SphereGeometry(0.014, 12, 12);
-    const spCenterMat = new THREE.MeshBasicMaterial({ color: 0x00d2c4 });
+    const spCenterMat = new THREE.MeshBasicMaterial({ color: 0xf8fafc });
     const spCenterMesh = new THREE.Mesh(spCenterGeo, spCenterMat);
     spCenterMesh.position.set(0, -1.012, 0);
     moonMesh.add(spCenterMesh);
 
-    // 7. Orbital Telemetry Arcs (Aerospace Cyan & Mint Emerald)
+    // 7. Orbital Telemetry Arcs
     const lroOrbitGeo = new THREE.BufferGeometry();
     const lroPoints = [];
     const lroRadiusX = 1.24;
@@ -418,19 +415,19 @@ export default function RealisticMoon({
     }
     lroOrbitGeo.setFromPoints(lroPoints);
     const lroOrbitMat = new THREE.LineBasicMaterial({
-      color: 0x00d2c4,
+      color: 0xcbd5e1,
       transparent: true,
-      opacity: 0.35,
+      opacity: 0.25,
     });
     const lroOrbitLine = new THREE.Line(lroOrbitGeo, lroOrbitMat);
     moonGroup.add(lroOrbitLine);
 
     const lroBeaconGeo = new THREE.SphereGeometry(0.014, 10, 10);
-    const lroBeaconMat = new THREE.MeshBasicMaterial({ color: 0x00d2c4 });
+    const lroBeaconMat = new THREE.MeshBasicMaterial({ color: 0xf8fafc });
     const lroBeacon = new THREE.Mesh(lroBeaconGeo, lroBeaconMat);
     moonGroup.add(lroBeacon);
 
-    // Arc B: CLPS Translunar Transfer Trajectory in Sage Green
+    // Arc B: CLPS Translunar Transfer Trajectory
     const clpsOrbitGeo = new THREE.BufferGeometry();
     const clpsPoints = [];
     const clpsSemiA = 1.36;
@@ -444,9 +441,9 @@ export default function RealisticMoon({
     }
     clpsOrbitGeo.setFromPoints(clpsPoints);
     const clpsOrbitMat = new THREE.LineBasicMaterial({
-      color: 0x88b38a,
+      color: 0x94a3b8,
       transparent: true,
-      opacity: 0.22,
+      opacity: 0.18,
     });
     const clpsOrbitLine = new THREE.Line(clpsOrbitGeo, clpsOrbitMat);
     moonGroup.add(clpsOrbitLine);
@@ -467,7 +464,7 @@ export default function RealisticMoon({
         color: pin.color,
         side: THREE.DoubleSide,
         transparent: true,
-        opacity: 0.72,
+        opacity: 0.65,
       });
       const ringMesh = new THREE.Mesh(ringGeo, ringMat);
       ringMesh.position.copy(pos.clone().multiplyScalar(1.003));
@@ -483,20 +480,20 @@ export default function RealisticMoon({
       });
     });
 
-    // 9. Warm Grazing Solar Terminator & Sage Earthshine Lighting
-    const sunLight = new THREE.DirectionalLight(0xf4efe6, 3.0);
+    // 9. Grazing Solar Terminator & Cool Moonlight Rim Lighting
+    const sunLight = new THREE.DirectionalLight(0xf8fafc, 3.1);
     sunLight.position.set(3.4, 0.95, 2.3);
     scene.add(sunLight);
 
-    const earthshine = new THREE.DirectionalLight(0x88b38a, 0.28);
+    const earthshine = new THREE.DirectionalLight(0x94a3b8, 0.25);
     earthshine.position.set(-3.4, -0.6, -1.2);
     scene.add(earthshine);
 
-    const warmRimLight = new THREE.DirectionalLight(0x00d2c4, 0.22);
-    warmRimLight.position.set(0.5, -2.8, -1.8);
-    scene.add(warmRimLight);
+    const coolRimLight = new THREE.DirectionalLight(0xcbd5e1, 0.24);
+    coolRimLight.position.set(0.5, -2.8, -1.8);
+    scene.add(coolRimLight);
 
-    const ambientLight = new THREE.AmbientLight(0x1c1a14, 0.26);
+    const ambientLight = new THREE.AmbientLight(0x181a20, 0.28);
     scene.add(ambientLight);
 
     // 10. Interactive Drag & Touch Controls
@@ -658,12 +655,12 @@ export default function RealisticMoon({
       aria-label="Interactive 3D Moon visualization"
       className="relative flex items-center justify-center select-none w-full max-w-[300px] sm:max-w-[360px] lg:max-w-[420px] xl:max-w-[460px] aspect-square mx-auto"
     >
-      {/* Warm Atmospheric Glow */}
+      {/* Subtle Moonlight Horizon Glow */}
       <div
         className="absolute inset-0 rounded-full pointer-events-none -z-10"
         style={{
           background:
-            'radial-gradient(circle at 52% 46%, rgba(229, 154, 109, 0.14) 0%, rgba(136, 179, 138, 0.08) 42%, transparent 72%)',
+            'radial-gradient(circle at 52% 46%, rgba(186, 204, 235, 0.14) 0%, rgba(148, 163, 184, 0.06) 44%, transparent 72%)',
           filter: 'blur(42px)',
         }}
       />
@@ -697,7 +694,7 @@ export default function RealisticMoon({
                 }
               }}
               style={{ display: 'none', left: '50%', top: '50%' }}
-              className="absolute -translate-x-1/2 -translate-y-1/2 pointer-events-auto cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00D2C4] rounded-full"
+              className="absolute -translate-x-1/2 -translate-y-1/2 pointer-events-auto cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 rounded-full"
               onMouseEnter={() => setActivePin(pin)}
               onMouseLeave={() => setActivePin(null)}
               onClick={() => handleLaunchToPin(pin, idx)}
@@ -705,23 +702,23 @@ export default function RealisticMoon({
               {/* Crisp Orbital Fiducial Node */}
               <div className="relative flex items-center justify-center p-2 group">
                 <span
-                  className="absolute w-4 h-4 rounded-full animate-ping opacity-60"
+                  className="absolute w-3.5 h-3.5 rounded-full animate-ping opacity-40"
                   style={{ backgroundColor: pin.accentHex }}
                 />
                 <span
-                  className="relative w-2.5 h-2.5 rounded-full border border-[#060B13] shadow-sm transition-transform group-hover:scale-125"
+                  className="relative w-2 h-2 rounded-full border border-[#050507] shadow-sm transition-transform group-hover:scale-125"
                   style={{ backgroundColor: pin.accentHex }}
                 />
 
                 {/* Editorial Node Pill */}
                 <span
-                  className={`hidden sm:inline-flex items-center gap-1.5 ml-2 px-2 py-0.5 rounded-full bg-[#060B13]/90 border text-[10px] font-mono whitespace-nowrap transition-all ${
+                  className={`hidden sm:inline-flex items-center gap-1.5 ml-2 px-2.5 py-0.5 rounded-full bg-[#08090C]/90 border text-[10px] font-mono whitespace-nowrap transition-all ${
                     isSelected
-                      ? 'border-[#00D2C4]/80 text-[#F1F5F9] opacity-100 shadow-[0_0_12px_rgba(0,210,196,0.3)]'
-                      : 'border-[#16283C] text-[#94A3B8] opacity-80 group-hover:opacity-100 group-hover:border-[#00D2C4]/50 group-hover:text-[#F1F5F9]'
+                      ? 'border-white/50 text-white opacity-100 shadow-[0_4px_16px_rgba(0,0,0,0.6)]'
+                      : 'border-white/[0.12] text-[#8E95A5] opacity-85 group-hover:opacity-100 group-hover:border-white/30 group-hover:text-white'
                   }`}
                 >
-                  <span className="text-[#00D2C4]">{pin.indexLabel}</span>
+                  <span className="text-white/70">{pin.indexLabel}</span>
                   <span>{pin.name}</span>
                 </span>
               </div>
@@ -729,29 +726,29 @@ export default function RealisticMoon({
               {/* Editorial Telemetry Popover */}
               {isHovered && (
                 <div
-                  className="absolute bottom-7 left-1/2 -translate-x-1/2 w-56 p-3.5 rounded-2xl bg-[#0A1220]/95 border border-[#00D2C4]/45 backdrop-blur-xl shadow-2xl text-left pointer-events-none z-30 animate-in fade-in zoom-in-95 duration-150"
+                  className="absolute bottom-7 left-1/2 -translate-x-1/2 w-56 p-3.5 rounded-2xl bg-[#0A0B0E]/95 border border-white/[0.16] backdrop-blur-xl shadow-2xl text-left pointer-events-none z-30 animate-in fade-in zoom-in-95 duration-150"
                   style={{ transformOrigin: 'bottom center' }}
                 >
                   <div className="flex items-center justify-between text-[10px] font-mono mb-1">
-                    <span className="text-[#00D2C4] font-semibold">
+                    <span className="text-white font-medium">
                       {pin.indexLabel} · {pin.taskOrder}
                     </span>
-                    <span className="text-[#94A3B8] tabular-nums">
+                    <span className="text-[#8E95A5] tabular-nums">
                       {formatLunarCoordinates(pin.lon, pin.lat).combined}
                     </span>
                   </div>
 
-                  <div className="font-serif text-base text-[#F1F5F9] leading-tight mb-0.5">
+                  <div className="font-sans font-semibold text-sm text-white leading-tight mb-0.5">
                     {pin.name}
                   </div>
 
-                  <div className="text-[11px] text-[#94A3B8] leading-snug mb-2">
+                  <div className="text-[11px] text-[#8E95A5] leading-snug mb-2">
                     {pin.siteName} · {pin.region}
                   </div>
 
-                  <div className="flex items-center justify-between pt-2 border-t border-[#16283C] text-[9.5px] font-mono text-[#34D399]">
+                  <div className="flex items-center justify-between pt-2 border-t border-white/[0.08] text-[9.5px] font-mono text-[#CBD5E1]">
                     <span>{pin.status}</span>
-                    <ArrowUpRight className="w-3 h-3 text-[#00D2C4]" />
+                    <ArrowUpRight className="w-3 h-3 text-white" />
                   </div>
                 </div>
               )}

@@ -1172,11 +1172,11 @@ export default function App() {
   }
 
   return (
-    <div className="relative w-screen h-screen overflow-hidden flex flex-col bg-[#060B13] text-slate-100 font-sans select-none animate-in fade-in duration-200">
+    <div className="relative w-screen h-screen overflow-hidden flex flex-col bg-[#050507] text-slate-100 font-sans select-none animate-in fade-in duration-200">
       {/* Accessible skip link */}
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:px-3 focus:py-1.5 focus:bg-[#00D2C4] focus:text-[#060B13] focus:font-semibold focus:rounded-md focus:shadow-lg focus:outline-none"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:px-3 focus:py-1.5 focus:bg-white focus:text-[#050507] focus:font-semibold focus:rounded-md focus:shadow-lg focus:outline-none"
       >
         Skip to main content
       </a>
@@ -1206,11 +1206,13 @@ export default function App() {
 
 
       {/* ========================================================================= */}
-      {/* FLOATING NOTIFICATIONS: Under navbar in top-left corner                   */}
+      {/* FLOATING NOTIFICATIONS: Discrete bottom-right corner                      */}
       {/* ========================================================================= */}
       <ToastFeedback
         maxItems={1}
-        className="fixed top-20 left-5 sm:left-15 z-50 items-start select-none max-w-[calc(100vw-24px)] sm:max-w-xs"
+        className={`fixed ${
+          currentView === 'explorer' && showLunarTimeline ? 'bottom-24' : 'bottom-5'
+        } right-5 z-50 items-end select-none max-w-[calc(100vw-24px)] sm:max-w-xs`}
       />
 
       {/* ========================================================================= */}
@@ -1266,15 +1268,15 @@ export default function App() {
         )}
 
         {/* Central Lunar Mission Workspace */}
-        <div className="relative flex-1 min-w-0 h-full overflow-hidden flex flex-col bg-[#060B13]">
+        <div className="relative flex-1 min-w-0 h-full overflow-hidden flex flex-col bg-[#050507]">
           {/* Dedicated Subpage Workspaces (Lazy Loaded) */}
           {currentView !== 'explorer' && (
-            <div className="flex-1 w-full h-full overflow-y-auto custom-scrollbar bg-[#060B13]">
+            <div className="flex-1 w-full h-full overflow-y-auto custom-scrollbar bg-[#050507]">
               <React.Suspense
                 fallback={
-                  <div className="flex-1 flex flex-col items-center justify-center min-h-[50vh] text-cyan-400 font-mono text-xs gap-3">
-                    <div className="w-8 h-8 rounded-full border-2 border-cyan-500/30 border-t-cyan-400 animate-spin" />
-                    <span>INITIALIZING MISSION WORKSPACE...</span>
+                  <div className="flex-1 flex flex-col items-center justify-center min-h-[50vh] text-[#8E95A5] font-sans text-xs font-medium tracking-wide gap-3">
+                    <div className="w-7 h-7 rounded-full border-2 border-white/15 border-t-white animate-spin" />
+                    <span>Initializing mission workspace...</span>
                   </div>
                 }
               >

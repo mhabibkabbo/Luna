@@ -238,38 +238,38 @@ export default function GuideOverlay({
         aria-labelledby="guide-welcome-title"
         className="fixed inset-0 z-[60] flex items-center justify-center overflow-y-auto p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-200"
       >
-        <div className="bg-[#070b14] border border-cyan-500/40 rounded-2xl max-w-md w-full max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain p-6 shadow-[0_20px_50px_rgba(0,0,0,0.85)] flex flex-col gap-4 text-white animate-in zoom-in-95 duration-150">
+        <div className="bg-[#0A0B0E] border border-white/[0.14] rounded-2xl max-w-md w-full max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain p-6 shadow-[0_20px_50px_rgba(0,0,0,0.85)] flex flex-col gap-4 text-white animate-in zoom-in-95 duration-150">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-cyan-500/20 border border-cyan-500/50 flex items-center justify-center text-cyan-400 shrink-0">
-              <Compass className="w-5 h-5 animate-pulse" />
+            <div className="w-10 h-10 rounded-xl bg-white/[0.06] border border-white/[0.14] flex items-center justify-center text-white shrink-0">
+              <Compass className="w-5 h-5" />
             </div>
             <div>
-              <h3 id="guide-welcome-title" className="text-base font-bold tracking-tight text-white">
+              <h3 id="guide-welcome-title" className="text-base font-semibold tracking-tight text-white">
                 Welcome to Luna Mission Platform
               </h3>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-[#8E95A5]">
                 NASA Lunar Landing Site Exploration & Telemetry
               </p>
             </div>
           </div>
 
-          <p className="text-xs text-slate-300 leading-relaxed">
+          <p className="text-xs text-[#CBD5E1] leading-relaxed">
             Would you like a quick spotlight walkthrough of the key operational controls, 3D/2D GIS
             maps, and mission analysis tools?
           </p>
 
-          <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-800">
+          <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-white/[0.08]">
             <button
               type="button"
               onClick={() => dismissPrompt(guideState.activeView)}
-              className="px-3.5 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-800/80 transition-colors"
+              className="px-3.5 py-1.5 rounded-lg text-xs font-medium text-[#8E95A5] hover:text-white hover:bg-white/[0.06] transition-colors"
             >
               Skip for now
             </button>
             <button
               type="button"
               onClick={() => startGuide(guideState.activeView)}
-              className="px-4 py-1.5 rounded-lg text-xs font-semibold bg-cyan-600 hover:bg-cyan-500 text-white transition-all shadow-[0_0_12px_rgba(6,182,212,0.4)] flex items-center gap-1.5"
+              className="px-4 py-1.5 rounded-lg text-xs font-semibold bg-white hover:bg-[#E2E8F0] text-[#050507] transition-all flex items-center gap-1.5"
             >
               Take the tour
               <ChevronRight className="w-3.5 h-3.5" />
@@ -382,7 +382,7 @@ export default function GuideOverlay({
             height: `${targetRect.height}px`,
             borderRadius: `${BORDER_RADIUS}px`,
             boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.72)',
-            border: '2px solid rgba(0, 210, 196, 0.85)',
+            border: '2px solid rgba(248, 250, 252, 0.75)',
           }}
         />
       ) : (
@@ -394,8 +394,8 @@ export default function GuideOverlay({
         ref={popoverRef}
         className={`fixed z-[61] ${
           isMobile
-            ? 'bottom-0 left-0 right-0 max-h-[55dvh] overflow-y-auto overscroll-contain custom-scrollbar rounded-t-2xl p-4 pb-[max(1rem,env(safe-area-inset-bottom))] bg-[#070b14] border-t border-cyan-500/40 shadow-2xl animate-in slide-in-from-bottom duration-200'
-            : 'w-80 rounded-xl p-4 bg-[#070b14]/95 backdrop-blur-md border border-cyan-500/50 shadow-[0_16px_40px_rgba(0,0,0,0.85)] animate-in fade-in zoom-in-95 duration-200'
+            ? 'bottom-0 left-0 right-0 max-h-[55dvh] overflow-y-auto overscroll-contain custom-scrollbar rounded-t-2xl p-4 pb-[max(1rem,env(safe-area-inset-bottom))] bg-[#0A0B0E] border-t border-white/[0.14] shadow-2xl animate-in slide-in-from-bottom duration-200'
+            : 'w-80 rounded-xl p-4 bg-[#0A0B0E]/95 backdrop-blur-md border border-white/[0.16] shadow-[0_16px_40px_rgba(0,0,0,0.85)] animate-in fade-in zoom-in-95 duration-200'
         } text-white`}
         style={getPopoverStyle()}
       >
@@ -403,12 +403,12 @@ export default function GuideOverlay({
         <div className="flex items-center justify-between gap-2 mb-2">
           <div className="flex items-center gap-1.5">
             <span className="flex h-2 w-2 relative">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500" />
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-white" />
             </span>
-            <span className="text-[10px] font-mono uppercase tracking-wider text-cyan-400 font-bold">
+            <span className="text-[10px] font-mono uppercase tracking-wider text-white font-semibold">
               {guideState.mode === 'whats-new' ? "What's New" : 'Guide'}{' '}
-              <span className="text-slate-400 font-normal">
+              <span className="text-[#8E95A5] font-normal">
                 ({guideState.activeStepIndex + 1}/{guideState.steps.length})
               </span>
             </span>
@@ -417,7 +417,7 @@ export default function GuideOverlay({
           <button
             type="button"
             onClick={skipGuide}
-            className="text-slate-400 hover:text-white p-1 rounded hover:bg-slate-800/60 transition-colors"
+            className="text-[#8E95A5] hover:text-white p-1 rounded hover:bg-white/[0.06] transition-colors"
             title="Skip tour [Esc]"
             aria-label="Skip tour"
           >
@@ -427,16 +427,16 @@ export default function GuideOverlay({
 
         {/* Title & Body */}
         <div className="mb-3">
-          <h4 className="text-sm font-bold text-white tracking-tight mb-1">
+          <h4 className="text-sm font-semibold text-white tracking-tight mb-1">
             {activeStep.title}
           </h4>
-          <p className="text-xs text-slate-300 leading-relaxed font-sans">
+          <p className="text-xs text-[#CBD5E1] leading-relaxed font-sans">
             {activeStep.body}
           </p>
         </div>
 
         {/* Step Dots & Controls */}
-        <div className="flex items-center justify-between pt-2 border-t border-slate-800/80">
+        <div className="flex items-center justify-between pt-2 border-t border-white/[0.08]">
           {/* Step Dots */}
           <div className="flex items-center gap-1">
             {guideState.steps.map((step, idx) => (
@@ -444,10 +444,10 @@ export default function GuideOverlay({
                 key={step.id}
                 className={`h-1.5 rounded-full transition-all ${
                   idx === guideState.activeStepIndex
-                    ? 'w-4 bg-cyan-400'
+                    ? 'w-4 bg-white'
                     : idx < guideState.activeStepIndex
-                    ? 'w-1.5 bg-cyan-600/60'
-                    : 'w-1.5 bg-slate-700'
+                    ? 'w-1.5 bg-white/50'
+                    : 'w-1.5 bg-white/20'
                 }`}
               />
             ))}
@@ -459,7 +459,7 @@ export default function GuideOverlay({
               <button
                 type="button"
                 onClick={prevGuideStep}
-                className="px-2 py-1 rounded-md text-[11px] font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition-colors flex items-center gap-1"
+                className="px-2 py-1 rounded-md text-[11px] font-medium text-[#CBD5E1] hover:text-white hover:bg-white/[0.06] transition-colors flex items-center gap-1"
                 title="Previous step [←]"
               >
                 <ChevronLeft className="w-3 h-3" />
@@ -470,7 +470,7 @@ export default function GuideOverlay({
             <button
               type="button"
               onClick={nextGuideStep}
-              className="px-3 py-1 rounded-md text-[11px] font-semibold bg-cyan-600 hover:bg-cyan-500 text-white transition-all shadow-[0_0_8px_rgba(6,182,212,0.3)] flex items-center gap-1"
+              className="px-3 py-1 rounded-md text-[11px] font-semibold bg-white hover:bg-[#E2E8F0] text-[#050507] transition-all flex items-center gap-1"
               title={isLastStep ? 'Finish tour [Enter]' : 'Next step [→]'}
             >
               {isLastStep ? 'Got it' : 'Next'}

@@ -139,13 +139,13 @@ export default function HorizonViewCard({
   const earthStatusMeta = EARTH_STATUS[link?.status] || { label: 'Unknown', color: '#60a5fa' };
 
   return (
-    <section className="space-y-3 rounded-2xl border border-[#16283C] bg-[#060B13] p-4 text-[#F8FAFC]">
+    <section className="space-y-3 rounded-2xl border border-[#1E2028] bg-[#050507] p-4 text-[#F8FAFC]">
       {/* Compact 2-Pill Telemetry Summary */}
       <div className="grid grid-cols-2 gap-2">
-        <div className="rounded-xl border border-[#16283C] bg-[#0A111C] p-2.5">
+        <div className="rounded-xl border border-[#1E2028] bg-[#0C0D12] p-2.5">
           <div className="flex items-center justify-between text-[10px] font-mono text-[#94A3B8]">
             <span className="flex items-center gap-1">
-              <Sun className="h-3.5 w-3.5 text-[#00D2C4]" />
+              <Sun className="h-3.5 w-3.5 text-[#F8FAFC]" />
               <span className="font-semibold text-[#F8FAFC]">Sun Position</span>
             </span>
             <span style={{ color: sunStatusMeta.color }} className="font-mono font-bold">
@@ -169,7 +169,7 @@ export default function HorizonViewCard({
           </div>
         </div>
 
-        <div className="rounded-xl border border-[#16283C] bg-[#0A111C] p-2.5">
+        <div className="rounded-xl border border-[#1E2028] bg-[#0C0D12] p-2.5">
           <div className="flex items-center justify-between text-[10px] font-mono text-[#94A3B8]">
             <span className="flex items-center gap-1">
               <Radio className="h-3.5 w-3.5 text-[#34D399]" />

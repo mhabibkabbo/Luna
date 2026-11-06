@@ -14,10 +14,10 @@ export default function LunaBrandLogo({
   const content = (
     <div className={`flex items-center gap-2.5 shrink-0 group ${className}`}>
       <div
-        className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors duration-200 ${
+        className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors duration-200 ${
           transparent
-            ? 'bg-transparent border border-white/15 group-hover:border-[#00D2C4]/60 group-hover:bg-white/5'
-            : 'bg-[#0D1726] border border-[#16283C] group-hover:border-[#00D2C4]/60'
+            ? 'bg-transparent border border-white/[0.14] group-hover:border-white/40 group-hover:bg-white/[0.04]'
+            : 'bg-[#0C0D12] border border-white/[0.1] group-hover:border-white/30'
         }`}
       >
         <svg
@@ -28,22 +28,22 @@ export default function LunaBrandLogo({
         >
           <path
             d="M 12 3 A 9 9 0 1 0 18.5 18 A 8 8 0 1 1 12 3 Z"
-            className="fill-[#F1F5F9] group-hover:fill-[#00D2C4] transition-colors duration-200"
+            className="fill-white transition-colors duration-200"
           />
-          <circle cx="8" cy="11.5" r="0.85" className="fill-[#34D399]" />
+          <circle cx="8" cy="11.5" r="0.85" className="fill-[#94A3B8]" />
           <path
             d="M 3.5 19 C 5 11, 14 7, 19.5 9"
-            stroke="#00D2C4"
+            stroke="#94A3B8"
             strokeWidth="1.3"
             strokeLinecap="round"
           />
-          <circle cx="19.5" cy="9" r="1.2" className="fill-[#34D399]" />
+          <circle cx="19.5" cy="9" r="1.2" className="fill-white" />
         </svg>
       </div>
 
       <div className="flex flex-col leading-none text-left">
-        <span className="text-lg font-bold tracking-tight text-[#F1F5F9] group-hover:text-white transition-colors whitespace-nowrap drop-shadow-sm">
-          luna<span className="font-editorial italic font-normal text-[#00D2C4] ml-0.5">studio</span>
+        <span className="text-base font-semibold tracking-[-0.02em] text-white group-hover:text-white transition-colors whitespace-nowrap">
+          luna<span className="font-normal text-[#8E95A5] ml-1">studio</span>
         </span>
       </div>
     </div>

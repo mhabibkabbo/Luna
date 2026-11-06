@@ -264,15 +264,15 @@ export default function SlipSimulatorModal({ isOpen, onClose, onSelectSiteAndDat
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="relative w-full max-w-5xl max-h-[90vh] bg-[#0A111C] border border-[#16283C] rounded-3xl shadow-2xl overflow-hidden flex flex-col text-[#F8FAFC] font-sans">
+      <div className="relative w-full max-w-5xl max-h-[90vh] bg-[#0C0D12] border border-[#1E2028] rounded-3xl shadow-2xl overflow-hidden flex flex-col text-[#F8FAFC] font-sans">
         {/* Header */}
-        <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-4 border-b border-[#16283C] bg-[#060B13]">
+        <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-4 border-b border-[#1E2028] bg-[#050507]">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-2xl bg-[#00D2C4]/15 border border-[#00D2C4]/30 text-[#00D2C4]">
+            <div className="p-2.5 rounded-2xl bg-white/[0.08] border border-white/25 text-[#F8FAFC]">
               <Sliders className="w-5 h-5" />
             </div>
             <div>
-              <div className="text-[10px] font-mono uppercase tracking-wider text-[#00D2C4]">
+              <div className="text-[10px] font-mono uppercase tracking-wider text-[#F8FAFC]">
                 Time-Based Mission Simulator &amp; What-If Analysis
               </div>
               <h2 className="font-serif text-xl font-medium text-[#F8FAFC]">
@@ -306,7 +306,7 @@ export default function SlipSimulatorModal({ isOpen, onClose, onSelectSiteAndDat
             <button
               type="button"
               onClick={handleApplyToGlobalClock}
-              className="px-3.5 py-2 rounded-xl bg-[#00D2C4] hover:bg-[#00e6d6] text-[#060B13] font-mono text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-lg"
+              className="px-3.5 py-2 rounded-xl bg-white hover:bg-[#E2E8F0] text-[#050507] font-mono text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-lg"
             >
               <Clock className="w-3.5 h-3.5" />
               <span>Sync Global Clock</span>
@@ -314,7 +314,7 @@ export default function SlipSimulatorModal({ isOpen, onClose, onSelectSiteAndDat
             <button
               type="button"
               onClick={onClose}
-              className="p-2 rounded-full text-[#94A3B8] hover:text-white hover:bg-[#16283C] transition-colors"
+              className="p-2 rounded-full text-[#94A3B8] hover:text-white hover:bg-[#1E2028] transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
@@ -322,7 +322,7 @@ export default function SlipSimulatorModal({ isOpen, onClose, onSelectSiteAndDat
         </div>
 
         {/* Mode Sub-Navigation Bar */}
-        <div className="px-6 py-2.5 bg-[#070d17] border-b border-[#16283C] flex flex-wrap items-center justify-between gap-2">
+        <div className="px-6 py-2.5 bg-[#050507] border-b border-[#1E2028] flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             {[
               { id: 'timeline', label: '1. 4-Track Mission Timeline', icon: Activity },
@@ -338,8 +338,8 @@ export default function SlipSimulatorModal({ isOpen, onClose, onSelectSiteAndDat
                   onClick={() => setActiveMode(tab.id)}
                   className={`px-3.5 py-1.5 rounded-xl font-mono text-xs flex items-center gap-1.5 border transition-colors ${
                     isAct
-                      ? 'bg-[#00D2C4]/20 border-[#00D2C4] text-[#00D2C4] font-bold'
-                      : 'bg-[#0A111C] border-[#16283C] text-slate-400 hover:text-white'
+                      ? 'bg-white/[0.08] border-white/25 text-[#F8FAFC] font-bold'
+                      : 'bg-[#0C0D12] border-[#1E2028] text-slate-400 hover:text-white'
                   }`}
                 >
                   <Icon className="w-3.5 h-3.5" />
@@ -373,7 +373,7 @@ export default function SlipSimulatorModal({ isOpen, onClose, onSelectSiteAndDat
         {/* Content Body */}
         <div className="flex-1 overflow-y-auto p-6 space-y-5">
           {/* Shared Top Controls: Site, Slip Slider, Window Duration & Step Size */}
-          <div className="p-4 rounded-2xl bg-[#060B13] border border-[#16283C] space-y-3">
+          <div className="p-4 rounded-2xl bg-[#050507] border border-[#1E2028] space-y-3">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
               <div>
                 <label className="text-[10px] font-mono uppercase text-slate-400 block mb-1">
@@ -382,7 +382,7 @@ export default function SlipSimulatorModal({ isOpen, onClose, onSelectSiteAndDat
                 <select
                   value={selectedSiteId}
                   onChange={(e) => setSelectedSiteId(e.target.value)}
-                  className="w-full h-9 px-2.5 rounded-xl bg-[#0A111C] border border-[#16283C] text-xs font-mono text-white"
+                  className="w-full h-9 px-2.5 rounded-xl bg-[#0C0D12] border border-[#1E2028] text-xs font-mono text-white"
                 >
                   {SITES_TO_ANALYZE.map((s) => (
                     <option key={s.id} value={s.id}>
@@ -403,7 +403,7 @@ export default function SlipSimulatorModal({ isOpen, onClose, onSelectSiteAndDat
                   step="1"
                   value={slipDays}
                   onChange={(e) => setSlipDays(parseInt(e.target.value, 10))}
-                  className="w-full accent-[#00D2C4] cursor-pointer mt-2"
+                  className="w-full accent-white cursor-pointer mt-2"
                 />
               </div>
 
@@ -419,8 +419,8 @@ export default function SlipSimulatorModal({ isOpen, onClose, onSelectSiteAndDat
                       onClick={() => setWindowDurationDays(d)}
                       className={`h-9 rounded-xl font-mono text-xs border ${
                         windowDurationDays === d
-                          ? 'bg-[#00D2C4] text-[#060B13] border-[#00D2C4] font-bold'
-                          : 'bg-[#0A111C] text-slate-400 border-[#16283C]'
+                          ? 'bg-white text-[#050507] border-white/25 font-bold'
+                          : 'bg-[#0C0D12] text-slate-400 border-[#1E2028]'
                       }`}
                     >
                       {d}d
@@ -442,7 +442,7 @@ export default function SlipSimulatorModal({ isOpen, onClose, onSelectSiteAndDat
                       className={`h-9 rounded-xl font-mono text-xs border ${
                         stepHours === h
                           ? 'bg-cyan-500/25 text-cyan-300 border-cyan-400 font-bold'
-                          : 'bg-[#0A111C] text-slate-400 border-[#16283C]'
+                          : 'bg-[#0C0D12] text-slate-400 border-[#1E2028]'
                       }`}
                     >
                       {h}h
@@ -451,8 +451,8 @@ export default function SlipSimulatorModal({ isOpen, onClose, onSelectSiteAndDat
                 </div>
               </div>
             </div>
-            <div className="flex items-center justify-between text-[11px] font-mono text-slate-400 pt-1 border-t border-[#16283C]">
-              <span>Simulated Touchdown Epoch: <strong className="text-[#00D2C4]">{formattedSimDate}</strong></span>
+            <div className="flex items-center justify-between text-[11px] font-mono text-slate-400 pt-1 border-t border-[#1E2028]">
+              <span>Simulated Touchdown Epoch: <strong className="text-[#F8FAFC]">{formattedSimDate}</strong></span>
               <span>Samples: {timelineTracks?.steps?.length ?? 0} steps ({stepHours}h cadence)</span>
             </div>
           </div>
@@ -461,7 +461,7 @@ export default function SlipSimulatorModal({ isOpen, onClose, onSelectSiteAndDat
           {/* VIEW 1: 4-TRACK SYNCHRONIZED MISSION TIMELINE (Section 6)         */}
           {/* ================================================================= */}
           {activeMode === 'timeline' && timelineTracks?.steps && (
-            <div className="p-5 rounded-2xl bg-[#060B13] border border-[#16283C] space-y-4">
+            <div className="p-5 rounded-2xl bg-[#050507] border border-[#1E2028] space-y-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
                   <h3 className="text-sm font-mono uppercase tracking-wider text-white font-bold">
@@ -535,7 +535,7 @@ export default function SlipSimulatorModal({ isOpen, onClose, onSelectSiteAndDat
                       0h → +{windowDurationDays * 24}h
                     </span>
                   </div>
-                  <div className="flex items-center gap-[1px] h-6 rounded-lg overflow-hidden bg-[#0A111C] p-0.5 border border-[#16283C]">
+                  <div className="flex items-center gap-[1px] h-6 rounded-lg overflow-hidden bg-[#0C0D12] p-0.5 border border-[#1E2028]">
                     {timelineTracks.steps.slice(0, 120).map((pt) => (
                       <button
                         key={pt.index}
@@ -561,9 +561,9 @@ export default function SlipSimulatorModal({ isOpen, onClose, onSelectSiteAndDat
           {/* VIEW 2: WHAT-IF SCENARIO COMPARATOR (Section 7)                   */}
           {/* ================================================================= */}
           {activeMode === 'whatif' && whatIfDiff && (
-            <div className="p-5 rounded-2xl bg-[#060B13] border border-[#16283C] space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-3 border-b border-[#16283C]">
-                <div className="p-3.5 rounded-xl bg-[#0A111C] border border-cyan-500/40">
+            <div className="p-5 rounded-2xl bg-[#050507] border border-[#1E2028] space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-3 border-b border-[#1E2028]">
+                <div className="p-3.5 rounded-xl bg-[#0C0D12] border border-cyan-500/40">
                   <div className="text-[10px] font-mono uppercase text-cyan-400">
                     Original Scenario A (Baseline)
                   </div>
@@ -575,7 +575,7 @@ export default function SlipSimulatorModal({ isOpen, onClose, onSelectSiteAndDat
                   </div>
                 </div>
 
-                <div className="p-3.5 rounded-xl bg-[#0A111C] border border-purple-500/40 space-y-2">
+                <div className="p-3.5 rounded-xl bg-[#0C0D12] border border-purple-500/40 space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] font-mono uppercase text-purple-300">
                       Alternative Scenario B (What-If Target)
@@ -588,7 +588,7 @@ export default function SlipSimulatorModal({ isOpen, onClose, onSelectSiteAndDat
                     <select
                       value={altSiteId}
                       onChange={(e) => setAltSiteId(e.target.value)}
-                      className="h-8 px-2 rounded bg-[#060B13] border border-slate-700 text-xs font-mono text-white"
+                      className="h-8 px-2 rounded bg-[#050507] border border-slate-700 text-xs font-mono text-white"
                     >
                       {SITES_TO_ANALYZE.map((s) => (
                         <option key={s.id} value={s.id}>
@@ -604,7 +604,7 @@ export default function SlipSimulatorModal({ isOpen, onClose, onSelectSiteAndDat
                         max="60"
                         value={altSlipDays}
                         onChange={(e) => setAltSlipDays(Number(e.target.value) || 0)}
-                        className="w-16 h-8 px-2 rounded bg-[#060B13] border border-slate-700 text-white"
+                        className="w-16 h-8 px-2 rounded bg-[#050507] border border-slate-700 text-white"
                       />
                       <span className="text-slate-400">days</span>
                     </div>
@@ -675,11 +675,11 @@ export default function SlipSimulatorModal({ isOpen, onClose, onSelectSiteAndDat
           {/* VIEW 3: MULTI-SITE LAUNCH WINDOW HEATMAP                          */}
           {/* ================================================================= */}
           {activeMode === 'heatmap' && (
-            <div className="p-5 rounded-2xl bg-[#060B13] border border-[#16283C] space-y-4">
+            <div className="p-5 rounded-2xl bg-[#050507] border border-[#1E2028] space-y-4">
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse font-mono text-xs">
                   <thead>
-                    <tr className="border-b border-[#16283C] text-[#94A3B8]">
+                    <tr className="border-b border-[#1E2028] text-[#94A3B8]">
                       <th className="py-2.5 px-3 font-normal">Landing Site</th>
                       {Array.from({ length: windowDurationDays }, (_, i) => (
                         <th key={i} className="py-2.5 px-1.5 text-center font-normal">
@@ -690,7 +690,7 @@ export default function SlipSimulatorModal({ isOpen, onClose, onSelectSiteAndDat
                   </thead>
                   <tbody className="divide-y divide-[#16283C]/50">
                     {heatmapMatrix.map((siteRow) => (
-                      <tr key={siteRow.id} className="hover:bg-[#0F1C2E] transition-colors">
+                      <tr key={siteRow.id} className="hover:bg-[#14161D] transition-colors">
                         <td className="py-2.5 px-3 font-serif font-medium text-[#F8FAFC] whitespace-nowrap">
                           {siteRow.name}
                         </td>
@@ -703,7 +703,7 @@ export default function SlipSimulatorModal({ isOpen, onClose, onSelectSiteAndDat
                             cell.score >= 80
                               ? 'bg-[#34D399]/25 text-[#34D399] border-[#34D399]/40'
                               : cell.score >= 60
-                              ? 'bg-[#00D2C4]/25 text-[#00D2C4] border-[#00D2C4]/40'
+                              ? 'bg-white/[0.08] text-[#F8FAFC] border-white/25'
                               : 'bg-rose-500/20 text-rose-400 border-rose-500/30';
                           return (
                             <td key={cell.dayOffset} className="py-2 px-1 text-center">
@@ -736,8 +736,8 @@ export default function SlipSimulatorModal({ isOpen, onClose, onSelectSiteAndDat
                 onClick={() => setSelectedSiteId(site.id)}
                 className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between gap-2 ${
                   selectedSiteId === site.id
-                    ? 'bg-[#0F1C2E] border-[#00D2C4]'
-                    : 'bg-[#060B13] border-[#16283C] hover:border-[#22D3EE]/40'
+                    ? 'bg-[#14161D] border-white/25'
+                    : 'bg-[#050507] border-[#1E2028] hover:border-white/30'
                 }`}
               >
                 <div>
@@ -752,7 +752,7 @@ export default function SlipSimulatorModal({ isOpen, onClose, onSelectSiteAndDat
                     e.stopPropagation();
                     handleSelectCell(site, 0);
                   }}
-                  className="px-2.5 py-1 rounded-lg bg-[#00D2C4]/15 text-[#00D2C4] border border-[#00D2C4]/30 font-mono text-[11px] font-bold flex items-center gap-1"
+                  className="px-2.5 py-1 rounded-lg bg-white/[0.08] text-[#F8FAFC] border border-white/25 font-mono text-[11px] font-bold flex items-center gap-1"
                 >
                   <span>{site.score}%</span>
                   <ArrowRight className="w-3 h-3" />

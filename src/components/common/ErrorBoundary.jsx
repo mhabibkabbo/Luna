@@ -23,14 +23,14 @@ export class ErrorBoundary extends React.Component {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="w-full h-full min-h-screen bg-[#050811] flex flex-col items-center justify-center p-6 text-slate-100">
-          <div className="max-w-md w-full bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-2xl backdrop-blur-xl text-center space-y-4">
+        <div className="w-full h-full min-h-screen bg-[#050507] flex flex-col items-center justify-center p-6 text-slate-100">
+          <div className="max-w-md w-full bg-[#0C0D12] border border-white/[0.08] rounded-2xl p-6 shadow-2xl backdrop-blur-xl text-center space-y-4">
             <div className="w-12 h-12 rounded-xl bg-red-500/10 text-red-400 mx-auto flex items-center justify-center border border-red-500/20">
               <AlertTriangle className="w-6 h-6" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-white tracking-tight">Something went wrong</h2>
-              <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+              <h2 className="text-lg font-semibold text-white tracking-tight">Something went wrong</h2>
+              <p className="text-xs text-[#8E95A5] mt-1 leading-relaxed">
                 An unexpected error occurred while rendering the lunar surface viewport.
               </p>
             </div>
@@ -42,7 +42,7 @@ export class ErrorBoundary extends React.Component {
             <button
               type="button"
               onClick={this.handleReset}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-xs font-semibold shadow-lg shadow-cyan-600/20 transition-colors"
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-white hover:bg-[#E2E8F0] text-[#050507] rounded-xl text-xs font-semibold transition-colors"
             >
               <RefreshCw className="w-4 h-4" />
               Reload Application

@@ -86,7 +86,7 @@ export default function SouthPoleLegendHUD({
         <button
           type="button"
           onClick={() => setIsMinimized(false)}
-          className="h-9 px-3 rounded-xl bg-[#070C15]/95 hover:bg-[#0E1726] border border-[#16283C] hover:border-cyan-500/50 text-xs font-mono text-cyan-300 flex items-center gap-2.5 shadow-[0_12px_35px_rgba(0,0,0,0.85)] backdrop-blur-xl transition-all group"
+          className="h-9 px-3 rounded-xl bg-[#050507]/95 hover:bg-[#14161D] border border-[#1E2028] hover:border-cyan-500/50 text-xs font-mono text-cyan-300 flex items-center gap-2.5 shadow-[0_12px_35px_rgba(0,0,0,0.85)] backdrop-blur-xl transition-all group"
           title="Restore South Pole 2D GIS Layers & Legend"
           aria-label="Restore South Pole 2D GIS Layers & Legend"
         >
@@ -107,7 +107,7 @@ export default function SouthPoleLegendHUD({
 
   return (
     <div className="absolute top-4 sm:top-4 left-16 sm:left-16 z-20 pointer-events-auto select-none w-[310px] sm:w-[356px] max-w-[calc(100vw-4.5rem)] max-h-[calc(100%-8rem)] flex flex-col animate-in fade-in duration-150">
-      <div className="rounded-xl border border-slate-800/95 bg-[#070C15]/95 shadow-[0_16px_40px_rgba(0,0,0,0.85)] backdrop-blur-xl p-3 text-slate-100 transition-all flex flex-col max-h-full overflow-hidden">
+      <div className="rounded-xl border border-slate-800/95 bg-[#050507]/95 shadow-[0_16px_40px_rgba(0,0,0,0.85)] backdrop-blur-xl p-3 text-slate-100 transition-all flex flex-col max-h-full overflow-hidden">
         {/* Header Collar */}
         <div className="flex items-center justify-between pb-2 border-b border-slate-800 gap-2 shrink-0">
           <div className="flex items-center gap-2 min-w-0">
@@ -150,7 +150,7 @@ export default function SouthPoleLegendHUD({
           <>
             <div className="mt-2.5 space-y-2.5 flex-1 min-h-0 overflow-y-auto custom-scrollbar pr-1">
             {/* Active Layer Quantitative Color Ramp & Provenance */}
-            <div className="space-y-1.5 bg-[#0B1220] p-2.5 rounded-lg border border-slate-800/90">
+            <div className="space-y-1.5 bg-[#0C0D12] p-2.5 rounded-lg border border-slate-800/90">
               <div className="flex items-center justify-between gap-1 text-[10px] font-mono">
                 <span className="font-semibold text-white truncate">
                   {activeLayerMeta.name}
@@ -195,7 +195,7 @@ export default function SouthPoleLegendHUD({
             <div
               role="tablist"
               aria-label="South Pole Map Controls"
-              className="grid grid-cols-3 rounded-lg p-0.5 border border-slate-800 bg-[#0B1220] text-[10px] font-mono"
+              className="grid grid-cols-3 rounded-lg p-0.5 border border-slate-800 bg-[#0C0D12] text-[10px] font-mono"
             >
               <button
                 role="tab"
@@ -251,7 +251,7 @@ export default function SouthPoleLegendHUD({
                   </div>
 
                   {/* Raster Opacity Slider */}
-                  <div className="flex items-center gap-2 px-2 py-1 rounded bg-[#0B1220] border border-slate-800/80">
+                  <div className="flex items-center gap-2 px-2 py-1 rounded bg-[#0C0D12] border border-slate-800/80">
                     <Sliders className="w-3 h-3 text-cyan-400 shrink-0" />
                     <input
                       type="range"
@@ -279,7 +279,7 @@ export default function SouthPoleLegendHUD({
                           className={`px-2 py-1.5 rounded-lg border text-left font-mono transition-all ${
                             isSelected
                               ? 'bg-cyan-950/60 border-cyan-400 text-cyan-200 shadow-sm'
-                              : 'bg-[#0B1220] border-slate-800/80 text-slate-300 hover:border-slate-700 hover:text-white'
+                              : 'bg-[#0C0D12] border-slate-800/80 text-slate-300 hover:border-slate-700 hover:text-white'
                           }`}
                         >
                           <div className="flex items-center justify-between gap-1">
@@ -307,7 +307,7 @@ export default function SouthPoleLegendHUD({
                     Vector &amp; Hazard Overlays (Layer 5 + Aux)
                   </div>
 
-                  <label className="flex items-center justify-between px-2 py-1.5 rounded-lg bg-[#0B1220] border border-slate-800/80 cursor-pointer hover:border-slate-700">
+                  <label className="flex items-center justify-between px-2 py-1.5 rounded-lg bg-[#0C0D12] border border-slate-800/80 cursor-pointer hover:border-slate-700">
                     <span className="flex items-center gap-1.5 text-slate-200">
                       <Mountain className="w-3 h-3 text-cyan-400" />
                       <span>5. Craters, Rims &amp; Landmarks</span>
@@ -324,7 +324,7 @@ export default function SouthPoleLegendHUD({
                     />
                   </label>
 
-                  <label className="flex items-center justify-between px-2 py-1.5 rounded-lg bg-[#0B1220] border border-slate-800/80 cursor-pointer hover:border-slate-700">
+                  <label className="flex items-center justify-between px-2 py-1.5 rounded-lg bg-[#0C0D12] border border-slate-800/80 cursor-pointer hover:border-slate-700">
                     <span className="flex items-center gap-1.5 text-slate-200">
                       <Layers className="w-3 h-3 text-amber-400" />
                       <span>Elevation Contours ({contourInterval} m)</span>
@@ -337,7 +337,7 @@ export default function SouthPoleLegendHUD({
                     />
                   </label>
 
-                  <label className="flex items-center justify-between px-2 py-1.5 rounded-lg bg-[#0B1220] border border-slate-800/80 cursor-pointer hover:border-slate-700">
+                  <label className="flex items-center justify-between px-2 py-1.5 rounded-lg bg-[#0C0D12] border border-slate-800/80 cursor-pointer hover:border-slate-700">
                     <span className="flex items-center gap-1.5 text-slate-200">
                       <ShieldAlert className="w-3 h-3 text-rose-400" />
                       <span>Slope Hazard Tint (≥ 15.0°)</span>
@@ -350,7 +350,7 @@ export default function SouthPoleLegendHUD({
                     />
                   </label>
 
-                  <label className="flex items-center justify-between px-2 py-1.5 rounded-lg bg-[#0B1220] border border-slate-800/80 cursor-pointer hover:border-slate-700">
+                  <label className="flex items-center justify-between px-2 py-1.5 rounded-lg bg-[#0C0D12] border border-slate-800/80 cursor-pointer hover:border-slate-700">
                     <span className="flex items-center gap-1.5 text-slate-200">
                       <span className="w-2.5 h-2.5 rounded-full border border-sky-400 bg-sky-500/30 inline-block" />
                       <span>PSR Cold-Trap Footprints</span>
@@ -363,7 +363,7 @@ export default function SouthPoleLegendHUD({
                     />
                   </label>
 
-                  <label className="flex items-center justify-between px-2 py-1.5 rounded-lg bg-[#0B1220] border border-slate-800/80 cursor-pointer hover:border-slate-700">
+                  <label className="flex items-center justify-between px-2 py-1.5 rounded-lg bg-[#0C0D12] border border-slate-800/80 cursor-pointer hover:border-slate-700">
                     <span className="flex items-center gap-1.5 text-slate-200">
                       <Route className="w-3 h-3 text-amber-400" />
                       <span>Artemis / VIPER Traverses</span>
@@ -376,7 +376,7 @@ export default function SouthPoleLegendHUD({
                     />
                   </label>
 
-                  <label className="flex items-center justify-between px-2 py-1.5 rounded-lg bg-[#0B1220] border border-slate-800/80 cursor-pointer hover:border-slate-700">
+                  <label className="flex items-center justify-between px-2 py-1.5 rounded-lg bg-[#0C0D12] border border-slate-800/80 cursor-pointer hover:border-slate-700">
                     <span className="flex items-center gap-1.5 text-slate-200">
                       <Radio className="w-3 h-3 text-emerald-400" />
                       <span>Dynamic Earth LOS Vector</span>
@@ -395,7 +395,7 @@ export default function SouthPoleLegendHUD({
             {/* TAB 2: CARTOGRAPHIC SYMBOL KEY */}
             {activeTab === 'legend' && (
               <div className="space-y-2 text-[10px] font-mono">
-                <div className="rounded-lg p-2 bg-[#0B1220] border border-slate-800 flex items-center justify-between">
+                <div className="rounded-lg p-2 bg-[#0C0D12] border border-slate-800 flex items-center justify-between">
                   <div>
                     <span className="text-slate-400 block text-[9px] uppercase">
                       Contour Interval
@@ -415,25 +415,25 @@ export default function SouthPoleLegendHUD({
                 </div>
 
                 <div className="space-y-1">
-                  <div className="flex items-center justify-between py-1 px-2 rounded bg-[#0B1220]">
+                  <div className="flex items-center justify-between py-1 px-2 rounded bg-[#0C0D12]">
                     <span className="text-slate-200">Index Contour</span>
                     <span className="text-[9px] text-slate-400">
                       Solid white (1.3px)
                     </span>
                   </div>
-                  <div className="flex items-center justify-between py-1 px-2 rounded bg-[#0B1220]">
+                  <div className="flex items-center justify-between py-1 px-2 rounded bg-[#0C0D12]">
                     <span className="text-slate-200">Slope Hazard Zone</span>
                     <span className="text-[9px] text-rose-400 font-semibold">
                       ≥ 15.0° (Horn 3×3)
                     </span>
                   </div>
-                  <div className="flex items-center justify-between py-1 px-2 rounded bg-[#0B1220]">
+                  <div className="flex items-center justify-between py-1 px-2 rounded bg-[#0C0D12]">
                     <span className="text-slate-200">PSR Cold Trap</span>
                     <span className="text-[9px] text-sky-400">
                       LOLA &lt;110 K Basin
                     </span>
                   </div>
-                  <div className="flex items-center justify-between py-1 px-2 rounded bg-[#0B1220]">
+                  <div className="flex items-center justify-between py-1 px-2 rounded bg-[#0C0D12]">
                     <span className="text-slate-200">Earth LOS Corridor</span>
                     <span className="text-[9px] text-emerald-400">
                       Sub-Earth Meridian
@@ -446,7 +446,7 @@ export default function SouthPoleLegendHUD({
             {/* TAB 3: PROVENANCE & DATUM */}
             {activeTab === 'metadata' && (
               <div className="space-y-2 text-[10px] font-mono">
-                <div className="p-2.5 rounded-lg bg-[#0B1220] border border-slate-800 space-y-1.5">
+                <div className="p-2.5 rounded-lg bg-[#0C0D12] border border-slate-800 space-y-1.5">
                   <div className="flex justify-between">
                     <span className="text-slate-400">Dataset:</span>
                     <a

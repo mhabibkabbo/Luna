@@ -9,8 +9,8 @@ export default function ExpandableText({
   text = '',
   maxLines = 3,
   charThreshold = 140,
-  className = 'text-xs text-[#94A3B8] leading-relaxed',
-  buttonClassName = 'mt-1 text-[11px] font-mono text-[#00D2C4] hover:text-[#34D399] inline-flex items-center gap-1 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#00D2C4] rounded transition-colors self-start',
+  className = 'text-xs text-[#8E95A5] leading-relaxed',
+  buttonClassName = 'mt-1.5 text-[11px] font-mono text-[#CBD5E1] hover:text-white inline-flex items-center gap-1 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/50 rounded transition-colors self-start',
   id,
 }) {
   const [isExpanded, setIsExpanded] = useState(false);

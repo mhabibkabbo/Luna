@@ -31,7 +31,7 @@ export default function MeasurementToolbar({
   return (
     <div
       id="measurement-floating-toolbar"
-      className="absolute top-14 left-1/2 -translate-x-1/2 z-30 w-11/12 max-w-md bg-[#060b14]/96 backdrop-blur-2xl border border-amber-500/50 rounded-xl shadow-2xl p-3 pointer-events-auto transition-all animate-in fade-in slide-in-from-top-2 duration-150 text-slate-100"
+      className="absolute top-14 left-1/2 -translate-x-1/2 z-30 w-11/12 max-w-md bg-[#050507]/96 backdrop-blur-2xl border border-amber-500/50 rounded-xl shadow-2xl p-3 pointer-events-auto transition-all animate-in fade-in slide-in-from-top-2 duration-150 text-slate-100"
     >
       {/* Top action row */}
       <div className="flex items-center justify-between gap-3 pb-2.5 border-b border-slate-800">

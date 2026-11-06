@@ -46,7 +46,7 @@ export default function LeftSidebarNav({
           type="button"
           onClick={onResetOverview}
           aria-label={`Reset ${isMoon ? 'Moon' : 'Earth'} view to global overview`}
-          className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-300 hover:bg-[#00D2C4] hover:text-[#060B13] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00D2C4]"
+          className="w-9 h-9 rounded-xl flex items-center justify-center text-[#8E95A5] hover:bg-white/[0.08] hover:text-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
         >
           <Home className="w-4 h-4" />
         </button>
@@ -61,10 +61,10 @@ export default function LeftSidebarNav({
             onClick={onToggleLayers}
             aria-label={is2DMode ? 'Toggle map layers' : 'Toggle basemap and topographic layers'}
             aria-pressed={isLayersOpen}
-            className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00D2C4] ${
+            className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 ${
               isLayersOpen
-                ? 'bg-[#00D2C4] text-[#060B13] shadow-[0_0_12px_rgba(0,210,196,0.4)] font-bold'
-                : 'text-slate-400 hover:text-white hover:bg-[#0E1A2C]'
+                ? 'bg-white text-[#050507] font-semibold'
+                : 'text-[#8E95A5] hover:text-white hover:bg-white/[0.06]'
             }`}
           >
             <Layers className="w-4 h-4" />
@@ -73,20 +73,20 @@ export default function LeftSidebarNav({
       )}
 
       {/* Subtle Divider */}
-      {isMoon && <div className="w-5 h-[1px] bg-[#16283C]/80 my-0.5" />}
+      {isMoon && <div className="w-5 h-[1px] bg-white/[0.08] my-0.5" />}
 
       {/* Moon View / Display Mode (3D Globe vs 2D Topo) */}
-      {isMoon && <div data-guide="view-mode" className="p-0.5 rounded-xl bg-[#0A1220] border border-[#16283C] flex flex-col gap-0.5">
+      {isMoon && <div data-guide="view-mode" className="p-0.5 rounded-xl bg-[#0C0D12] border border-white/[0.08] flex flex-col gap-0.5">
         <NavTooltip label="3D Globe View" shortcut="1">
           <button
             type="button"
             onClick={() => onViewModeChange?.('3d')}
             aria-label="Switch to 3D Globe view"
             aria-pressed={viewMode === '3d'}
-            className={`w-7 h-5 rounded-lg flex items-center justify-center text-[9px] font-mono font-bold transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#00D2C4] ${
+            className={`w-7 h-5 rounded-lg flex items-center justify-center text-[9px] font-mono font-bold transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/50 ${
               viewMode === '3d'
-                ? 'bg-[#00D2C4] text-[#060B13] shadow-[0_0_8px_rgba(0,210,196,0.4)]'
-                : 'text-slate-400 hover:text-white'
+                ? 'bg-white text-[#050507]'
+                : 'text-[#8E95A5] hover:text-white'
             }`}
           >
             3D
@@ -98,10 +98,10 @@ export default function LeftSidebarNav({
             onClick={() => onViewModeChange?.('2d')}
             aria-label="Switch to 2D South Pole topographic map"
             aria-pressed={is2DMode}
-            className={`w-7 h-5 rounded-lg flex items-center justify-center text-[9px] font-mono font-bold transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#00D2C4] ${
+            className={`w-7 h-5 rounded-lg flex items-center justify-center text-[9px] font-mono font-bold transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/50 ${
               is2DMode
-                ? 'bg-[#00D2C4] text-[#060B13] shadow-[0_0_8px_rgba(0,210,196,0.4)]'
-                : 'text-slate-400 hover:text-white'
+                ? 'bg-white text-[#050507]'
+                : 'text-[#8E95A5] hover:text-white'
             }`}
           >
             2D
@@ -115,14 +115,14 @@ export default function LeftSidebarNav({
           type="button"
           onClick={onGoToSouthPole}
           aria-label="Center camera on Lunar South Pole"
-          className="w-9 h-9 rounded-xl flex items-center justify-center text-[#00D2C4] hover:bg-[#00D2C4]/20 hover:text-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00D2C4]"
+          className="w-9 h-9 rounded-xl flex items-center justify-center text-[#CBD5E1] hover:bg-white/[0.08] hover:text-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
         >
           <Compass className="w-4 h-4" />
         </button>
       </NavTooltip>}
 
       {/* Subtle Divider */}
-      <div className="w-5 h-[1px] bg-[#16283C]/80 my-0.5" />
+      <div className="w-5 h-[1px] bg-white/[0.08] my-0.5" />
 
       {/* Lighting / Display Settings (3D Globe only) */}
       {!is2DMode && (
@@ -132,10 +132,10 @@ export default function LeftSidebarNav({
             onClick={onToggleLighting}
             aria-label="Toggle real-time solar terminator shading"
             aria-pressed={isSolarLighting}
-            className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00D2C4] ${
+            className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 ${
               isSolarLighting
-                ? 'bg-[#00D2C4] text-[#060B13] shadow-[0_0_10px_rgba(0,210,196,0.3)]'
-                : 'text-slate-400 hover:text-white hover:bg-[#0E1A2C]'
+                ? 'bg-white text-[#050507]'
+                : 'text-[#8E95A5] hover:text-white hover:bg-white/[0.06]'
             }`}
           >
             <Lightbulb className="w-4 h-4" />
@@ -151,10 +151,10 @@ export default function LeftSidebarNav({
             onClick={onToggleCelestial}
             aria-label="Toggle celestial ephemeris engine"
             aria-pressed={isCelestialOpen}
-            className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00D2C4] ${
+            className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 ${
               isCelestialOpen
-                ? 'bg-[#00D2C4] text-[#060B13] shadow-[0_0_12px_rgba(0,210,196,0.4)]'
-                : 'text-slate-400 hover:text-white hover:bg-[#0E1A2C]'
+                ? 'bg-white text-[#050507]'
+                : 'text-[#8E95A5] hover:text-white hover:bg-white/[0.06]'
             }`}
           >
             <Orbit className="w-4 h-4" />
@@ -170,10 +170,10 @@ export default function LeftSidebarNav({
             onClick={onToggleAutoRotate}
             aria-label={isAutoRotating ? 'Pause orbital auto-rotation' : 'Start orbital auto-rotation'}
             aria-pressed={isAutoRotating}
-            className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00D2C4] ${
+            className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 ${
               isAutoRotating
-                ? 'bg-[#00D2C4] text-[#060B13] shadow-[0_0_8px_rgba(0,210,196,0.3)]'
-                : 'text-slate-400 hover:text-white hover:bg-[#0E1A2C]'
+                ? 'bg-white text-[#050507]'
+                : 'text-[#8E95A5] hover:text-white hover:bg-white/[0.06]'
             }`}
           >
             <RotateCw className={`w-4 h-4 ${isAutoRotating ? 'animate-spin' : ''}`} />
@@ -189,10 +189,10 @@ export default function LeftSidebarNav({
             onClick={onToggleMeasure}
             aria-label="Toggle geodesic distance and bearing ruler"
             aria-pressed={isMeasureActive}
-            className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00D2C4] ${
+            className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 ${
               isMeasureActive
-                ? 'bg-[#00D2C4] text-[#060B13] shadow-[0_0_10px_rgba(0,210,196,0.4)]'
-                : 'text-slate-400 hover:text-white hover:bg-[#0E1A2C]'
+                ? 'bg-white text-[#050507]'
+                : 'text-[#8E95A5] hover:text-white hover:bg-white/[0.06]'
             }`}
           >
             <Ruler className="w-4 h-4" />
@@ -208,7 +208,7 @@ export default function LeftSidebarNav({
       <nav
         aria-label="Floating visualization toolbar"
         data-guide="toolbar"
-        className="hidden lg:flex absolute left-3.5 sm:left-4 top-1/2 -translate-y-1/2 z-30 select-none overflow-visible flex-col items-center gap-1.5 p-1.5 rounded-2xl bg-[#060B13]/85 backdrop-blur-xl border border-[#16283C]/90 shadow-[0_12px_40px_rgba(0,0,0,0.7),0_0_0_1px_rgba(0,210,196,0.1)] transition-all duration-200 pointer-events-auto"
+        className="hidden lg:flex absolute left-3.5 sm:left-4 top-1/2 -translate-y-1/2 z-30 select-none overflow-visible flex-col items-center gap-1.5 p-1.5 rounded-2xl bg-[#08090C]/90 backdrop-blur-xl border border-white/[0.08] shadow-[0_16px_48px_rgba(0,0,0,0.8)] transition-all duration-200 pointer-events-auto"
       >
         {content}
       </nav>
@@ -223,7 +223,7 @@ export default function LeftSidebarNav({
           />
           <nav
             aria-label="Mobile visualization toolbar"
-            className="relative w-16 bg-[#060B13] border-r border-[#16283C] h-full flex flex-col items-center justify-start z-50 overflow-y-auto custom-scrollbar animate-in slide-in-from-left duration-200"
+            className="relative w-16 bg-[#050507] border-r border-white/[0.08] h-full flex flex-col items-center justify-start z-50 overflow-y-auto custom-scrollbar animate-in slide-in-from-left duration-200"
           >
             {content}
           </nav>

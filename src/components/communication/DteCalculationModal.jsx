@@ -159,18 +159,18 @@ export default function DteCalculationModal({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="relative w-full max-w-3xl bg-[#12110D] border border-[#2D2A22] rounded-3xl shadow-2xl overflow-hidden text-[#F4EFE6] font-sans">
+      <div className="relative w-full max-w-3xl bg-[#050507] border border-[#1E2028] rounded-3xl shadow-2xl overflow-hidden text-[#F8FAFC] font-sans">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#2D2A22] bg-[#181711]">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[#1E2028] bg-[#0C0D12]">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-xl bg-[#26231B] border border-[#E59A6D]/40 flex items-center justify-center text-[#E59A6D]">
+            <div className="w-8 h-8 rounded-xl bg-[#14161D] border border-white/25 flex items-center justify-center text-[#F8FAFC]">
               <Radio className="w-4 h-4" />
             </div>
             <div>
-              <h2 className="font-serif text-xl text-[#F4EFE6]">
+              <h2 className="font-serif text-xl text-[#F8FAFC]">
                 Direct-to-Earth Communication Calculation
               </h2>
-              <p className="text-[10px] font-mono text-[#A8A193]">
+              <p className="text-[10px] font-mono text-[#8E95A5]">
                 Line-of-Sight Geometry · DSN Facilities · Latency &amp; Link Margin
               </p>
             </div>
@@ -179,7 +179,7 @@ export default function DteCalculationModal({
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-full bg-[#26231B] hover:bg-[#332E24] text-[#A8A193] hover:text-[#F4EFE6] transition-colors"
+            className="p-1.5 rounded-full bg-[#14161D] hover:bg-[#14161D] text-[#8E95A5] hover:text-white transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
@@ -188,19 +188,19 @@ export default function DteCalculationModal({
         {/* Modal Body */}
         <div className="p-6 space-y-6 max-h-[82vh] overflow-y-auto custom-scrollbar">
           {/* Target Coordinates Row */}
-          <div className="p-4 rounded-2xl bg-[#181711] border border-[#2D2A22] space-y-3">
+          <div className="p-4 rounded-2xl bg-[#0C0D12] border border-[#1E2028] space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-mono uppercase tracking-wider text-[#E59A6D]">
+              <span className="text-[10px] font-mono uppercase tracking-wider text-[#F8FAFC]">
                 Lunar Surface Origin Point
               </span>
-              <span className="text-xs font-mono text-[#F4EFE6]">
+              <span className="text-xs font-mono text-[#F8FAFC]">
                 {latStr}, {lonStr}
               </span>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               <div>
-                <label className="text-[10px] text-[#A8A193] block mb-1">Target Latitude (°)</label>
+                <label className="text-[10px] text-[#8E95A5] block mb-1">Target Latitude (°)</label>
                 <input
                   type="number"
                   step="0.01"
@@ -208,12 +208,12 @@ export default function DteCalculationModal({
                   max="90"
                   value={targetLat}
                   onChange={(e) => setTargetLat(e.target.value)}
-                  className="w-full h-8 px-2.5 bg-[#12110D] border border-[#2D2A22] rounded-lg text-xs font-mono text-white"
+                  className="w-full h-8 px-2.5 bg-[#050507] border border-[#1E2028] rounded-lg text-xs font-mono text-white"
                 />
               </div>
 
               <div>
-                <label className="text-[10px] text-[#A8A193] block mb-1">Target Longitude (°)</label>
+                <label className="text-[10px] text-[#8E95A5] block mb-1">Target Longitude (°)</label>
                 <input
                   type="number"
                   step="0.01"
@@ -221,7 +221,7 @@ export default function DteCalculationModal({
                   max="180"
                   value={targetLon}
                   onChange={(e) => setTargetLon(e.target.value)}
-                  className="w-full h-8 px-2.5 bg-[#12110D] border border-[#2D2A22] rounded-lg text-xs font-mono text-white"
+                  className="w-full h-8 px-2.5 bg-[#050507] border border-[#1E2028] rounded-lg text-xs font-mono text-white"
                 />
               </div>
 
@@ -233,7 +233,7 @@ export default function DteCalculationModal({
                       setTargetLat(String(selectedMoonFeature.latitude ?? -89.4));
                       setTargetLon(String(selectedMoonFeature.longitude ?? 0.0));
                     }}
-                    className="w-full h-8 px-3 rounded-lg bg-[#26231B] hover:bg-[#332E24] text-[#E59A6D] text-xs font-medium border border-[#2D2A22] transition-colors"
+                    className="w-full h-8 px-3 rounded-lg bg-[#14161D] hover:bg-[#14161D] text-[#F8FAFC] text-xs font-medium border border-[#1E2028] transition-colors"
                   >
                     Use Selected Site
                   </button>
@@ -244,27 +244,27 @@ export default function DteCalculationModal({
 
           {/* Core Calculation Metrics Cards */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div className="p-3.5 rounded-2xl bg-[#181711] border border-[#2D2A22] space-y-1">
-              <span className="text-[10px] font-mono text-[#A8A193] block">Earth Elevation</span>
-              <div className="font-mono text-lg font-bold text-[#F4EFE6]">
+            <div className="p-3.5 rounded-2xl bg-[#0C0D12] border border-[#1E2028] space-y-1">
+              <span className="text-[10px] font-mono text-[#8E95A5] block">Earth Elevation</span>
+              <div className="font-mono text-lg font-bold text-[#F8FAFC]">
                 {earthLook.elevationDeg.toFixed(1)}°
               </div>
-              <span className="text-[9.5px] text-[#A8A193]">Above local lunar horizon</span>
+              <span className="text-[9.5px] text-[#8E95A5]">Above local lunar horizon</span>
             </div>
 
-            <div className="p-3.5 rounded-2xl bg-[#181711] border border-[#2D2A22] space-y-1">
-              <span className="text-[10px] font-mono text-[#A8A193] block">Earth Azimuth</span>
-              <div className="font-mono text-lg font-bold text-[#F4EFE6]">
+            <div className="p-3.5 rounded-2xl bg-[#0C0D12] border border-[#1E2028] space-y-1">
+              <span className="text-[10px] font-mono text-[#8E95A5] block">Earth Azimuth</span>
+              <div className="font-mono text-lg font-bold text-[#F8FAFC]">
                 {earthLook.azimuthDeg.toFixed(1)}°
               </div>
-              <span className="text-[9.5px] text-[#A8A193]">Bearing from North</span>
+              <span className="text-[9.5px] text-[#8E95A5]">Bearing from North</span>
             </div>
 
-            <div className="p-3.5 rounded-2xl bg-[#181711] border border-[#2D2A22] space-y-1">
-              <span className="text-[10px] font-mono text-[#A8A193] block">Line-of-Sight</span>
+            <div className="p-3.5 rounded-2xl bg-[#0C0D12] border border-[#1E2028] space-y-1">
+              <span className="text-[10px] font-mono text-[#8E95A5] block">Line-of-Sight</span>
               <div
                 className={`font-mono text-base font-bold ${
-                  generalLink.status === 'clear' ? 'text-[#88B38A]' : 'text-[#E59A6D]'
+                  generalLink.status === 'clear' ? 'text-[#88B38A]' : 'text-[#F8FAFC]'
                 }`}
               >
                 {generalLink.status === 'clear'
@@ -273,18 +273,18 @@ export default function DteCalculationModal({
                   ? 'Far Side'
                   : 'Terrain Masked'}
               </div>
-              <span className="text-[9.5px] text-[#A8A193]">
+              <span className="text-[9.5px] text-[#8E95A5]">
                 Margin {generalLink.marginDeg >= 0 ? '+' : ''}
                 {generalLink.marginDeg.toFixed(1)}°
               </span>
             </div>
 
-            <div className="p-3.5 rounded-2xl bg-[#181711] border border-[#2D2A22] space-y-1">
-              <span className="text-[10px] font-mono text-[#A8A193] block">1-Way Light Delay</span>
+            <div className="p-3.5 rounded-2xl bg-[#0C0D12] border border-[#1E2028] space-y-1">
+              <span className="text-[10px] font-mono text-[#8E95A5] block">1-Way Light Delay</span>
               <div className="font-mono text-lg font-bold text-[#88B38A]">
                 {lightTravelSec} s
               </div>
-              <span className="text-[9.5px] text-[#A8A193]">
+              <span className="text-[9.5px] text-[#8E95A5]">
                 {(state.earth.distanceKm).toLocaleString()} km
               </span>
             </div>
@@ -300,11 +300,11 @@ export default function DteCalculationModal({
           {/* Deep Space Network Ground Facilities Table */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-[#F4EFE6] flex items-center gap-2">
+              <span className="text-xs font-semibold text-[#F8FAFC] flex items-center gap-2">
                 <Globe2 className="w-3.5 h-3.5 text-[#88B38A]" />
                 <span>Deep Space Network (DSN) Ground Stations</span>
               </span>
-              <span className="text-[10px] font-mono text-[#A8A193]">
+              <span className="text-[10px] font-mono text-[#8E95A5]">
                 NASA Goldstone · Madrid · Canberra
               </span>
             </div>
@@ -320,14 +320,14 @@ export default function DteCalculationModal({
                     onClick={() => setSelectedStationId(station.id)}
                     className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
                       isSelected
-                        ? 'bg-[#1C1A14] border-[#E59A6D]/70 shadow-lg'
-                        : 'bg-[#181711] border-[#2D2A22] hover:border-[#2D2A22]/80'
+                        ? 'bg-[#14161D] border-white/25 shadow-lg'
+                        : 'bg-[#0C0D12] border-[#1E2028] hover:border-[#1E2028]/80'
                     }`}
                   >
                     <div className="space-y-0.5">
                       <div className="flex items-center gap-2">
-                        <span className="font-medium text-xs text-[#F4EFE6]">{station.name}</span>
-                        <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#26231B] text-[#A8A193]">
+                        <span className="font-medium text-xs text-[#F8FAFC]">{station.name}</span>
+                        <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#14161D] text-[#8E95A5]">
                           {station.country}
                         </span>
                       </div>
@@ -340,7 +340,7 @@ export default function DteCalculationModal({
                       <div className="text-right">
                         <div
                           className={`text-xs font-mono font-bold flex items-center gap-1.5 justify-end ${
-                            isLinked ? 'text-[#34D399]' : 'text-[#00D2C4]'
+                            isLinked ? 'text-[#34D399]' : 'text-[#F8FAFC]'
                           }`}
                         >
                           {isLinked ? (
@@ -355,7 +355,7 @@ export default function DteCalculationModal({
                             </>
                           )}
                         </div>
-                        <div className="text-[10px] font-mono text-[#A8A193]">
+                        <div className="text-[10px] font-mono text-[#8E95A5]">
                           Moon at {station.evaluation.stationElevationDeg !== null ? `${station.evaluation.stationElevationDeg.toFixed(1)}°` : '0°'} el
                         </div>
                       </div>
@@ -368,7 +368,7 @@ export default function DteCalculationModal({
                             onClose();
                             onSelectEarthSite(station);
                           }}
-                          className="px-3 py-1.5 rounded-full bg-[#26231B] hover:bg-[#E59A6D] text-[#F4EFE6] hover:text-[#12110D] text-[11px] font-medium transition-colors"
+                          className="px-3 py-1.5 rounded-full bg-[#14161D] hover:bg-[#E2E8F0] text-[#F8FAFC] hover:text-[#050507] text-[11px] font-medium transition-colors"
                         >
                           View Station ↗
                         </button>

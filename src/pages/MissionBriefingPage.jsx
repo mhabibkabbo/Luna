@@ -216,47 +216,47 @@ Generated via LUNA — Lunar Landing Site Navigator (NASA Space Apps Challenge)
   };
 
   return (
-    <div className="flex-1 overflow-y-auto bg-[#07090e] text-slate-100 p-4 md:p-8 space-y-6">
+    <div className="flex-1 overflow-y-auto bg-[#050507] text-slate-100 px-5 sm:px-8 lg:px-10 py-7 space-y-6">
       {/* Workspace Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 border-b border-slate-800/80 pb-5">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 border-b border-[#1E2028] pb-5">
         <div>
-          <div className="flex items-center gap-2 text-xs font-mono tracking-widest text-cyan-400 uppercase">
-            <FileText className="w-4 h-4 text-cyan-400" />
-            <span>Workspace 06 · Mission Assessment & Briefing Dossier</span>
+          <div className="flex items-center gap-2 text-[11px] font-sans font-semibold tracking-[0.14em] text-[#8E95A5] uppercase">
+            <FileText className="w-3.5 h-3.5 text-[#F8FAFC]" />
+            <span>Workspace 06 · Mission Assessment &amp; Briefing Dossier</span>
           </div>
-          <h1 className="text-2xl font-black tracking-tight text-white mt-1">
-            Flight Readiness Review & Mission Dossier
+          <h1 className="text-2xl sm:text-[26px] font-display font-semibold tracking-tight text-white mt-1.5">
+            Flight Readiness Review &amp; Mission Dossier
           </h1>
-          <p className="text-xs text-slate-400 mt-1 max-w-3xl">
+          <p className="text-[13.5px] font-sans text-[#8E95A5] mt-1 max-w-3xl leading-relaxed">
             Consolidated evaluation of solar power continuity, direct-to-Earth communication links, thermal constraints, and operational hazard matrix.
           </p>
         </div>
 
         {/* Action Controls */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5 shrink-0">
           <button
             onClick={copyMarkdown}
-            className="px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 hover:border-slate-600 text-xs font-medium text-slate-200 flex items-center gap-2 transition"
+            className="px-3.5 py-2 rounded-lg bg-[#0C0D12] border border-[#1E2028] hover:bg-[#14161D] text-xs font-sans font-medium text-slate-200 flex items-center gap-2 transition"
           >
-            {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-slate-400" />}
+            {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-slate-400" />}
             {copied ? 'Copied Markdown' : 'Copy Briefing MD'}
           </button>
 
           <button
             onClick={handlePrint}
-            className="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-xs font-bold text-white flex items-center gap-2 shadow-lg shadow-cyan-950/60 transition active:scale-98"
+            className="px-4 py-2 rounded-lg bg-white hover:bg-[#E2E8F0] text-xs font-sans font-semibold text-[#050507] flex items-center gap-2 shadow-sm transition active:scale-98"
           >
-            <Printer className="w-4 h-4" />
+            <Printer className="w-3.5 h-3.5" />
             Print / Export PDF
           </button>
         </div>
       </div>
 
       {/* Target & Epoch Bar */}
-      <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800/80 flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
+      <div className="p-5 rounded-xl bg-[#0C0D12] border border-[#1E2028] flex flex-wrap items-center justify-between gap-4">
+        <div className="flex flex-wrap items-center gap-5">
           <div>
-            <label className="text-[10px] font-mono uppercase tracking-wider text-slate-400 block mb-1">
+            <label className="text-[11px] font-sans font-semibold uppercase tracking-[0.08em] text-[#8E95A5] block mb-1.5">
               Evaluated Landing Site
             </label>
             <select
@@ -265,7 +265,7 @@ Generated via LUNA — Lunar Landing Site Navigator (NASA Space Apps Challenge)
                 const found = LANDING_SITES.find((s) => s.id === e.target.value);
                 if (found && onSelectSite) onSelectSite(found);
               }}
-              className="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs font-bold text-slate-200 focus:outline-none focus:border-cyan-500"
+              className="px-3 py-1.5 rounded-lg bg-[#050507] border border-[#1E2028] text-xs font-sans font-medium text-white focus:outline-none focus:border-white/40"
             >
               {LANDING_SITES.map((site) => {
                 const sLat = site.latitude ?? site.lat ?? 0;
@@ -278,18 +278,18 @@ Generated via LUNA — Lunar Landing Site Navigator (NASA Space Apps Challenge)
             </select>
           </div>
 
-          <div className="hidden sm:block border-l border-slate-800 pl-4">
-            <span className="text-[10px] font-mono uppercase tracking-wider text-slate-500 block">
+          <div className="hidden sm:block border-l border-[#1E2028] pl-5">
+            <span className="text-[11px] font-sans font-semibold uppercase tracking-[0.08em] text-[#8E95A5] block">
               Mission Profile
             </span>
-            <span className="text-xs font-bold text-white mt-0.5 block">{mission.name}</span>
+            <span className="text-[13.5px] font-display font-semibold text-white mt-1 block">{mission.name}</span>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 text-xs font-mono text-slate-400">
-          <Clock className="w-4 h-4 text-cyan-400" />
+        <div className="flex items-center gap-2 text-xs font-sans text-[#8E95A5]">
+          <Clock className="w-4 h-4 text-[#F8FAFC]" />
           <span>Epoch:</span>
-          <span className="font-bold text-white">{new Date(simulationTime).toUTCString()}</span>
+          <span className="font-mono tabular-nums font-medium text-white">{new Date(simulationTime).toUTCString()}</span>
         </div>
       </div>
 
@@ -297,47 +297,49 @@ Generated via LUNA — Lunar Landing Site Navigator (NASA Space Apps Challenge)
       <div
         className={`p-6 rounded-2xl border flex flex-col md:flex-row md:items-center justify-between gap-6 ${
           assessment?.isGo
-            ? 'bg-gradient-to-r from-emerald-950/40 via-slate-900 to-slate-900 border-emerald-500/40'
-            : 'bg-gradient-to-r from-amber-950/40 via-slate-900 to-slate-900 border-amber-500/40'
+            ? 'bg-gradient-to-r from-emerald-950/35 via-[#0C0D12] to-[#0C0D12] border-emerald-500/35'
+            : 'bg-gradient-to-r from-amber-950/35 via-[#0C0D12] to-[#0C0D12] border-amber-500/35'
         }`}
       >
         <div className="flex items-start gap-4">
           <div
             className={`p-3 rounded-xl border mt-0.5 ${
               assessment?.isGo
-                ? 'bg-emerald-900/50 text-emerald-400 border-emerald-700'
-                : 'bg-amber-900/50 text-amber-400 border-amber-700'
+                ? 'bg-emerald-950/60 text-emerald-400 border-emerald-700/60'
+                : 'bg-amber-950/60 text-amber-400 border-amber-700/60'
             }`}
           >
             {assessment?.isGo ? <CheckCircle2 className="w-6 h-6" /> : <AlertTriangle className="w-6 h-6" />}
           </div>
           <div>
-            <div className="flex items-center gap-2 font-mono text-xs">
+            <div className="flex flex-wrap items-center gap-2.5 text-xs">
               <span
-                className={`px-2 py-0.5 rounded font-bold uppercase ${
+                className={`px-2.5 py-0.5 rounded-md font-sans font-semibold uppercase tracking-wider text-[11px] ${
                   assessment?.isGo ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'
                 }`}
               >
                 {assessment?.isGo ? 'STATUS: GO FOR DESCENT' : 'STATUS: CAUTION / CONSTRAINED'}
               </span>
-              <span className="text-slate-400">Readiness Score: {assessment?.score ?? '--'}/100</span>
+              <span className="font-sans text-[#8E95A5]">
+                Readiness Score: <strong className="font-mono tabular-nums text-white">{assessment?.score ?? '--'}/100</strong>
+              </span>
             </div>
-            <h2 className="text-xl font-black text-white mt-1">
+            <h2 className="text-lg sm:text-xl font-display font-semibold text-white mt-2">
               {assessment?.isGo
                 ? 'All Critical Mission Flight Parameters Satisfied'
                 : 'Identified Hazards Require Mitigation or Window Adjustment'}
             </h2>
-            <p className="text-xs text-slate-300 mt-1 max-w-2xl">
+            <p className="text-[13px] font-sans text-[#CBD5E1] mt-1 max-w-2xl leading-relaxed">
               Evaluation at {currentSite.name} reveals {assessment?.isSunlit ? 'active solar illumination' : 'darkness/shadow'} and{' '}
               {assessment?.dte?.status === 'clear' ? 'continuous Earth line of sight' : 'RF communication obstruction'}.
             </p>
           </div>
         </div>
 
-        <div className="text-right font-mono flex md:flex-col items-center md:items-end justify-between">
-          <span className="text-[10px] text-slate-400 uppercase">Mission Suitability</span>
+        <div className="text-right flex md:flex-col items-center md:items-end justify-between shrink-0">
+          <span className="text-[11px] font-sans font-semibold text-[#8E95A5] uppercase tracking-[0.08em]">Mission Suitability</span>
           <span
-            className={`text-3xl font-black ${
+            className={`text-3xl font-mono tabular-nums font-semibold mt-1 ${
               assessment?.isGo ? 'text-emerald-400' : 'text-amber-400'
             }`}
           >
@@ -347,104 +349,127 @@ Generated via LUNA — Lunar Landing Site Navigator (NASA Space Apps Challenge)
       </div>
 
       {/* 4 Pillars Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 font-mono">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Pillar 1: Solar */}
-        <div className="p-5 rounded-2xl bg-[#0c1017] border border-slate-800 space-y-3">
+        <div className="p-5 rounded-xl bg-[#0C0D12] border border-[#1E2028] space-y-3">
           <div className="flex items-center justify-between text-xs">
-            <span className="text-slate-400 uppercase flex items-center gap-1.5">
+            <span className="text-[#8E95A5] font-sans font-semibold uppercase tracking-[0.08em] text-[11px] flex items-center gap-1.5">
               <Sun className="w-4 h-4 text-amber-400" />
               Illumination
             </span>
-            <span className="font-bold text-amber-300">{assessment?.powerPct ?? 0}% Pwr</span>
+            <span className="font-mono tabular-nums font-semibold text-amber-300">{assessment?.powerPct ?? 0}% Pwr</span>
           </div>
-          <div className="text-lg font-black text-white">
+          <div className="text-lg font-display font-semibold text-white">
             {assessment?.isSunlit ? 'Active Sunlit' : 'Shadow / Night'}
           </div>
-          <div className="text-[11px] text-slate-400 space-y-1 pt-2 border-t border-slate-800/80">
-            <p>Sun Elevation: {fmtNum(assessment?.sun?.elevationDeg, 2)}°</p>
-            <p>Ridge Clearance: {fmtNum(assessment?.clearance, 2)}°</p>
+          <div className="text-xs font-sans text-[#8E95A5] space-y-1.5 pt-2.5 border-t border-[#1E2028]">
+            <p className="flex justify-between">
+              <span>Sun Elevation:</span>
+              <span className="font-mono tabular-nums text-[#E2E8F0]">{fmtNum(assessment?.sun?.elevationDeg, 2)}°</span>
+            </p>
+            <p className="flex justify-between">
+              <span>Ridge Clearance:</span>
+              <span className="font-mono tabular-nums text-[#E2E8F0]">{fmtNum(assessment?.clearance, 2)}°</span>
+            </p>
           </div>
         </div>
 
         {/* Pillar 2: Comms */}
-        <div className="p-5 rounded-2xl bg-[#0c1017] border border-slate-800 space-y-3">
+        <div className="p-5 rounded-xl bg-[#0C0D12] border border-[#1E2028] space-y-3">
           <div className="flex items-center justify-between text-xs">
-            <span className="text-slate-400 uppercase flex items-center gap-1.5">
+            <span className="text-[#8E95A5] font-sans font-semibold uppercase tracking-[0.08em] text-[11px] flex items-center gap-1.5">
               <Radio className="w-4 h-4 text-cyan-400" />
               Direct Comms
             </span>
             <span
-              className={`font-bold uppercase ${
+              className={`font-sans font-semibold uppercase text-[11px] ${
                 assessment?.dte?.status === 'clear' ? 'text-emerald-400' : 'text-rose-400'
               }`}
             >
               {assessment?.dte?.status ?? 'N/A'}
             </span>
           </div>
-          <div className="text-lg font-black text-white">
+          <div className="text-lg font-display font-semibold text-white">
             {assessment?.dte?.status === 'clear' ? 'LOS Unobstructed' : 'Line of Sight Masked'}
           </div>
-          <div className="text-[11px] text-slate-400 space-y-1 pt-2 border-t border-slate-800/80">
-            <p>Earth Elevation: {fmtNum(assessment?.dte?.elevationDeg, 2)}°</p>
-            <p>Terrain Margin: {fmtNum(assessment?.dte?.marginDeg, 2)}°</p>
+          <div className="text-xs font-sans text-[#8E95A5] space-y-1.5 pt-2.5 border-t border-[#1E2028]">
+            <p className="flex justify-between">
+              <span>Earth Elevation:</span>
+              <span className="font-mono tabular-nums text-[#E2E8F0]">{fmtNum(assessment?.dte?.elevationDeg, 2)}°</span>
+            </p>
+            <p className="flex justify-between">
+              <span>Terrain Margin:</span>
+              <span className="font-mono tabular-nums text-[#E2E8F0]">{fmtNum(assessment?.dte?.marginDeg, 2)}°</span>
+            </p>
           </div>
         </div>
 
         {/* Pillar 3: Thermal */}
-        <div className="p-5 rounded-2xl bg-[#0c1017] border border-slate-800 space-y-3">
+        <div className="p-5 rounded-xl bg-[#0C0D12] border border-[#1E2028] space-y-3">
           <div className="flex items-center justify-between text-xs">
-            <span className="text-slate-400 uppercase flex items-center gap-1.5">
+            <span className="text-[#8E95A5] font-sans font-semibold uppercase tracking-[0.08em] text-[11px] flex items-center gap-1.5">
               <Thermometer className="w-4 h-4 text-rose-400" />
               Thermal Regimen
             </span>
-            <span className="font-bold text-white">Calculated</span>
+            <span className="font-sans font-medium text-[#CBD5E1] text-[11px]">Calculated</span>
           </div>
-          <div className="text-lg font-black text-white">
+          <div className="text-lg font-mono tabular-nums font-semibold text-white">
             {fmtNum(assessment?.thermal?.surfaceTempC, 0)}°C
           </div>
-          <div className="text-[11px] text-slate-400 space-y-1 pt-2 border-t border-slate-800/80">
-            <p>Absolute: {assessment?.thermal?.surfaceTempC != null ? fmtNum(assessment.thermal.surfaceTempC + 273.15, 0) : '0'} K</p>
-            <p>Subsurface: {fmtNum(assessment?.thermal?.subsurfaceTempC, 0)}°C</p>
+          <div className="text-xs font-sans text-[#8E95A5] space-y-1.5 pt-2.5 border-t border-[#1E2028]">
+            <p className="flex justify-between">
+              <span>Absolute:</span>
+              <span className="font-mono tabular-nums text-[#E2E8F0]">{assessment?.thermal?.surfaceTempC != null ? fmtNum(assessment.thermal.surfaceTempC + 273.15, 0) : '0'} K</span>
+            </p>
+            <p className="flex justify-between">
+              <span>Subsurface:</span>
+              <span className="font-mono tabular-nums text-[#E2E8F0]">{fmtNum(assessment?.thermal?.subsurfaceTempC, 0)}°C</span>
+            </p>
           </div>
         </div>
 
         {/* Pillar 4: Topography */}
-        <div className="p-5 rounded-2xl bg-[#0c1017] border border-slate-800 space-y-3">
+        <div className="p-5 rounded-xl bg-[#0C0D12] border border-[#1E2028] space-y-3">
           <div className="flex items-center justify-between text-xs">
-            <span className="text-slate-400 uppercase flex items-center gap-1.5">
+            <span className="text-[#8E95A5] font-sans font-semibold uppercase tracking-[0.08em] text-[11px] flex items-center gap-1.5">
               <Mountain className="w-4 h-4 text-purple-400" />
               Topography
             </span>
-            <span className="font-bold text-purple-300">LOLA DEM</span>
+            <span className="font-sans font-semibold text-purple-300 text-[11px]">LOLA DEM</span>
           </div>
-          <div className="text-lg font-black text-white">
+          <div className="text-lg font-mono tabular-nums font-semibold text-white">
             {assessment?.terrainMetrics?.elevationM != null
               ? `${Math.round(assessment.terrainMetrics.elevationM).toLocaleString()} m`
               : currentSite.elevationM != null
               ? `${currentSite.elevationM.toLocaleString()} m`
-              : 'Not present in DEM'}
+              : <span className="font-sans text-sm font-normal text-[#8E95A5]">Not present in DEM</span>}
           </div>
-          <div className="text-[11px] text-slate-400 space-y-1 pt-2 border-t border-slate-800/80">
-            <p>
-              Slope:{' '}
-              {assessment?.terrainMetrics?.slopeDeg != null
-                ? `${fmtNum(assessment.terrainMetrics.slopeDeg, 1)}°`
-                : 'Not present in DEM'}
+          <div className="text-xs font-sans text-[#8E95A5] space-y-1.5 pt-2.5 border-t border-[#1E2028]">
+            <p className="flex justify-between">
+              <span>Slope:</span>
+              <span className="font-mono tabular-nums text-[#E2E8F0]">
+                {assessment?.terrainMetrics?.slopeDeg != null
+                  ? `${fmtNum(assessment.terrainMetrics.slopeDeg, 1)}°`
+                  : <span className="font-sans text-[#8E95A5]">Not present in DEM</span>}
+              </span>
             </p>
-            <p>Horizon: 360° Profile</p>
+            <p className="flex justify-between">
+              <span>Horizon:</span>
+              <span className="text-[#E2E8F0]">360° Profile</span>
+            </p>
           </div>
         </div>
       </div>
 
       {/* Operational Risk Matrix */}
-      <div className="p-6 rounded-2xl bg-[#0c1017] border border-slate-800/80 space-y-4">
-        <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+      <div className="p-6 rounded-xl bg-[#0C0D12] border border-[#1E2028] space-y-4">
+        <h3 className="text-sm font-display font-semibold text-white flex items-center gap-2">
           <ShieldAlert className="w-4 h-4 text-amber-400" />
-          Operational Hazard Identification & Flight Constraints
+          Operational Hazard Identification &amp; Flight Constraints
         </h3>
 
         {!assessment?.risks || assessment.risks.length === 0 ? (
-          <div className="p-4 rounded-xl bg-emerald-950/30 border border-emerald-800/40 text-emerald-300 text-xs font-mono">
+          <div className="p-4 rounded-xl bg-emerald-950/30 border border-emerald-800/40 text-emerald-300 text-xs font-sans font-medium">
             All primary operational safety constraints satisfied with zero critical flags.
           </div>
         ) : (
@@ -452,10 +477,10 @@ Generated via LUNA — Lunar Landing Site Navigator (NASA Space Apps Challenge)
             {assessment.risks.map((risk, index) => (
               <div
                 key={index}
-                className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 flex items-start gap-3"
+                className="p-4 rounded-xl bg-[#050507] border border-[#1E2028] flex items-start gap-3.5"
               >
                 <span
-                  className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase mt-0.5 ${
+                  className={`px-2 py-0.5 rounded text-[10.5px] font-sans font-semibold uppercase mt-0.5 shrink-0 ${
                     risk.severity === 'HIGH'
                       ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
                       : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
@@ -464,8 +489,8 @@ Generated via LUNA — Lunar Landing Site Navigator (NASA Space Apps Challenge)
                   {risk.severity}
                 </span>
                 <div>
-                  <h4 className="text-xs font-bold text-white">{risk.title}</h4>
-                  <p className="text-xs text-slate-400 mt-0.5">{risk.desc}</p>
+                  <h4 className="text-[13px] font-sans font-semibold text-white">{risk.title}</h4>
+                  <p className="text-xs font-sans text-[#8E95A5] mt-1 leading-relaxed">{risk.desc}</p>
                 </div>
               </div>
             ))}
@@ -474,20 +499,20 @@ Generated via LUNA — Lunar Landing Site Navigator (NASA Space Apps Challenge)
       </div>
 
       {/* Navigation Footnotes */}
-      <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-xl bg-slate-900/40 border border-slate-800 text-xs">
-        <span className="text-slate-400">
+      <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-xl bg-[#0C0D12] border border-[#1E2028] text-xs font-sans">
+        <span className="text-[#8E95A5]">
           Need detailed sensor models or horizon geometry?
         </span>
         <div className="flex items-center gap-3">
           <button
             onClick={() => onNavigate && onNavigate('comparison')}
-            className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 transition"
+            className="px-3.5 py-2 rounded-lg bg-[#14161D] hover:bg-[#1E2028] border border-[#1E2028] font-medium text-slate-200 transition"
           >
             Compare Landing Sites
           </button>
           <button
             onClick={() => onNavigate && onNavigate('explorer')}
-            className="px-3 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-medium transition"
+            className="px-3.5 py-2 rounded-lg bg-white hover:bg-[#E2E8F0] text-[#050507] font-semibold transition"
           >
             View in 3D Celestial Explorer
           </button>
