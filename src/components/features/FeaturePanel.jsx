@@ -61,6 +61,7 @@ import {
   evaluateCandidateForMissionWindow,
   DEFAULT_PLANNER_CONSTRAINTS,
 } from '../../utils/plannerEngine.js';
+import { comparisonSelectionStore } from '../../utils/comparisonEngine.js';
 
 const TABS = [
   { id: 'overview', label: 'Overview' },
@@ -91,6 +92,7 @@ export default function FeaturePanel({
   onZoomHere,
   onClearCustomPin,
   onCompareMission,
+  onReturnToComparison,
   onSelectOtherBody,
 }) {
   const [activeTab, setActiveTab] = useState('overview');
@@ -101,6 +103,22 @@ export default function FeaturePanel({
   const [roughnessRadiusM, setRoughnessRadiusM] = useState(2000);
   const [isDataSourcesOpen, setIsDataSourcesOpen] = useState(false);
   const [isContextExpanded, setIsContextExpanded] = useState(false);
+<<<<<<< Updated upstream
+=======
+  const [isCardDataExpanded, setIsCardDataExpanded] = useState(false);
+  const [comparisonSnap, setComparisonSnap] = useState(() => comparisonSelectionStore.get());
+  const [comparisonFeedbackMsg, setComparisonFeedbackMsg] = useState(null);
+
+  useEffect(() => {
+    return comparisonSelectionStore.subscribe((snap) => {
+      setComparisonSnap(snap);
+    });
+  }, []);
+
+  useEffect(() => {
+    setComparisonFeedbackMsg(null);
+  }, [feature?.id, feature?.latitude, feature?.longitude]);
+>>>>>>> Stashed changes
 
   // Weather state
   const [spaceWeather, setSpaceWeather] = useState(FALLBACK_SPACE_WEATHER);
@@ -1837,46 +1855,129 @@ export default function FeaturePanel({
       {/* =================================================================== */}
       {/* 4. PERSISTENT ACTION CONTROLS FOOTER (3 Compact Buttons)            */}
       {/* =================================================================== */}
-      <div className="px-3 py-2 border-t border-slate-800/90 bg-[#080f1d] grid grid-cols-3 gap-1.5 shrink-0">
-        <button
-          type="button"
-          onClick={() => onZoomHere?.(featLon, featLat)}
-          title="Center map view on this pin"
-          className="h-8 px-1.5 rounded-lg bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-500/30 font-mono text-[10.5px] font-semibold flex items-center justify-center gap-1 transition-colors whitespace-nowrap"
-        >
-          <Navigation className="w-3 h-3 shrink-0" />
-          <span>Center View</span>
-        </button>
+      {(() => {
+        const targetFeature = clpsData || feature;
+        const isAlreadyAdded =
+          !isEarthFeature && comparisonSelectionStore.isFeatureInComparison(targetFeature);
+        const isAtLimit =
+          !isAlreadyAdded &&
+          comparisonSnap.locations.length >= comparisonSnap.maxLocations;
+        const showComparisonBar =
+          !isEarthFeature &&
+          (isAlreadyAdded || comparisonFeedbackMsg?.type === 'error');
 
-        <button
-          type="button"
-          onClick={() => onCompareMission?.(clpsData || feature)}
-          title="Compare this site side-by-side"
-          className="h-8 px-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-800 font-mono text-[10.5px] font-medium flex items-center justify-center gap-1 transition-colors whitespace-nowrap"
-        >
-          <GitCompare className="w-3 h-3 text-emerald-400 shrink-0" />
-          <span>Compare Site</span>
-        </button>
+        return (
+          <>
+            {showComparisonBar && (
+              <div className="px-3 py-1.5 border-t border-slate-800/90 bg-[#060B13] flex items-center justify-between gap-2 shrink-0 animate-in fade-in duration-150">
+                <div className="min-w-0 flex items-center gap-1.5">
+                  <span
+                    className={`text-[10px] font-mono font-semibold truncate ${
+                      comparisonFeedbackMsg?.type === 'error'
+                        ? 'text-amber-300'
+                        : 'text-[#00D2C4]'
+                    }`}
+                  >
+                    {comparisonFeedbackMsg?.type === 'error'
+                      ? comparisonFeedbackMsg.text
+                      : `Comparison: ${comparisonSnap.locations.length} / ${comparisonSnap.maxLocations} Selected`}
+                  </span>
+                </div>
+                {onReturnToComparison && (
+                  <button
+                    type="button"
+                    onClick={onReturnToComparison}
+                    className="px-2 py-1 rounded bg-[#00D2C4]/15 hover:bg-[#00D2C4]/25 border border-[#00D2C4]/40 text-[10px] font-mono font-semibold text-[#00D2C4] whitespace-nowrap transition-colors"
+                  >
+                    Back to Comparison ({comparisonSnap.locations.length}/{comparisonSnap.maxLocations}) →
+                  </button>
+                )}
+              </div>
+            )}
 
-        <button
-          type="button"
-          onClick={handleShareLocation}
-          title="Copy shareable permalink"
-          className="h-8 px-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-800 font-mono text-[10.5px] font-medium flex items-center justify-center gap-1 transition-colors whitespace-nowrap"
-        >
-          {shared ? (
-            <>
-              <Check className="w-3 h-3 text-emerald-400 shrink-0" />
-              <span className="text-emerald-300">Copied</span>
-            </>
-          ) : (
-            <>
-              <Share2 className="w-3 h-3 text-cyan-400 shrink-0" />
-              <span>Share</span>
-            </>
-          )}
-        </button>
-      </div>
+            <div className="px-3 py-2 border-t border-slate-800/90 bg-[#080f1d] grid grid-cols-3 gap-1.5 shrink-0">
+              <button
+                type="button"
+                onClick={() => onZoomHere?.(featLon, featLat)}
+                title="Center map view on this pin"
+                className="h-8 px-1.5 rounded-lg bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-500/30 font-mono text-[10.5px] font-semibold flex items-center justify-center gap-1 transition-colors whitespace-nowrap"
+              >
+                <Navigation className="w-3 h-3 shrink-0" />
+                <span>Center View</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (isAlreadyAdded) {
+                    setComparisonFeedbackMsg(null);
+                    onCompareMission?.(targetFeature);
+                  } else if (isAtLimit) {
+                    setComparisonFeedbackMsg({
+                      type: 'error',
+                      text: `Cannot add: Limit (${comparisonSnap.maxLocations}/${comparisonSnap.maxLocations}) reached`,
+                    });
+                    onCompareMission?.(targetFeature);
+                  } else {
+                    setComparisonFeedbackMsg(null);
+                    onCompareMission?.(targetFeature);
+                  }
+                }}
+                title={
+                  isAlreadyAdded
+                    ? 'Click to deselect and remove this location from Site Comparison'
+                    : isAtLimit
+                    ? `Cannot add: Maximum of ${comparisonSnap.maxLocations} locations reached`
+                    : 'Add this location to Site Comparison'
+                }
+                className={`h-8 px-1.5 rounded-lg font-mono text-[10.5px] font-medium flex items-center justify-center gap-1 transition-colors whitespace-nowrap border ${
+                  isAlreadyAdded
+                    ? 'bg-emerald-950/40 hover:bg-rose-950/50 text-emerald-300 hover:text-rose-200 border-emerald-500/40 hover:border-rose-500/40'
+                    : isAtLimit
+                    ? 'bg-amber-950/40 hover:bg-amber-950/60 text-amber-300 border-amber-500/40'
+                    : 'bg-slate-900 hover:bg-slate-800 text-slate-200 border-slate-800'
+                }`}
+              >
+                {isAlreadyAdded ? (
+                  <>
+                    <X className="w-3 h-3 text-rose-400 shrink-0" />
+                    <span>Deselect ({comparisonSnap.locations.length}/{comparisonSnap.maxLocations})</span>
+                  </>
+                ) : isAtLimit ? (
+                  <>
+                    <AlertTriangle className="w-3 h-3 text-amber-400 shrink-0" />
+                    <span>Limit ({comparisonSnap.locations.length}/{comparisonSnap.maxLocations})</span>
+                  </>
+                ) : (
+                  <>
+                    <GitCompare className="w-3 h-3 text-emerald-400 shrink-0" />
+                    <span>Compare Site</span>
+                  </>
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={handleShareLocation}
+                title="Copy shareable permalink"
+                className="h-8 px-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-800 font-mono text-[10.5px] font-medium flex items-center justify-center gap-1 transition-colors whitespace-nowrap"
+              >
+                {shared ? (
+                  <>
+                    <Check className="w-3 h-3 text-emerald-400 shrink-0" />
+                    <span className="text-emerald-300">Copied</span>
+                  </>
+                ) : (
+                  <>
+                    <Share2 className="w-3 h-3 text-cyan-400 shrink-0" />
+                    <span>Share</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </>
+        );
+      })()}
     </aside>
   );
 }

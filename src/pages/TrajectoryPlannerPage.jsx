@@ -671,60 +671,6 @@ export default function TrajectoryPlannerPage({ onNavigate }) {
         </div>
       </div>
 
-      {/* ── Select Vehicle & NASA JPL Horizons Strip (Bottom of Simulation, Ahead of Info) ──
-      <div className="bg-[#0d1624] border border-[#1b2d45] rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3 text-xs shadow-lg snap-start scroll-mt-2.5">
-        {/* Rocket Launcher Selector */}
-        {/*
-        <div className="flex items-center gap-2.5 flex-wrap">
-          <span className="font-mono text-[#F59E0B] flex items-center gap-1.5 font-semibold uppercase text-xs">
-            <Rocket className="w-4 h-4" />
-            <span>Select Vehicle:</span>
-          </span>
-          <div className="flex items-center gap-1.5 flex-wrap">
-            {LUNAR_ROCKETS.map((r) => (
-              <button
-                key={r.id}
-                type="button"
-                onClick={() => setSelectedRocketId(r.id)}
-                className={`text-xs font-mono px-3 py-1.5 rounded-lg border transition-all ${
-                  selectedRocketId === r.id
-                    ? 'bg-[#F59E0B]/20 border-[#F59E0B] text-white font-medium shadow-[0_0_8px_rgba(245,158,11,0.3)] ring-1 ring-[#F59E0B]/40'
-                    : 'bg-[#152336]/60 border-[#223854] text-[#94A3B8] hover:text-white hover:border-[#38BDF8]'
-                }`}
-              >
-                {r.name}
-              </button>
-            ))}
-          </div>
-        </div>*/}
-        {/* NASA JPL Horizons Ephemeris API Status */}
-        {/*
-        <div className="flex items-center gap-2 font-mono text-xs">
-          <div className="flex items-center gap-2 bg-[#152336] px-3 py-1.5 rounded-lg border border-[#223854]">
-            <Radio className={`w-3.5 h-3.5 ${jplEphemeris?.isLive ? 'text-emerald-400 animate-pulse' : 'text-cyan-400'}`} />
-            <span className="text-[#94A3B8]">API:</span>
-            <span className="text-white font-semibold">
-              {jplEphemeris?.isLive ? 'NASA JPL Horizons' : 'IAU Ephemeris'}
-            </span>
-            {jplEphemeris && (
-              <span className="text-[#38BDF8]">
-                ({Math.round(jplEphemeris.rangeKm || 384400).toLocaleString()} km &middot; {(jplEphemeris.lightTimeSec ?? (jplEphemeris.rangeKm / 299792.458))?.toFixed(2) ?? '1.28'}s LT)
-              </span>
-            )}
-          </div>
-
-          <button
-            type="button"
-            onClick={loadJplData}
-            disabled={isLoadingJpl}
-            className="p-1.5 px-2.5 rounded-lg bg-[#152336] hover:bg-[#223854] text-[#94A3B8] hover:text-white transition-colors"
-            title="Refresh Live NASA JPL Horizons Ephemeris"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${isLoadingJpl ? 'animate-spin text-cyan-400' : ''}`} />
-          </button>
-        </div>
-      </div> */}
-
       {/* ── Flight Telemetry & Delta-V Budget Deck ─────────────────────────────── */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3.5 snap-start scroll-mt-2.5">
         {/* 1. Transit Duration */}

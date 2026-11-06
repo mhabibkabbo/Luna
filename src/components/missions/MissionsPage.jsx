@@ -35,6 +35,7 @@ function formatCoordinates(value, positive, negative) {
   return `${Math.abs(value).toFixed(2)}°${value >= 0 ? positive : negative}`;
 }
 
+<<<<<<< Updated upstream
 export default function MissionsPage({ onLaunchExplorer }) {
   const [activeMission, setActiveMission] = useState(null);
   const [expandedMissionId, setExpandedMissionId] = useState(null);
@@ -43,6 +44,48 @@ export default function MissionsPage({ onLaunchExplorer }) {
     <div className="flex h-full min-h-0 w-full flex-col overflow-hidden bg-[#060B13] font-sans text-[#F1F5F9] selection:bg-[#00D2C4]/30">
       <PublicPageHeader currentPage="missions" onLaunchExplorer={onLaunchExplorer} />
 
+=======
+function MissionEntry({ mission, index, onLaunchExplorer }) {
+  const status = getMissionStatus(mission);
+  const StatusIcon = status.icon;
+  const isLeft = index % 2 === 0;
+
+  return (
+    <li className="relative grid grid-cols-[1fr_2.75rem_1fr] gap-x-3 sm:gap-x-6">
+      <div className={isLeft ? 'col-start-1' : 'col-start-3'}>
+        <button type="button" onClick={() => onLaunchExplorer({ selectedMission: mission, missionId: mission.id })} className="group w-full rounded-2xl border border-[#20344B] bg-[#0A1220]/95 p-4 text-left shadow-[0_12px_35px_rgba(0,0,0,0.16)] transition-all hover:-translate-y-1 hover:border-[#00D2C4]/70 hover:bg-[#0C1728] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00D2C4] sm:p-5" aria-label={`Open ${mission.name} in the lunar explorer`}>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-[9px] font-mono uppercase tracking-[0.18em] text-[#34D399] sm:text-[10px]">{mission.taskOrder} · {mission.provider}</p>
+              <h2 className="mt-1.5 text-base font-semibold leading-tight text-[#F1F5F9] sm:text-xl">{mission.name}</h2>
+            </div>
+            <ArrowUpRight className="mt-0.5 h-4 w-4 shrink-0 text-[#00D2C4] transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+          </div>
+          <p className="mt-3 hidden text-xs leading-relaxed text-[#94A3B8] sm:block" style={{ display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: 2, overflow: 'hidden' }}>{getTimelineDescription(mission)}</p>
+          <div className="mt-3 grid gap-2 border-t border-[#1B3047] pt-3 text-[10px] text-[#A5B4C7] sm:grid-cols-2 sm:text-[11px]">
+            <span className="flex min-w-0 items-center gap-1.5"><CalendarDays className="h-3.5 w-3.5 shrink-0 text-[#00D2C4]" /><span className="truncate">{mission.launchDate}</span></span>
+            <span className="flex min-w-0 items-center gap-1.5"><MapPin className="h-3.5 w-3.5 shrink-0 text-[#00D2C4]" /><span className="truncate">{mission.landingSiteName}</span></span>
+          </div>
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+            <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[9px] font-mono uppercase tracking-wide ${status.className}`}><StatusIcon className="h-3 w-3" /> {status.label}</span>
+            <span className="font-mono text-[9px] text-[#64748B]">{formatCoordinates(mission.latitude, 'N', 'S')} · {formatCoordinates(mission.longitude, 'E', 'W')}</span>
+          </div>
+        </button>
+      </div>
+      <div className="col-start-2 row-start-1 flex flex-col items-center" aria-hidden="true">
+        <span className="mt-5 flex h-8 w-8 items-center justify-center rounded-full border-2 border-sky-300 bg-[#111B29] text-[10px] font-mono font-bold text-sky-300 shadow-[0_0_0_5px_#060B13] sm:h-10 sm:w-10">{String(index + 1).padStart(2, '0')}</span>
+      </div>
+    </li>
+  );
+}
+
+export default function MissionsPage({ onLaunchExplorer, onNavigate }) {
+  const catalogMissions = [...CLPS_MISSIONS, ...HISTORIC_MISSIONS].sort((a, b) => getTimelineOrder(a) - getTimelineOrder(b));
+  const completedCount = catalogMissions.filter((mission) => mission.missionStatus === 'completed').length;
+  return (
+    <div className="flex h-full min-h-0 w-full flex-col overflow-hidden bg-[#060B13] font-sans text-[#F1F5F9] selection:bg-[#00D2C4]/30">
+      <PublicPageHeader currentPage="missions" onLaunchExplorer={onLaunchExplorer} onNavigate={onNavigate} />
+>>>>>>> Stashed changes
       <main className="min-h-0 flex-1 overflow-y-auto">
         <div className="mx-auto w-full max-w-[1400px] space-y-8 px-5 py-9 sm:px-8 sm:py-12 lg:px-12">
           <div className="space-y-3 border-b border-[#16283C] pb-7">

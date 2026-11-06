@@ -1,7 +1,6 @@
 import React from 'react';
 import {
   Layers,
-  Rocket,
   Compass,
   Home,
   Lightbulb,
@@ -31,10 +30,14 @@ export default function LeftSidebarNav({
   onToggleMeasure,
   onGoToSouthPole,
   onResetOverview,
-  onOpenMissionExplorer,
   isMobileOpen = false,
   onCloseMobile,
 }) {
+<<<<<<< Updated upstream
+=======
+  const isMoon = activePlanet === 'moon';
+  const is2DMode = viewMode === '2d' || viewMode === 'sp-2d';
+>>>>>>> Stashed changes
   const content = (
     <div className="flex flex-col items-center gap-1.5 w-full py-2.5 px-1.5">
       <span className="hidden sr-only">Visualization Controls</span>
@@ -51,6 +54,7 @@ export default function LeftSidebarNav({
         </button>
       </NavTooltip>
 
+<<<<<<< Updated upstream
       {/* Orbit / Layer Controls */}
       <NavTooltip label="Basemap & Layers" shortcut="L">
         <button
@@ -72,13 +76,24 @@ export default function LeftSidebarNav({
       {/* Rocket / Mission Controls */}
       {onOpenMissionExplorer && (
         <NavTooltip label="Mission Manifest">
+=======
+      {/* Orbit / Layer Controls (3D Globe only) */}
+      {isMoon && !is2DMode && (
+        <NavTooltip label="Basemap & Layers" shortcut="L">
+>>>>>>> Stashed changes
           <button
             type="button"
-            onClick={onOpenMissionExplorer}
-            aria-label="Open NASA CLPS mission explorer"
-            className="w-9 h-9 rounded-xl flex items-center justify-center text-[#FBBF24] hover:bg-[#FBBF24]/20 hover:text-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00D2C4]"
+            data-guide="layers"
+            onClick={onToggleLayers}
+            aria-label="Toggle basemap and topographic layers"
+            aria-pressed={isLayersOpen}
+            className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00D2C4] ${
+              isLayersOpen
+                ? 'bg-[#00D2C4] text-[#060B13] shadow-[0_0_12px_rgba(0,210,196,0.4)] font-bold'
+                : 'text-slate-400 hover:text-white hover:bg-[#0E1A2C]'
+            }`}
           >
-            <Rocket className="w-4 h-4" />
+            <Layers className="w-4 h-4" />
           </button>
         </NavTooltip>
       )}
@@ -105,9 +120,9 @@ export default function LeftSidebarNav({
             type="button"
             onClick={() => onViewModeChange?.('2d')}
             aria-label="Switch to 2D South Pole topographic map"
-            aria-pressed={viewMode === '2d' || viewMode === 'sp-2d'}
+            aria-pressed={is2DMode}
             className={`w-7 h-5 rounded-lg flex items-center justify-center text-[9px] font-mono font-bold transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#00D2C4] ${
-              viewMode === '2d' || viewMode === 'sp-2d'
+              is2DMode
                 ? 'bg-[#00D2C4] text-[#060B13] shadow-[0_0_8px_rgba(0,210,196,0.4)]'
                 : 'text-slate-400 hover:text-white'
             }`}
@@ -129,23 +144,26 @@ export default function LeftSidebarNav({
         </button>
       </NavTooltip>
 
-      {/* Lighting / Display Settings */}
-      <NavTooltip label="Solar Shading">
-        <button
-          type="button"
-          onClick={onToggleLighting}
-          aria-label="Toggle real-time solar terminator shading"
-          aria-pressed={isSolarLighting}
-          className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00D2C4] ${
-            isSolarLighting
-              ? 'bg-[#00D2C4] text-[#060B13] shadow-[0_0_10px_rgba(0,210,196,0.3)]'
-              : 'text-slate-400 hover:text-white hover:bg-[#0E1A2C]'
-          }`}
-        >
-          <Lightbulb className="w-4 h-4" />
-        </button>
-      </NavTooltip>
+      {/* Lighting / Display Settings (3D Globe only) */}
+      {!is2DMode && (
+        <NavTooltip label="Solar Shading">
+          <button
+            type="button"
+            onClick={onToggleLighting}
+            aria-label="Toggle real-time solar terminator shading"
+            aria-pressed={isSolarLighting}
+            className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00D2C4] ${
+              isSolarLighting
+                ? 'bg-[#00D2C4] text-[#060B13] shadow-[0_0_10px_rgba(0,210,196,0.3)]'
+                : 'text-slate-400 hover:text-white hover:bg-[#0E1A2C]'
+            }`}
+          >
+            <Lightbulb className="w-4 h-4" />
+          </button>
+        </NavTooltip>
+      )}
 
+<<<<<<< Updated upstream
       {/* Ephemeris & Time Engine */}
       <NavTooltip label="Ephemeris Engine" shortcut="E">
         <button
@@ -162,26 +180,52 @@ export default function LeftSidebarNav({
           <Orbit className="w-4 h-4" />
         </button>
       </NavTooltip>
+=======
+      {/* Ephemeris & Time Engine (3D Globe only) */}
+      {isMoon && !is2DMode && (
+        <NavTooltip label="Ephemeris Engine" shortcut="E">
+          <button
+            type="button"
+            onClick={onToggleCelestial}
+            aria-label="Toggle celestial ephemeris engine"
+            aria-pressed={isCelestialOpen}
+            className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00D2C4] ${
+              isCelestialOpen
+                ? 'bg-[#00D2C4] text-[#060B13] shadow-[0_0_12px_rgba(0,210,196,0.4)]'
+                : 'text-slate-400 hover:text-white hover:bg-[#0E1A2C]'
+            }`}
+          >
+            <Orbit className="w-4 h-4" />
+          </button>
+        </NavTooltip>
+      )}
+>>>>>>> Stashed changes
 
-      {/* Auto-Rotation */}
-      <NavTooltip label={isAutoRotating ? 'Pause Rotation' : 'Auto-Rotation'}>
-        <button
-          type="button"
-          onClick={onToggleAutoRotate}
-          aria-label={isAutoRotating ? 'Pause orbital auto-rotation' : 'Start orbital auto-rotation'}
-          aria-pressed={isAutoRotating}
-          className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00D2C4] ${
-            isAutoRotating
-              ? 'bg-[#00D2C4] text-[#060B13] shadow-[0_0_8px_rgba(0,210,196,0.3)]'
-              : 'text-slate-400 hover:text-white hover:bg-[#0E1A2C]'
-          }`}
-        >
-          <RotateCw className={`w-4 h-4 ${isAutoRotating ? 'animate-spin' : ''}`} />
-        </button>
-      </NavTooltip>
+      {/* Auto-Rotation (3D Globe only) */}
+      {!is2DMode && (
+        <NavTooltip label={isAutoRotating ? 'Pause Rotation' : 'Auto-Rotation'}>
+          <button
+            type="button"
+            onClick={onToggleAutoRotate}
+            aria-label={isAutoRotating ? 'Pause orbital auto-rotation' : 'Start orbital auto-rotation'}
+            aria-pressed={isAutoRotating}
+            className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00D2C4] ${
+              isAutoRotating
+                ? 'bg-[#00D2C4] text-[#060B13] shadow-[0_0_8px_rgba(0,210,196,0.3)]'
+                : 'text-slate-400 hover:text-white hover:bg-[#0E1A2C]'
+            }`}
+          >
+            <RotateCw className={`w-4 h-4 ${isAutoRotating ? 'animate-spin' : ''}`} />
+          </button>
+        </NavTooltip>
+      )}
 
       {/* Geodesic Ruler (when in 2D mode) */}
+<<<<<<< Updated upstream
       {(viewMode === '2d' || viewMode === 'sp-2d') && onToggleMeasure && (
+=======
+      {isMoon && is2DMode && onToggleMeasure && (
+>>>>>>> Stashed changes
         <NavTooltip label="Geodesic Ruler" shortcut="M">
           <button
             type="button"
