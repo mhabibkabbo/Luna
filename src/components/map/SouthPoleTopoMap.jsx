@@ -881,7 +881,7 @@ const SouthPoleTopoMap = forwardRef(function SouthPoleTopoMap(
       ctx.save();
       ctx.beginPath();
       ctx.arc(pt.x, pt.y, dotR, 0, Math.PI * 2);
-      ctx.fillStyle = isSelected ? '#FF9E00' : isHovered ? '#EF4444' : '#00E5FF';
+      ctx.fillStyle = isSelected ? '#FDE047' : isHovered ? '#EF4444' : '#00E5FF';
       ctx.fill();
       ctx.strokeStyle = '#FFFFFF';
       ctx.lineWidth = 1.5;
@@ -976,7 +976,7 @@ const SouthPoleTopoMap = forwardRef(function SouthPoleTopoMap(
       ctx.save();
       ctx.beginPath();
       ctx.arc(pt.x, pt.y, 5, 0, Math.PI * 2);
-      ctx.fillStyle = '#FF9E00';
+      ctx.fillStyle = '#FDE047';
       ctx.fill();
       ctx.strokeStyle = '#FFFFFF';
       ctx.lineWidth = 2;
@@ -984,7 +984,7 @@ const SouthPoleTopoMap = forwardRef(function SouthPoleTopoMap(
 
       ctx.beginPath();
       ctx.arc(pt.x, pt.y, 11, 0, Math.PI * 2);
-      ctx.strokeStyle = '#FF9E00';
+      ctx.strokeStyle = '#FDE047';
       ctx.lineWidth = 1.2;
       ctx.stroke();
 

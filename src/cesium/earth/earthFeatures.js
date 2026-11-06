@@ -44,10 +44,10 @@ function createSitePinImage(type, selected) {
     throw new Error('Unable to create the Earth communication-site marker canvas.');
   }
 
-  const color = selected ? '#FF9E00' : SITE_MARKER_COLORS[type] || '#00D2C4';
+  const color = selected ? '#FDE047' : SITE_MARKER_COLORS[type] || '#00D2C4';
   context.clearRect(0, 0, canvas.width, canvas.height);
   context.save();
-  context.shadowColor = selected ? 'rgba(255, 158, 0, 0.95)' : color;
+  context.shadowColor = selected ? 'rgba(253, 224, 71, 0.95)' : color;
   context.shadowBlur = selected ? 24 : 14;
 
   context.beginPath();
@@ -123,10 +123,10 @@ function createPinImage(selected) {
   }
 
   const cx = canvas.width / 2;
-  const primaryColor = selected ? '#FF9E00' : '#00D2C4';
+  const primaryColor = selected ? '#FDE047' : '#00D2C4';
 
   context.save();
-  context.shadowColor = selected ? 'rgba(255, 158, 0, 0.95)' : 'rgba(0, 210, 196, 0.75)';
+  context.shadowColor = selected ? 'rgba(253, 224, 71, 0.95)' : 'rgba(0, 210, 196, 0.75)';
   context.shadowBlur = selected ? 20 : 12;
 
   context.beginPath();
@@ -205,7 +205,7 @@ export function createEarthFeatures({ viewer, container, callbacks }) {
         entity.label.distanceDisplayCondition = new Cesium.DistanceDisplayCondition(0, EARTH_PIN_STYLE.farDistance);
       }
       entity.label.fillColor = selected
-        ? Cesium.Color.fromCssColorString('#FFB020')
+        ? Cesium.Color.fromCssColorString('#FDE047')
         : Cesium.Color.fromCssColorString('#FFFFFF');
     }
   };

@@ -334,6 +334,7 @@ export default function DteSignalChart({
       .attr('stroke', '#38bdf8')
       .attr('stroke-width', 1)
       .attr('stroke-dasharray', '2 2')
+      .style('pointer-events', 'none')
       .style('opacity', 0);
 
     overlay

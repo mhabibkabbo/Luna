@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useRef, useLayoutEffect } from 'react';
 import {
   X,
   MapPin,
@@ -19,7 +19,6 @@ import {
   CheckCircle2,
   ShieldCheck,
   ShieldAlert,
-  Wind,
   RefreshCw,
   Mountain,
   Globe2,
@@ -67,11 +66,11 @@ import {
 import { comparisonSelectionStore } from '../../utils/comparisonEngine.js';
 
 const TABS = [
-  { id: 'overview', label: 'Overview', icon: Compass },
   { id: 'terrain', label: 'Terrain', icon: Mountain },
-  { id: 'lighting', label: 'Lighting', icon: Sun },
   { id: 'communication', label: 'Comms', icon: Radio },
+  { id: 'temperature', label: 'Temp', icon: Thermometer },
   { id: 'dossier', label: 'Dossier', icon: ShieldCheck },
+  { id: 'info', label: 'Info', icon: Compass },
 ];
 
 const SUN_STATUS = {
@@ -98,7 +97,10 @@ export default function FeaturePanel({
   onReturnToComparison,
   onSelectOtherBody,
 }) {
-  const [activeTab, setActiveTab] = useState('overview');
+  const isEarthFeature = feature?.body === 'earth';
+  const [activeTab, setActiveTab] = useState('terrain');
+  const contentScrollRef = useRef(null);
+  const contentScrollTopRef = useRef(0);
   const [isExpanded, setIsExpanded] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -132,9 +134,16 @@ export default function FeaturePanel({
     () => communicationEarthFeature?.id || 'all'
   );
 
-  // Live ephemeris clock subscription
-  const [timeMs, setTimeMs] = useState(() => celestialTimeStore.get().ms);
+  // Keep the selected tab current without recomputing hidden tabs during timeline scrubbing.
+  const [tabTimeMs, setTabTimeMs] = useState(() => celestialTimeStore.get().ms);
+  const [settledTabTimeMs, setSettledTabTimeMs] = useState(() => celestialTimeStore.get().ms);
   const [trackStartMs, setTrackStartMs] = useState(() => celestialTimeStore.get().ms);
+
+  useEffect(() => {
+    return celestialTimeStore.subscribe(({ ms }) => {
+      if (feature && !isEarthFeature && !isMinimized) setTabTimeMs(ms);
+    });
+  }, [feature, isEarthFeature, isMinimized]);
 
   useEffect(() => {
     ensurePolarDemLoaded()
@@ -145,10 +154,17 @@ export default function FeaturePanel({
   }, []);
 
   useEffect(() => {
-    return celestialTimeStore.subscribe(({ ms }) => {
-      setTimeMs(ms);
-    });
-  }, []);
+    if (feature && !isEarthFeature && !isMinimized) {
+      setTabTimeMs(celestialTimeStore.get().ms);
+      setSettledTabTimeMs(celestialTimeStore.get().ms);
+    }
+  }, [activeTab, feature, isEarthFeature, isMinimized]);
+
+  // Forecast scans are costly, so let timeline scrubbing finish before refreshing them.
+  useEffect(() => {
+    const timeout = setTimeout(() => setSettledTabTimeMs(tabTimeMs), 250);
+    return () => clearTimeout(timeout);
+  }, [tabTimeMs]);
 
   useEffect(() => {
     if (communicationEarthFeature?.id) {
@@ -156,10 +172,16 @@ export default function FeaturePanel({
     }
   }, [communicationEarthFeature]);
 
-  // Reset tab to overview and sync track start time when selecting a new location
+  // Keep the selected tab and content position while switching locations.
+  useLayoutEffect(() => {
+    if (contentScrollRef.current) {
+      contentScrollRef.current.scrollTop = contentScrollTopRef.current;
+    }
+  }, [feature?.id, feature?.latitude, feature?.longitude, feature?.lat, feature?.lon]);
+
+  // Sync location-specific state when selecting a new location.
   useEffect(() => {
     if (feature) {
-      setActiveTab('overview');
       setTrackStartMs(celestialTimeStore.get().ms);
       setIsContextExpanded(false);
       setIsMinimized(false);
@@ -178,9 +200,9 @@ export default function FeaturePanel({
     }
   }, []);
 
-  // Space weather fetch effect (triggered on overview and dossier tabs or when forced)
+  // Keep live telemetry fresh on the tabs that display it.
   useEffect(() => {
-    if (activeTab === 'overview' || activeTab === 'dossier') {
+    if (activeTab === 'temperature') {
       loadWeather(false);
       const interval = setInterval(() => loadWeather(false), 5 * 60 * 1000);
       return () => clearInterval(interval);
@@ -189,7 +211,6 @@ export default function FeaturePanel({
 
   // Safe extraction of feature coordinates & metadata
   const safeFeature = feature || {};
-  const isEarthFeature = safeFeature.body === 'earth';
   const isCustomPin = Boolean(
     safeFeature.isCustomPin || safeFeature.type === 'custom_pin'
   );
@@ -241,7 +262,7 @@ export default function FeaturePanel({
   }, [feature, isEarthFeature, featLat, featLon, demLoadedTick, roughnessRadiusM]);
 
   // Ephemeris, Sun position, Earth visibility, and transition countdowns
-  const state = useMemo(() => computeCelestialState(timeMs), [timeMs]);
+  const state = useMemo(() => computeCelestialState(tabTimeMs), [tabTimeMs]);
 
   const terrainFn = useMemo(
     () => (azimuthDeg) =>
@@ -271,11 +292,11 @@ export default function FeaturePanel({
 
   const localThermal = useMemo(() => {
     if (!feature || isEarthFeature) return null;
-    return getLunarTemperature(featLat, featLon, new Date(timeMs), {
+    return getLunarTemperature(featLat, featLon, new Date(tabTimeMs), {
       terrainHorizonDeg: sunTerrainHorizon,
       elevationM: terrainMetrics?.elevationM ?? null,
     });
-  }, [feature, isEarthFeature, featLat, featLon, timeMs, sunTerrainHorizon, terrainMetrics?.elevationM]);
+  }, [feature, isEarthFeature, featLat, featLon, tabTimeMs, sunTerrainHorizon, terrainMetrics?.elevationM]);
 
   const earthLook = useMemo(
     () => earthLookFromMoon(state, moonPoint),
@@ -338,18 +359,24 @@ export default function FeaturePanel({
   );
 
   const solarTransition = useMemo(
-    () => calculateSolarTransition(timeMs, featLat, featLon, siteId),
-    [timeMs, featLat, featLon, siteId]
+    () =>
+      feature && !isEarthFeature && (activeTab === 'terrain' || activeTab === 'info')
+        ? calculateSolarTransition(settledTabTimeMs, featLat, featLon, siteId)
+        : null,
+    [feature, isEarthFeature, activeTab, settledTabTimeMs, featLat, featLon, siteId]
   );
 
   const earthTransition = useMemo(
-    () => calculateEarthPositionTransition(timeMs, moonPoint),
-    [timeMs, moonPoint]
+    () =>
+      feature && !isEarthFeature && (activeTab === 'terrain' || activeTab === 'info')
+        ? calculateEarthPositionTransition(settledTabTimeMs, moonPoint)
+        : null,
+    [feature, isEarthFeature, activeTab, settledTabTimeMs, moonPoint]
   );
 
-  // All DSN stations status for DTE & Dossier tabs
+  // Only calculate station-by-station link status while the Comms tab is active.
   const dsnSitesCalculations = useMemo(() => {
-    if (isEarthFeature) return [];
+    if (isEarthFeature || activeTab !== 'communication') return [];
     return EARTH_COMMUNICATION_SITES.map((station) => {
       const evaluation = evaluateEarthLink({
         state,
@@ -363,7 +390,7 @@ export default function FeaturePanel({
         evaluation,
       };
     });
-  }, [isEarthFeature, state, moonPoint, terrainFn]);
+  }, [isEarthFeature, activeTab, state, moonPoint, terrainFn]);
 
   // Multi-day mission window assessment for Dossier tab
   const missionWindowAssessment = useMemo(() => {
@@ -385,7 +412,7 @@ export default function FeaturePanel({
     const dailyScores = Array.from({ length: missionWindowDays }, (_, dayIdx) => {
       let daySunSteps = 0;
       let dayDsnSteps = 0;
-      const dayStartMs = timeMs + dayIdx * 86400000;
+      const dayStartMs = settledTabTimeMs + dayIdx * 86400000;
 
       for (let s = 0; s < 4; s++) {
         const t = dayStartMs + s * 6 * 3600000;
@@ -451,7 +478,7 @@ export default function FeaturePanel({
       },
       {
         ...DEFAULT_PLANNER_CONSTRAINTS,
-        landingTimeMs: timeMs,
+        landingTimeMs: settledTabTimeMs,
         missionDurationDays: missionWindowDays,
       }
     );
@@ -477,20 +504,19 @@ export default function FeaturePanel({
     isEarthFeature,
     activeTab,
     missionWindowDays,
-    timeMs,
+    settledTabTimeMs,
     siteId,
     featLat,
     featLon,
     regionInfo,
     terrainFn,
     moonPoint,
-    localThermal,
     terrainMetrics,
   ]);
 
   // Combined important warnings for Overview
   const overviewWarnings = useMemo(() => {
-    if (!feature || isEarthFeature) return [];
+    if (!feature || isEarthFeature || activeTab !== 'info') return [];
     const list = [];
 
     if (terrainMetrics?.slopeDeg != null && terrainMetrics.slopeDeg >= 15) {
@@ -545,6 +571,7 @@ export default function FeaturePanel({
   }, [
     feature,
     isEarthFeature,
+    activeTab,
     terrainMetrics,
     localThermal,
     sun.status,
@@ -592,6 +619,9 @@ export default function FeaturePanel({
   };
 
   const handleTabSelect = (tabId) => {
+    const currentTimeMs = celestialTimeStore.get().ms;
+    setTabTimeMs(currentTimeMs);
+    setSettledTabTimeMs(currentTimeMs);
     setActiveTab(tabId);
   };
 
@@ -770,7 +800,11 @@ export default function FeaturePanel({
       {/* 3. TAB CONTENT AREA                                                 */}
       {/* =================================================================== */}
       <div
-        className="px-4 py-3.5 space-y-3 overflow-y-auto custom-scrollbar flex-1 min-h-0"
+        ref={contentScrollRef}
+        onScroll={(event) => {
+          contentScrollTopRef.current = event.currentTarget.scrollTop;
+        }}
+        className="px-3.5 py-3 space-y-2.5 overflow-y-auto custom-scrollbar flex-1 min-h-0"
       >
         {/* EARTH FEATURE FALLBACK VIEW */}
         {isEarthFeature && (
@@ -804,20 +838,12 @@ export default function FeaturePanel({
         )}
 
         {/* ================================================================= */}
-        {/* TAB 1: OVERVIEW                                                   */}
+        {/* General site information, terrain telemetry, and lunar weather */}
         {/* ================================================================= */}
-        {!isEarthFeature && activeTab === 'overview' && (
+        {!isEarthFeature && (
           <div className="space-y-2.5">
-            {(safeFeature.horizonEligible === false ||
-              safeFeature.positionTrust === 'illustrative' ||
-              clpsData?.horizonEligible === false ||
-              clpsData?.positionTrust === 'illustrative') && (
-              <div className="px-2.5 py-1.5 rounded-xl bg-amber-950/40 border border-amber-500/40 flex items-center gap-2 text-[11px] font-mono text-amber-200">
-                <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                <span>Exact landing coordinates not published by NASA (Display placeholder only)</span>
-              </div>
-            )}
-
+            {activeTab === 'info' && (
+              <>
             {/* Compact Coordinates & Surface Elevation Strip */}
             <div className="p-3 rounded-xl bg-[#0C0D12] border border-white/[0.08] flex items-center justify-between gap-3">
               <div className="min-w-0">
@@ -861,26 +887,68 @@ export default function FeaturePanel({
               </div>
             </div>
 
-            {/* NASA Provenance & Coverage Confidence Strip */}
-            {terrainMetrics?.uncertainty && (
-              <div className="px-3 py-2 rounded-xl bg-[#0C0D12] border border-white/[0.08] flex items-center justify-between gap-2.5 text-[11px]">
-                <span
-                  className={`px-2 py-0.5 rounded font-mono text-[10px] font-medium uppercase tracking-[0.04em] shrink-0 border ${
-                    PROVENANCE_BADGES[terrainMetrics.uncertainty.provenanceType]?.badgeClass ||
-                    PROVENANCE_BADGES.NASA_MEASURED.badgeClass
-                  }`}
-                >
-                  {PROVENANCE_BADGES[terrainMetrics.uncertainty.provenanceType]?.shortLabel ||
-                    'NASA MEASURED'}
-                </span>
-                <span className={`font-sans text-[#94A3B8] ${showFullCardData ? 'whitespace-normal break-words' : 'truncate'}`}>
-                  {terrainMetrics.dataSource} · {terrainMetrics.uncertainty.verticalAccuracy}
-                </span>
+
+            {(safeFeature.horizonEligible === false ||
+              safeFeature.positionTrust === 'illustrative' ||
+              clpsData?.horizonEligible === false ||
+              clpsData?.positionTrust === 'illustrative') && (
+              <div className="px-2.5 py-1.5 rounded-xl bg-amber-950/40 border border-amber-500/40 flex items-center gap-2 text-[11px] font-mono text-amber-200">
+                <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                <span>Exact landing coordinates not published by NASA (Display placeholder only)</span>
               </div>
             )}
 
+            <div className="p-2.5 rounded-xl bg-[#0A121E] border border-slate-800/80 space-y-1.5">
+              <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 block">
+                Site Context &amp; Provenance
+              </span>
+              <p
+                className="text-xs text-slate-300 leading-relaxed"
+                style={
+                  isContextExpanded
+                    ? undefined
+                    : {
+                        display: '-webkit-box',
+                        WebkitBoxOrient: 'vertical',
+                        WebkitLineClamp: 3,
+                        overflow: 'hidden',
+                      }
+                }
+              >
+                {siteContextDescription}
+              </p>
+              {siteContextDescription.length > 120 && (
+                <button
+                  type="button"
+                  aria-expanded={isContextExpanded}
+                  onClick={() => setIsContextExpanded((expanded) => !expanded)}
+                  className="text-[10px] font-mono text-cyan-400 hover:text-cyan-300 transition-colors"
+                >
+                  {isContextExpanded ? 'Show less' : 'Read full description'}
+                </button>
+              )}
+              <div className="pt-1 flex items-center justify-between text-[10px] font-mono text-slate-400 border-t border-slate-800/70">
+                <span>Datum: IAU Moon 2000 (R₀ = 1,737.4 km)</span>
+                <a
+                  href={clpsData?.referenceLinks?.[0]?.url || 'https://lunar.gsfc.nasa.gov/'}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-cyan-400 hover:text-cyan-300"
+                >
+                  <span>NASA LRO / PDS</span>
+                  <ExternalLink className="w-2.5 h-2.5" />
+                </a>
+              </div>
+              <div className="text-[9.5px] font-mono text-slate-400 pt-1 border-t border-slate-800/70">
+                Suitability scores are decision-support approximations computed from LOLA DEM altimetry and DE440 ephemerides—not official NASA flight certification.
+              </div>
+            </div>
+              </>
+            )}
+
             {/* Primary Dual Telemetry Grid: Sun Position & Earth Visibility */}
-            <div className="grid grid-cols-2 gap-2.5">
+            {activeTab === 'terrain' && (
+              <div className="grid grid-cols-2 gap-2 font-mono">
               {/* Sun Position Card */}
               <div className="p-3 rounded-xl bg-[#0C0D12] border border-white/[0.08] space-y-1.5">
                 <div className="flex items-center justify-between text-[11.5px]">
@@ -958,10 +1026,12 @@ export default function FeaturePanel({
                     : `Earth${earthTransition.nextEvent === 'earthset' ? 'set' : 'rise'} in ${earthTransition.formattedDuration}`}
                 </div>
               </div>
-            </div>
+              </div>
+            )}
 
             {/* Lunar Surface & Space Weather Telemetry Card */}
-            <div className="p-2.5 rounded-xl bg-[#0C0D12] border border-slate-800/80 space-y-2">
+            {activeTab === 'temperature' && (
+              <div className="p-2.5 rounded-xl bg-[#0A121E] border border-slate-800/80 space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold text-white flex items-center gap-1.5">
                   <Thermometer className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
@@ -1103,10 +1173,14 @@ export default function FeaturePanel({
                   {spaceWeather?.isFallback ? 'Simulated Model' : 'Live NOAA SWPC'}
                 </span>
               </div>
-            </div>
+              <p className="text-[9px] font-mono text-slate-500">
+                Temperatures follow the selected ephemeris time; NOAA telemetry remains live.
+              </p>
+              </div>
+            )}
 
             {/* Important Warnings Strip */}
-            {overviewWarnings.length > 0 ? (
+            {activeTab === 'info' && (overviewWarnings.length > 0 ? (
               <div className="space-y-1.5">
                 {overviewWarnings.map((w) => (
                   <div
@@ -1136,51 +1210,74 @@ export default function FeaturePanel({
                   {localThermal ? `${localThermal.tempC > 0 ? '+' : ''}${localThermal.tempC}°C` : ''}
                 </span>
               </div>
-            )}
+            ))}
 
             {/* Expanded Overview Workspace Additions */}
-            {isExpanded && (
+            {isExpanded && ['terrain', 'temperature', 'info'].includes(activeTab) && (
               <div className="space-y-2.5 pt-1 border-t border-slate-800/80">
                 <div className="grid grid-cols-3 gap-2 font-mono text-xs">
-                  <div className="p-2.5 rounded-xl bg-[#0C0D12] border border-slate-800/80">
-                    <span className="text-[10px] text-slate-400 block">Plasma Temp</span>
-                    <span className="text-sm font-bold text-white tabular-nums">
-                      {spaceWeather?.temperature != null
-                        ? `${spaceWeather.temperature.toLocaleString()} K`
-                        : '100,000 K'}
-                    </span>
-                    <span className="text-[10px] text-slate-400 block">Ion Temperature</span>
-                  </div>
-                  <div className="p-2.5 rounded-xl bg-[#0C0D12] border border-slate-800/80">
-                    <span className="text-[10px] text-slate-400 block">Horizon Mask</span>
-                    <span className="text-sm font-bold text-cyan-300 tabular-nums">
-                      {sunTerrainHorizon != null ? `${sunTerrainHorizon.toFixed(1)}°` : '—'}
-                    </span>
-                    <span className="text-[10px] text-slate-400 block">Solar Azimuth</span>
-                  </div>
-                  <div className="p-2.5 rounded-xl bg-[#0C0D12] border border-slate-800/80">
-                    <span className="text-[10px] text-slate-400 block">1-Way RF Delay</span>
-                    <span className="text-sm font-bold text-emerald-300 tabular-nums">
-                      {lightTravelSec} s
-                    </span>
-                    <span className="text-[10px] text-slate-400 block tabular-nums">
-                      {Math.round(state.earth.distanceKm).toLocaleString()} km
-                    </span>
-                  </div>
+                  {activeTab === 'temperature' && (
+                    <div className="p-2.5 rounded-xl bg-[#0A121E] border border-slate-800/80">
+                      <span className="text-[10px] text-slate-400 block">Plasma Temp</span>
+                      <span className="text-sm font-bold text-white tabular-nums">
+                        {spaceWeather?.temperature != null
+                          ? `${spaceWeather.temperature.toLocaleString()} K`
+                          : '100,000 K'}
+                      </span>
+                      <span className="text-[10px] text-slate-400 block">Ion Temperature</span>
+                    </div>
+                  )}
+                  {activeTab === 'terrain' && (
+                    <div className="p-2.5 rounded-xl bg-[#0A121E] border border-slate-800/80">
+                      <span className="text-[10px] text-slate-400 block">Horizon Mask</span>
+                      <span className="text-sm font-bold text-cyan-300 tabular-nums">
+                        {sunTerrainHorizon != null ? `${sunTerrainHorizon.toFixed(1)}°` : '—'}
+                      </span>
+                      <span className="text-[10px] text-slate-400 block">Solar Azimuth</span>
+                    </div>
+                  )}
+                  {activeTab === 'info' && (
+                    <div className="p-2.5 rounded-xl bg-[#0A121E] border border-slate-800/80">
+                      <span className="text-[10px] text-slate-400 block">Earth Distance</span>
+                      <span className="text-sm font-bold text-white tabular-nums">
+                        {Math.round(state.earth.distanceKm).toLocaleString()} km
+                      </span>
+                    </div>
+                  )}
                 </div>
+              </div>
+            )}
+
+            {activeTab === 'terrain' && (
+              <div className="p-2.5 rounded-xl bg-[#0A121E] border border-slate-800/80 space-y-2">
+                <div className="flex items-center justify-between text-[10px] font-mono text-slate-400">
+                  <span className="text-white font-semibold">
+                    360° Horizon Mask, Sun Track &amp; Libration Zone
+                  </span>
+                  <span>LOLA Altimetry</span>
+                </div>
+                <HorizonViewChart
+                  siteId={siteId}
+                  latitude={featLat}
+                  longitude={featLon}
+                  moonFeature={moonPoint}
+                  startMs={trackStartMs}
+                  currentSun={currentSun}
+                  currentEarth={currentEarth}
+                />
               </div>
             )}
           </div>
         )}
 
         {/* ================================================================= */}
-        {/* TAB 2: TERRAIN                                                    */}
+        {/* TAB 1: TERRAIN                                                    */}
         {/* ================================================================= */}
         {!isEarthFeature && activeTab === 'terrain' && (
           terrainMetrics ? (
-            <div className="space-y-2.5">
+            <div className="flex flex-col gap-2.5">
               {/* Terrain Classification Banner */}
-              <div className="p-2.5 rounded-xl bg-[#0C0D12] border border-slate-800/80 flex items-center justify-between gap-2">
+              <div className="order-5 p-2.5 rounded-xl bg-[#0A121E] border border-slate-800/80 flex items-center justify-between gap-2">
                 <div>
                   <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 block">
                     Terrain Classification
@@ -1208,7 +1305,7 @@ export default function FeaturePanel({
 
               {/* Equatorial / Mid-Latitude Dem Coverage Notice */}
               {!terrainMetrics.inSouthPoleCap && (
-                <div className="p-2.5 rounded-xl bg-cyan-950/20 border border-cyan-500/30 flex items-start gap-2 text-[11px] font-mono text-cyan-200">
+                <div className="order-5 p-2.5 rounded-xl bg-cyan-950/20 border border-cyan-500/30 flex items-start gap-2 text-[11px] font-mono text-cyan-200">
                   <Info className="w-3.5 h-3.5 text-cyan-400 shrink-0 mt-0.5" />
                   <div className="space-y-0.5 leading-tight">
                     <span className="font-semibold text-white">Equatorial / Mid-Latitude Region</span>
@@ -1220,7 +1317,7 @@ export default function FeaturePanel({
               )}
 
             {/* Configurable Radius Selector for Roughness & Local Relief */}
-            <div className="p-2 rounded-xl bg-[#0C0D12] border border-slate-800/80 flex items-center justify-between gap-1 text-[10px] font-mono">
+            <div className="order-1 p-2 rounded-xl bg-[#0A121E] border border-slate-800/80 flex items-center justify-between gap-1 text-[10px] font-mono">
               <span className="text-slate-400">Analysis Radius:</span>
               <div className="flex items-center gap-1">
                 {[500, 1000, 2000, 5000, 10000].map((r) => (
@@ -1241,7 +1338,7 @@ export default function FeaturePanel({
             </div>
 
             {/* 4-Card Quantitative Terrain Grid */}
-            <div className="grid grid-cols-2 gap-2 font-mono">
+            <div className="order-2 grid grid-cols-2 gap-2 font-mono">
               {/* Card 1: Elevation */}
               <div className="p-2.5 rounded-xl bg-[#0C0D12] border border-slate-800/80">
                 <div className="flex items-center justify-between">
@@ -1356,7 +1453,7 @@ export default function FeaturePanel({
             </div>
 
             {/* Selenographic Region, Nearest Landmark & Uncertainty */}
-            <div className="p-2.5 rounded-xl bg-[#0C0D12] border border-slate-800/80 space-y-1.5 text-xs">
+            <div className="order-4 p-2.5 rounded-xl bg-[#0A121E] border border-slate-800/80 space-y-1.5 text-xs">
               <div className="flex items-center justify-between">
                 <span className="text-[10px] font-mono text-slate-400">Geologic Region</span>
                 <span className="font-mono text-slate-200 text-right">
@@ -1396,7 +1493,7 @@ export default function FeaturePanel({
 
             {/* Radial Elevation Profile (-10 km to +10 km N-S & W-E Cross-Section) */}
             {terrainMetrics.radialProfile ? (
-              <div className="p-2.5 rounded-xl bg-[#0C0D12] border border-slate-800/80 space-y-1.5">
+              <div className="order-3 p-2.5 rounded-xl bg-[#0A121E] border border-slate-800/80 space-y-1.5">
                 <div className="flex items-center justify-between text-[10px] font-mono">
                   <span className="text-slate-200 font-semibold">
                     Radial Elevation Profile (±10 km Cross-Section)
@@ -1492,7 +1589,7 @@ export default function FeaturePanel({
                 </div>
               </div>
             ) : (
-              <div className="p-2.5 rounded-xl bg-[#0C0D12] border border-slate-800/80 text-xs font-mono text-slate-400 space-y-1">
+              <div className="order-3 p-2.5 rounded-xl bg-[#0A121E] border border-slate-800/80 text-xs font-mono text-slate-400 space-y-1">
                 <div className="flex items-center gap-1.5 text-slate-300 font-semibold">
                   <Mountain className="w-3.5 h-3.5 text-cyan-400" />
                   <span>Radial Elevation Profile: Not present in loaded dataset</span>
@@ -1505,7 +1602,7 @@ export default function FeaturePanel({
             )}
 
             {/* Terrain Warnings */}
-            <div className="space-y-1.5">
+            <div className="order-6 space-y-1.5">
               <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 block">
                 Terrain Engineering Advisories
               </span>
@@ -1547,8 +1644,26 @@ export default function FeaturePanel({
               )}
             </div>
 
+            {/* NASA provenance and coverage confidence immediately precede the data sources. */}
+            {terrainMetrics.uncertainty && (
+              <div className="order-7 px-2.5 py-1.5 rounded-xl bg-[#080f1c] border border-slate-800/80 flex items-center justify-between gap-2 text-[10px] font-mono">
+                <span
+                  className={`px-1.5 py-0.5 rounded border ${
+                    PROVENANCE_BADGES[terrainMetrics.uncertainty.provenanceType]?.badgeClass ||
+                    PROVENANCE_BADGES.NASA_MEASURED.badgeClass
+                  }`}
+                >
+                  {PROVENANCE_BADGES[terrainMetrics.uncertainty.provenanceType]?.shortLabel ||
+                    'NASA MEASURED'}
+                </span>
+                <span className={`text-slate-300 ${showFullCardData ? 'whitespace-normal break-words' : 'truncate'}`}>
+                  {terrainMetrics.dataSource} · {terrainMetrics.uncertainty.verticalAccuracy}
+                </span>
+              </div>
+            )}
+
             {/* Collapsible Data Sources Section (Requirement 10) */}
-            <div className="rounded-xl bg-[#0C0D12] border border-slate-800/80 overflow-hidden">
+            <div className="order-8 rounded-xl bg-[#0A121E] border border-slate-800/80 overflow-hidden">
               <button
                 type="button"
                 onClick={() => setIsDataSourcesOpen(!isDataSourcesOpen)}
@@ -1626,10 +1741,12 @@ export default function FeaturePanel({
         ))}
 
         {/* ================================================================= */}
-        {/* TAB 3: LIGHTING                                                   */}
+        {/* TAB 3: TIME-DEPENDENT TEMPERATURE & ENVIRONMENT */}
         {/* ================================================================= */}
-        {!isEarthFeature && activeTab === 'lighting' && (
+        {!isEarthFeature && (activeTab === 'info' || activeTab === 'temperature') && (
           <div className="space-y-2.5">
+            {activeTab === 'info' && (
+              <>
             {/* Illumination & Shadow Summary Grid */}
             <div className="grid grid-cols-2 gap-2 font-mono">
               <div className="p-2.5 rounded-xl bg-[#0C0D12] border border-slate-800/80 space-y-1">
@@ -1709,10 +1826,12 @@ export default function FeaturePanel({
                 <span className="text-[10px] text-slate-400 block">Lidar Nominal</span>
               </div>
             </div>
+              </>
+            )}
 
             {/* Surface Radiative Thermal Regime (Calculated — Analytical Radiative Balance Model) */}
-            {localThermal && (
-              <div className="p-2.5 rounded-xl bg-[#0C0D12] border border-slate-800/80 space-y-2">
+            {activeTab === 'temperature' && localThermal && (
+              <div className="p-2.5 rounded-xl bg-[#0A121E] border border-slate-800/80 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold text-white flex items-center gap-1.5">
                     <Thermometer className="w-3.5 h-3.5 text-cyan-400" />
@@ -1766,29 +1885,11 @@ export default function FeaturePanel({
               </div>
             )}
 
-            {/* 360° Interactive Horizon Chart */}
-            <div className="p-2.5 rounded-xl bg-[#0C0D12] border border-slate-800/80 space-y-2">
-              <div className="flex items-center justify-between text-[10px] font-mono text-slate-400">
-                <span className="text-white font-semibold">
-                  360° Horizon Mask, Sun Track &amp; Libration Zone
-                </span>
-                <span>LOLA Altimetry</span>
-              </div>
-              <HorizonViewChart
-                siteId={siteId}
-                latitude={featLat}
-                longitude={featLon}
-                moonFeature={moonPoint}
-                startMs={trackStartMs}
-                currentSun={currentSun}
-                currentEarth={currentEarth}
-              />
-            </div>
           </div>
         )}
 
         {/* ================================================================= */}
-        {/* TAB 4: COMMUNICATION (Direct-to-Earth Link Analyzer)               */}
+        {/* TAB 2: COMMUNICATION (Direct-to-Earth Link Analyzer)               */}
         {/* ================================================================= */}
         {!isEarthFeature && activeTab === 'communication' && (
           <div className="space-y-2.5">
@@ -1897,10 +1998,12 @@ export default function FeaturePanel({
         )}
 
         {/* ================================================================= */}
-        {/* TAB 5: DOSSIER                                                    */}
+        {/* TAB 4: DOSSIER */}
         {/* ================================================================= */}
         {!isEarthFeature && activeTab === 'dossier' && (
           <div className="space-y-2.5">
+            {activeTab === 'dossier' && (
+              <>
             {/* Multi-Day Landing Window Suitability Verdict */}
             <div className="p-2.5 rounded-xl bg-[#0C0D12] border border-slate-800/80 space-y-2.5">
               <div className="flex items-center justify-between gap-2">
@@ -2033,106 +2136,9 @@ export default function FeaturePanel({
                 )}
               </div>
             )}
+              </>
+            )}
 
-            {/* Scientific Context & Physical Description */}
-            <div className="p-2.5 rounded-xl bg-[#0C0D12] border border-slate-800/80 space-y-1.5">
-              <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 block">
-                Site Context &amp; Provenance
-              </span>
-              <p
-                className="text-xs text-slate-300 leading-relaxed"
-                style={
-                  isContextExpanded
-                    ? undefined
-                    : {
-                        display: '-webkit-box',
-                        WebkitBoxOrient: 'vertical',
-                        WebkitLineClamp: 3,
-                        overflow: 'hidden',
-                      }
-                }
-              >
-                {siteContextDescription}
-              </p>
-              {siteContextDescription.length > 120 && (
-                <button
-                  type="button"
-                  aria-expanded={isContextExpanded}
-                  onClick={() => setIsContextExpanded((expanded) => !expanded)}
-                  className="text-[10px] font-mono text-cyan-400 hover:text-cyan-300 transition-colors"
-                >
-                  {isContextExpanded ? 'Show less' : 'Read full description'}
-                </button>
-              )}
-              <div className="pt-1 flex items-center justify-between text-[10px] font-mono text-slate-400 border-t border-slate-800/70">
-                <span>Datum: IAU Moon 2000 (R₀ = 1,737.4 km)</span>
-                <a
-                  href={
-                    clpsData?.referenceLinks?.[0]?.url ||
-                    'https://lunar.gsfc.nasa.gov/'
-                  }
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-cyan-400 hover:text-cyan-300"
-                >
-                  <span>NASA LRO / PDS</span>
-                  <ExternalLink className="w-2.5 h-2.5" />
-                </a>
-              </div>
-              <div className="text-[9.5px] font-mono text-slate-400 pt-1 border-t border-slate-800/70">
-                Suitability scores are decision-support approximations computed from LOLA DEM altimetry and DE440 ephemerides—not official NASA flight certification.
-              </div>
-            </div>
-
-            {/* NOAA SWPC Space Weather Telemetry */}
-            <div className="p-2.5 rounded-xl bg-[#0C0D12] border border-slate-800/80 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-white flex items-center gap-1.5">
-                  <Wind className="w-3.5 h-3.5 text-cyan-400" />
-                  <span>Space Weather Telemetry (NOAA SWPC)</span>
-                </span>
-                <button
-                  type="button"
-                  onClick={() => loadWeather(true)}
-                  disabled={isWeatherLoading}
-                  title="Refresh space weather feeds"
-                  className="p-1 rounded-md bg-[#050507] hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800 transition-colors"
-                >
-                  <RefreshCw className={`w-3 h-3 ${isWeatherLoading ? 'animate-spin' : ''}`} />
-                </button>
-              </div>
-              <div className="grid grid-cols-3 gap-1.5 font-mono text-xs">
-                <div className="p-2 rounded-lg bg-[#050507] border border-slate-800/70">
-                  <span className="text-[9.5px] text-slate-400 block">Solar Wind</span>
-                  <div className="text-xs font-bold text-white tabular-nums mt-0.5">
-                    {spaceWeather.speed != null ? `${spaceWeather.speed} km/s` : 'Standby'}
-                  </div>
-                  <span className="text-[9px] text-cyan-400 block truncate">
-                    {spaceWeather.speedStatus}
-                  </span>
-                </div>
-                <div className="p-2 rounded-lg bg-[#050507] border border-slate-800/70">
-                  <span className="text-[9.5px] text-slate-400 block">Proton Density</span>
-                  <div className="text-xs font-bold text-white tabular-nums mt-0.5">
-                    {spaceWeather.density != null ? `${spaceWeather.density} p/cm³` : '—'}
-                  </div>
-                  <span className="text-[9px] text-slate-400 block">Plasma stream</span>
-                </div>
-                <div className="p-2 rounded-lg bg-[#050507] border border-slate-800/70">
-                  <span className="text-[9.5px] text-slate-400 block">IMF Bz / Bt</span>
-                  <div className="text-xs font-bold text-amber-300 tabular-nums mt-0.5">
-                    {spaceWeather.bz != null ? `${spaceWeather.bz} nT` : '—'}
-                  </div>
-                  <span className="text-[9px] text-slate-400 block truncate">
-                    Bt: {spaceWeather.bt != null ? `${spaceWeather.bt} nT` : 'N/A'}
-                  </span>
-                </div>
-              </div>
-              <div className="text-[9px] font-mono text-slate-400 flex items-center justify-between border-t border-slate-800/60 pt-1">
-                <span className="truncate max-w-[240px]">{spaceWeather.source}</span>
-                <span>{spaceWeather.isFallback ? 'Simulated' : 'Live NOAA'}</span>
-              </div>
-            </div>
           </div>
         )}
       </div>

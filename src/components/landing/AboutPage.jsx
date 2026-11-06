@@ -3,10 +3,10 @@ import { ArrowUpRight, Compass, Globe2, Users } from 'lucide-react';
 import PublicPageHeader from '../common/PublicPageHeader.jsx';
 
 const team = [
-  { name: 'Mishkatul Habib Kabbo', role: 'Presenter & Video Person', colors: ['#181A20', '#272A34'] },
-  { name: 'Nahid Iqbal', role: 'Data Person', colors: ['#14161B', '#22252E'] },
-  { name: 'Rafid Muammar', role: 'Designer', colors: ['#181A20', '#272A34'] },
-  { name: 'Yeasin Anzam Rifat', role: 'Builder', colors: ['#14161B', '#22252E'] },
+  { name: 'Mishkatul Habib Kabbo', role: 'UI/UX', colors: ['#0E7490', '#22D3EE'] },
+  { name: 'Nahid Iqbal', role: 'Presenter & Video Person', colors: ['#047857', '#34D399'] },
+  { name: 'Rafid Muammar', role: 'Data Person', colors: ['#4338CA', '#818CF8'] },
+  { name: 'Yeasin Anzam Rifat', role: 'Builder', colors: ['#B45309', '#FBBF24'] },
 ];
 
 function PlaceholderPortrait({ name, colors }) {

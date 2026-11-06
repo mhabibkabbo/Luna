@@ -4,7 +4,7 @@ import {
   Compass,
   Home,
   Lightbulb,
-  Orbit,
+  Clock,
   RotateCw,
   Ruler,
 } from 'lucide-react';
@@ -12,7 +12,7 @@ import NavTooltip from './NavTooltip.jsx';
 
 /**
  * Compact left-side visualization toolbar.
- * Houses map manipulation, layer controls, and ephemeris actions.
+ * Houses map manipulation, layer controls, and time controls.
  * Hovering any button displays an animated name pill emerging to the right.
  */
 export default function LeftSidebarNav({
@@ -143,13 +143,13 @@ export default function LeftSidebarNav({
         </NavTooltip>
       )}
 
-      {/* Ephemeris & Time Engine (3D Globe only) */}
+      {/* Time controls (3D Globe only) */}
       {isMoon && !is2DMode && (
-        <NavTooltip label="Ephemeris Engine" shortcut="E">
+        <NavTooltip label="Time Machine" shortcut="E">
           <button
             type="button"
             onClick={onToggleCelestial}
-            aria-label="Toggle celestial ephemeris engine"
+            aria-label="Toggle Time Machine"
             aria-pressed={isCelestialOpen}
             className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 ${
               isCelestialOpen
@@ -157,7 +157,7 @@ export default function LeftSidebarNav({
                 : 'text-[#8E95A5] hover:text-white hover:bg-white/[0.06]'
             }`}
           >
-            <Orbit className="w-4 h-4" />
+            <Clock className="w-4 h-4" />
           </button>
         </NavTooltip>
       )}
