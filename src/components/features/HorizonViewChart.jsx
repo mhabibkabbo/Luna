@@ -1,4 +1,5 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState, useEffect, useId } from "react";
+import { Eye, HelpCircle, Compass, AlertTriangle, CheckCircle2 } from "lucide-react";
 import {
   computeCelestialState,
   solarPosition,
@@ -10,6 +11,7 @@ import {
   HORIZON_TABLE,
   getHorizonProfile,
   horizonAt,
+  ensurePolarDemLoaded,
 } from "../../utils/horizons.js";
 import {
   COMMUNICATION_TIMELINE_COLORS,
@@ -34,9 +36,9 @@ const HOURS_PER_DAY = 24;
 const AZIMUTH_TICKS = [0, 90, 180, 270, 360];
 const AZIMUTH_LABELS = { 0: "N", 90: "E", 180: "S", 270: "W", 360: "N" };
 
-const sunColor = (status) => SUNLIGHT_TIMELINE_COLORS[status];
-const earthColor = (status) => COMMUNICATION_TIMELINE_COLORS[status];
-const earthTrackColor = (status) => COMMUNICATION_TIMELINE_COLORS[status];
+const sunColor = (status) => SUNLIGHT_TIMELINE_COLORS[status] || "#fde68a";
+const earthColor = (status) => COMMUNICATION_TIMELINE_COLORS[status] || "#60a5fa";
+const earthTrackColor = (status) => COMMUNICATION_TIMELINE_COLORS[status] || "#60a5fa";
 
 function smoothTrackSegments(track, x, y, colorFor) {
   return track.slice(1).flatMap((point, index) => {
@@ -68,15 +70,19 @@ function smoothTrackSegments(track, x, y, colorFor) {
     const cp2x = x1 - (x(useAfter.azimuth) - x0) / 6;
     const cp2y = y1 - (y(useAfter.elevation) - y0) / 6;
 
-    return [{
-      d: `M ${x0} ${y0} C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${x1} ${y1}`,
-      color: colorFor(point.status),
-    }];
+    return [
+      {
+        d: `M ${x0} ${y0} C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${x1} ${y1}`,
+        color: colorFor(point.status),
+      },
+    ];
   });
 }
 
 /**
  * Shared azimuth/elevation plot for the terrain silhouette and apparent Sun/Earth discs.
+ * Uses real NASA LOLA DEM horizon profiles (precomputed or dynamically ray-marched for 80°S-90°S).
+ * Never substitutes fake sine-wave terrain; outside modeled DEM coverage, explicitly marks flat 0° analytical horizon.
  */
 export default function HorizonViewChart({
   siteId,
@@ -87,10 +93,51 @@ export default function HorizonViewChart({
   currentSun,
   currentEarth,
 }) {
-  const profile = getHorizonProfile(HORIZON_TABLE, siteId);
+  const clipId = useId();
+  const earthGradientId = useId();
+  const [demTick, setDemTick] = useState(0);
+  const [standThereMode, setStandThereMode] = useState(false);
+  const [showExplain, setShowExplain] = useState(false);
+
+  useEffect(() => {
+    ensurePolarDemLoaded()
+      .then((grid) => {
+        if (grid) setDemTick((t) => t + 1);
+      })
+      .catch(() => {});
+  }, []);
+
+  const profile = useMemo(
+    () => getHorizonProfile(HORIZON_TABLE, siteId, latitude, longitude),
+    [siteId, latitude, longitude, demTick]
+  );
+
+  // Authentic terrain profile: real LOLA DEM ray-marched profile or explicit flat 0° analytical horizon
+  const effectiveProfile = useMemo(() => {
+    if (profile?.horizon) {
+      return {
+        ...profile,
+        isModeled: true,
+        sourceLabel: profile.isDemRayMarched
+          ? "NASA LOLA 80°S–90°S Ray-Marched DEM"
+          : "NASA LOLA Precomputed Horizon Profile",
+      };
+    }
+    return {
+      horizon: new Array(361).fill(0),
+      site_name: "Unmodeled Non-Polar Coordinate",
+      isModeled: false,
+      sourceLabel: "Unmodeled Terrain (Flat 0° Analytical Horizon)",
+    };
+  }, [profile]);
+
   const data = useMemo(() => {
-    const terrainFn = (azimuthDeg) =>
-      horizonAt(HORIZON_TABLE, siteId, azimuthDeg);
+    const terrainFn = (azimuthDeg) => {
+      if (profile?.horizon) {
+        return horizonAt(HORIZON_TABLE, siteId, azimuthDeg, latitude, longitude) ?? 0;
+      }
+      return 0;
+    };
     const terrain = [];
     for (let az = 0; az <= 360; az += 1) {
       terrain.push({ az, elevation: terrainFn(az) });
@@ -102,8 +149,8 @@ export default function HorizonViewChart({
     for (let i = 0; i < sampleCount; i += 1) {
       const state = computeCelestialState(startMs + i * PATH_STEP_H * 3600000);
       const flatSun = solarPosition(state, latitude, longitude);
-      const terrain = terrainFn(flatSun.azimuthDeg) ?? 0;
-      const sun = solarPosition(state, latitude, longitude, terrain);
+      const tElev = terrainFn(flatSun.azimuthDeg) ?? 0;
+      const sun = solarPosition(state, latitude, longitude, tElev);
       sunTrack.push({
         azimuth: sun.azimuthDeg,
         elevation: sun.elevationDeg,
@@ -114,7 +161,6 @@ export default function HorizonViewChart({
 
       const earth = earthLookFromMoon(state, moonFeature);
       const earthTerrain = terrainFn(earth.azimuthDeg) ?? 0;
-      // Color the forecast by generic Earth-disc visibility over lunar terrain, not a selected ground station's DTE link.
       const hasLineOfSight =
         earth.elevationDeg + earth.radiusDeg > Math.max(0, earthTerrain);
       earthTrack.push({
@@ -127,13 +173,16 @@ export default function HorizonViewChart({
     }
 
     return { terrain, sunTrack, earthTrack };
-  }, [startMs, latitude, longitude, moonFeature, siteId]);
+  }, [startMs, latitude, longitude, moonFeature, siteId, profile]);
+
+  const maxElev = standThereMode ? 25 : MAX_ELEVATION;
+  const elevTicks = standThereMode ? [0, 5, 10, 15, 25] : ELEVATION_TICKS;
 
   const y = (elevation) => {
     const fraction =
-      Math.max(0, Math.min(MAX_ELEVATION, elevation)) / MAX_ELEVATION;
+      Math.max(0, Math.min(maxElev, elevation)) / maxElev;
     const scaled =
-      ELEVATION_LOG_FACTOR === 0
+      standThereMode || ELEVATION_LOG_FACTOR === 0
         ? fraction
         : Math.log1p(ELEVATION_LOG_FACTOR * fraction) /
           Math.log1p(ELEVATION_LOG_FACTOR);
@@ -143,7 +192,7 @@ export default function HorizonViewChart({
   const sunSegments = smoothTrackSegments(data.sunTrack, x, y, sunColor);
   const earthSegments = smoothTrackSegments(data.earthTrack, x, y, earthTrackColor);
   const terrainPoints = data.terrain
-    .map(({ az, elevation }) => `${x(az)},${y(elevation ?? 0)}`)
+    .map(({ az, elevation }) => `${x(az)},${y(Math.max(0, elevation ?? 0))}`)
     .join(" ");
   const terrainPolygon = `${PAD_LEFT},${HORIZON_Y} ${terrainPoints} ${W - PAD_RIGHT},${HORIZON_Y}`;
   const currentSunColor = sunColor(currentSun.status);
@@ -154,13 +203,87 @@ export default function HorizonViewChart({
   const earthY = y(currentEarth.elevationDeg);
   const sunIconY = Math.max(PAD_TOP + 10, sunY);
   const earthIconY = Math.max(PAD_TOP + 10, earthY);
-  const sunAngle = Math.round(currentSun.elevationDeg);
-  const earthAngle = Math.round(currentEarth.elevationDeg);
+  const sunAngle = Math.round(currentSun.elevationDeg * 10) / 10;
+  const earthAngle = Math.round(currentEarth.elevationDeg * 10) / 10;
   const sunLabelX = sunX < W * 0.52 ? sunX + 13 : sunX - 13;
   const earthLabelX = earthX < W * 0.52 ? earthX + 13 : earthX - 13;
+  let sunLabelY = Math.max(PAD_TOP + 3, sunIconY - 12);
+  let earthLabelY = Math.max(PAD_TOP + 3, earthIconY - 12);
+  if (Math.abs(sunX - earthX) < 55 && Math.abs(sunLabelY - earthLabelY) < 16) {
+    if (sunLabelY <= earthLabelY) {
+      sunLabelY = Math.max(PAD_TOP + 2, sunLabelY - 7);
+      earthLabelY = Math.min(HORIZON_Y - 4, earthLabelY + 9);
+    } else {
+      earthLabelY = Math.max(PAD_TOP + 2, earthLabelY - 7);
+      sunLabelY = Math.min(HORIZON_Y - 4, sunLabelY + 9);
+    }
+  }
 
   return (
-    <div className="w-full space-y-1">
+    <div className="w-full space-y-1.5">
+      {/* Mode & Provenance Header Bar */}
+      <div className="flex items-center justify-between gap-1.5 text-[10px] font-mono">
+        <span
+          className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded border truncate ${
+            effectiveProfile.isModeled
+              ? "bg-emerald-950/60 border-emerald-500/40 text-emerald-300"
+              : "bg-amber-950/60 border-amber-500/40 text-amber-300"
+          }`}
+          title={effectiveProfile.sourceLabel}
+        >
+          {effectiveProfile.isModeled ? (
+            <CheckCircle2 className="w-3 h-3 shrink-0" />
+          ) : (
+            <AlertTriangle className="w-3 h-3 shrink-0" />
+          )}
+          <span className="truncate">{effectiveProfile.sourceLabel}</span>
+        </span>
+
+        <div className="flex items-center gap-1 shrink-0">
+          <button
+            type="button"
+            onClick={() => setStandThereMode((v) => !v)}
+            className={`px-2 py-0.5 rounded border flex items-center gap-1 transition-colors ${
+              standThereMode
+                ? "bg-cyan-500/20 border-cyan-400 text-cyan-200 font-bold"
+                : "bg-slate-900 border-slate-700 text-slate-300 hover:text-white"
+            }`}
+            title="Switch between 0–90° Sky Track and 0–25° astronaut surface panorama"
+          >
+            <Eye className="w-3 h-3" />
+            <span>{standThereMode ? "Panorama (0–25°)" : "Stand-There"}</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowExplain((v) => !v)}
+            className={`p-1 rounded border transition-colors ${
+              showExplain
+                ? "bg-cyan-500/20 border-cyan-400 text-cyan-200"
+                : "bg-slate-900 border-slate-700 text-slate-400 hover:text-white"
+            }`}
+            title="Explain this 360° horizon chart"
+          >
+            <HelpCircle className="w-3 h-3" />
+          </button>
+        </div>
+      </div>
+
+      {showExplain && (
+        <div className="p-2.5 rounded-lg bg-slate-900/90 border border-cyan-500/30 text-[10.5px] text-slate-200 leading-relaxed space-y-1">
+          <div className="font-semibold text-cyan-300 flex items-center gap-1.5">
+            <Compass className="w-3.5 h-3.5" />
+            <span>How to Read the 360° Lunar Horizon Mask</span>
+          </div>
+          <p className="text-slate-300">
+            Imagine standing on the lunar surface looking all the way around from{" "}
+            <strong>North (0°) → East (90°) → South (180°) → West (270°)</strong>. The teal silhouette shows surrounding crater rims and mountains from NASA LOLA laser altimetry.
+          </p>
+          <p className="text-slate-300">
+            At the South Pole, the Sun circles near the horizon (0°–7°), while Earth hovers inside a ~14°×13° libration box near 0°E. Whenever either disc drops behind the teal mountain silhouette, solar power or Direct-to-Earth radio is blocked!
+          </p>
+        </div>
+      )}
+
       <svg
         viewBox={`0 0 ${W} ${H}`}
         preserveAspectRatio="xMidYMid meet"
@@ -169,11 +292,11 @@ export default function HorizonViewChart({
         aria-label="Terrain horizon with the predicted paths of the Sun and Earth over the next 30 days"
       >
         <defs>
-          <linearGradient id="earth-globe" x1="0" x2="1" y1="0" y2="1">
+          <linearGradient id={earthGradientId} x1="0" x2="1" y1="0" y2="1">
             <stop offset="0%" stopColor="#60a5fa" />
             <stop offset="100%" stopColor="#1d4ed8" />
           </linearGradient>
-          <clipPath id="horizon-plot-clip">
+          <clipPath id={clipId}>
             <rect
               x={PAD_LEFT}
               y={PAD_TOP}
@@ -193,7 +316,7 @@ export default function HorizonViewChart({
             strokeWidth="0.7"
           />
         ))}
-        {ELEVATION_TICKS.map((elevation) => (
+        {elevTicks.map((elevation) => (
           <g key={`elevation-${elevation}`}>
             <line
               x1={PAD_LEFT}
@@ -207,7 +330,7 @@ export default function HorizonViewChart({
             <text
               x={PAD_LEFT - 5}
               y={y(elevation) + 2.5}
-              fontSize="7"
+              fontSize="8"
               fill="#94a3b8"
               textAnchor="end"
             >
@@ -224,19 +347,7 @@ export default function HorizonViewChart({
           strokeWidth="0.8"
         />
 
-        <g clipPath="url(#horizon-plot-clip)">
-          {profile?.horizon && (
-            <>
-              <polygon points={terrainPolygon} fill="#334155" fillOpacity="0.85" />
-              <polyline
-                points={terrainPoints}
-                fill="none"
-                stroke="#94a3b8"
-                strokeWidth="0.9"
-              />
-            </>
-          )}
-
+        <g clipPath={`url(#${clipId})`}>
           {sunSegments.map((segment, index) => (
             <path
               key={`sun-path-${index}`}
@@ -287,6 +398,24 @@ export default function HorizonViewChart({
             </circle>
           ))}
 
+          {/* Draw terrain silhouette AFTER sky tracks in Stand-There mode so mountains visually occlude the Sun/Earth discs */}
+          {effectiveProfile?.horizon && (
+            <>
+              <polygon
+                points={terrainPolygon}
+                fill="#0F172A"
+                fillOpacity={standThereMode ? "0.94" : "0.82"}
+              />
+              <polyline
+                points={terrainPoints}
+                fill="none"
+                stroke={effectiveProfile.isModeled ? "#00D2C4" : "#F59E0B"}
+                strokeWidth="1.2"
+                strokeDasharray={effectiveProfile.isModeled ? undefined : "4 3"}
+              />
+            </>
+          )}
+
           {currentSun.elevationDeg >= 0 ? (
             <>
               <line
@@ -300,8 +429,8 @@ export default function HorizonViewChart({
                 opacity="0.8"
               />
               <g transform={`translate(${sunX} ${sunIconY})`}>
-                <circle r="5" fill="#fbbf24" stroke="#fef3c7" strokeWidth="1" />
-                <title>Sun · {currentSun.status} · elevation {currentSun.elevationDeg.toFixed(1)}°</title>
+                <circle r={standThereMode ? "6" : "5"} fill="#fbbf24" stroke="#fef3c7" strokeWidth="1" />
+                <title>Sun · {currentSun.status} · elevation {currentSun.elevationDeg != null ? `${currentSun.elevationDeg.toFixed(1)}°` : '—'}</title>
               </g>
             </>
           ) : (
@@ -311,7 +440,7 @@ export default function HorizonViewChart({
               stroke="#fef3c7"
               strokeWidth="0.7"
             >
-              <title>Sun below horizon · elevation {currentSun.elevationDeg.toFixed(1)}°</title>
+              <title>Sun below horizon · elevation {currentSun.elevationDeg != null ? `${currentSun.elevationDeg.toFixed(1)}°` : '—'}</title>
             </path>
           )}
           {currentEarth.elevationDeg >= 0 ? (
@@ -327,7 +456,7 @@ export default function HorizonViewChart({
                 opacity="0.8"
               />
               <g transform={`translate(${earthX} ${earthIconY})`}>
-                <circle r="8" fill="url(#earth-globe)" stroke="#dbeafe" strokeWidth="1" />
+                <circle r={standThereMode ? "9.5" : "8"} fill={`url(#${earthGradientId})`} stroke="#dbeafe" strokeWidth="1" />
                 <path
                   d="M-5 -3  -2 -6  1 -5  2 -2  5 -1  4 2  1 3  0 6 -3 4 -4 1 -6 0Z M2 4 5 3 6 5 3 7Z"
                   fill="#34d399"
@@ -335,7 +464,7 @@ export default function HorizonViewChart({
                   strokeWidth="0.6"
                   strokeLinejoin="round"
                 />
-                <title>Earth · {currentEarth.status} · elevation {currentEarth.elevationDeg.toFixed(1)}°</title>
+                <title>Earth · {currentEarth.status} · elevation {currentEarth.elevationDeg != null ? `${currentEarth.elevationDeg.toFixed(1)}°` : '—'}</title>
               </g>
             </>
           ) : (
@@ -345,14 +474,14 @@ export default function HorizonViewChart({
               stroke="#dbeafe"
               strokeWidth="0.7"
             >
-              <title>Earth below horizon · elevation {currentEarth.elevationDeg.toFixed(1)}°</title>
+              <title>Earth below horizon · elevation {currentEarth.elevationDeg != null ? `${currentEarth.elevationDeg.toFixed(1)}°` : '—'}</title>
             </path>
           )}
 
           <text
             x={sunLabelX}
-            y={Math.max(PAD_TOP + 3, sunIconY - 12)}
-            fontSize="9"
+            y={sunLabelY}
+            fontSize="9.5"
             fontWeight="600"
             fill="#fde68a"
             textAnchor={sunX < W * 0.52 ? "start" : "end"}
@@ -365,8 +494,8 @@ export default function HorizonViewChart({
           </text>
           <text
             x={earthLabelX}
-            y={Math.max(PAD_TOP + 3, earthIconY - 12)}
-            fontSize="9"
+            y={earthLabelY}
+            fontSize="9.5"
             fontWeight="600"
             fill="#bfdbfe"
             textAnchor={earthX < W * 0.52 ? "start" : "end"}
@@ -384,23 +513,24 @@ export default function HorizonViewChart({
             key={`label-${az}`}
             x={az === 0 ? PAD_LEFT + 3 : az === 360 ? W - PAD_RIGHT - 3 : x(az)}
             y={H - 5}
-            fontSize="8"
+            fontSize="8.5"
             fill="#94a3b8"
             textAnchor={az === 0 ? "start" : az === 360 ? "end" : "middle"}
           >
-            {AZIMUTH_LABELS[az]}{az === 360 ? "" : ` ${az}°`}
+            {AZIMUTH_LABELS[az]}
+            {az === 360 ? "" : ` ${az}°`}
           </text>
         ))}
       </svg>
 
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[9px] text-slate-400">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-slate-300">
         <span className="inline-flex items-center gap-1">
           <i className="h-2 w-2 rounded-full" style={{ backgroundColor: SUNLIGHT_TIMELINE_COLORS.sunlit }} />
           Sunlit
         </span>
         <span className="inline-flex items-center gap-1">
           <i className="h-2 w-2 rounded-full" style={{ backgroundColor: SUNLIGHT_TIMELINE_COLORS.blocked }} />
-          Sun terrain-blocked
+          Terrain-blocked
         </span>
         <span className="inline-flex items-center gap-1">
           <i className="h-2 w-2 rounded-full" style={{ backgroundColor: SUNLIGHT_TIMELINE_COLORS.night }} />
@@ -408,25 +538,13 @@ export default function HorizonViewChart({
         </span>
         <span className="inline-flex items-center gap-1">
           <i className="h-2 w-2 rounded-full" style={{ backgroundColor: COMMUNICATION_TIMELINE_COLORS.clear }} />
-          DTE link
-        </span>
-        <span className="inline-flex items-center gap-1">
-          <i className="h-2 w-2 rounded-full" style={{ backgroundColor: COMMUNICATION_TIMELINE_COLORS.doubtful }} />
-          DTE marginal
-        </span>
-        <span className="inline-flex items-center gap-1">
-          <i className="h-2 w-2 rounded-full" style={{ backgroundColor: COMMUNICATION_TIMELINE_COLORS.away }} />
-          DTE site facing away
+          DTE Link
         </span>
         <span className="inline-flex items-center gap-1">
           <i className="h-2 w-2 rounded-full" style={{ backgroundColor: COMMUNICATION_TIMELINE_COLORS.blocked }} />
-          DTE blocked
+          DTE Blocked
         </span>
-        <span className="inline-flex items-center gap-1">
-          <i className="h-2 w-2 rounded-full border border-white" />
-          Current
-        </span>
-        <span className="ml-auto">Next {PATH_DAYS} d</span>
+        <span className="ml-auto font-mono text-slate-400">Next {PATH_DAYS}d</span>
       </div>
     </div>
   );

@@ -8,6 +8,7 @@ import 'cesium/Build/Cesium/Widgets/widgets.css';
 import { createCelestialOverlay } from './moonCelestial.js';
 import { createMoonGlobe } from './moonGlobe.js';
 import { createMoonFeatures } from './moonFeatures.js';
+import { createGlobeCameraControls } from '../globeCameraControls.js';
 import { celestialTimeStore } from '../../utils/celestialTime.js';
 
 // Ensure no Cesium Ion authentication prompt
@@ -53,46 +54,47 @@ function getLunarMarkerDataUrl(category = 'crater_minor', isSelected = false) {
 
   ctx.clearRect(0, 0, width, height);
 
-  // Configuration per marker type
-  let primaryColor = '#06b6d4'; // cyan
-  let glowColor = 'rgba(6, 182, 212, 0.45)';
+  // Configuration per marker type - NASA Greenish-Blue / Cyan-Teal palette
+  // Selected markers use high-contrast warm solar amber (#FF9E00) to contrast with cool cyan and grey regolith
+  let primaryColor = isSelected ? '#FF9E00' : '#00D2C4';
+  let glowColor = isSelected ? 'rgba(255, 158, 0, 0.95)' : 'rgba(0, 210, 196, 0.5)';
 
   switch (category) {
     case 'south_pole':
-      primaryColor = isSelected ? '#38bdf8' : '#00f2fe';
-      glowColor = 'rgba(0, 242, 254, 0.7)';
+      primaryColor = isSelected ? '#FF9E00' : '#00D2C4';
+      glowColor = isSelected ? 'rgba(255, 158, 0, 0.95)' : 'rgba(0, 210, 196, 0.85)';
       break;
     case 'landing_apollo':
-      primaryColor = isSelected ? '#38bdf8' : '#06b6d4';
-      glowColor = 'rgba(6, 182, 212, 0.6)';
+      primaryColor = isSelected ? '#FF9E00' : '#00E5FF';
+      glowColor = isSelected ? 'rgba(255, 158, 0, 0.95)' : 'rgba(0, 229, 255, 0.75)';
       break;
     case 'landing_robotic':
-      primaryColor = isSelected ? '#34d399' : '#10b981';
-      glowColor = 'rgba(16, 185, 129, 0.6)';
+      primaryColor = isSelected ? '#FF9E00' : '#14B8A6';
+      glowColor = isSelected ? 'rgba(255, 158, 0, 0.95)' : 'rgba(20, 184, 166, 0.7)';
       break;
     case 'crater_major':
-      primaryColor = isSelected ? '#f8fafc' : '#e2e8f0';
-      glowColor = 'rgba(241, 245, 249, 0.5)';
+      primaryColor = isSelected ? '#FF9E00' : '#06B6D4';
+      glowColor = isSelected ? 'rgba(255, 158, 0, 0.95)' : 'rgba(6, 182, 212, 0.65)';
       break;
     case 'crater_minor':
-      primaryColor = isSelected ? '#cbd5e1' : '#94a3b8';
-      glowColor = 'rgba(148, 163, 184, 0.4)';
+      primaryColor = isSelected ? '#FF9E00' : '#0284C7';
+      glowColor = isSelected ? 'rgba(255, 158, 0, 0.95)' : 'rgba(2, 132, 199, 0.55)';
       break;
     case 'mountain':
-      primaryColor = isSelected ? '#fbbf24' : '#f59e0b';
-      glowColor = 'rgba(245, 158, 11, 0.6)';
+      primaryColor = isSelected ? '#FF9E00' : '#38BDF8';
+      glowColor = isSelected ? 'rgba(255, 158, 0, 0.95)' : 'rgba(56, 189, 248, 0.65)';
       break;
     case 'mare':
-      primaryColor = isSelected ? '#60a5fa' : '#38bdf8';
-      glowColor = 'rgba(56, 189, 248, 0.5)';
+      primaryColor = isSelected ? '#FF9E00' : '#0D9488';
+      glowColor = isSelected ? 'rgba(255, 158, 0, 0.95)' : 'rgba(13, 148, 136, 0.6)';
       break;
     case 'valley':
-      primaryColor = isSelected ? '#d8b4fe' : '#c084fc';
-      glowColor = 'rgba(192, 132, 252, 0.5)';
+      primaryColor = isSelected ? '#FF9E00' : '#22D3EE';
+      glowColor = isSelected ? 'rgba(255, 158, 0, 0.95)' : 'rgba(34, 211, 238, 0.6)';
       break;
     case 'custom_pin':
-      primaryColor = isSelected ? '#fda4af' : '#f43f5e';
-      glowColor = 'rgba(244, 63, 94, 0.75)';
+      primaryColor = isSelected ? '#FF9E00' : '#00D2C4';
+      glowColor = isSelected ? 'rgba(255, 158, 0, 0.95)' : 'rgba(0, 210, 196, 0.85)';
       break;
   }
 
@@ -133,7 +135,7 @@ function getLunarMarkerDataUrl(category = 'crater_minor', isSelected = false) {
     // Pulsing polar reticle
     ctx.beginPath();
     ctx.arc(cx, cy, 36, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(0, 242, 254, 0.4)';
+    ctx.strokeStyle = 'rgba(229, 154, 109, 0.4)';
     ctx.lineWidth = 4;
     ctx.stroke();
 
@@ -163,7 +165,7 @@ function getLunarMarkerDataUrl(category = 'crater_minor', isSelected = false) {
     // Mission badge with outer ring & inner icon
     ctx.beginPath();
     ctx.arc(cx, cy, 30, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(5, 8, 17, 0.9)';
+    ctx.fillStyle = 'rgba(18, 17, 13, 0.9)';
     ctx.fill();
     ctx.strokeStyle = primaryColor;
     ctx.lineWidth = 5;
@@ -175,16 +177,16 @@ function getLunarMarkerDataUrl(category = 'crater_minor', isSelected = false) {
     ctx.fillStyle = primaryColor;
     ctx.fill();
 
-    // Center white dot
+    // Center dot
     ctx.beginPath();
     ctx.arc(cx, cy, 7, 0, Math.PI * 2);
-    ctx.fillStyle = '#ffffff';
+    ctx.fillStyle = '#F4EFE6';
     ctx.fill();
   } else if (category === 'mountain') {
     // Peak triangle badge
     ctx.beginPath();
     ctx.arc(cx, cy, 28, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(5, 8, 17, 0.85)';
+    ctx.fillStyle = 'rgba(18, 17, 13, 0.85)';
     ctx.fill();
     ctx.strokeStyle = primaryColor;
     ctx.lineWidth = 4;
@@ -201,7 +203,7 @@ function getLunarMarkerDataUrl(category = 'crater_minor', isSelected = false) {
     // Celestial sea plain badge
     ctx.beginPath();
     ctx.arc(cx, cy, 26, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(5, 8, 17, 0.85)';
+    ctx.fillStyle = 'rgba(18, 17, 13, 0.85)';
     ctx.fill();
     ctx.strokeStyle = primaryColor;
     ctx.lineWidth = 4;
@@ -215,7 +217,7 @@ function getLunarMarkerDataUrl(category = 'crater_minor', isSelected = false) {
     // Crater circular ring with illuminated center
     ctx.beginPath();
     ctx.arc(cx, cy, category === 'crater_major' ? 26 : 18, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(5, 8, 17, 0.85)';
+    ctx.fillStyle = 'rgba(18, 17, 13, 0.85)';
     ctx.fill();
     ctx.strokeStyle = primaryColor;
     ctx.lineWidth = 4;
@@ -253,6 +255,10 @@ export function createMoon(container, callbacks = {}) {
     /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
   );
 
+  if ('default' in Cesium.Ellipsoid) {
+    Cesium.Ellipsoid.default = Cesium.Ellipsoid.MOON;
+  }
+
   // 1. Initialize Cesium.Viewer with Moon Ellipsoid and custom baseLayer (disabling Ion)
   callbacks.onLoadingStageChange?.('Initializing WebGL 3D Planetary Canvas...');
   const moonGlobe = createMoonGlobe();
@@ -266,6 +272,7 @@ export function createMoon(container, callbacks = {}) {
       Cesium.Ellipsoid.MOON
     ),
 
+    skyBox: Cesium.SkyBox.createEarthSkyBox(),
     skyAtmosphere: false,
 
     baseLayerPicker: false,
@@ -311,7 +318,7 @@ export function createMoon(container, callbacks = {}) {
   const scene = viewer.scene;
   scene.backgroundColor = Cesium.Color.TRANSPARENT;
   scene.globe.baseColor = Cesium.Color.fromCssColorString('#0f172a');
-  scene.globe.depthTestAgainstTerrain = true; // Occlude markers on the far side of the Moon
+  scene.globe.depthTestAgainstTerrain = false; // Analytical hemisphere culling in moonFeatures handles far-side occlusion without GPU depth stalls
   scene.highDynamicRange = false;
   scene.msaaSamples = isMobile ? 1 : 2; // Cesium default is 4x MSAA
   scene.fog.enabled = false;
@@ -385,6 +392,18 @@ export function createMoon(container, callbacks = {}) {
   cameraController.enableTranslate = true;
   cameraController.enableZoom = true;
   cameraController.enableTilt = true;
+  // Keep the default two-finger gesture zoom-only instead of tilting during a pinch.
+  cameraController.tiltEventTypes = [
+    Cesium.CameraEventType.MIDDLE_DRAG,
+    {
+      eventType: Cesium.CameraEventType.LEFT_DRAG,
+      modifier: Cesium.KeyboardEventModifier.CTRL,
+    },
+    {
+      eventType: Cesium.CameraEventType.RIGHT_DRAG,
+      modifier: Cesium.KeyboardEventModifier.CTRL,
+    },
+  ];
   cameraController.enableLook = false;
   cameraController.enableCollisionDetection = false;
   cameraController.inertiaSpin = isMobile ? 0.82 : 0.88;
@@ -393,6 +412,17 @@ export function createMoon(container, callbacks = {}) {
   cameraController.zoomFactor = 2.0;
   cameraController.minimumZoomDistance = 20000.0; // 20 km minimum altitude
   cameraController.maximumZoomDistance = 1_000_000_000; // 1M km overview
+
+  // Google Earth style drag / zoom (replaces the pole-locked stock controller).
+  const globeControls = createGlobeCameraControls(viewer, {
+    ellipsoid: Cesium.Ellipsoid.MOON,
+    minHeight: 20000,
+    maxHeight: 1_000_000_000,
+    isMobile,
+  });
+
+  // Prevent near-plane frustum slicing into lunar features
+  viewer.camera.frustum.near = 1.0;
 
   // Enable Cesium's built-in Sun
   if (!scene.sun) {
@@ -412,11 +442,16 @@ export function createMoon(container, callbacks = {}) {
 
 
   /**
-   * Smoothly animates the camera to a given selenographic coordinate.
+   * Smoothly animates the camera to a given selenographic coordinate,
+   * centering on the site while strictly maintaining the current camera altitude/zoom.
    */
-  const flyToCoordinate = (lon, lat, height = 1400000, duration = 1.6) => {
+  const flyToCoordinate = (lon, lat, height = null, duration = 1.2) => {
+    const currentHeight =
+      viewer.camera.positionCartographic?.height || 1400000;
+    const targetHeight =
+      typeof height === 'number' && height > 100 ? Math.max(height, 20000) : Math.max(currentHeight, 20000);
     viewer.camera.flyTo({
-      destination: Cesium.Cartesian3.fromDegrees(lon, lat, height, Cesium.Ellipsoid.MOON),
+      destination: Cesium.Cartesian3.fromDegrees(lon, lat, targetHeight, Cesium.Ellipsoid.MOON),
       duration,
       easingFunction: Cesium.EasingFunction.QUADRATIC_OUT,
     });
@@ -602,7 +637,7 @@ export function createMoon(container, callbacks = {}) {
    */
   const resetOverview = () => {
     viewer.camera.flyTo({
-      destination: Cesium.Cartesian3.fromDegrees(0, 0, 7500000, Cesium.Ellipsoid.MOON),
+      destination: Cesium.Cartesian3.fromDegrees(0, 0, 9200000, Cesium.Ellipsoid.MOON),
       duration: 1.4,
       easingFunction: Cesium.EasingFunction.QUADRATIC_OUT,
     });
@@ -655,19 +690,19 @@ export function createMoon(container, callbacks = {}) {
 
   // Lighting toggle
   let isLightingEnabled = true;
-  const toggleLighting = () => {
-    isLightingEnabled = !isLightingEnabled;
+  const setLightingEnabled = (enabled) => {
+    isLightingEnabled = Boolean(enabled);
     scene.globe.enableLighting = isLightingEnabled;
     scene.requestRender();
     return isLightingEnabled;
   };
+  const toggleLighting = () => setLightingEnabled(!isLightingEnabled);
 
   // Destruction / cleanup
   const destroy = () => {
     if (destroyed) return;
     destroyed = true;
-
-    
+    globeControls.destroy();
     if (removeAdaptiveResolutionListener) {
       removeAdaptiveResolutionListener();
     }
@@ -696,16 +731,52 @@ export function createMoon(container, callbacks = {}) {
     }
   };
 
+  const waitUntilReady = () => {
+    if (destroyed || viewer.isDestroyed()) return Promise.resolve();
+    return new Promise((resolve) => {
+      let settled = false;
+      let frames = 0;
+      const finish = () => {
+        if (settled) return;
+        settled = true;
+        removeCheck?.();
+        clearTimeout(safetyTimer);
+        resolve();
+      };
+      const safetyTimer = setTimeout(finish, 1400);
+      const removeCheck = scene.postRender.addEventListener(() => {
+        frames += 1;
+        if (scene.globe.tilesLoaded || frames >= 2) {
+          finish();
+        } else {
+          scene.requestRender();
+        }
+      });
+      viewer.resize?.();
+      scene.requestRender();
+    });
+  };
+
   return {
     id: 'moon',
     viewer,
     globe: moonGlobe,
     getViewer: () => viewer,
+    waitUntilReady,
     setActive(active) {
-      viewer.useDefaultRenderLoop = active;
+      if (destroyed || viewer.isDestroyed()) return;
+      if (active && 'default' in Cesium.Ellipsoid) {
+        Cesium.Ellipsoid.default = Cesium.Ellipsoid.MOON;
+      }
+      if (active) {
+        cameraController._ellipsoid = Cesium.Ellipsoid.MOON;
+        viewer.camera._ellipsoid = Cesium.Ellipsoid.MOON;
+        cameraController.enableInputs = true;
+      }
       if (viewer.container) {
         viewer.container.style.display = active ? 'block' : 'none';
       }
+      viewer.useDefaultRenderLoop = active;
       if (active) {
         viewer.resize?.();
         viewer.scene?.requestRender?.();
@@ -721,6 +792,7 @@ export function createMoon(container, callbacks = {}) {
     zoomOut,
     toggleAutoRotate,
     toggleLighting,
+    setLightingEnabled,
     getLightingEnabled: () => isLightingEnabled,
     extras: {
       features: {

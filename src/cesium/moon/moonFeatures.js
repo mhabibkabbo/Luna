@@ -120,6 +120,8 @@ export function createMoonFeatures({ viewer, container, callbacks, isMobile, fly
         if (selectedEntity.label) {
           selectedEntity.label.distanceDisplayCondition = new Cesium.DistanceDisplayCondition(0.0, prevMaxDist);
           selectedEntity.label.fillColor = Cesium.Color.fromCssColorString('#f8fafc');
+          selectedEntity.label.outlineColor = Cesium.Color.fromCssColorString('#000000');
+          selectedEntity.label.outlineWidth = 2;
         }
       } catch {}
       selectedEntity = null;
@@ -127,10 +129,12 @@ export function createMoonFeatures({ viewer, container, callbacks, isMobile, fly
 
     if (!featureId) return;
 
-    const target = [...pinEntities, customPinEntity].find((e) => {
-      const f = e.properties?.feature?.getValue();
-      return f?.id === featureId;
-    });
+    const target = [...pinEntities, customPinEntity]
+      .filter(Boolean)
+      .find((e) => {
+        const f = e?.properties?.feature?.getValue();
+        return f?.id === featureId;
+      });
 
     if (target) {
       selectedEntity = target;
@@ -144,9 +148,12 @@ export function createMoonFeatures({ viewer, container, callbacks, isMobile, fly
             new Cesium.DistanceDisplayCondition(0.0, 1.0e9);
         }
         if (target.label) {
-          // Force selected label visible across orbital zooms
+          // Force selected label visible across orbital zooms with high-contrast amber/gold
           target.label.distanceDisplayCondition = new Cesium.DistanceDisplayCondition(0.0, 5.0e7);
-          target.label.fillColor = Cesium.Color.fromCssColorString('#38bdf8');
+          target.label.fillColor = Cesium.Color.fromCssColorString('#FFB020');
+          target.label.outlineColor = Cesium.Color.fromCssColorString('#060B13');
+          target.label.outlineWidth = 3;
+          target.label.style = Cesium.LabelStyle.FILL_AND_OUTLINE;
         }
       } catch {}
     }
@@ -279,8 +286,8 @@ export function createMoonFeatures({ viewer, container, callbacks, isMobile, fly
         text: `${pinTitle}\n${latStr}, ${lonStr}`,
         font: 'bold 12px "Space Mono", monospace',
         style: Cesium.LabelStyle.FILL_AND_OUTLINE,
-        fillColor: Cesium.Color.fromCssColorString('#ffe4e6'),
-        outlineColor: Cesium.Color.fromCssColorString('#881337'),
+        fillColor: Cesium.Color.fromCssColorString('#FDE68A'),
+        outlineColor: Cesium.Color.fromCssColorString('#451A03'),
         outlineWidth: 2,
         showBackground: true,
         backgroundColor: Cesium.Color.fromCssColorString('rgba(15, 23, 42, 0.94)'),
@@ -309,8 +316,12 @@ export function createMoonFeatures({ viewer, container, callbacks, isMobile, fly
    */
   const clearCustomPin = () => {
     if (customPinEntity) {
+      if (selectedEntity === customPinEntity) {
+        selectedEntity = null;
+      }
       viewer.entities.remove(customPinEntity);
       customPinEntity = null;
+      scene.requestRender();
     }
   };
 
@@ -318,7 +329,7 @@ export function createMoonFeatures({ viewer, container, callbacks, isMobile, fly
   let lastCoordsThrottleTime = 0;
   let lastHoverPickTime = 0;
   const COORDS_THROTTLE_MS = 100;
-  const HOVER_THROTTLE_MS = 140;
+  const HOVER_THROTTLE_MS = 200;
   let pointerIsDown = false;
 
   handler.setInputAction((movement) => {
@@ -360,20 +371,18 @@ export function createMoonFeatures({ viewer, container, callbacks, isMobile, fly
           hoveredEntity = pickedObject.id;
           hoveredEntity.billboard.scale = baseScale * 1.35;
           hoveredEntity.billboard.image = getLunarMarkerDataUrl(markerType, true);
-        }
-
-        scene.requestRender();
-        callbacks.onFeatureHover?.(feature, movement.endPosition.x, movement.endPosition.y);
-      } else {
-        container.style.cursor = 'default';
-        if (hoveredEntity) {
-          const prevBase = hoveredEntity.properties.baseScale?.getValue() || 0.55;
-          const prevType = hoveredEntity.properties.markerType?.getValue() || 'crater_minor';
-          hoveredEntity.billboard.scale = prevBase;
-          hoveredEntity.billboard.image = getLunarMarkerDataUrl(prevType, false);
-          hoveredEntity = null;
           scene.requestRender();
         }
+
+        callbacks.onFeatureHover?.(feature, movement.endPosition.x, movement.endPosition.y);
+      } else if (hoveredEntity) {
+        container.style.cursor = 'default';
+        const prevBase = hoveredEntity.properties.baseScale?.getValue() || 0.55;
+        const prevType = hoveredEntity.properties.markerType?.getValue() || 'crater_minor';
+        hoveredEntity.billboard.scale = prevBase;
+        hoveredEntity.billboard.image = getLunarMarkerDataUrl(prevType, false);
+        hoveredEntity = null;
+        scene.requestRender();
         callbacks.onFeatureHover?.(null, 0, 0);
       }
     }
@@ -404,13 +413,8 @@ export function createMoonFeatures({ viewer, container, callbacks, isMobile, fly
       const feature = pickedObject.id.properties.feature.getValue();
       selectFeaturePin(feature.id);
       callbacks.onFeatureSelect?.(feature);
-      const targetHeight =
-        feature.type === 'mare'
-          ? 2600000
-          : feature.type === 'crater' && feature.diameterKm < 50
-          ? 600000
-          : 1200000;
-      flyToCoordinate(feature.longitude, feature.latitude, targetHeight);
+      // Center the site directly under the camera without changing zoom / altitude
+      flyToCoordinate(feature.longitude, feature.latitude);
       return;
     }
 
@@ -432,7 +436,7 @@ export function createMoonFeatures({ viewer, container, callbacks, isMobile, fly
 
   // 5. Initial Camera Positioning over Lunar Nearside
   viewer.camera.setView({
-    destination: Cesium.Cartesian3.fromDegrees(0, 0, 7500000, Cesium.Ellipsoid.MOON),
+    destination: Cesium.Cartesian3.fromDegrees(0, 0, 9200000, Cesium.Ellipsoid.MOON),
   });
 
 

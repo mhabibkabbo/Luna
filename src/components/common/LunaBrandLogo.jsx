@@ -1,77 +1,53 @@
 import React from 'react';
-import { Moon } from 'lucide-react';
 
 /**
- * Standardized Luna Brand Emblem and Wordmark component.
- * Ensures 100% shared visual identity across the Landing Page, Explorer Workspace,
- * and dialog headers.
+ * Standardized Luna Brand Wordmark & Studio Emblem.
+ * Styled after Hamol Studio & Two-Do warm editorial aesthetic.
  */
 export default function LunaBrandLogo({
   asButton = false,
   onClick,
   className = '',
-  title = 'Luna — CLPS Lunar Mission Browser',
+  title = 'Luna — Spatial Lunar Mission & Site Studio',
+  transparent = true,
 }) {
   const content = (
-  <div className={`flex items-center gap-2.5 shrink-0 group ${className}`}>
-    {/* Brand Icon Box: Transparent with fine border & CLPS Lunar Orbit Emblem */}
-    <div className="w-7 h-7 rounded-lg bg-slate-950/40 border border-slate-700/60 flex items-center justify-center group-hover:border-cyan-500/50 group-hover:bg-cyan-950/20 transition-all duration-300">
-      <svg
-        viewBox="0 0 24 24"
-        className="w-4 h-4"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
+    <div className={`flex items-center gap-2.5 shrink-0 group ${className}`}>
+      <div
+        className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors duration-200 ${
+          transparent
+            ? 'bg-transparent border border-white/15 group-hover:border-[#00D2C4]/60 group-hover:bg-white/5'
+            : 'bg-[#0D1726] border border-[#16283C] group-hover:border-[#00D2C4]/60'
+        }`}
       >
-        <defs>
-          <linearGradient id="orbit-grad" x1="0%" y1="100%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#06b6d4" stopOpacity="0.2" />
-            <stop offset="100%" stopColor="#38bdf8" />
-          </linearGradient>
-        </defs>
+        <svg
+          viewBox="0 0 24 24"
+          className="w-4 h-4"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M 12 3 A 9 9 0 1 0 18.5 18 A 8 8 0 1 1 12 3 Z"
+            className="fill-[#F1F5F9] group-hover:fill-[#00D2C4] transition-colors duration-200"
+          />
+          <circle cx="8" cy="11.5" r="0.85" className="fill-[#34D399]" />
+          <path
+            d="M 3.5 19 C 5 11, 14 7, 19.5 9"
+            stroke="#00D2C4"
+            strokeWidth="1.3"
+            strokeLinecap="round"
+          />
+          <circle cx="19.5" cy="9" r="1.2" className="fill-[#34D399]" />
+        </svg>
+      </div>
 
-        {/* Crescent Moon Base */}
-        <path
-          d="M 12 3 A 9 9 0 1 0 18.5 18 A 8 8 0 1 1 12 3 Z"
-          className="fill-slate-200 group-hover:fill-cyan-100 transition-colors duration-300"
-        />
-
-        {/* Surface Cratering Accents */}
-        <circle cx="8" cy="11.5" r="0.85" className="fill-slate-400 group-hover:fill-cyan-300/80 transition-colors" />
-        <circle cx="10" cy="15" r="0.6" className="fill-slate-400 group-hover:fill-cyan-300/80 transition-colors" />
-
-        {/* CLPS Orbital Trajectory Arc */}
-        <path
-          d="M 3.5 19 C 5 11, 14 7, 19.5 9"
-          stroke="url(#orbit-grad)"
-          strokeWidth="1.25"
-          strokeLinecap="round"
-        />
-
-        {/* Payload / Lander Target Reticle */}
-        <circle cx="19.5" cy="9" r="1" className="fill-white" />
-        <circle
-          cx="19.5"
-          cy="9"
-          r="1.8"
-          className="stroke-cyan-400 group-hover:stroke-cyan-300 transition-colors"
-          strokeWidth="0.6"
-        />
-      </svg>
+      <div className="flex flex-col leading-none text-left">
+        <span className="text-lg font-bold tracking-tight text-[#F1F5F9] group-hover:text-white transition-colors whitespace-nowrap drop-shadow-sm">
+          luna<span className="font-editorial italic font-normal text-[#00D2C4] ml-0.5">studio</span>
+        </span>
+      </div>
     </div>
-
-    {/* Brand Name & Identifier */}
-    <div className="flex items-baseline gap-1.5">
-      <span className="text-[1.2rem] font-semibold tracking-wider text-white uppercase font-orbitron group-hover:text-cyan-200 transition-colors">
-        LUNA
-      </span>
-      <span className="text-[8px] font-mono text-cyan-400/80 tracking-widest uppercase hidden sm:inline">
-        CLPS BROWSER
-      </span>
-
-    </div>
-
-  </div>
-);
+  );
 
   if (asButton) {
     return (
@@ -79,7 +55,7 @@ export default function LunaBrandLogo({
         type="button"
         onClick={onClick}
         title={title}
-        className="group flex items-center h-8 px-1.5 rounded-lg border border-transparent hover:border-slate-800/80 hover:bg-slate-900/60 focus:outline-none focus-visible:ring-1 focus-visible:ring-cyan-400 transition-all active:scale-[0.98]"
+        className="group flex items-center h-9 px-2 rounded-xl bg-transparent hover:bg-white/5 border border-transparent hover:border-white/10 focus:outline-none transition-all active:scale-[0.98]"
       >
         {content}
       </button>

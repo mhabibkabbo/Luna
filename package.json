@@ -7,13 +7,21 @@
     "dev": "vite --host 0.0.0.0 --port 3000",
     "build": "vite build",
     "preview": "vite preview --host 0.0.0.0 --port 3000",
+    "test": "node --test tests/*.test.js",
     "lint": "node -e 'console.log(\"Lint passed\")'"
   },
   "dependencies": {
+    "@types/d3": "^7.4.3",
     "astronomy-engine": "^2.1.19",
     "cesium": "^1.145.0",
+    "d3": "^7.9.1",
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.9",
+    "leaflet": "^1.9.4",
     "lucide-react": "^0.468.0",
     "ol": "^10.10.0",
+    "proj4": "^2.22.0",
+    "proj4leaflet": "^1.0.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "recharts": "^2.15.4",
@@ -30,8 +38,5 @@
     "tailwindcss": "^3.4.19",
     "typescript": "^5.9.3",
     "vite": "^6.4.3"
-  },
-  "allowScripts": {
-    "esbuild@0.25.12": true
   }
 }

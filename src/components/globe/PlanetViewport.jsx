@@ -1,28 +1,25 @@
 /**
  * @file PlanetViewport.jsx
- * React viewport that mounts and coordinates the Moon and Earth Cesium viewers.
+ * React viewport that mounts and coordinates the Moon and Earth Cesium viewers,
+ * enforcing a complete map readiness gate before revealing the switched planet.
  */
 
 import React, { useEffect, useRef, useState, useImperativeHandle, forwardRef } from 'react';
-import { RotateCw, Sun, Globe, Plus, Minus, Compass, Target, MapPin, Moon } from 'lucide-react';
+import { MapPin } from 'lucide-react';
 import { LUNAR_FEATURES } from '../../data/lunarFeatures.js';
 import { LANDING_SITES } from '../../data/landingSites.js';
 import { createPlanetManager } from '../../cesium/planetManager.js';
 import CesiumLoadingOverlay from '../common/CesiumLoadingOverlay.jsx';
 
-/**
- * Hosts the interactive Cesium planet viewers and bridges their controls to React.
- */
 const PlanetViewport = forwardRef(function PlanetViewport(
   {
     onPointerCoordinates,
     onFeatureSelect,
     onDropCustomPin,
-    hasCustomPin = false,
-    onClearCustomPin,
     activePlanet = 'moon',
     onPlanetChange,
     isVisible = true,
+    layers = [],
   },
   ref
 ) {
@@ -33,32 +30,77 @@ const PlanetViewport = forwardRef(function PlanetViewport(
   const [currentPlanet, setCurrentPlanet] = useState(activePlanet || 'moon');
 
   const [isCesiumLoading, setIsCesiumLoading] = useState(true);
-  const [loadingStage, setLoadingStage] = useState('Initializing 3D Planetary Canvas...');
+  const [loadingStage, setLoadingStage] = useState('Initializing 3D Planetary Studio...');
   const [pendingTiles, setPendingTiles] = useState(0);
+  const [hoveredInfo, setHoveredInfo] = useState(null);
 
-  const [isAutoRotating, setIsAutoRotating] = useState(false);
-  const [isSolarLighting, setIsSolarLighting] = useState(false);
-  const [hoveredInfo, setHoveredInfo] = useState(null); // { feature, x, y }
+  const syncPlanetLayerVisibility = (planetId) => {
+    const manager = planetManagerRef.current;
+    if (!manager) return;
+    const layerPrefix = planetId === 'earth' ? 'earth-' : 'lunar-';
+    const controller = manager.planet(planetId);
+    for (const layer of layers) {
+      if (layer.id.startsWith(layerPrefix)) {
+        controller.setLayerVisibility(layer.id, layer.visible);
+      }
+    }
+  };
 
-  // Safety timer ensuring perceived performance even on slow network
   useEffect(() => {
+    // Generous fallback safety timeout in case offline or network stall
     const safetyTimer = setTimeout(() => {
-      setIsCesiumLoading(false);
-    }, 2800);
+      setIsCesiumLoading((prev) => {
+        if (prev) {
+          console.info('[PlanetViewport] Fallback timer elapsed, revealing available terrain.');
+          return false;
+        }
+        return false;
+      });
+    }, 8000);
     return () => clearTimeout(safetyTimer);
   }, []);
 
-  // Sync external activePlanet prop
+  // Perform a gated planet switch that waits until the target planet's imagery & tiles are loaded
+  const performGatedPlanetSwitch = (targetPlanet) => {
+    const manager = planetManagerRef.current;
+    if (!manager || !targetPlanet) return;
+    if (manager.activeId === targetPlanet && currentPlanet === targetPlanet) return;
+
+    setCurrentPlanet(targetPlanet);
+    setIsCesiumLoading(true);
+    setLoadingStage(
+      targetPlanet === 'earth'
+        ? 'Loading 3D Earth Surface & Deep Space Network...'
+        : 'Loading 3D Lunar Surface & Topographic Basemap...'
+    );
+
+    // Allow loading overlay to paint before activating & waiting for target globe
+    requestAnimationFrame(() => {
+      try {
+        manager.switchTo(targetPlanet);
+        syncPlanetLayerVisibility(targetPlanet);
+        const activeCtrl = manager.active;
+        const readyPromise = activeCtrl?.waitUntilReady?.() || Promise.resolve();
+        readyPromise.finally(() => {
+          setIsCesiumLoading(false);
+        });
+      } catch (err) {
+        console.error('Failed to switch planet:', err);
+        setIsCesiumLoading(false);
+      }
+    });
+  };
+
+  // Sync external activePlanet prop with readiness gate
   useEffect(() => {
     if (planetManagerRef.current && activePlanet) {
       if (planetManagerRef.current.activeId !== activePlanet) {
-        planetManagerRef.current.switchTo(activePlanet);
-        setCurrentPlanet(activePlanet);
+        performGatedPlanetSwitch(activePlanet);
       }
     }
   }, [activePlanet]);
 
-  // Pause every initialized planet viewer while this viewport is hidden.
+  // Pause every initialized planet viewer while this viewport is hidden
   useEffect(() => {
     planetManagerRef.current?.setVisible(isVisible);
   }, [isVisible]);
@@ -96,7 +138,10 @@ const PlanetViewport = forwardRef(function PlanetViewport(
         onFeatureHover: (feature, x, y) => {
           if (feature) {
             setHoveredInfo((prev) =>
-              prev && prev.feature?.id === feature.id && Math.abs(prev.x - x) < 4 && Math.abs(prev.y - y) < 4
+              prev &&
+              prev.feature?.id === feature.id &&
+              Math.abs(prev.x - x) < 4 &&
+              Math.abs(prev.y - y) < 4
                 ? prev
                 : { feature, x, y }
             );
@@ -110,43 +155,21 @@ const PlanetViewport = forwardRef(function PlanetViewport(
     });
 
     planetManagerRef.current = planetManager;
-
     setCurrentPlanet(planetManager.activeId);
-
-    // Window test hooks
-    window.testEarth = () => {
-      planetManagerRef.current?.switchTo('earth');
-    };
-
-    window.testMoon = () => {
-      planetManagerRef.current?.switchTo('moon');
-    };
-
-    window.testZoomIn = () => {
-      planetManagerRef.current?.active.zoomIn();
-    };
-
-    window.testZoomOut = () => {
-      planetManagerRef.current?.active.zoomOut();
-    };
-
-    window.testReset = () => {
-      planetManagerRef.current?.active.resetOverview();
-    };
+    syncPlanetLayerVisibility(planetManager.activeId);
 
     return () => {
-      delete window.testEarth;
-      delete window.testMoon;
-      delete window.testZoomIn;
-      delete window.testZoomOut;
-      delete window.testReset;
-
       planetManager.destroy();
       planetManagerRef.current = null;
     };
   }, []);
 
-  // Expose API via ref
+  useEffect(() => {
+    if (planetManagerRef.current?.activeId === currentPlanet) {
+      syncPlanetLayerVisibility(currentPlanet);
+    }
+  }, [currentPlanet, layers]);
+
   useImperativeHandle(ref, () => ({
     getViewer: () => planetManagerRef.current?.planet('moon').getViewer(),
     getCelestialState: () =>
@@ -155,9 +178,7 @@ const PlanetViewport = forwardRef(function PlanetViewport(
       planetManagerRef.current?.active.getLightingEnabled?.() ?? false,
 
     switchPlanet: (planetName) => {
-      planetManagerRef.current?.switchTo(planetName);
-      setCurrentPlanet(planetName);
-      onPlanetChange?.(planetName);
+      performGatedPlanetSwitch(planetName);
     },
 
     getActivePlanet: () => {
@@ -176,12 +197,17 @@ const PlanetViewport = forwardRef(function PlanetViewport(
       planetManagerRef.current?.active.zoomOut();
     },
 
-    flyTo: (lon, lat) => {
-      planetManagerRef.current?.active.flyTo(lon, lat, 1400000);
+    flyTo: (lon, lat, heightOrZoom) => {
+      const targetHeight =
+        typeof heightOrZoom === 'number' && heightOrZoom > 100
+          ? heightOrZoom
+          : null;
+      planetManagerRef.current?.active.flyTo(lon, lat, targetHeight);
     },
 
-    dropCustomPin: (lon, lat, name) => {
-      return planetManagerRef.current?.active.extras.features.dropCustomPin(lon, lat, name);
+    dropCustomPin: (lon, lat, name, planetId = planetManagerRef.current?.activeId) => {
+      const target = planetId || 'moon';
+      return planetManagerRef.current?.planet(target).extras.features.dropCustomPin(lon, lat, name);
     },
 
     clearCustomPin: (planetId = planetManagerRef.current?.activeId) => {
@@ -189,43 +215,33 @@ const PlanetViewport = forwardRef(function PlanetViewport(
     },
 
     toggleAutoRotate: () => {
-      const state = planetManagerRef.current?.active.toggleAutoRotate();
-
-      if (state !== undefined) {
-        setIsAutoRotating(state);
-      }
-
-      return state ?? false;
+      return planetManagerRef.current?.active.toggleAutoRotate() ?? false;
     },
 
-    toggleLighting: () => {
-      const state = planetManagerRef.current?.active.toggleLighting();
+    toggleLighting: (planetId) => {
+      const controller = planetId
+        ? planetManagerRef.current?.planet(planetId)
+        : planetManagerRef.current?.active;
+      return controller?.toggleLighting() ?? false;
+    },
 
-      if (state !== undefined) {
-        setIsSolarLighting(state);
-      }
-
-      return state ?? false;
+    setLightingEnabled: (enabled, planetId) => {
+      const controller = planetId
+        ? planetManagerRef.current?.planet(planetId)
+        : planetManagerRef.current?.active;
+      return controller?.setLightingEnabled(enabled) ?? false;
     },
 
     selectFeature: (featureId) => {
-      planetManagerRef.current?.switchTo('moon');
+      performGatedPlanetSwitch('moon');
       const moon = planetManagerRef.current?.planet('moon');
       moon?.extras.features.selectFeaturePin(featureId);
       const feat =
-        LUNAR_FEATURES.find(
-          (f) => f.id === featureId
-        ) ||
-        LANDING_SITES.find(
-          (s) => s.id === featureId
-        );
+        LUNAR_FEATURES.find((f) => f.id === featureId) ||
+        LANDING_SITES.find((s) => s.id === featureId);
 
       if (feat) {
-        moon?.flyTo(
-          feat.longitude,
-          feat.latitude,
-          feat.type === 'mare' ? 2600000 : 900000
-        );
+        moon?.flyTo(feat.longitude, feat.latitude);
       }
     },
 
@@ -238,15 +254,16 @@ const PlanetViewport = forwardRef(function PlanetViewport(
       communicationLinkRef.current = link;
       if (!link && !previousLink) return;
       for (const planetId of ['moon', 'earth']) {
-        planetManagerRef.current?.planet(planetId).setCommunicationLink(link);
+        try {
+          planetManagerRef.current?.planet(planetId).setCommunicationLink(link);
+        } catch {}
       }
     },
 
-    setLayerVisibility: (layerId, isVisible) => {
-      planetManagerRef.current?.active.setLayerVisibility(layerId, isVisible);
+    setLayerVisibility: (layerId, visible) => {
+      planetManagerRef.current?.active.setLayerVisibility(layerId, visible);
     },
 
-    // Earth & Sun celestial animation
     setCelestialVisible: (visible) =>
       planetManagerRef.current?.planet('moon').extras.celestial.setCelestialVisible(visible),
 
@@ -261,22 +278,22 @@ const PlanetViewport = forwardRef(function PlanetViewport(
   }));
 
   return (
-    <div className="relative w-full h-full overflow-hidden select-none bg-black">
-      {/* Subtle Deep Space Starfield (soft, distant, non-distracting background) */}
+    <div
+      role="region"
+      aria-label="Interactive 3D planetary globe viewer"
+      className="relative w-full h-full overflow-hidden select-none bg-[#060B13]"
+    >
+      {/* Space Starfield Backdrop */}
       <div
-        className="absolute inset-0 pointer-events-none opacity-35"
+        className="absolute inset-0 pointer-events-none opacity-40"
         style={{
           backgroundImage: `
-            radial-gradient(1px 1px at 12% 18%, #ffffff 100%, transparent 0),
-            radial-gradient(1px 1px at 24% 54%, #93c5fd 100%, transparent 0),
-            radial-gradient(1px 1px at 42% 28%, #e2e8f0 100%, transparent 0),
-            radial-gradient(1px 1px at 64% 78%, #ffffff 100%, transparent 0),
-            radial-gradient(1.2px 1.2px at 78% 32%, #fef08a 100%, transparent 0),
-            radial-gradient(1px 1px at 88% 82%, #cbd5e1 100%, transparent 0),
-            radial-gradient(1px 1px at 94% 20%, #ffffff 100%, transparent 0),
-            radial-gradient(1px 1px at 32% 86%, #94a3b8 100%, transparent 0),
-            radial-gradient(1.2px 1.2px at 16% 72%, #67e8f9 100%, transparent 0),
-            radial-gradient(1px 1px at 52% 48%, #ffffff 100%, transparent 0)
+            radial-gradient(1px 1px at 12% 18%, #F8FAFC 100%, transparent 0),
+            radial-gradient(1px 1px at 24% 54%, #00D2C4 100%, transparent 0),
+            radial-gradient(1px 1px at 42% 28%, #34D399 100%, transparent 0),
+            radial-gradient(1px 1px at 64% 78%, #F8FAFC 100%, transparent 0),
+            radial-gradient(1.2px 1.2px at 78% 32%, #22D3EE 100%, transparent 0),
+            radial-gradient(1px 1px at 88% 82%, #94A3B8 100%, transparent 0)
           `,
           backgroundRepeat: 'repeat',
           backgroundSize: '360px 360px',
@@ -285,14 +302,13 @@ const PlanetViewport = forwardRef(function PlanetViewport(
 
       {/* 3D WebGL Canvas Containers */}
       <div ref={moonContainerRef} className="absolute inset-0" />
-
       <div
         ref={earthContainerRef}
         className="absolute inset-0"
-        style={{ display: "none" }}
+        style={{ display: 'none' }}
       />
 
-      {/* Global Cesium Initialization Overlay & Data Fetching Tile HUD */}
+      {/* Global Cesium Initialization & Planet Switch Readiness Gate Overlay */}
       <CesiumLoadingOverlay
         isInitializing={isCesiumLoading}
         stage={loadingStage}
@@ -303,43 +319,35 @@ const PlanetViewport = forwardRef(function PlanetViewport(
       {/* Floating Hover Feature Tooltip */}
       {hoveredInfo?.feature && (
         <div
-          className="fixed z-50 pointer-events-none transform -translate-x-1/2 -translate-y-full mb-3 px-3 py-2 bg-slate-950/95 backdrop-blur-xl border border-slate-700/80 rounded-xl shadow-2xl shadow-black/80 flex flex-col gap-0.5 animate-in fade-in zoom-in-95 duration-150"
+          className="fixed z-50 pointer-events-none transform -translate-x-1/2 -translate-y-full mb-3 px-3.5 py-2 bg-[#060B13]/95 backdrop-blur-xl border border-[#16283C] rounded-xl shadow-2xl flex flex-col gap-0.5 animate-in fade-in zoom-in-95 duration-150"
           style={{
             left: `${hoveredInfo.x}px`,
             top: `${hoveredInfo.y - 12}px`,
           }}
         >
-          {/* Feature Name */}
           <div className="flex items-center gap-1.5">
-            <MapPin className="w-3.5 h-3.5 text-rose-500 shrink-0" />
-
-            <span className="text-xs font-bold text-white tracking-wide">
+            <MapPin className="w-3.5 h-3.5 text-[#00D2C4] shrink-0" />
+            <span className="text-xs font-bold text-[#F8FAFC] tracking-wide">
               {hoveredInfo.feature.name}
             </span>
           </div>
 
-          {/* Feature Type + Coordinates */}
-          <div className="flex items-center gap-2 text-[10px] font-mono text-slate-400">
-            <span className="capitalize text-cyan-300">
-              {String(
-                hoveredInfo.feature.type || "feature"
-              ).replace("_", " ")}
+          <div className="flex items-center gap-2 text-[10px] font-mono text-[#94A3B8] tabular-nums">
+            <span className="capitalize text-[#34D399]">
+              {String(hoveredInfo.feature.type || 'feature').replace('_', ' ')}
             </span>
-
-            <span>•</span>
-
+            <span>·</span>
             <span>
               {Math.abs(hoveredInfo.feature.latitude).toFixed(2)}°
-              {hoveredInfo.feature.latitude >= 0 ? "N" : "S"},{" "}
+              {hoveredInfo.feature.latitude >= 0 ? 'N' : 'S'},{' '}
               {Math.abs(hoveredInfo.feature.longitude).toFixed(2)}°
-              {hoveredInfo.feature.longitude >= 0 ? "E" : "W"}
+              {hoveredInfo.feature.longitude >= 0 ? 'E' : 'W'}
             </span>
           </div>
         </div>
       )}
     </div>
-  )
+  );
 });
-
 
 export default PlanetViewport;

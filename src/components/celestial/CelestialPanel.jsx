@@ -20,9 +20,11 @@ import {
 } from 'lucide-react';
 import { formatLunarCoordinates } from '../../utils/coordinates.js';
 import {
+  CELESTIAL_MINUTE_MS,
   celestialTimeStore,
   MIN_CELESTIAL_TIME_MS,
   MAX_CELESTIAL_TIME_MS,
+  normalizeCelestialTimeMs,
 } from '../../utils/celestialTime.js';
 
 // The ephemeris models are validated for these years; the date input enforces the same range.
@@ -110,23 +112,30 @@ export default function CelestialPanel({
   const [rate, setRate] = useState(3600);
   const [shownTime, setShownTime] = useState(() => celestialTimeStore.get().ms);
   const [state, setState] = useState(null);
-  const [isCalculating, setIsCalculating] = useState(false);
 
   const timeRef = useRef(celestialTimeStore.get().ms);
-  const lastPublishRef = useRef(0);
+  const stateRef = useRef(null);
 
-  /** Applies a time to the globe; publishes to React state at most ~4 times a second. */
+  /** Applies and publishes only whole-minute celestial times. */
   const applyTime = useCallback(
     (ms, { force = false, source = 'ephemeris' } = {}) => {
-      const clamped = Math.min(MAX_MS, Math.max(MIN_MS, ms));
+      const clamped = normalizeCelestialTimeMs(
+        Math.min(MAX_MS, Math.max(MIN_MS, ms))
+      );
+      const changed = clamped !== timeRef.current;
       timeRef.current = clamped;
-      celestialTimeStore.setTime(clamped, source);
-      const next = globeRef.current?.getCelestialState?.();
-      const now = performance.now();
-      if (force || now - lastPublishRef.current >= 250) {
-        lastPublishRef.current = now;
+      if (changed) {
+        celestialTimeStore.setTime(clamped, source);
+      }
+      if (!stateRef.current) {
+        const next = globeRef.current?.getCelestialState?.();
+        if (next) {
+          stateRef.current = next;
+          setState(next);
+        }
+      }
+      if (changed || force) {
         setShownTime(clamped);
-        if (next) setState(next);
       }
       return clamped;
     },
@@ -136,28 +145,18 @@ export default function CelestialPanel({
   // Subscribe separately from the local controls so other time publishers stay in sync.
   useEffect(() => celestialTimeStore.subscribe(({ ms, source }) => {
     timeRef.current = ms;
+    setShownTime(ms);
     if (source === 'timeline-drag') {
       setLive(false);
       setPlaying(false);
-      setIsCalculating(true);
-      const now = performance.now();
-      if (now - lastPublishRef.current >= 250) {
-        lastPublishRef.current = now;
-        setShownTime(ms);
-      }
-      return;
-    }
-    if (source === 'timeline' || source === 'timeline-final') {
+    } else if (source === 'timeline' || source === 'timeline-final') {
       setLive(false);
       setPlaying(false);
     }
-    const now = performance.now();
-    if (source === 'timeline-final' || now - lastPublishRef.current >= 250) {
-      lastPublishRef.current = now;
-      setShownTime(ms);
-      const next = globeRef.current?.getCelestialState?.();
-      if (next) setState(next);
-      setIsCalculating(false);
+    const next = globeRef.current?.getCelestialState?.();
+    if (next) {
+      stateRef.current = next;
+      setState(next);
     }
   }), [globeRef]);
 
@@ -173,12 +172,16 @@ export default function CelestialPanel({
   // Keep the shared clock current even when the panel is closed or the app is in 2D mode.
   useEffect(() => {
     if (!live) return undefined;
+    let timeoutId;
+    const updateAtNextMinute = () => {
+      applyTime(Date.now(), { force: true, source: 'live' });
+      const delay = CELESTIAL_MINUTE_MS - (Date.now() % CELESTIAL_MINUTE_MS);
+      timeoutId = setTimeout(updateAtNextMinute, delay);
+    };
     applyTime(Date.now(), { force: true, source: 'live' });
-    const id = setInterval(
-      () => applyTime(Date.now(), { force: true, source: 'live' }),
-      1000
-    );
-    return () => clearInterval(id);
+    const delay = CELESTIAL_MINUTE_MS - (Date.now() % CELESTIAL_MINUTE_MS);
+    timeoutId = setTimeout(updateAtNextMinute, delay);
+    return () => clearTimeout(timeoutId);
   }, [live, applyTime]);
 
   // Time-lapse
@@ -186,24 +189,26 @@ export default function CelestialPanel({
     if (!playing) return undefined;
     let raf = 0;
     let last = null;
+    let remainderMs = 0;
     const tick = (now) => {
       if (last === null) {
-        last = now; // seed from the frame clock itself
+        last = now;
         raf = requestAnimationFrame(tick);
         return;
       }
-      if (now - last < 33) { // cap time-lapse updates at ~30 Hz
-        raf = requestAnimationFrame(tick);
-        return;
-      }
-      const dt = Math.max(0, Math.min(0.1, (now - last) / 1000)); // ignore long gaps (hidden tab)
+      const dt = Math.max(0, Math.min(0.1, (now - last) / 1000));
       last = now;
-      const target = timeRef.current + dt * rate * 1000;
-      const applied = applyTime(target, { source: 'playback' });
-      if (applied !== target) {
-        setPlaying(false); // reached the end of the supported range
-        applyTime(applied, { force: true, source: 'playback' });
-        return;
+      remainderMs += dt * rate * 1000;
+      const minuteSteps = Math.floor(remainderMs / CELESTIAL_MINUTE_MS);
+      if (minuteSteps > 0) {
+        remainderMs %= CELESTIAL_MINUTE_MS;
+        const target = timeRef.current + minuteSteps * CELESTIAL_MINUTE_MS;
+        const applied = applyTime(target, { source: 'playback' });
+        if (applied !== target) {
+          setPlaying(false);
+          applyTime(applied, { force: true, source: 'playback' });
+          return;
+        }
       }
       raf = requestAnimationFrame(tick);
     };
@@ -276,7 +281,7 @@ export default function CelestialPanel({
   return (
     <div
       id="celestial-panel"
-      className="absolute top-14 right-3 sm:right-4 z-30 w-[min(22rem,calc(100vw-2rem))] max-h-[calc(100vh-5rem)] flex flex-col bg-[#060b14]/96 backdrop-blur-2xl border border-slate-800 rounded-xl shadow-2xl shadow-black/80 overflow-hidden pointer-events-auto transition-all animate-in fade-in slide-in-from-top-2 duration-150 select-none"
+      className="fixed top-[100px] left-[60px] -translate-y-1/2 z-75 w-[min(23rem,calc(100vw-4.5rem))] max-h-[calc(100vh-4rem)] flex flex-col bg-[#060b14]/96 backdrop-blur-2xl border border-slate-800/90 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.85)] overflow-hidden pointer-events-auto transition-all animate-in fade-in slide-in-from-left-4 duration-200 ease-out select-none"
     >
       {/* Header */}
       <div className="flex items-center justify-between gap-2 px-3.5 py-2.5 border-b border-slate-800 bg-slate-900/60">
@@ -468,9 +473,7 @@ export default function CelestialPanel({
           </div>
 
           {/* Readouts */}
-          {isCalculating ? (
-            <p role="status" className="text-[11px] text-slate-400">Calculating…</p>
-          ) : earth && sun && moon ? (
+          {earth && sun && moon ? (
             <div className="space-y-2">
               <Readout icon={Globe2} title="Earth" accent="text-sky-300">
                 <Row label="Distance" value={`${fmtInt(earth.distanceKm)} km`} />
@@ -493,11 +496,6 @@ export default function CelestialPanel({
           ) : (
             <p className="text-[11px] text-slate-400">Waiting for the 3D view…</p>
           )}
-
-          <p className="text-[10px] leading-snug text-slate-500">
-            Directions are exact. Sizes and display distances are compressed to fit the view; labels
-            give the true distances. Turn on solar shading to see the terminator follow the Sun.
-          </p>
         </div>
       )}
     </div>

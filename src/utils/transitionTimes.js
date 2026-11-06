@@ -49,7 +49,7 @@ export function formatDuration(ms) {
  * @returns {object} Solar transition & power generation report
  */
 export function calculateSolarTransition(currentTimeMs, latitude, longitude, siteId = null) {
-  const getHz = (az) => (siteId ? horizonAt(HORIZON_TABLE, siteId, az) ?? 0 : 0);
+  const getHz = (az) => (horizonAt(HORIZON_TABLE, siteId, az, latitude, longitude) ?? 0);
 
   // 1. Current State
   const currentState = computeCelestialState(currentTimeMs);
@@ -154,10 +154,9 @@ export function calculateEarthTransition(
   constraints = DEFAULT_DTE_CONSTRAINTS
 ) {
   const siteId = moonFeature.id;
-  const terrainFn = (az) => (siteId ? horizonAt(HORIZON_TABLE, siteId, az) : null);
-
   const lat = moonFeature.latitude ?? moonFeature.lat ?? 0;
   const lon = moonFeature.longitude ?? moonFeature.lon ?? 0;
+  const terrainFn = (az) => horizonAt(HORIZON_TABLE, siteId, az, lat, lon);
 
   // 1. Current Link Evaluation
   const currentState = computeCelestialState(currentTimeMs);

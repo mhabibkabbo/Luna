@@ -17,6 +17,7 @@
  */
 
 import * as Cesium from 'cesium';
+import { normalizeCelestialTimeMs } from '../../utils/celestialTime.js';
 import { computeCelestialState, MOON_RADIUS_KM } from '../../utils/lunarEphemeris.js';
 import { formatLunarCoordinates } from '../../utils/coordinates.js';
 
@@ -58,14 +59,9 @@ czm_material czm_getMaterial(czm_materialInput materialInput)
   return material;
 }`;
 
-// Same package and version the app already pulls its textures from.
 const EARTH_TEXTURE_URLS = [
   // Local asset (served by Vite from public/ at /assets/...)
   "/assets/earth-blue-marble.jpg",
-
-  // CDN fallbacks
-  "https://cdn.jsdelivr.net/npm/three-globe@2.31.0/example/img/earth-blue-marble.jpg",
-  "https://unpkg.com/three-globe@2.31.0/example/img/earth-blue-marble.jpg",
 ];
 
 
@@ -359,7 +355,8 @@ export function createCelestialOverlay(viewer, options = {}) {
   function setTime(when) {
     if (destroyed || scene.isDestroyed?.() || viewer.isDestroyed?.()) return null;
 
-    const date = when instanceof Date ? when : new Date(when);
+    const inputDate = when instanceof Date ? when : new Date(when);
+    const date = new Date(normalizeCelestialTimeMs(inputDate));
     const julianDate = Cesium.JulianDate.fromDate(date);
 
     // Synchronize Cesium's internal clock so Cesium time stays synchronized

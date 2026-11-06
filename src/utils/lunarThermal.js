@@ -13,6 +13,7 @@
  */
 
 import { computeCelestialState } from './lunarEphemeris.js';
+import { normalizeCelestialTimeMs } from './celestialTime.js';
 
 export const THERMAL_CONSTANTS = Object.freeze({
   T_MAX_K: 390, // Subsolar maximum temperature (~ +117°C)
@@ -98,9 +99,13 @@ export function getSubsolarPoint(date) {
  *   subsolarPoint?: { lat: number, lon: number }
  * }}
  */
-export function getLunarTemperature(latDeg, lonDeg, date = new Date()) {
+export function getLunarTemperature(latDeg, lonDeg, date = new Date(), options = {}) {
   const targetDate = date instanceof Date ? date : new Date(date);
-  const validDate = isNaN(targetDate.getTime()) ? new Date() : targetDate;
+  const validDate = new Date(
+    normalizeCelestialTimeMs(
+      isNaN(targetDate.getTime()) ? new Date() : targetDate
+    )
+  );
 
   // 1. Subsolar Point Calculation (δ_sun, λ_sun)
   const subsolar = getSubsolarPoint(validDate);
@@ -119,14 +124,23 @@ export function getLunarTemperature(latDeg, lonDeg, date = new Date()) {
     Math.sin(latRad) * Math.sin(subLatRad) +
     Math.cos(latRad) * Math.cos(subLatRad) * Math.cos(lonRad - subLonRad);
 
-  const isDaylight = cosTheta > 0;
   const clampedCosTheta = Math.max(-1, Math.min(1, cosTheta));
 
   // Solar Elevation Angle above local tangent plane: 90° - zenith angle
-  // sin(elev) = cos(theta) => elev = asin(cos(theta))
   const solarElevationDeg = Math.asin(clampedCosTheta) * RAD2DEG;
+  const terrainHorizonDeg =
+    typeof options?.terrainHorizonDeg === 'number' && Number.isFinite(options.terrainHorizonDeg)
+      ? options.terrainHorizonDeg
+      : 0;
+  const elevationM =
+    typeof options?.elevationM === 'number' && Number.isFinite(options.elevationM)
+      ? options.elevationM
+      : null;
 
-  // 3. Thermal Model Calculation
+  const isDaylight = cosTheta > 0 && solarElevationDeg > terrainHorizonDeg;
+  const isTerrainShadowed = cosTheta > 0 && solarElevationDeg <= terrainHorizonDeg;
+
+  // 3. Analytical Radiative Balance Model Calculation
   let tempK;
   let isPSR = false;
 
@@ -134,15 +148,21 @@ export function getLunarTemperature(latDeg, lonDeg, date = new Date()) {
     // Daytime radiative balance: T_min + (T_max - T_min) * (cos θ)^(1/4)
     tempK =
       THERMAL_CONSTANTS.T_MIN_K +
-      (THERMAL_CONSTANTS.T_MAX_K - THERMAL_CONSTANTS.T_MIN_K) * Math.pow(cosTheta, 0.25);
+      (THERMAL_CONSTANTS.T_MAX_K - THERMAL_CONSTANTS.T_MIN_K) * Math.pow(clampedCosTheta, 0.25);
   } else {
-    // Night / Shadow
+    // Night / Terrain Shadow
     if (Math.abs(latDeg) > THERMAL_CONSTANTS.POLAR_PSR_LAT_THRESHOLD) {
-      // Polar Shadow Guard: Permanently Shadowed Region (PSR)
-      tempK = THERMAL_CONSTANTS.T_PSR_K;
-      isPSR = true;
+      // Distinguish true cold-trap depressions (elevation <= -1500m or deep negative sun elevation)
+      // from transient terrain shadows on elevated polar ridges
+      if ((elevationM !== null && elevationM <= -1500) || solarElevationDeg <= -4.0) {
+        tempK = THERMAL_CONSTANTS.T_PSR_K;
+        isPSR = true;
+      } else {
+        // Transient polar shadow on highland ridge/rim (Vasavada et al. 2012 polar night regime ~75 K)
+        tempK = isTerrainShadowed ? 85 : 70;
+      }
     } else {
-      // Standard equatorial / mid-latitude lunar night
+      // Standard equatorial / mid-latitude lunar night (~100 K)
       tempK = THERMAL_CONSTANTS.T_MIN_K;
     }
   }
@@ -151,17 +171,34 @@ export function getLunarTemperature(latDeg, lonDeg, date = new Date()) {
   const tempC = tempK - 273.15;
   const tempF = (tempC * 9) / 5 + 32;
 
+  const roundedTempK = Math.round(tempK);
+  const roundedTempC = Math.round(tempC);
+  const roundedTempF = Math.round(tempF);
+  const subsurfaceTempC = Math.round(
+    isPSR ? -228 : -20 - Math.pow(Math.abs(latDeg) / 90, 1.5) * 145
+  );
+
   return {
-    tempK: Math.round(tempK),
-    tempC: Math.round(tempC),
-    tempF: Math.round(tempF),
+    tempK: roundedTempK,
+    tempC: roundedTempC,
+    tempF: roundedTempF,
+    kelvin: roundedTempK,
+    celsius: roundedTempC,
+    fahrenheit: roundedTempF,
+    surfaceTempK: roundedTempK,
+    surfaceTempC: roundedTempC,
+    subsurfaceTempC,
     isDaylight,
+    isTerrainShadowed,
     solarElevationDeg: Math.round(solarElevationDeg * 10) / 10,
+    terrainHorizonDeg: Math.round(terrainHorizonDeg * 10) / 10,
     isPSR,
+    provenance: 'Calculated',
+    modelName:
+      'Calculated (Analytical Radiative Balance Model — Diviner gridded dataset not present)',
     subsolarPoint: {
       lat: Math.round(subLatDeg * 100) / 100,
       lon: Math.round(subLonDeg * 100) / 100,
     },
   };
 }
-
