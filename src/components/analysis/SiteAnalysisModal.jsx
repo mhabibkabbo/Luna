@@ -276,16 +276,15 @@ export default function SiteAnalysisModal({
         elevationM: terrainMetrics?.elevationM ?? null,
         roughnessM: terrainMetrics?.roughnessM ?? null,
       },
-      {
-        ...DEFAULT_PLANNER_CONSTRAINTS,
-        landingTimeMs: timeMs,
-        missionDurationDays: missionWindowDays,
-      }
+      timeMs,
+      missionWindowDays,
+      DEFAULT_PLANNER_CONSTRAINTS
     );
 
     const sunlitRatio = unifiedEval?.sunlitRatio ?? Math.round((sunlitSteps / numSamples) * 100);
     const dsnRatio = unifiedEval?.dteUptimeRatio ?? (isFarside ? 0 : Math.round((dsnSteps / numSamples) * 100));
-    const longestSunlitHours = Math.round(maxSunStreak * 6);
+    const longestSunlitHours =
+      unifiedEval?.durationOutlook?.longestSunlitHours ?? Math.round(maxSunStreak * 6);
     const finalWindowScore = unifiedEval?.overallScore ?? 50;
 
     return {

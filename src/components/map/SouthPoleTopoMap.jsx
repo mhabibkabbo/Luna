@@ -73,18 +73,18 @@ export function getPolarStereographicPanBounds(extentM = MAX_PAN_EXTENT_M) {
 export const SOUTH_POLE_LANDMARKS = CANONICAL_POLAR_LANDMARKS;
 
 /**
- * NASA LOLA Permanently Shadowed Regions (PSRs) Cold-Trap Footprints
+ * Named NASA LOLA Polar Cold-Trap Anchor Labels (footprints loaded from /data/topo/psr_footprints.geojson)
  */
-const PSR_COLD_TRAPS = [
-  { id: 'psr-shackleton', name: 'Shackleton PSR', lat: -89.67, lon: 129.78, radiusKm: 9.8 },
-  { id: 'psr-haworth', name: 'Haworth PSR', lat: -87.40, lon: -5.10, radiusKm: 21.5 },
-  { id: 'psr-shoemaker', name: 'Shoemaker PSR', lat: -88.1, lon: 45.0, radiusKm: 21.0 },
-  { id: 'psr-cabeus', name: 'Cabeus LCROSS PSR', lat: -84.9, lon: -35.5, radiusKm: 29.0 },
-  { id: 'psr-faustini', name: 'Faustini PSR', lat: -87.30, lon: 77.00, radiusKm: 17.5 },
-  { id: 'psr-degerlache', name: 'De Gerlache PSR', lat: -88.5, lon: -87.1, radiusKm: 13.8 },
-  { id: 'psr-sverdrup', name: 'Sverdrup PSR', lat: -88.3, lon: -152.0, radiusKm: 14.0 },
-  { id: 'psr-slater', name: 'Slater PSR', lat: -88.1, lon: 111.0, radiusKm: 10.5 },
-  { id: 'psr-amundsen-floor', name: 'Amundsen North Floor PSR', lat: -84.1, lon: 83.2, radiusKm: 18.5 },
+const PSR_COLD_TRAP_ANCHORS = [
+  { id: 'psr-shackleton', name: 'Shackleton PSR', lat: -89.67, lon: 129.78 },
+  { id: 'psr-haworth', name: 'Haworth PSR', lat: -87.45, lon: -4.0 },
+  { id: 'psr-shoemaker', name: 'Shoemaker PSR', lat: -88.1, lon: 45.0 },
+  { id: 'psr-cabeus', name: 'Cabeus LCROSS PSR', lat: -84.9, lon: -35.5 },
+  { id: 'psr-faustini', name: 'Faustini PSR', lat: -87.3, lon: 77.0 },
+  { id: 'psr-degerlache', name: 'De Gerlache PSR', lat: -88.5, lon: -87.1 },
+  { id: 'psr-sverdrup', name: 'Sverdrup PSR', lat: -88.3, lon: -152.0 },
+  { id: 'psr-slater', name: 'Slater PSR', lat: -88.1, lon: 111.0 },
+  { id: 'psr-amundsen-floor', name: 'Amundsen Floor PSR', lat: -84.1, lon: 83.2 },
 ];
 
 function boxesOverlap(a, b) {
@@ -148,6 +148,8 @@ const SouthPoleTopoMap = forwardRef(function SouthPoleTopoMap(
   const celestialAnglesRef = useRef({
     sunAzimuthDeg: 315,
     sunElevationDeg: 1.5,
+    subSunLonDeg: 315,
+    subSunLatDeg: -1.5,
     subEarthLonDeg: 0,
     subEarthLatDeg: -6.5,
   });
@@ -163,24 +165,29 @@ const SouthPoleTopoMap = forwardRef(function SouthPoleTopoMap(
   // In-memory smoothed contour grid computed from DEM
   const [contourGridData, setContourGridData] = useState(null);
 
-  // Static Auxiliary Layers (Traverses, Ridges)
+  // Static Auxiliary Layers (Traverses, Ridges, DEM-Derived PSR Polygons)
   const [plannedTraverses, setPlannedTraverses] = useState(null);
   const [ridgesAndRims, setRidgesAndRims] = useState(null);
+  const [psrFootprints, setPsrFootprints] = useState(null);
 
-  // Preload polar DEM for main-thread 360° horizon ray-marching & subscribe to live Sub-Earth longitude and solar angles
+  // Preload polar DEM for main-thread 360° horizon ray-marching & subscribe to live Sub-Earth and Sub-Solar selenographic vectors
   useEffect(() => {
     ensurePolarDemLoaded().catch(() => {});
     let redrawTimer = null;
     const syncCelestial = (s) => {
       const ms = s?.ms ?? Date.now();
       const state = computeCelestialState(ms);
-      const sunPole = solarPosition(state, -89.5, 0);
+      const sLon = state?.sun?.subLon ?? s?.sun?.subLon ?? 315;
+      const sLat = state?.sun?.subLat ?? s?.sun?.subLat ?? -1.5;
       const eLon = state?.earth?.subLon ?? s?.earth?.subLon ?? 0;
       const eLat = state?.earth?.subLat ?? -6.5;
       setSubEarthLonDeg(eLon);
       celestialAnglesRef.current = {
-        sunAzimuthDeg: sunPole.azimuthDeg ?? 315,
-        sunElevationDeg: sunPole.elevationDeg ?? 1.5,
+        // In South Polar Stereographic (+Y = 0°E, +X = 90°E), planar solar azimuth clockwise from +Y is subSunLonDeg
+        sunAzimuthDeg: sLon,
+        sunElevationDeg: -sLat,
+        subSunLonDeg: sLon,
+        subSunLatDeg: sLat,
         subEarthLonDeg: eLon,
         subEarthLatDeg: eLat,
       };
@@ -260,7 +267,7 @@ const SouthPoleTopoMap = forwardRef(function SouthPoleTopoMap(
     [zoomLevel]
   );
 
-  // Load auxiliary traverses and ridges once
+  // Load auxiliary traverses, ridges, and DEM-derived PSR footprints once
   useEffect(() => {
     fetch('/data/topo/planned_traverses.geojson')
       .then((r) => (r.ok ? r.json() : null))
@@ -270,6 +277,11 @@ const SouthPoleTopoMap = forwardRef(function SouthPoleTopoMap(
     fetch('/data/topo/ridges_and_rims.geojson')
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => data && setRidgesAndRims(data))
+      .catch(() => {});
+
+    fetch('/data/topo/psr_footprints.geojson')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => data && setPsrFootprints(data))
       .catch(() => {});
   }, []);
 
@@ -638,25 +650,44 @@ const SouthPoleTopoMap = forwardRef(function SouthPoleTopoMap(
       ctx.restore();
     }
 
-    // 5. PERMANENTLY SHADOWED REGIONS (PSR Cold Traps)
-    if (showPsrs) {
-      PSR_COLD_TRAPS.forEach((psr) => {
-        const centerPt = latLonToPx(psr.lat, psr.lon);
-        const centerM = latLonToStereographicMeters(psr.lat, psr.lon);
-        const edgePt = metersToPx(centerM.x + psr.radiusKm * 1000, centerM.y);
-        const rPx = Math.max(4, Math.hypot(edgePt.x - centerPt.x, edgePt.y - centerPt.y));
+    // 5. PERMANENTLY SHADOWED REGIONS (LOLA 16-Azimuth Horizon Shadow PSR Polygons)
+    if (showPsrs && psrFootprints?.features) {
+      ctx.save();
+      ctx.fillStyle = 'rgba(56, 189, 248, 0.14)';
+      ctx.strokeStyle = 'rgba(125, 211, 252, 0.72)';
+      ctx.lineWidth = 1.1;
+      ctx.setLineDash([4, 3]);
 
-        ctx.save();
-        ctx.fillStyle = 'rgba(56, 189, 248, 0.12)';
-        ctx.strokeStyle = 'rgba(125, 211, 252, 0.65)';
-        ctx.lineWidth = 1.1;
-        ctx.setLineDash([4, 3]);
+      for (const feature of psrFootprints.features) {
+        const coords = feature.geometry?.coordinates;
+        if (!coords || coords.length < 3) continue;
         ctx.beginPath();
-        ctx.arc(centerPt.x, centerPt.y, rPx, 0, Math.PI * 2);
+        coords.forEach(([lon, lat], idx) => {
+          const pt = latLonToPx(lat, lon);
+          if (idx === 0) ctx.moveTo(pt.x, pt.y);
+          else ctx.lineTo(pt.x, pt.y);
+        });
+        ctx.closePath();
         ctx.fill();
         ctx.stroke();
-        ctx.restore();
-      });
+      }
+
+      if (currentZoom >= 2) {
+        ctx.setLineDash([]);
+        ctx.font = '600 8px "Space Mono", monospace';
+        ctx.textAlign = 'center';
+        PSR_COLD_TRAP_ANCHORS.forEach((anchor) => {
+          const pt = latLonToPx(anchor.lat, anchor.lon);
+          if (pt.x > 30 && pt.x < size.x - 30 && pt.y > 30 && pt.y < size.y - 30) {
+            ctx.strokeStyle = 'rgba(4, 8, 16, 0.85)';
+            ctx.lineWidth = 2.5;
+            ctx.strokeText(anchor.name, pt.x, pt.y);
+            ctx.fillStyle = '#7DD3FC';
+            ctx.fillText(anchor.name, pt.x, pt.y);
+          }
+        });
+      }
+      ctx.restore();
     }
 
     // 6. DYNAMIC EARTH DSN LINE-OF-SIGHT CORRIDOR (Along Instantaneous Sub-Earth Longitude)
@@ -943,6 +974,7 @@ const SouthPoleTopoMap = forwardRef(function SouthPoleTopoMap(
     measureNodes,
     plannedTraverses,
     probedPin,
+    psrFootprints,
     ridgesAndRims,
     selectedFeature,
     selectedLocation,
@@ -1022,6 +1054,8 @@ const SouthPoleTopoMap = forwardRef(function SouthPoleTopoMap(
               showSlopeHazard: showSlopeHazardRef.current,
               sunAzimuthDeg: angles.sunAzimuthDeg,
               sunElevationDeg: angles.sunElevationDeg,
+              subSunLonDeg: angles.subSunLonDeg,
+              subSunLatDeg: angles.subSunLatDeg,
               subEarthLonDeg: angles.subEarthLonDeg,
               subEarthLatDeg: angles.subEarthLatDeg,
               demUrl: DEM_BINARY_URL,

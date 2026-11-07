@@ -375,9 +375,11 @@ test('Audit Verification: LOLA Worker 0.5 m Vertical Scaling & Unified Planner E
     sampleElevationAtMeters,
     computeSlopeAtMeters,
   } = await import('../src/workers/lolaTileWorker.js');
-  const { rankLandingCandidates, DEFAULT_PLANNER_CONSTRAINTS } = await import(
-    '../src/utils/plannerEngine.js'
-  );
+  const {
+    rankLandingCandidates,
+    evaluateCandidateForMissionWindow,
+    DEFAULT_PLANNER_CONSTRAINTS,
+  } = await import('../src/utils/plannerEngine.js');
   const { PLANNER_CANDIDATES } = await import('../src/data/plannerCandidates.js');
   const { ensurePolarDemLoaded } = await import('../src/utils/horizons.js');
 
@@ -398,9 +400,10 @@ test('Audit Verification: LOLA Worker 0.5 m Vertical Scaling & Unified Planner E
   assert.equal(outOfBoundsSlope.slopeDeg, null);
 
   // Verify rankLandingCandidates runs all 19 candidates without crashing on null slope/elevation
+  const testEpochMs = Date.parse('2026-09-20T12:00:00Z');
   const ranked = rankLandingCandidates(PLANNER_CANDIDATES, {
     ...DEFAULT_PLANNER_CONSTRAINTS,
-    landingTimeMs: Date.parse('2026-09-20T12:00:00Z'),
+    landingTimeMs: testEpochMs,
     missionDurationDays: 14,
   });
   assert.equal(ranked.length, PLANNER_CANDIDATES.length);
@@ -411,6 +414,26 @@ test('Audit Verification: LOLA Worker 0.5 m Vertical Scaling & Unified Planner E
   assert.ok(malapert.dteUptimeRatio > 0, `Nearside polar site DTE uptime must be > 0%, got ${malapert.dteUptimeRatio}%`);
   assert.ok(malapert.slopeDeg !== null, 'Polar site slopeDeg must be sampled from LOLA DEM');
   assert.ok(malapert.elevationM !== null, 'Polar site elevationM must be sampled from LOLA DEM');
+
+  // Verify dual-signature equivalence (positional vs options object) & return shape
+  const malapertSite = PLANNER_CANDIDATES.find((c) => c.id === 'landing-artemis3-malapert');
+  const evalPositional = evaluateCandidateForMissionWindow(
+    malapertSite,
+    testEpochMs,
+    14,
+    DEFAULT_PLANNER_CONSTRAINTS
+  );
+  const evalOptions = evaluateCandidateForMissionWindow(malapertSite, {
+    ...DEFAULT_PLANNER_CONSTRAINTS,
+    landingTimeMs: testEpochMs,
+    missionDurationDays: 14,
+  });
+  assert.equal(evalPositional.overallScore, evalOptions.overallScore);
+  assert.equal(evalPositional.sunlitRatio, evalOptions.sunlitRatio);
+  assert.equal(evalPositional.dteUptimeRatio, evalOptions.dteUptimeRatio);
+  assert.ok(evalPositional.touchdown && typeof evalPositional.touchdown.dteStatus === 'string');
+  assert.ok(evalPositional.instant && typeof evalPositional.instant.dteStatus === 'string');
+  assert.ok(evalPositional.terrain && evalPositional.terrain.elevationM !== undefined);
 
   // Non-polar sites outside 80°S-90°S must have slopeDeg === null and slopeScore === null (never coerced to 100)
   const crisium = ranked.find((r) => r.id === 'landing-clps-firefly-crisium');
@@ -497,8 +520,139 @@ test('South Polar Stereographic Pan Bounds: Symmetric 4-Quadrant Coverage Includ
   assert.ok(malapertAY >= projSwY && malapertAY <= projNeY);
 });
 
+test('South Pole GeoJSON Integrity: Stereographic Crater Rims, Connecting Ridge Azimuths & Geodesic Traverse Metrics', async () => {
+  const fs = await import('node:fs');
+  const ridgesData = JSON.parse(fs.readFileSync('public/data/topo/ridges_and_rims.geojson', 'utf8'));
+  const traversesData = JSON.parse(fs.readFileSync('public/data/topo/planned_traverses.geojson', 'utf8'));
 
+  const R0 = 1737400;
+  const latLonToStereo = (lat, lon) => {
+    const colat = ((90 + lat) * Math.PI) / 180;
+    const r = 2 * R0 * Math.tan(colat / 2);
+    const lonRad = (lon * Math.PI) / 180;
+    return { x: r * Math.sin(lonRad), y: r * Math.cos(lonRad) };
+  };
+  const geodesicDistKm = ([lon1, lat1], [lon2, lat2]) => {
+    const toRad = Math.PI / 180;
+    const p1 = lat1 * toRad;
+    const p2 = lat2 * toRad;
+    const dp = (lat2 - lat1) * toRad;
+    const dl = (lon2 - lon1) * toRad;
+    const a = Math.sin(dp / 2) ** 2 + Math.cos(p1) * Math.cos(p2) * Math.sin(dl / 2) ** 2;
+    return (2 * Math.atan2(Math.sqrt(a), Math.sqrt(Math.max(0, 1 - a))) * R0) / 1000;
+  };
 
+  // 1. Shackleton Crater Rim must be a true stereographic circle of ~10.5 km radius encircling 90°S
+  const shackleton = ridgesData.features.find((f) => f.properties.name === 'Shackleton Crater Rim');
+  assert.ok(shackleton, 'Shackleton Crater Rim feature must exist');
+  const shCenter = latLonToStereo(shackleton.properties.centerLat, shackleton.properties.centerLon);
+  const shCoords = shackleton.geometry.coordinates;
+  let hasPosLon = false;
+  let hasNegLon = false;
+  for (const [lon, lat] of shCoords) {
+    if (lon > 100) hasPosLon = true;
+    if (lon < -100) hasNegLon = true;
+    const pt = latLonToStereo(lat, lon);
+    const distM = Math.hypot(pt.x - shCenter.x, pt.y - shCenter.y);
+    assert.ok(Math.abs(distM - 10500) < 5, `Shackleton rim radius must be 10.5 km in stereographic space, got ${distM}`);
+  }
+  assert.ok(hasPosLon && hasNegLon, 'Shackleton rim must encircle 90°S and span positive and negative longitudes');
 
+  // 2. Connecting Ridge Crest and Traverse 1 must route along ~218°E–273°E (-142°W to -87°W), never across 90°E or 0°E
+  const connectingRidge = ridgesData.features.find((f) => f.properties.name === 'Connecting Ridge Crest');
+  assert.ok(connectingRidge);
+  for (const [lon] of connectingRidge.geometry.coordinates) {
+    assert.ok(lon <= -85 && lon >= -145, `Connecting Ridge longitude ${lon}° must stay in the -145°W to -85°W (215°E–275°E) sector`);
+  }
+
+  // 3. All traverse routes must have lengthKm matching their true spherical geodesic length
+  for (const feat of traversesData.features) {
+    const coords = feat.geometry.coordinates;
+    let sumKm = 0;
+    for (let i = 1; i < coords.length; i++) {
+      sumKm += geodesicDistKm(coords[i - 1], coords[i]);
+    }
+    assert.ok(
+      Math.abs(feat.properties.lengthKm - sumKm) <= 0.15,
+      `Traverse ${feat.properties.id} lengthKm (${feat.properties.lengthKm}) must match geodesic length (${sumKm.toFixed(2)})`
+    );
+  }
+});
+
+test('Multi-Azimuth LOLA DEM Horizon PSR Mask & DEM-Derived PSR Footprints (CRITICAL-04)', async () => {
+  const fs = await import('node:fs');
+  const {
+    initWorkerDemBuffer,
+    computePsrClearanceAtMeters,
+  } = await import('../src/workers/lolaTileWorker.js');
+
+  // 1. Flat deep basin at -2500 m without surrounding walls must NOT be classified as a PSR (clearance > 0°)
+  const flatDeepGrid = new Int16Array(1520 * 1520);
+  flatDeepGrid.fill(-5000); // -5000 * 0.5 = -2500 m everywhere
+  initWorkerDemBuffer(flatDeepGrid);
+  const flatClearance = computePsrClearanceAtMeters(0, 0);
+  assert.ok(
+    flatClearance > 1.0,
+    `Flat terrain at -2500m must have positive solar clearance (> 1.0°), got ${flatClearance}°`
+  );
+
+  // 2. Real LOLA South Pole DEM: Shackleton floor must be a true multi-azimuth PSR (clearance <= 0°), while South Pole rim is sunlit (> 0°)
+  const rawBuf = fs.readFileSync('public/data/lola_sp_80s_int16.bin');
+  const realDemInt16 = new Int16Array(rawBuf.buffer, rawBuf.byteOffset, rawBuf.byteLength / 2);
+  initWorkerDemBuffer(realDemInt16, 1520, 0.5);
+
+  const shackletonFloorClearance = computePsrClearanceAtMeters(7921, -6600);
+  const southPoleRimClearance = computePsrClearanceAtMeters(0, 0);
+  assert.ok(
+    shackletonFloorClearance < 0,
+    `Shackleton Crater floor must be permanently shadowed across all 16 solar azimuths (< 0°), got ${shackletonFloorClearance}°`
+  );
+  assert.ok(
+    southPoleRimClearance > 0,
+    `South Pole rim crest (0, 0) must receive summer sunlight (> 0°), got ${southPoleRimClearance}°`
+  );
+
+  // 3. Verify psr_footprints.geojson contains irregular DEM-extracted PSR polygons
+  const psrGeoJson = JSON.parse(fs.readFileSync('public/data/topo/psr_footprints.geojson', 'utf8'));
+  assert.ok(psrGeoJson.features.length >= 50, `Expected >= 50 DEM-derived PSR polygons, found ${psrGeoJson.features.length}`);
+  const shackletonPoly = psrGeoJson.features.find((f) => f.properties.id === 'psr-shackleton');
+  assert.ok(shackletonPoly, 'DEM-derived Shackleton PSR polygon must be present');
+  assert.ok(shackletonPoly.geometry.coordinates.length >= 15, 'Shackleton PSR polygon must have detailed contour vertices');
+});
+
+test('Planar Sub-Solar/Sub-Earth Directional DEM Horizon Ray-Marching (CRITICAL-05)', async () => {
+  const fs = await import('node:fs');
+  const {
+    initWorkerDemBuffer,
+    sampleElevationAtMeters,
+    computeDirectionalHorizonDeg,
+  } = await import('../src/workers/lolaTileWorker.js');
+
+  const rawBuf = fs.readFileSync('public/data/lola_sp_80s_int16.bin');
+  const realDemInt16 = new Int16Array(rawBuf.buffer, rawBuf.byteOffset, rawBuf.byteLength / 2);
+  initWorkerDemBuffer(realDemInt16, 1520, 0.5);
+
+  const halfExtent = 304000;
+
+  // 1. Shackleton Crater floor (x = 7921 m, y = -6600 m) looking toward 0°E / nearside Earth (dirX = 0, dirY = 1)
+  const floorZ = sampleElevationAtMeters(7921, -6600);
+  const floorHorizonTowardEarthDeg = computeDirectionalHorizonDeg(7921, -6600, floorZ, 0, 1, halfExtent);
+  assert.ok(
+    floorHorizonTowardEarthDeg > 10.0,
+    `Shackleton floor looking toward 0°E must be occluded by steep crater wall (> 10°), got ${floorHorizonTowardEarthDeg.toFixed(2)}°`
+  );
+
+  // 2. South Pole rim crest (x = 0 m, y = 0 m) looking toward 0°E / nearside Earth (dirX = 0, dirY = 1)
+  const rimZ = sampleElevationAtMeters(0, 0);
+  const rimHorizonTowardEarthDeg = computeDirectionalHorizonDeg(0, 0, rimZ, 0, 1, halfExtent);
+  assert.ok(
+    rimHorizonTowardEarthDeg < 2.0,
+    `South Pole rim crest looking toward 0°E must have an unobstructed low horizon (< 2°), got ${rimHorizonTowardEarthDeg.toFixed(2)}°`
+  );
+  assert.ok(
+    floorHorizonTowardEarthDeg > rimHorizonTowardEarthDeg + 10.0,
+    'Crater floor horizon obstruction must exceed rim horizon by > 10°'
+  );
+});
 
 

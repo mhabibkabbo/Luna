@@ -48,10 +48,8 @@ const LANDER_PRESETS = [
 ];
 
 function evaluateSiteAtEpoch(site, epochMs, presetWeights, durationDays = 1) {
-  const ev = evaluateCandidateForMissionWindow(site, {
+  const ev = evaluateCandidateForMissionWindow(site, epochMs, durationDays, {
     ...DEFAULT_PLANNER_CONSTRAINTS,
-    landingTimeMs: epochMs,
-    missionDurationDays: durationDays,
     weights: { ...presetWeights, thermal: presetWeights.thermal ?? 0.0 },
   });
 
@@ -61,13 +59,16 @@ function evaluateSiteAtEpoch(site, epochMs, presetWeights, durationDays = 1) {
   return {
     sunlitScore,
     isSunlit: sunlitScore >= 50,
-    linkStatus: ev.instant.dteStatus || (dteScore >= 50 ? 'clear' : 'blocked'),
-    linkMargin: ev.instant.dteMarginDeg ?? 0,
+    linkStatus:
+      ev.touchdown?.dteStatus ||
+      ev.instant?.dteStatus ||
+      (dteScore >= 50 ? 'clear' : 'blocked'),
+    linkMargin: ev.touchdown?.earthMarginDeg ?? ev.instant?.dteMarginDeg ?? 0,
     dteScore,
     score: ev.overallScore,
-    elevationM: ev.terrain.elevationM,
-    slopeDeg: ev.terrain.slopeDeg,
-    roughnessM: ev.terrain.roughnessM,
+    elevationM: ev.elevationM ?? ev.terrain?.elevationM ?? null,
+    slopeDeg: ev.slopeDeg ?? ev.terrain?.slopeDeg ?? null,
+    roughnessM: ev.roughnessM ?? ev.terrain?.roughnessM ?? null,
   };
 }
 

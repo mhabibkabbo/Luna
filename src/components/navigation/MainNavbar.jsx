@@ -256,7 +256,7 @@ export default function MainNavbar({
             type="button"
             onClick={onOpenGuide}
             aria-label="Open user guide"
-            className="h-8 px-3 rounded-lg bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.12] hover:border-white/[0.22] text-[#F8FAFC] hover:text-white text-[12px] font-sans font-medium flex items-center gap-1.5 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 shrink-0"
+            className="h-8 px-3 rounded-lg bg-[#FACC15] hover:bg-[#FDE047] border border-[#EAB308]/60 text-[#050507] hover:text-black text-[12px] font-sans font-semibold flex items-center gap-1.5 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FACC15]/60 shrink-0"
           >
             <span>Guide</span>
           </button>

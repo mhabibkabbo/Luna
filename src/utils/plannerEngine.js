@@ -42,35 +42,91 @@ export const DEFAULT_PLANNER_CONSTRAINTS = {
   },
 };
 
+export function normalizeMissionWindowArgs(
+  landingMsOrOpts,
+  durationDaysArg,
+  constraintsArg = DEFAULT_PLANNER_CONSTRAINTS
+) {
+  let rawLanding = landingMsOrOpts;
+  let rawDuration = durationDaysArg;
+  let rawConstraints = constraintsArg;
+
+  if (
+    landingMsOrOpts &&
+    typeof landingMsOrOpts === 'object' &&
+    !(landingMsOrOpts instanceof Date)
+  ) {
+    rawLanding =
+      landingMsOrOpts.landingTimeMs ??
+      landingMsOrOpts.landingMs ??
+      landingMsOrOpts.epochMs ??
+      landingMsOrOpts.startMs;
+    rawDuration =
+      landingMsOrOpts.missionDurationDays ??
+      landingMsOrOpts.durationDays ??
+      durationDaysArg ??
+      14;
+    const baseConstraints =
+      landingMsOrOpts.constraints && typeof landingMsOrOpts.constraints === 'object'
+        ? landingMsOrOpts.constraints
+        : landingMsOrOpts;
+    rawConstraints = {
+      ...DEFAULT_PLANNER_CONSTRAINTS,
+      ...(constraintsArg && typeof constraintsArg === 'object' ? constraintsArg : {}),
+      ...baseConstraints,
+      weights: {
+        ...DEFAULT_PLANNER_CONSTRAINTS.weights,
+        ...(constraintsArg?.weights || {}),
+        ...(baseConstraints?.weights || {}),
+      },
+    };
+  } else {
+    rawConstraints = {
+      ...DEFAULT_PLANNER_CONSTRAINTS,
+      ...(constraintsArg && typeof constraintsArg === 'object' ? constraintsArg : {}),
+      weights: {
+        ...DEFAULT_PLANNER_CONSTRAINTS.weights,
+        ...(constraintsArg?.weights || {}),
+      },
+    };
+  }
+
+  let safeLandingMs = Date.now();
+  if (typeof rawLanding === 'number' && Number.isFinite(rawLanding)) {
+    safeLandingMs = rawLanding;
+  } else if (rawLanding instanceof Date && Number.isFinite(rawLanding.getTime())) {
+    safeLandingMs = rawLanding.getTime();
+  } else if (typeof rawLanding === 'string' && rawLanding.trim() !== '') {
+    const parsed = Date.parse(rawLanding);
+    if (Number.isFinite(parsed)) {
+      safeLandingMs = parsed;
+    } else if (Number.isFinite(Number(rawLanding))) {
+      safeLandingMs = Number(rawLanding);
+    }
+  }
+
+  const parsedDuration = Number(rawDuration);
+  const safeDurationDays =
+    Number.isFinite(parsedDuration) && parsedDuration > 0 ? parsedDuration : 14;
+
+  return {
+    safeLandingMs,
+    safeDurationDays,
+    constraints: rawConstraints,
+  };
+}
+
 export function evaluateCandidateForMissionWindow(
   candidate,
   landingMsOrOpts,
   durationDaysArg,
   constraintsArg = DEFAULT_PLANNER_CONSTRAINTS
 ) {
-  let landingMs = landingMsOrOpts;
-  let durationDays = durationDaysArg;
-  let constraints = constraintsArg;
-
-  if (landingMsOrOpts && typeof landingMsOrOpts === 'object' && ! (landingMsOrOpts instanceof Date)) {
-    landingMs =
-      landingMsOrOpts.landingTimeMs ??
-      landingMsOrOpts.landingMs ??
-      Date.now();
-    durationDays =
-      landingMsOrOpts.missionDurationDays ??
-      landingMsOrOpts.durationDays ??
-      14;
-    constraints = { ...DEFAULT_PLANNER_CONSTRAINTS, ...landingMsOrOpts };
-  }
-
-  const safeLandingMs =
-    typeof landingMs === 'number' && Number.isFinite(landingMs)
-      ? landingMs
-      : landingMs instanceof Date
-      ? landingMs.getTime()
-      : Date.now();
-  const safeDurationDays = Math.max(1, Number(durationDays) || 14);
+  const { safeLandingMs, safeDurationDays, constraints } = normalizeMissionWindowArgs(
+    landingMsOrOpts,
+    durationDaysArg,
+    constraintsArg
+  );
   const durationMs = safeDurationDays * 86400000;
   const stepHours = constraints.stepHours ?? DEFAULT_STEP_HOURS;
   const numSteps = Math.max(16, Math.round((safeDurationDays * 24) / stepHours));
@@ -97,6 +153,13 @@ export function evaluateCandidateForMissionWindow(
   const elevationM =
     typeof rawElevation === 'number' && Number.isFinite(rawElevation) ? rawElevation : null;
   const hasElevationData = elevationM !== null;
+
+  const rawRoughness =
+    typeof candidate.roughnessM === 'number' && Number.isFinite(candidate.roughnessM)
+      ? candidate.roughnessM
+      : sampledMetrics.roughnessM;
+  const roughnessM =
+    typeof rawRoughness === 'number' && Number.isFinite(rawRoughness) ? rawRoughness : null;
 
   // 1. Touchdown Evaluation (t0) — never invent a fallback horizon angle when DEM is unmodeled
   const state0 = computeCelestialState(safeLandingMs);
@@ -431,10 +494,13 @@ export function evaluateCandidateForMissionWindow(
     );
   }
 
+  const dteStatus0 = candidate.isFarSide ? 'away' : dte0.status;
+
   return {
     id: siteId,
     slopeDeg,
     elevationM,
+    roughnessM,
     sunlitRatio,
     dteUptimeRatio,
     slopeScore,
@@ -448,6 +514,7 @@ export function evaluateCandidateForMissionWindow(
       longitude: lon,
       slopeDeg,
       elevationM,
+      roughnessM,
     },
     isCompliant,
     isPartialScore,
@@ -474,8 +541,27 @@ export function evaluateCandidateForMissionWindow(
       surfaceTempC: thermal0.tempC,
       surfaceTempK: thermal0.tempK,
       isDteLinked: isDteLinked0,
+      dteStatus: dteStatus0,
       earthElevationDeg: dte0.elevationDeg,
-      earthMarginDeg: dte0.marginDeg,
+      earthMarginDeg: dte0.marginDeg ?? 0,
+    },
+    instant: {
+      isSunlit: sol0.status === 'sunlit',
+      sunElevationDeg: sol0.elevationDeg,
+      sunAzimuthDeg: sol0.azimuthDeg,
+      terrainHorizonDeg: terrainHorizon0,
+      isDteLinked: isDteLinked0,
+      dteStatus: dteStatus0,
+      dteElevationDeg: dte0.elevationDeg,
+      dteMarginDeg: dte0.marginDeg ?? 0,
+      surfaceTempC: thermal0.tempC,
+      surfaceTempK: thermal0.tempK,
+    },
+    terrain: {
+      elevationM,
+      slopeDeg,
+      roughnessM,
+      isHorizonModeled,
     },
     durationOutlook: {
       durationDays: safeDurationDays,
@@ -500,8 +586,19 @@ export function rankLandingCandidates(
   durationDays,
   constraints = DEFAULT_PLANNER_CONSTRAINTS
 ) {
+  const {
+    safeLandingMs,
+    safeDurationDays,
+    constraints: normalizedConstraints,
+  } = normalizeMissionWindowArgs(landingMsOrOpts, durationDays, constraints);
+
   const evaluations = candidates.map((cand) =>
-    evaluateCandidateForMissionWindow(cand, landingMsOrOpts, durationDays, constraints)
+    evaluateCandidateForMissionWindow(
+      cand,
+      safeLandingMs,
+      safeDurationDays,
+      normalizedConstraints
+    )
   );
 
   evaluations.sort((a, b) => {

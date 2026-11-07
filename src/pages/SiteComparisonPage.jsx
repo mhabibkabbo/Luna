@@ -496,12 +496,16 @@ export default function SiteComparisonPage({
       {/* =================================================================== */}
       {/* 1. CONCISE PAGE HEADER (Section 9A)                                 */}
       {/* =================================================================== */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#1E2028] pb-5">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 border-b border-[#1E2028] pb-5">
         <div>
-          <h1 className="text-2xl sm:text-[26px] font-display font-semibold tracking-tight text-white">
+          <div className="flex items-center gap-2 text-[11px] font-sans font-semibold tracking-[0.14em] text-[#8E95A5] uppercase">
+            <GitCompare className="w-3.5 h-3.5 text-[#F8FAFC]" />
+            <span>Workspace 04 · Landing Site Comparison &amp; Trade-Off Matrix</span>
+          </div>
+          <h1 className="text-2xl sm:text-[26px] font-display font-semibold tracking-tight text-white mt-1.5">
             Landing Site Comparison
           </h1>
-          <p className="text-[13.5px] font-sans text-[#8E95A5] mt-1.5 leading-relaxed">
+          <p className="text-[13.5px] font-sans text-[#8E95A5] mt-1 max-w-3xl leading-relaxed">
             Evaluate lunar landing candidates across terrain, illumination, communication, thermal conditions, and mission duration.
           </p>
         </div>

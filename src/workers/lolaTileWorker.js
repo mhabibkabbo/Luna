@@ -143,6 +143,140 @@ function computeSlopeAtMeters(xMeters, yMeters, stepM = 400, halfExtent = HALF_E
   };
 }
 
+// Precomputed 16-azimuth ray tables for Mazarico et al. (2011) multi-azimuth LOLA DEM PSR horizon masking
+const PSR_AZ_COUNT = 16;
+const PSR_RAY_STEPS = 14;
+const PSR_STEP_M = 2400; // 2.4 km radial steps up to 33.6 km crater rim horizon
+const PSR_DIR_X = new Float32Array(PSR_AZ_COUNT);
+const PSR_DIR_Y = new Float32Array(PSR_AZ_COUNT);
+const PSR_INV_DIST = new Float32Array(PSR_RAY_STEPS + 1);
+const PSR_CURV_DROP = new Float32Array(PSR_RAY_STEPS + 1);
+
+(function initPsrTables() {
+  for (let a = 0; a < PSR_AZ_COUNT; a++) {
+    const rad = (a * 2 * Math.PI) / PSR_AZ_COUNT;
+    PSR_DIR_X[a] = Math.sin(rad);
+    PSR_DIR_Y[a] = Math.cos(rad);
+  }
+  for (let s = 1; s <= PSR_RAY_STEPS; s++) {
+    const d = s * PSR_STEP_M;
+    PSR_INV_DIST[s] = 1 / d;
+    PSR_CURV_DROP[s] = (d * d) / (2 * MOON_RADIUS_M);
+  }
+})();
+
+/**
+ * Computes maximum annual solar elevation clearance (in degrees) above the local 360° LOLA DEM
+ * terrain horizon across 16 solar azimuths at maximum lunar summer obliquity (+1.5424°).
+ * Returns <= 0° if and only if surrounding topography blocks the Sun at ALL azimuths (true PSR).
+ */
+function computePsrClearanceAtMeters(xMeters, yMeters, zCenter = null, halfExtent = HALF_EXTENT_M) {
+  if (!demGrid || demSize <= 0) return null;
+  const z0 = zCenter !== null && Number.isFinite(zCenter)
+    ? zCenter
+    : sampleElevationAtMeters(xMeters, yMeters, halfExtent);
+  if (z0 === null) return null;
+
+  const invWorldSpan = (demSize - 1) / (2 * halfExtent);
+  const c0 = (xMeters + halfExtent) * invWorldSpan;
+  const r0 = (halfExtent - yMeters) * invWorldSpan;
+  const stepGrid = PSR_STEP_M * invWorldSpan;
+
+  let maxSolarClearanceDeg = -90;
+
+  for (let a = 0; a < PSR_AZ_COUNT; a++) {
+    const ux = PSR_DIR_X[a];
+    const uy = PSR_DIR_Y[a];
+    const sunMaxElDeg =
+      1.5424 + ((xMeters * ux + yMeters * uy) / MOON_RADIUS_M) * 57.29577951308232;
+
+    let maxSlope = -1e9;
+    let validRaySamples = 0;
+    const dc = ux * stepGrid;
+    const dr = -uy * stepGrid;
+
+    for (let s = 1; s <= PSR_RAY_STEPS; s++) {
+      const nc = (c0 + dc * s) | 0;
+      const nr = (r0 + dr * s) | 0;
+      if (nc < 0 || nc >= demSize || nr < 0 || nr >= demSize) break;
+      const rawZ = demGrid[nr * demSize + nc];
+      if (rawZ === DEM_NODATA) continue;
+      validRaySamples++;
+      const zTarget = rawZ * demScale;
+      const slope = (zTarget - z0 - PSR_CURV_DROP[s]) * PSR_INV_DIST[s];
+      if (slope > maxSlope) maxSlope = slope;
+    }
+
+    const horizDeg = validRaySamples > 0 ? Math.atan(maxSlope) * 57.29577951308232 : 0;
+    const clearanceDeg = sunMaxElDeg - horizDeg;
+    if (clearanceDeg > maxSolarClearanceDeg) {
+      maxSolarClearanceDeg = clearanceDeg;
+    }
+  }
+
+  return maxSolarClearanceDeg;
+}
+
+// Precomputed radial step distances (800 m to 36.8 km) for directional solar shadow & Earth occlusion ray-marching
+const RAY_MARCH_STEPS = 16;
+const RAY_DIST_M = new Float32Array(RAY_MARCH_STEPS);
+const RAY_INV_DIST_M = new Float32Array(RAY_MARCH_STEPS);
+const RAY_CURV_DROP_M = new Float32Array(RAY_MARCH_STEPS);
+
+(function initDirectionalRayTables() {
+  for (let i = 0; i < RAY_MARCH_STEPS; i++) {
+    // Near-field 800 m / 1600 m steps transitioning to 2400 m far-field steps up to 36.8 km
+    const d = i === 0 ? 800 : i === 1 ? 1600 : i * 2400;
+    RAY_DIST_M[i] = d;
+    RAY_INV_DIST_M[i] = 1 / d;
+    RAY_CURV_DROP_M[i] = (d * d) / (2 * MOON_RADIUS_M);
+  }
+})();
+
+/**
+ * Marches a single directional ray along planar unit vector (dirX, dirY) across the LOLA DEM
+ * from (xMeters, yMeters) and returns the maximum terrain horizon elevation angle (in degrees),
+ * accounting for lunar spherical curvature drop d^2 / (2 * R0).
+ */
+function computeDirectionalHorizonDeg(
+  xMeters,
+  yMeters,
+  zCenter = null,
+  dirX = 0,
+  dirY = 1,
+  halfExtent = HALF_EXTENT_M
+) {
+  if (!demGrid || demSize <= 0) return 0;
+  const z0 =
+    zCenter !== null && Number.isFinite(zCenter)
+      ? zCenter
+      : sampleElevationAtMeters(xMeters, yMeters, halfExtent);
+  if (z0 === null) return 0;
+
+  const invWorldSpan = (demSize - 1) / (2 * halfExtent);
+  const c0 = (xMeters + halfExtent) * invWorldSpan;
+  const r0 = (halfExtent - yMeters) * invWorldSpan;
+
+  let maxSlope = -1e9;
+  let validCount = 0;
+
+  for (let i = 0; i < RAY_MARCH_STEPS; i++) {
+    const distM = RAY_DIST_M[i];
+    const gridOffset = distM * invWorldSpan;
+    const nc = (c0 + dirX * gridOffset) | 0;
+    const nr = (r0 - dirY * gridOffset) | 0;
+    if (nc < 0 || nc >= demSize || nr < 0 || nr >= demSize) break;
+    const rawZ = demGrid[nr * demSize + nc];
+    if (rawZ === DEM_NODATA) continue;
+    validCount++;
+    const zTarget = rawZ * demScale;
+    const slope = (zTarget - z0 - RAY_CURV_DROP_M[i]) * RAY_INV_DIST_M[i];
+    if (slope > maxSlope) maxSlope = slope;
+  }
+
+  return validCount > 0 ? Math.atan(maxSlope) * 57.29577951308232 : 0;
+}
+
 function handleExtractContourGrid(payload) {
   const gridSize = payload?.gridSize || 240;
   const halfExtentM = payload?.halfExtentM || HALF_EXTENT_M;
@@ -200,12 +334,14 @@ function handleRenderTile(msgPayload) {
   const mapExtentM = msgPayload.mapExtentM || HALF_EXTENT_M;
   const renderMode = msgPayload.renderMode || 'hypsometric';
   const enableHillshade = msgPayload.enableHillshade !== false;
-  const sunAzimuthDeg = msgPayload.sunAzimuthDeg ?? 315;
-  const sunElevationDeg = msgPayload.sunElevationDeg ?? 22;
+  const subSunLonDeg = msgPayload.subSunLonDeg ?? msgPayload.sunAzimuthDeg ?? 315;
+  const subSunLatDeg =
+    msgPayload.subSunLatDeg !== undefined
+      ? msgPayload.subSunLatDeg
+      : -(msgPayload.sunElevationDeg ?? 1.5);
   const subEarthLonDeg = msgPayload.subEarthLonDeg ?? 0;
   const subEarthLatDeg = msgPayload.subEarthLatDeg ?? -6.5;
   const showSlopeHazard = Boolean(msgPayload.showSlopeHazard);
-  const showPsr = msgPayload.showPsr !== undefined ? Boolean(msgPayload.showPsr) : true;
 
   const pixelData = new Uint8ClampedArray(tileSize * tileSize * 4);
   if (!demGrid || demSize <= 0) {
@@ -221,12 +357,20 @@ function handleRenderTile(msgPayload) {
     return;
   }
 
-  const azRad = (sunAzimuthDeg * Math.PI) / 180;
-  const elRad = (Math.max(1.5, sunElevationDeg) * Math.PI) / 180;
-  const cosEl = Math.cos(elRad);
-  const sinEl = Math.sin(elRad);
+  // Planar unit vectors in South Polar Stereographic frame (+Y = 0°E, +X = 90°E)
+  const subSunLonRad = (subSunLonDeg * Math.PI) / 180;
+  const sunDirX = Math.sin(subSunLonRad);
+  const sunDirY = Math.cos(subSunLonRad);
+  const rimLonRad = subSunLonRad + Math.PI * 0.75;
+  const rimDirX = Math.sin(rimLonRad);
+  const rimDirY = Math.cos(rimLonRad);
+
+  // Hillshade illumination elevation (clamped >= 15° for cartographic relief visibility on non-solar layers)
+  const hillElRad = (Math.max(15, -subSunLatDeg) * Math.PI) / 180;
+  const cosHillEl = Math.cos(hillElRad);
+  const sinHillEl = Math.sin(hillElRad);
+
   const earthLonRad = (subEarthLonDeg * Math.PI) / 180;
-  // Direction toward sub-Earth meridian in South Polar Stereographic plane (+Y = 0°E, +X = 90°E)
   const earthDirX = Math.sin(earthLonRad);
   const earthDirY = Math.cos(earthLonRad);
 
@@ -293,16 +437,14 @@ function handleRenderTile(msgPayload) {
       const slopeGradSq = dzdx * dzdx + dzdy * dzdy;
       const slopeRad = Math.atan(Math.sqrt(slopeGradSq));
       const slopeDeg = slopeRad * 57.29577951308232;
-      const aspectRad = Math.atan2(dzdy, -dzdx);
+      const cosSlope = 1 / Math.sqrt(1 + slopeGradSq);
 
       let shade = 0.85;
       if (enableHillshade || renderMode === 'hillshade' || renderMode === 'illumination') {
         const rawShade =
-          sinEl * Math.cos(slopeRad) +
-          cosEl * Math.sin(slopeRad) * Math.cos(azRad - aspectRad);
+          (sinHillEl - cosHillEl * (dzdx * sunDirX + dzdy * sunDirY)) * cosSlope;
         const rimShade =
-          0.45 * Math.cos(slopeRad) +
-          0.55 * Math.sin(slopeRad) * Math.cos(azRad + Math.PI * 0.75 - aspectRad);
+          (0.45 - 0.55 * (dzdx * rimDirX + dzdy * rimDirY)) * cosSlope;
         shade = Math.max(0.14, Math.min(1.15, rawShade * 0.82 + Math.max(0, rimShade) * 0.24));
       }
 
@@ -359,13 +501,31 @@ function handleRenderTile(msgPayload) {
         g = Math.min(255, lum + 3);
         b = Math.min(255, lum + 8);
       } else if (renderMode === 'illumination') {
-        // Layer 6: Time-Dynamic Solar Illumination & Grazing Incidence (first-principles local surface normal dot sun vector)
-        const sinSunEl = Math.sin((sunElevationDeg * Math.PI) / 180);
-        const cosSunEl = Math.cos((sunElevationDeg * Math.PI) / 180);
+        // Layer 6: Time-Dynamic Solar Illumination with Planar Solar Vector & DEM Horizon Ray-Marching
+        const sunDistM = worldX * sunDirX + worldY * sunDirY;
+        const localSunElevDeg =
+          -subSunLatDeg + (sunDistM / MOON_RADIUS_M) * 57.29577951308232;
+        const localSunElRad = (localSunElevDeg * Math.PI) / 180;
+        const sinSunEl = Math.sin(localSunElRad);
+        const cosSunEl = Math.cos(localSunElRad);
         const cosInc =
-          sinSunEl * Math.cos(slopeRad) +
-          cosSunEl * Math.sin(slopeRad) * Math.cos(azRad - aspectRad);
-        const isShadowed = cosInc <= 0.0;
+          (sinSunEl - cosSunEl * (dzdx * sunDirX + dzdy * sunDirY)) * cosSlope;
+
+        let isShadowed = localSunElevDeg <= 0.0 || cosInc <= 0.0;
+        if (!isShadowed) {
+          const sunHorizonDeg = computeDirectionalHorizonDeg(
+            worldX,
+            worldY,
+            elev,
+            sunDirX,
+            sunDirY,
+            mapExtentM
+          );
+          if (localSunElevDeg <= sunHorizonDeg) {
+            isShadowed = true;
+          }
+        }
+
         if (isShadowed) {
           const depth = Math.max(0.18, Math.min(0.6, (elev + 5000) / 8000));
           r = Math.round(10 * depth);
@@ -378,61 +538,91 @@ function handleRenderTile(msgPayload) {
           b = Math.min(255, Math.round(15 + Math.pow(flux, 1.8) * 155));
         }
       } else if (renderMode === 'psr') {
-        // Layer 7: Permanently Shadowed Regions (PSRs) & Deep Polar Cold-Trap Basins
+        // Layer 7: Permanently Shadowed Regions (PSRs) via 16-Azimuth LOLA DEM Horizon Ray-Marching (Mazarico et al. 2011)
         const clampedElev = Math.max(LUT_MIN_ELEV, Math.min(LUT_MAX_ELEV, Math.round(elev)));
         const lutIdx = (clampedElev - LUT_MIN_ELEV) * 3;
         r = Math.min(255, (RAMP_LUT[lutIdx] * shade * 0.55) | 0);
         g = Math.min(255, (RAMP_LUT[lutIdx + 1] * shade * 0.55) | 0);
         b = Math.min(255, (RAMP_LUT[lutIdx + 2] * shade * 0.65) | 0);
-        if (elev < -2000) {
-          const depthFactor = Math.min(1, (-2000 - elev) / 2500);
-          r = Math.round(r * (1 - 0.75 * depthFactor) + 14 * depthFactor);
-          g = Math.round(g * (1 - 0.65 * depthFactor) + 165 * depthFactor);
-          b = Math.round(b * (1 - 0.45 * depthFactor) + 245 * depthFactor);
+
+        const maxSolarClearanceDeg = computePsrClearanceAtMeters(worldX, worldY, elev, mapExtentM);
+        if (maxSolarClearanceDeg !== null && maxSolarClearanceDeg <= 0.0) {
+          // True multi-azimuth permanent shadow: horizon blocks Sun at all 16 azimuths
+          const shadowDepthFactor = Math.min(1, Math.max(0.25, -maxSolarClearanceDeg / 4.0));
+          r = Math.round(r * (1 - 0.82 * shadowDepthFactor) + 8 * shadowDepthFactor);
+          g = Math.round(g * (1 - 0.72 * shadowDepthFactor) + 178 * shadowDepthFactor);
+          b = Math.round(b * (1 - 0.52 * shadowDepthFactor) + 250 * shadowDepthFactor);
+        } else if (maxSolarClearanceDeg !== null && maxSolarClearanceDeg <= 0.75) {
+          // Marginal seasonal penumbra (< 0.75° max summer clearance)
+          const penumbraFactor = (0.75 - maxSolarClearanceDeg) / 0.75;
+          r = Math.round(r * (1 - 0.35 * penumbraFactor) + 30 * penumbraFactor);
+          g = Math.round(g * (1 - 0.35 * penumbraFactor) + 115 * penumbraFactor);
+          b = Math.round(b * (1 - 0.35 * penumbraFactor) + 195 * penumbraFactor);
         }
       } else if (renderMode === 'earth-visibility') {
-        // Layer 8: Direct-to-Earth (DTE) Libration-Synced Visibility (first-principles spherical geometry)
-        // Radial projection along sub-Earth meridian in meters (+ toward Earth, - away from Earth)
+        // Layer 8: Direct-to-Earth (DTE) Libration-Synced Visibility with DEM Obstacle Ray-Marching
         const earthDistM = worldX * earthDirX + worldY * earthDirY;
         const angularOffsetDeg = (earthDistM / MOON_RADIUS_M) * 57.29577951308232;
+        const localEarthElevDeg = -subEarthLatDeg + angularOffsetDeg;
         const localSlopeAlongEarthDeg =
           Math.atan(dzdx * earthDirX + dzdy * earthDirY) * 57.29577951308232;
-        // At the South Pole (-90°S), Earth elevation is -subEarthLatDeg + angularOffsetDeg
-        const earthElevApprox = -subEarthLatDeg + angularOffsetDeg - localSlopeAlongEarthDeg;
-        if (earthElevApprox <= 0.0) {
-          // Below local horizon / Earth-occulted
+        const earthHorizonDeg =
+          localEarthElevDeg > 0.0
+            ? computeDirectionalHorizonDeg(worldX, worldY, elev, earthDirX, earthDirY, mapExtentM)
+            : 90.0;
+        const effectiveHorizonDeg = Math.max(0.0, earthHorizonDeg, localSlopeAlongEarthDeg);
+        const earthClearanceDeg = localEarthElevDeg - effectiveHorizonDeg;
+
+        if (localEarthElevDeg <= 0.0 || earthClearanceDeg <= 0.0) {
+          // Below local horizon or occluded by intervening DEM terrain
           r = Math.round(75 * shade);
           g = Math.round(20 * shade);
           b = Math.round(30 * shade);
-        } else if (earthElevApprox < 1.5) {
-          // Marginal grazing horizon
+        } else if (earthClearanceDeg < 1.5) {
+          // Marginal grazing horizon (< 1.5° clearance above terrain mask)
           r = Math.round(215 * shade);
           g = Math.round(145 * shade);
           b = Math.round(25 * shade);
         } else {
           // Clear Direct-to-Earth visibility
-          const visT = Math.min(1, (earthElevApprox - 1.5) / 10);
+          const visT = Math.min(1, (earthClearanceDeg - 1.5) / 10);
           r = Math.round((16 + visT * 36) * (0.65 + shade * 0.35));
           g = Math.round((145 + visT * 95) * (0.65 + shade * 0.35));
           b = Math.round((110 + visT * 65) * (0.65 + shade * 0.35));
         }
       } else if (renderMode === 'risk') {
-        // Layer 9: Time-Dependent Composite Mission Risk (Slope + Shadow + DTE Occultation)
-        const sinSunEl = Math.sin((sunElevationDeg * Math.PI) / 180);
-        const cosSunEl = Math.cos((sunElevationDeg * Math.PI) / 180);
+        // Layer 9: Time-Dependent Composite Mission Risk (Slope + Cast Solar Shadow + DEM DTE Occultation)
+        const sunDistM = worldX * sunDirX + worldY * sunDirY;
+        const localSunElevDeg =
+          -subSunLatDeg + (sunDistM / MOON_RADIUS_M) * 57.29577951308232;
+        const localSunElRad = (localSunElevDeg * Math.PI) / 180;
+        const sinSunEl = Math.sin(localSunElRad);
+        const cosSunEl = Math.cos(localSunElRad);
         const cosInc =
-          sinSunEl * Math.cos(slopeRad) +
-          cosSunEl * Math.sin(slopeRad) * Math.cos(azRad - aspectRad);
+          (sinSunEl - cosSunEl * (dzdx * sunDirX + dzdy * sunDirY)) * cosSlope;
+        const sunHorizonDeg =
+          localSunElevDeg > 0.0 && cosInc > 0.0
+            ? computeDirectionalHorizonDeg(worldX, worldY, elev, sunDirX, sunDirY, mapExtentM)
+            : 90.0;
+        const isSunShadowed =
+          localSunElevDeg <= 0.0 || cosInc <= 0.0 || localSunElevDeg <= sunHorizonDeg;
+
         const earthDistM = worldX * earthDirX + worldY * earthDirY;
-        const angularOffsetDeg = (earthDistM / MOON_RADIUS_M) * 57.29577951308232;
-        const earthElevApprox = -subEarthLatDeg + angularOffsetDeg;
+        const localEarthElevDeg =
+          -subEarthLatDeg + (earthDistM / MOON_RADIUS_M) * 57.29577951308232;
+        const earthHorizonDeg =
+          localEarthElevDeg > 0.0
+            ? computeDirectionalHorizonDeg(worldX, worldY, elev, earthDirX, earthDirY, mapExtentM)
+            : 90.0;
+        const isEarthBlocked = localEarthElevDeg <= 0.0 || localEarthElevDeg <= earthHorizonDeg;
+
         let riskScore = 0;
         if (slopeDeg >= 15) riskScore += 55;
         else if (slopeDeg >= 10) riskScore += 28;
         else riskScore += (slopeDeg / 10) * 15;
 
-        if (cosInc <= 0.0) riskScore += 32;
-        if (earthElevApprox <= 0.0) riskScore += 25;
+        if (isSunShadowed) riskScore += 32;
+        if (isEarthBlocked) riskScore += 25;
         const rNorm = Math.max(0, Math.min(1, riskScore / 95));
 
         if (rNorm < 0.35) {
@@ -537,7 +727,13 @@ export function initWorkerDemBuffer(buffer, size = null, scale = DEM_SCALE_M) {
   demScale = Number.isFinite(scale) && scale > 0 ? scale : DEM_SCALE_M;
 }
 
-export { sampleElevation, sampleElevationAtMeters, computeSlopeAtMeters };
+export {
+  sampleElevation,
+  sampleElevationAtMeters,
+  computeSlopeAtMeters,
+  computePsrClearanceAtMeters,
+  computeDirectionalHorizonDeg,
+};
 
 if (typeof self !== 'undefined') {
   self.onmessage = async (e) => {

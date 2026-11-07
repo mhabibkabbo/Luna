@@ -340,71 +340,214 @@ fs.writeFileSync(
 );
 console.log(`[LOLA Contour Pipeline] Saved slope_hazard_15deg.geojson (${slopeFeatures.length} boundary lines)`);
 
+// Stereographic & Geodesic Helpers for Authentic Polar Traverses and Crater Rims
+function latLonToStereoMeters(latDeg, lonDeg) {
+  const colatRad = ((90 + latDeg) * Math.PI) / 180;
+  const r = 2 * REFERENCE_RADIUS_M * Math.tan(colatRad / 2);
+  const lonRad = (lonDeg * Math.PI) / 180;
+  return {
+    xM: r * Math.sin(lonRad),
+    yM: r * Math.cos(lonRad),
+  };
+}
+
+function stereoMetersToLonLat(xM, yM) {
+  const r = Math.hypot(xM, yM);
+  if (r === 0) return [0.0, -90.0];
+  const colat = 2 * Math.atan(r / (2 * REFERENCE_RADIUS_M));
+  const lat = (colat * 180) / Math.PI - 90.0;
+  const lon = (Math.atan2(xM, yM) * 180) / Math.PI;
+  return [+lon.toFixed(5), +lat.toFixed(5)];
+}
+
+function geodesicDistanceKm([lon1, lat1], [lon2, lat2]) {
+  const toRad = Math.PI / 180;
+  const phi1 = lat1 * toRad;
+  const phi2 = lat2 * toRad;
+  const dPhi = (lat2 - lat1) * toRad;
+  const dLam = (lon2 - lon1) * toRad;
+  const a =
+    Math.sin(dPhi / 2) ** 2 +
+    Math.cos(phi1) * Math.cos(phi2) * Math.sin(dLam / 2) ** 2;
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(Math.max(0, 1 - a)));
+  return (REFERENCE_RADIUS_M * c) / 1000;
+}
+
+function sampleDemAtStereoMeters(xM, yM) {
+  const c = Math.round((xM + HALF_EXTENT_M) / CELL_SIZE_M);
+  const r = Math.round((HALF_EXTENT_M - yM) / CELL_SIZE_M);
+  if (r < 1 || r >= GRID_SIZE - 1 || c < 1 || c >= GRID_SIZE - 1) return null;
+
+  const z0 = rawHeights[r * GRID_SIZE + c];
+  if (Number.isNaN(z0)) return null;
+
+  // 3x3 Horn gradient stencil on full-resolution 400 m/px LOLA DEM
+  const zNW = rawHeights[(r - 1) * GRID_SIZE + (c - 1)];
+  const zN = rawHeights[(r - 1) * GRID_SIZE + c];
+  const zNE = rawHeights[(r - 1) * GRID_SIZE + (c + 1)];
+  const zW = rawHeights[r * GRID_SIZE + (c - 1)];
+  const zE = rawHeights[r * GRID_SIZE + (c + 1)];
+  const zSW = rawHeights[(r + 1) * GRID_SIZE + (c - 1)];
+  const zS = rawHeights[(r + 1) * GRID_SIZE + c];
+  const zSE = rawHeights[(r + 1) * GRID_SIZE + (c + 1)];
+
+  if (
+    Number.isNaN(zNW) ||
+    Number.isNaN(zN) ||
+    Number.isNaN(zNE) ||
+    Number.isNaN(zW) ||
+    Number.isNaN(zE) ||
+    Number.isNaN(zSW) ||
+    Number.isNaN(zS) ||
+    Number.isNaN(zSE)
+  ) {
+    return { elevationM: z0, slopeDeg: 0 };
+  }
+
+  const dzdx = (zNE + 2 * zE + zSE - (zNW + 2 * zW + zSW)) / (8 * CELL_SIZE_M);
+  const dzdy = (zSW + 2 * zS + zSE - (zNW + 2 * zN + zNE)) / (8 * CELL_SIZE_M);
+  const slopeDeg = (Math.atan(Math.hypot(dzdx, dzdy)) * 180) / Math.PI;
+  return { elevationM: z0, slopeDeg };
+}
+
+function evaluateTraversePolyline(coordinates) {
+  let totalLengthKm = 0;
+  let maxSlopeDeg = 0;
+  let slopeSum = 0;
+  let sampleCount = 0;
+  let minElevationM = Infinity;
+  let maxElevationM = -Infinity;
+
+  for (let i = 1; i < coordinates.length; i++) {
+    const ptA = coordinates[i - 1];
+    const ptB = coordinates[i];
+    totalLengthKm += geodesicDistanceKm(ptA, ptB);
+
+    const stA = latLonToStereoMeters(ptA[1], ptA[0]);
+    const stB = latLonToStereoMeters(ptB[1], ptB[0]);
+    const segDistM = Math.hypot(stB.xM - stA.xM, stB.yM - stA.yM);
+    const steps = Math.max(4, Math.ceil(segDistM / 200));
+
+    for (let s = 0; s <= steps; s++) {
+      const t = s / steps;
+      const xM = stA.xM + (stB.xM - stA.xM) * t;
+      const yM = stA.yM + (stB.yM - stA.yM) * t;
+      const sample = sampleDemAtStereoMeters(xM, yM);
+      if (sample) {
+        if (sample.slopeDeg > maxSlopeDeg) maxSlopeDeg = sample.slopeDeg;
+        slopeSum += sample.slopeDeg;
+        sampleCount++;
+        if (sample.elevationM < minElevationM) minElevationM = sample.elevationM;
+        if (sample.elevationM > maxElevationM) maxElevationM = sample.elevationM;
+      }
+    }
+  }
+
+  return {
+    lengthKm: +totalLengthKm.toFixed(1),
+    maxSlopeDeg: +maxSlopeDeg.toFixed(1),
+    meanSlopeDeg: sampleCount > 0 ? +(slopeSum / sampleCount).toFixed(1) : 0,
+    minElevationM: Number.isFinite(minElevationM) ? Math.round(minElevationM) : 0,
+    maxElevationM: Number.isFinite(maxElevationM) ? Math.round(maxElevationM) : 0,
+  };
+}
+
+function buildTraverseFeature({ id, name, source, coordinates }) {
+  const stats = evaluateTraversePolyline(coordinates);
+  return {
+    type: 'Feature',
+    properties: {
+      id,
+      name,
+      source,
+      lengthKm: stats.lengthKm,
+      maxSlopeDeg: stats.maxSlopeDeg,
+      meanSlopeDeg: stats.meanSlopeDeg,
+      minElevationM: stats.minElevationM,
+      maxElevationM: stats.maxElevationM,
+    },
+    geometry: {
+      type: 'LineString',
+      coordinates,
+    },
+  };
+}
+
+function buildStereographicCraterRim(name, centerLat, centerLon, radiusM, numSegments = 36) {
+  const { xM: cx, yM: cy } = latLonToStereoMeters(centerLat, centerLon);
+  const coordinates = [];
+  let maxRimElev = -Infinity;
+
+  for (let i = 0; i <= numSegments; i++) {
+    const theta = (i * 2 * Math.PI) / numSegments;
+    const xM = cx + radiusM * Math.cos(theta);
+    const yM = cy + radiusM * Math.sin(theta);
+    coordinates.push(stereoMetersToLonLat(xM, yM));
+    const sample = sampleDemAtStereoMeters(xM, yM);
+    if (sample && sample.elevationM > maxRimElev) {
+      maxRimElev = sample.elevationM;
+    }
+  }
+
+  return {
+    type: 'Feature',
+    properties: {
+      name,
+      type: 'rim',
+      centerLat,
+      centerLon,
+      radiusKm: +(radiusM / 1000).toFixed(2),
+      elevationM: Number.isFinite(maxRimElev) ? Math.round(maxRimElev) : 1251,
+    },
+    geometry: {
+      type: 'LineString',
+      coordinates,
+    },
+  };
+}
+
 // Step 3: Planned Traverse Routes GeoJSON
 console.log('[LOLA Contour Pipeline] Packaging planned traverse routes...');
 const traverseRoutes = {
   type: 'FeatureCollection',
   name: 'NASA Artemis & VIPER South Pole Candidate Traverse Routes',
   features: [
-    {
-      type: 'Feature',
-      properties: {
-        id: 'traverse-connecting-ridge',
-        name: 'Connecting Ridge Traverse (Shackleton → De Gerlache)',
-        source: 'NASA Artemis III Science Definition Team',
-        maxSlopeDeg: 12.4,
-        lengthKm: 18.6,
-      },
-      geometry: {
-        type: 'LineString',
-        coordinates: [
-          [129.0, -89.65],
-          [90.0, -89.50],
-          [0.0, -89.40],
-          [-45.0, -89.10],
-          [-87.1, -88.50],
-        ],
-      },
-    },
-    {
-      type: 'Feature',
-      properties: {
-        id: 'traverse-malapert-plateau',
-        name: 'Malapert Massif Summit Approach',
-        source: 'NASA Lunar Exploration Analysis Group',
-        maxSlopeDeg: 14.2,
-        lengthKm: 24.1,
-      },
-      geometry: {
-        type: 'LineString',
-        coordinates: [
-          [0.0, -86.50],
-          [1.5, -86.25],
-          [2.7, -86.02],
-          [3.8, -85.80],
-        ],
-      },
-    },
-    {
-      type: 'Feature',
-      properties: {
-        id: 'traverse-nobile-viper',
-        name: 'Nobile Rim Volatiles Prospecting Loop',
-        source: 'NASA VIPER Science Team',
-        maxSlopeDeg: 11.8,
-        lengthKm: 15.3,
-      },
-      geometry: {
-        type: 'LineString',
-        coordinates: [
-          [53.5, -85.20],
-          [55.0, -85.35],
-          [57.2, -85.50],
-          [54.8, -85.65],
-          [52.5, -85.45],
-        ],
-      },
-    },
+    buildTraverseFeature({
+      id: 'traverse-connecting-ridge',
+      name: 'Connecting Ridge Traverse (Shackleton → De Gerlache)',
+      source: 'NASA Artemis III Science Definition Team',
+      // Routes along the 220°E–273°E (-140°W to -87.1°W) Connecting Ridge crest
+      coordinates: [
+        [-140.0, -89.56],
+        [-132.0, -89.48],
+        [-120.0, -89.38],
+        [-104.0, -89.26],
+        [-87.1, -89.12],
+      ],
+    }),
+    buildTraverseFeature({
+      id: 'traverse-malapert-plateau',
+      name: 'Malapert Massif Summit Approach',
+      source: 'NASA Lunar Exploration Analysis Group',
+      coordinates: [
+        [0.0, -86.50],
+        [1.5, -86.25],
+        [2.7, -86.02],
+        [3.8, -85.80],
+      ],
+    }),
+    buildTraverseFeature({
+      id: 'traverse-nobile-viper',
+      name: 'Nobile Rim Volatiles Prospecting Loop',
+      source: 'NASA VIPER Science Team',
+      coordinates: [
+        [53.5, -85.20],
+        [54.6, -85.28],
+        [55.6, -85.36],
+        [54.5, -85.44],
+        [53.3, -85.34],
+      ],
+    }),
   ],
 };
 
@@ -416,67 +559,59 @@ console.log(`[LOLA Contour Pipeline] Saved planned traverses to ${path.join(OUTP
 
 // Step 4: Ridge Lines & Crater Rims GeoJSON
 console.log('[LOLA Contour Pipeline] Packaging South Pole crater rims and major ridges...');
+const connectingRidgeCoords = [
+  [-142.0, -89.58],
+  [-134.0, -89.50],
+  [-122.0, -89.39],
+  [-108.0, -89.26],
+  [-96.0, -89.10],
+  [-87.1, -88.95],
+];
+const connectingRidgeStats = evaluateTraversePolyline(connectingRidgeCoords);
+
+const malapertRidgeCoords = [
+  [0.5, -86.35],
+  [1.8, -86.15],
+  [2.7, -86.02],
+  [3.9, -85.85],
+  [5.2, -85.70],
+];
+const malapertRidgeStats = evaluateTraversePolyline(malapertRidgeCoords);
+
 const ridgesAndRims = {
   type: 'FeatureCollection',
   name: 'NASA LOLA South Pole Major Ridges & Crater Rims',
   features: [
+    // Shackleton Crater: IAU center (-89.66°S, 129.8°E, distance from pole = 10.31 km), radius = 10.50 km -> encircles 90°S
+    buildStereographicCraterRim('Shackleton Crater Rim', -89.66, 129.8, 10500, 36),
     {
       type: 'Feature',
-      properties: { name: 'Shackleton Crater Rim', type: 'rim', elevationM: 1251 },
+      properties: {
+        name: 'Connecting Ridge Crest',
+        type: 'ridge',
+        elevationM: connectingRidgeStats.maxElevationM,
+        lengthKm: connectingRidgeStats.lengthKm,
+      },
       geometry: {
         type: 'LineString',
-        coordinates: Array.from({ length: 37 }, (_, i) => {
-          const az = (i * 10 * Math.PI) / 180;
-          const rDeg = 0.35; // ~10.5 km radius
-          const lat = -89.65 + Math.cos(az) * rDeg;
-          const lon = (129.0 + (Math.sin(az) * rDeg) / Math.cos((-89.65 * Math.PI) / 180) + 360) % 360;
-          return [+(lon > 180 ? lon - 360 : lon).toFixed(4), +lat.toFixed(4)];
-        }),
+        coordinates: connectingRidgeCoords,
       },
     },
     {
       type: 'Feature',
-      properties: { name: 'Connecting Ridge Crest', type: 'ridge', elevationM: 1420 },
+      properties: {
+        name: 'Malapert Massif Ridge',
+        type: 'ridge',
+        elevationM: malapertRidgeStats.maxElevationM,
+        lengthKm: malapertRidgeStats.lengthKm,
+      },
       geometry: {
         type: 'LineString',
-        coordinates: [
-          [135.0, -89.70],
-          [95.0, -89.55],
-          [35.0, -89.42],
-          [-15.0, -89.25],
-          [-65.0, -88.95],
-          [-87.0, -88.60],
-        ],
+        coordinates: malapertRidgeCoords,
       },
     },
-    {
-      type: 'Feature',
-      properties: { name: 'Malapert Massif Ridge', type: 'ridge', elevationM: 5113 },
-      geometry: {
-        type: 'LineString',
-        coordinates: [
-          [0.5, -86.35],
-          [1.8, -86.15],
-          [2.7, -86.02],
-          [3.9, -85.85],
-          [5.2, -85.70],
-        ],
-      },
-    },
-    {
-      type: 'Feature',
-      properties: { name: 'Haworth Rim Crest', type: 'rim', elevationM: 850 },
-      geometry: {
-        type: 'LineString',
-        coordinates: Array.from({ length: 25 }, (_, i) => {
-          const az = (i * 15 * Math.PI) / 180;
-          const rDeg = 0.85;
-          const lat = -87.45 + Math.cos(az) * rDeg;
-          const lon = (-4.0 + (Math.sin(az) * rDeg) / Math.cos((-87.45 * Math.PI) / 180) + 360) % 360;
-          return [+(lon > 180 ? lon - 360 : lon).toFixed(4), +lat.toFixed(4)];
-        }),
-      },
-    },
+    // Haworth Crater: IAU center (-87.45°S, -4.0°W), radius = 25.70 km (51.4 km diameter) in stereographic (x, y) meters
+    buildStereographicCraterRim('Haworth Rim Crest', -87.45, -4.0, 25700, 36),
   ],
 };
 
@@ -485,6 +620,184 @@ fs.writeFileSync(
   JSON.stringify(ridgesAndRims, null, 2)
 );
 console.log(`[LOLA Contour Pipeline] Saved ridges and crater rims to ${path.join(OUTPUT_DIR, 'ridges_and_rims.geojson')}`);
+
+// Step 4.5: Multi-Azimuth LOLA DEM Horizon Shadow Mask -> PSR Footprints GeoJSON (Mazarico et al. 2011 Methodology)
+console.log('[LOLA Contour Pipeline] Computing 16-azimuth LOLA DEM horizon shadow mask for PSR cold traps...');
+const PSR_AZ_COUNT = 16;
+const PSR_MAX_STEPS = 28; // up to ~44.8 km horizon ray distance on 1.6 km/px grid
+const psrDirC = new Float32Array(PSR_AZ_COUNT);
+const psrDirR = new Float32Array(PSR_AZ_COUNT);
+const psrDirX = new Float32Array(PSR_AZ_COUNT);
+const psrDirY = new Float32Array(PSR_AZ_COUNT);
+
+for (let a = 0; a < PSR_AZ_COUNT; a++) {
+  const rad = (a * 2 * Math.PI) / PSR_AZ_COUNT;
+  psrDirX[a] = Math.sin(rad);
+  psrDirY[a] = Math.cos(rad);
+  psrDirC[a] = Math.sin(rad);
+  psrDirR[a] = -Math.cos(rad);
+}
+
+const psrInvDist = new Float32Array(PSR_MAX_STEPS + 1);
+const psrCurvDrop = new Float32Array(PSR_MAX_STEPS + 1);
+for (let s = 1; s <= PSR_MAX_STEPS; s++) {
+  const d = s * CELL_DOWN_M;
+  psrInvDist[s] = 1 / d;
+  psrCurvDrop[s] = (d * d) / (2 * REFERENCE_RADIUS_M);
+}
+
+// psrShadowDepthField > 0 means permanently shadowed across all 16 solar azimuths at max +1.5424° summer solstice declination
+const psrShadowDepthField = new Float32Array(DOWNSAMPLE_N * DOWNSAMPLE_N);
+let psrCellCount = 0;
+
+for (let r = 0; r < DOWNSAMPLE_N; r++) {
+  const yM = HALF_EXTENT_M - (r + 0.5) * CELL_DOWN_M;
+  for (let c = 0; c < DOWNSAMPLE_N; c++) {
+    const xM = -HALF_EXTENT_M + (c + 0.5) * CELL_DOWN_M;
+    const z0 = smoothedHeights[r * DOWNSAMPLE_N + c];
+    if (Number.isNaN(z0)) {
+      psrShadowDepthField[r * DOWNSAMPLE_N + c] = -10;
+      continue;
+    }
+    let maxSolarClearanceDeg = -90;
+    for (let a = 0; a < PSR_AZ_COUNT; a++) {
+      const sunMaxElDeg =
+        1.5424 + ((xM * psrDirX[a] + yM * psrDirY[a]) / REFERENCE_RADIUS_M) * 57.29577951308232;
+      let maxSlope = -1e9;
+      const dc = psrDirC[a];
+      const dr = psrDirR[a];
+      for (let s = 1; s <= PSR_MAX_STEPS; s++) {
+        const nc = (c + dc * s) | 0;
+        const nr = (r + dr * s) | 0;
+        if (nc < 0 || nc >= DOWNSAMPLE_N || nr < 0 || nr >= DOWNSAMPLE_N) break;
+        const zTarget = smoothedHeights[nr * DOWNSAMPLE_N + nc];
+        const slope = (zTarget - z0 - psrCurvDrop[s]) * psrInvDist[s];
+        if (slope > maxSlope) maxSlope = slope;
+      }
+      const horizDeg = Math.atan(maxSlope) * 57.29577951308232;
+      const clearanceDeg = sunMaxElDeg - horizDeg;
+      if (clearanceDeg > maxSolarClearanceDeg) {
+        maxSolarClearanceDeg = clearanceDeg;
+      }
+    }
+    const shadowDepthDeg = -maxSolarClearanceDeg;
+    psrShadowDepthField[r * DOWNSAMPLE_N + c] = shadowDepthDeg;
+    if (shadowDepthDeg >= 0) psrCellCount++;
+  }
+}
+
+const KNOWN_POLAR_COLD_TRAPS = [
+  { id: 'psr-shackleton', name: 'Shackleton PSR', lat: -89.67, lon: 129.78, searchRadiusM: 15000 },
+  { id: 'psr-haworth', name: 'Haworth PSR', lat: -87.45, lon: -4.0, searchRadiusM: 32000 },
+  { id: 'psr-shoemaker', name: 'Shoemaker PSR', lat: -88.1, lon: 45.0, searchRadiusM: 32000 },
+  { id: 'psr-faustini', name: 'Faustini PSR', lat: -87.3, lon: 77.0, searchRadiusM: 28000 },
+  { id: 'psr-degerlache', name: 'De Gerlache PSR', lat: -88.5, lon: -87.1, searchRadiusM: 22000 },
+  { id: 'psr-cabeus', name: 'Cabeus LCROSS PSR', lat: -84.9, lon: -35.5, searchRadiusM: 48000 },
+  { id: 'psr-sverdrup', name: 'Sverdrup PSR', lat: -88.3, lon: -152.0, searchRadiusM: 24000 },
+  { id: 'psr-slater', name: 'Slater PSR', lat: -88.1, lon: 111.0, searchRadiusM: 20000 },
+  { id: 'psr-amundsen-floor', name: 'Amundsen Floor PSR', lat: -84.1, lon: 83.2, searchRadiusM: 42000 },
+].map((trap) => ({
+  ...trap,
+  ...latLonToStereoMeters(trap.lat, trap.lon),
+}));
+
+const psrContourGen = d3.contours()
+  .size([DOWNSAMPLE_N, DOWNSAMPLE_N])
+  .thresholds([0.0]);
+
+const psrContourLayers = psrContourGen(psrShadowDepthField);
+const psrFeatures = [];
+
+for (const layer of psrContourLayers) {
+  for (const polygon of layer.coordinates) {
+    const outerRing = polygon[0];
+    if (!outerRing || outerRing.length < 10) continue;
+
+    // Compute centroid and area in stereographic meters
+    let sumX = 0;
+    let sumY = 0;
+    let minFloorElevM = Infinity;
+    for (const [gx, gy] of outerRing) {
+      const xM = -HALF_EXTENT_M + gx * CELL_DOWN_M;
+      const yM = HALF_EXTENT_M - gy * CELL_DOWN_M;
+      sumX += xM;
+      sumY += yM;
+      const sample = sampleDemAtStereoMeters(xM, yM);
+      if (sample && sample.elevationM < minFloorElevM) {
+        minFloorElevM = sample.elevationM;
+      }
+    }
+    const cxM = sumX / outerRing.length;
+    const cyM = sumY / outerRing.length;
+    const centerSample = sampleDemAtStereoMeters(cxM, cyM);
+    if (centerSample && centerSample.elevationM < minFloorElevM) {
+      minFloorElevM = centerSample.elevationM;
+    }
+
+    // Approximate polygon area in km^2 via shoelace formula
+    let areaM2 = 0;
+    for (let i = 0; i < outerRing.length - 1; i++) {
+      const x1 = -HALF_EXTENT_M + outerRing[i][0] * CELL_DOWN_M;
+      const y1 = HALF_EXTENT_M - outerRing[i][1] * CELL_DOWN_M;
+      const x2 = -HALF_EXTENT_M + outerRing[i + 1][0] * CELL_DOWN_M;
+      const y2 = HALF_EXTENT_M - outerRing[i + 1][1] * CELL_DOWN_M;
+      areaM2 += x1 * y2 - x2 * y1;
+    }
+    const areaKm2 = Math.abs(areaM2) / 2e6;
+    if (areaKm2 < 18) continue; // Keep significant polar cold-trap basins (>= 18 km^2)
+
+    let matchedTrap = null;
+    let bestDist = Infinity;
+    for (const trap of KNOWN_POLAR_COLD_TRAPS) {
+      const dist = Math.hypot(cxM - trap.xM, cyM - trap.yM);
+      if (dist <= trap.searchRadiusM && dist < bestDist) {
+        bestDist = dist;
+        matchedTrap = trap;
+      }
+    }
+
+    const [centerLon, centerLat] = stereoMetersToLonLat(cxM, cyM);
+    const coords = outerRing.map(([gx, gy]) => gridToLonLat(gx, gy));
+
+    psrFeatures.push({
+      type: 'Feature',
+      properties: {
+        id: matchedTrap ? matchedTrap.id : `psr-${psrFeatures.length + 1}`,
+        name: matchedTrap ? matchedTrap.name : `Polar Cold Trap (${Math.abs(centerLat).toFixed(1)}°S)`,
+        isMajorColdTrap: Boolean(matchedTrap),
+        centerLat,
+        centerLon,
+        areaKm2: +areaKm2.toFixed(1),
+        minElevationM: Number.isFinite(minFloorElevM) ? Math.round(minFloorElevM) : null,
+        methodology: 'LOLA 16-Azimuth Horizon Ray-Marching (Max Solar Declination 1.5424°)',
+      },
+      geometry: {
+        type: 'LineString',
+        coordinates: coords,
+      },
+    });
+  }
+}
+
+const psrFootprintsGeoJson = {
+  type: 'FeatureCollection',
+  name: 'NASA LOLA Multi-Azimuth Horizon Shadow PSR Footprints',
+  properties: {
+    solarObliquityDeg: 1.5424,
+    azimuthRays: PSR_AZ_COUNT,
+    psrGridFractionPct: +((psrCellCount / (DOWNSAMPLE_N * DOWNSAMPLE_N)) * 100).toFixed(2),
+    featuresCount: psrFeatures.length,
+  },
+  features: psrFeatures,
+};
+
+fs.writeFileSync(
+  path.join(OUTPUT_DIR, 'psr_footprints.geojson'),
+  JSON.stringify(psrFootprintsGeoJson, null, 2)
+);
+console.log(
+  `[LOLA Contour Pipeline] Saved psr_footprints.geojson (${psrFeatures.length} DEM-derived PSR polygons, ${psrFootprintsGeoJson.properties.psrGridFractionPct}% polar PSR coverage)`
+);
 
 // Step 5: Save Manifest
 const topoMetadata = {
@@ -519,6 +832,7 @@ const topoMetadata = {
   slopeHazardFile: 'slope_hazard_15deg.geojson',
   plannedTraversesFile: 'planned_traverses.geojson',
   ridgesAndRimsFile: 'ridges_and_rims.geojson',
+  psrFootprintsFile: 'psr_footprints.geojson',
   generatedAt: new Date().toISOString(),
 };
 

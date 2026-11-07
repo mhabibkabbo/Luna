@@ -522,11 +522,9 @@ export default function FeaturePanel({
         elevationM: terrainMetrics?.elevationM ?? null,
         roughnessM: terrainMetrics?.roughnessM ?? null,
       },
-      {
-        ...DEFAULT_PLANNER_CONSTRAINTS,
-        landingTimeMs: settledTabTimeMs,
-        missionDurationDays: missionWindowDays,
-      }
+      settledTabTimeMs,
+      missionWindowDays,
+      DEFAULT_PLANNER_CONSTRAINTS
     );
 
     const sunlitRatio = unifiedEval?.sunlitRatio ?? Math.round((sunlitSteps / numSamples) * 100);

@@ -219,18 +219,16 @@ export default function LandingPlannerPage({
   return (
     <div className="flex-1 overflow-y-auto px-5 sm:px-8 lg:px-10 py-7 max-w-[1380px] mx-auto w-full space-y-6 animate-in fade-in duration-200">
       {/* 1. Header & Executive Overview */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-5 border-b border-white/[0.08]">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 border-b border-[#1E2028] pb-5">
         <div>
-          <div className="flex items-center gap-2 text-[11px] font-mono font-medium uppercase tracking-[0.08em] text-[#8E95A5] mb-2">
-            <Target className="w-3.5 h-3.5 text-[#CBD5E1]" />
-            <span>Workspace 05</span>
-            <span className="text-white/20">/</span>
-            <span className="text-[#CBD5E1]">Landing Window &amp; Candidate Planner</span>
+          <div className="flex items-center gap-2 text-[11px] font-sans font-semibold tracking-[0.14em] text-[#8E95A5] uppercase">
+            <Target className="w-3.5 h-3.5 text-[#F8FAFC]" />
+            <span>Workspace 03 · Landing Window &amp; Candidate Planner</span>
           </div>
-          <h1 className="text-2xl sm:text-[28px] font-display font-semibold text-white tracking-[-0.025em] leading-[1.2] flex items-center gap-2.5">
-            <span>Optimal Lunar Landing Site Planner</span>
+          <h1 className="text-2xl sm:text-[26px] font-display font-semibold tracking-tight text-white mt-1.5">
+            Optimal Lunar Landing Site Planner
           </h1>
-          <p className="text-[13.5px] sm:text-sm font-sans text-[#94A3B8] mt-1.5 max-w-3xl leading-[1.65]">
+          <p className="text-[13.5px] font-sans text-[#8E95A5] mt-1 max-w-3xl leading-relaxed">
             Where would be the most suitable place to land on the Moon at a particular date and time?
             Evaluates candidate locations throughout your mission duration against terrain slope, solar illumination continuity, Direct-to-Earth line-of-sight, and thermal survivability.
           </p>
