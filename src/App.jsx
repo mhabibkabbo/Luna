@@ -38,7 +38,6 @@ import {
 
 import LandingPlannerPage from './pages/LandingPlannerPage.jsx';
 import SiteComparisonPage from './pages/SiteComparisonPage.jsx';
-import MissionBriefingPage from './pages/MissionBriefingPage.jsx';
 import MissionLibraryPage from './pages/MissionLibraryPage.jsx';
 import TrajectoryPlannerPage from './pages/TrajectoryPlannerPage.jsx';
 import { CLPS_MISSIONS } from './data/clpsMissions.js';
@@ -87,7 +86,7 @@ export default function App() {
       if (hash === 'about') return 'about';
       if (hash === 'planner') return 'planner';
       if (hash === 'comparison' || hash === 'compare') return 'comparison';
-      if (hash === 'briefing') return 'briefing';
+      if (hash === 'briefing') return 'explorer';
       if (hash === 'library' || hash === 'guide') return 'library';
       if (hash === 'trajectory' || hash === 'orbit' || hash === 'transfer') return 'trajectory';
       if (params.get('autostart') === '1') return 'explorer';
@@ -166,7 +165,7 @@ export default function App() {
       } else if (hash === 'comparison' || hash === 'compare') {
         setCurrentView('comparison');
       } else if (hash === 'briefing') {
-        setCurrentView('briefing');
+        setCurrentView('explorer');
       } else if (hash === 'library' || hash === 'guide') {
         setCurrentView('library');
       } else if (hash === 'trajectory' || hash === 'orbit' || hash === 'transfer') {
@@ -278,6 +277,7 @@ export default function App() {
   const [selectedFeature, setSelectedFeature] = useState(null);
   const [selectedMoonFeature, setSelectedMoonFeature] = useState(null);
   const [selectedEarthFeature, setSelectedEarthFeature] = useState(null);
+  const [featurePanelTab, setFeaturePanelTab] = useState('terrain');
 
   // Independent feature memory for 3D globe vs 2D South Pole map
   const [selectedFeature3D, setSelectedFeature3D] = useState(null);
@@ -1292,7 +1292,10 @@ export default function App() {
                 {currentView === 'planner' && (
                   <LandingPlannerPage
                     onNavigate={handleNavigate}
-                    onSelectSite={handleFeatureSelect}
+                    onSelectSite={(site, tab = 'terrain') => {
+                      if (tab) setFeaturePanelTab(tab);
+                      handleFeatureSelect(site);
+                    }}
                     onFlyToSite={(site) => {
                       handleFeatureSelect(site);
                       handleNavigate('explorer');
@@ -1327,14 +1330,6 @@ export default function App() {
                         );
                       }, 150);
                     }}
-                  />
-                )}
-                {currentView === 'briefing' && (
-                  <MissionBriefingPage
-                    selectedSite={selectedMoonFeature || selectedFeature}
-                    onSelectSite={handleFeatureSelect}
-                    activeMission={activeMission}
-                    onNavigate={handleNavigate}
                   />
                 )}
                 {currentView === 'library' && (
@@ -1450,6 +1445,8 @@ export default function App() {
           feature={selectedFeature}
           timelineVisible={showLunarTimeline}
           communicationEarthFeature={selectedCommunicationEarthFeature}
+          initialTab={featurePanelTab}
+          onTabChange={setFeaturePanelTab}
           onClose={handleCloseFeaturePanel}
           onZoomHere={handleZoomHere}
           onMeasureFromHere={handleMeasureFromFeature}

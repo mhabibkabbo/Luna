@@ -23,8 +23,13 @@ const RAD = 180 / Math.PI;
 export const DEFAULT_DTE_CONSTRAINTS = Object.freeze({
   /** Ground station elevation mask toward the Moon. */
   stationMinElevationDeg: 10,
-  /** Az/el gimbals lose azimuth authority near zenith (keyhole). */
-  antennaMaxElevationDeg: 88,
+  /**
+   * Maximum antenna elevation angle (deg).
+   * Default 90° for omnidirectional / wide-beam / 3-axis lunar surface antennas
+   * (Earth is quasi-stationary at zenith near the sub-Earth point with no rapid tracking slew required).
+   * Steerable 2-axis Az/El tracking gimbal mounts with a zenith keyhole limit can specify 88° or lower.
+   */
+  antennaMaxElevationDeg: 90,
   /** Maximum gimbal slew rate needed to keep tracking Earth. */
   maxSlewDegPerHour: 360,
 });

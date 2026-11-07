@@ -23,7 +23,6 @@ export const WORKSPACE_PAGES = [
   { id: 'trajectory', label: 'Orbit Planner', icon: Orbit, shortcut: 'O' },
   { id: 'planner', label: 'Landing Recommendations', icon: Target, shortcut: 'P' },
   { id: 'comparison', label: 'Site Comparison', icon: GitCompare, shortcut: 'C' },
-  { id: 'briefing', label: 'Mission Briefing', icon: FileText, shortcut: 'B' },
   { id: 'library', label: 'Data Sources & Library', icon: Database, shortcut: 'L' },
 ];
 

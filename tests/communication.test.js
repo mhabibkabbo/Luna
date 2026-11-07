@@ -25,6 +25,7 @@ import {
 } from '../src/utils/communicationAnalysis.js';
 import { ensurePolarDemLoaded } from '../src/utils/horizons.js';
 import { computeCelestialState } from '../src/utils/lunarEphemeris.js';
+import { evaluateEarthLink, DEFAULT_DTE_CONSTRAINTS } from '../src/utils/earthLink.js';
 
 test('Communication Analysis: NASA Data Sources & Provenance Metadata', () => {
   // LOLA DEM verification
@@ -185,4 +186,46 @@ test('Communication Analysis: Multi-Day Time Sweep & Contact Window Clustering',
     assert.equal(sample.signalDbm, undefined, 'Must NEVER generate fabricated dBm values');
     assert.ok(['clear', 'blocked', 'doubtful', 'relay', 'unavailable'].includes(sample.status));
   }
+});
+
+test('Communication Analysis: Sub-Earth Point Zenith Line-of-Sight & Keyhole Constraints', () => {
+  const epochMs = Date.UTC(2026, 6, 1, 12, 0);
+  const state = computeCelestialState(epochMs);
+
+  // Sub-Earth point coordinates where Earth is directly overhead at zenith (~90° elevation)
+  const subEarthFeature = {
+    latitude: state.earth.subLat,
+    longitude: state.earth.subLon,
+    elevationM: 0,
+  };
+
+  // 1. With DEFAULT_DTE_CONSTRAINTS (antennaMaxElevationDeg = 90), link must be CLEAR, not blocked
+  const defaultLink = evaluateEarthLink({
+    state,
+    moonFeature: subEarthFeature,
+    constraints: DEFAULT_DTE_CONSTRAINTS,
+  });
+  assert.equal(defaultLink.status, 'clear', 'Sub-Earth point must evaluate as clear under default constraints');
+  assert.equal(defaultLink.reason, 'ok');
+  assert.ok(defaultLink.elevationDeg >= 89.0, 'Sub-Earth elevation must be near 90° zenith');
+  assert.ok(defaultLink.marginDeg >= 89.0, 'Sub-Earth terrain margin must be near 90°');
+
+  // 2. Central nearside origin (0°, 0°) must also evaluate as clear
+  const originLink = evaluateEarthLink({
+    state,
+    moonFeature: { latitude: 0, longitude: 0, elevationM: 0 },
+    constraints: DEFAULT_DTE_CONSTRAINTS,
+  });
+  assert.equal(originLink.status, 'clear', 'Nearside origin (0, 0) must evaluate as clear under default constraints');
+  assert.equal(originLink.reason, 'ok');
+
+  // 3. When an explicit 2-axis Az/El gimbal constraint with antennaMaxElevationDeg = 88 is provided,
+  // it must identify reason as 'keyhole' and NOT 'terrain'
+  const keyholeLink = evaluateEarthLink({
+    state,
+    moonFeature: subEarthFeature,
+    constraints: { ...DEFAULT_DTE_CONSTRAINTS, antennaMaxElevationDeg: 88 },
+  });
+  assert.equal(keyholeLink.status, 'blocked');
+  assert.equal(keyholeLink.reason, 'keyhole', 'Exceeding gimbal limit must flag keyhole, not terrain blockage');
 });

@@ -145,7 +145,7 @@ export default function LeftSidebarNav({
 
       {/* Time controls (3D Globe only) */}
       {isMoon && !is2DMode && (
-        <NavTooltip label="Time Machine" shortcut="E">
+        <NavTooltip label="Celestial Ephemeris" shortcut="E">
           <button
             type="button"
             onClick={onToggleCelestial}

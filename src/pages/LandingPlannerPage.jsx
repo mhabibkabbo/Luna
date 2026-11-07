@@ -196,7 +196,7 @@ export default function LandingPlannerPage({
 
     if (navigator.clipboard) {
       navigator.clipboard.writeText(lines.join('\n'));
-      notifySuccess('Mission Assessment copied to clipboard', 'Ready for flight review & briefing dossier.');
+      notifySuccess('Mission Assessment copied to clipboard', 'Ready for flight review & site dossier.');
     }
   };
 
@@ -826,12 +826,13 @@ export default function LandingPlannerPage({
                   <button
                     type="button"
                     onClick={() => {
-                      if (onSelectSite) onSelectSite(c);
-                      onNavigate('briefing');
+                      if (onSelectSite) onSelectSite(c, 'dossier');
+                      if (onFlyToSite) onFlyToSite(c);
+                      onNavigate('explorer');
                     }}
                     className="text-[#CBD5E1] hover:text-white font-sans font-medium flex items-center gap-1.5 hover:underline"
                   >
-                    <span>Push to Mission Briefing</span>
+                    <span>View Site Dossier</span>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                 </div>

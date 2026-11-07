@@ -271,6 +271,12 @@ export default function DteCalculationModal({
                   ? 'Clear Link'
                   : generalLink.status === 'away'
                   ? 'Far Side'
+                  : generalLink.reason === 'keyhole'
+                  ? 'Antenna Keyhole'
+                  : generalLink.reason === 'below-horizon'
+                  ? 'Below Horizon'
+                  : generalLink.reason === 'station'
+                  ? 'Station Masked'
                   : 'Terrain Masked'}
               </div>
               <span className="text-[9.5px] text-[#8E95A5]">

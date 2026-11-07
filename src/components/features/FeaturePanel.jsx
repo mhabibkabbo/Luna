@@ -28,6 +28,7 @@ import {
   Trash2,
   Info,
   Droplets,
+  FileText,
 } from 'lucide-react';
 import { formatLunarCoordinates, getLunarRegionInfo } from '../../utils/coordinates.js';
 import { getCanonicalPolarLandmark, getVolatileDataForFeature } from '../../data/lunarCanonicalCatalog.js';
@@ -91,7 +92,7 @@ const SUN_STATUS = {
 const EARTH_STATUS = {
   clear: { label: 'Link Active', color: COMMUNICATION_TIMELINE_COLORS.clear },
   doubtful: { label: 'Marginal', color: COMMUNICATION_TIMELINE_COLORS.doubtful },
-  blocked: { label: 'Terrain Blocked', color: COMMUNICATION_TIMELINE_COLORS.blocked },
+  blocked: { label: 'Link Blocked', color: COMMUNICATION_TIMELINE_COLORS.blocked },
   away: { label: 'Far Side', color: '#fb923c' },
 };
 
@@ -105,14 +106,23 @@ export default function FeaturePanel({
   onCompareMission,
   onReturnToComparison,
   onSelectOtherBody,
+  initialTab = 'terrain',
+  onTabChange,
 }) {
   const isEarthFeature = feature?.body === 'earth';
-  const [activeTab, setActiveTab] = useState('terrain');
+  const [activeTab, setActiveTab] = useState(initialTab);
+
+  useEffect(() => {
+    if (initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab]);
   const contentScrollRef = useRef(null);
   const contentScrollTopRef = useRef(0);
   const [isExpanded, setIsExpanded] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [copiedDossier, setCopiedDossier] = useState(false);
   const [shared, setShared] = useState(false);
   const [demLoadedTick, setDemLoadedTick] = useState(0);
   const [roughnessRadiusM, setRoughnessRadiusM] = useState(2000);
@@ -569,6 +579,82 @@ export default function FeaturePanel({
     terrainMetrics,
   ]);
 
+  // Mission Readiness & Operational Risk Matrix for Dossier tab
+  const dossierAssessment = useMemo(() => {
+    if (!feature || isEarthFeature || isPlaceholderLocation || activeTab !== 'dossier') return null;
+
+    const risks = [];
+    const isSunlit = sun.status === 'sunlit' && !localThermal?.isPSR;
+    const sunClearance = flatSun.elevationDeg != null ? flatSun.elevationDeg - (sunTerrainHorizon ?? 0) : null;
+
+    if (!isSunlit) {
+      risks.push({
+        title: 'Solar Eclipse or Night Phase Active',
+        severity: 'HIGH',
+        desc: 'Array power output is 0%. Landers require internal primary battery or RTG power reserves.',
+      });
+    } else if (sunClearance !== null && sunClearance < 1.0) {
+      risks.push({
+        title: 'Low Solar Elevation Clearance',
+        severity: 'MEDIUM',
+        desc: `Sun is only ${sunClearance.toFixed(1)}° above local mountain ridge; high risk of terrain shadow casting.`,
+      });
+    }
+
+    if (generalLink.status === 'blocked') {
+      const isKeyhole = generalLink.reason === 'keyhole';
+      const isStation = generalLink.reason === 'station';
+      risks.push({
+        title: isKeyhole ? 'Antenna Zenith Keyhole' : isStation ? 'Ground Station Masked' : 'Telemetry Blackout',
+        severity: isKeyhole ? 'MEDIUM' : 'HIGH',
+        desc: isKeyhole
+          ? 'Earth is directly overhead at zenith, exceeding steerable 2-axis tracking antenna gimbal limit.'
+          : isStation
+          ? 'Target Earth ground station is below its operational minimum elevation mask.'
+          : 'Direct line of sight to Earth is obstructed by lunar curvature or local terrain mask.',
+      });
+    } else if (generalLink.status === 'doubtful') {
+      risks.push({
+        title: 'Marginal Earth Line of Sight',
+        severity: 'MEDIUM',
+        desc: 'Earth disk partially grazes local horizon topography; potential multipath or RF degradation.',
+      });
+    }
+
+    const surfaceTemp = localThermal?.tempC ?? null;
+    if (surfaceTemp != null && surfaceTemp < -150) {
+      risks.push({
+        title: 'Extreme Cryogenic Surface Environment',
+        severity: 'HIGH',
+        desc: `Surface temperature is ${surfaceTemp.toFixed(0)}°C. Mechanism cold-welding and battery freeze hazards.`,
+      });
+    }
+
+    const score = missionWindowAssessment?.windowScore ?? null;
+    const isDataWithheld = score === null;
+    const isGo = !isDataWithheld && score >= 65 && generalLink.status !== 'blocked' && generalLink.status !== 'away';
+
+    return {
+      score,
+      isDataWithheld,
+      isGo,
+      risks,
+    };
+  }, [
+    feature,
+    isEarthFeature,
+    isPlaceholderLocation,
+    activeTab,
+    sun.status,
+    flatSun.elevationDeg,
+    sunTerrainHorizon,
+    localThermal?.isPSR,
+    localThermal?.tempC,
+    generalLink.status,
+    generalLink.reason,
+    missionWindowAssessment?.windowScore,
+  ]);
+
   // Combined important warnings for Overview
   const overviewWarnings = useMemo(() => {
     if (!feature || isEarthFeature || activeTab !== 'info') return [];
@@ -624,10 +710,20 @@ export default function FeaturePanel({
         text: 'Lunar Far Side: Direct-to-Earth RF occulted (orbital relay required)',
       });
     } else if (generalLink.status === 'blocked') {
+      let warningText = `DTE Line-of-Sight blocked by local terrain (${(earthTerrainHorizon ?? 0).toFixed(1)}° horizon mask)`;
+      if (generalLink.reason === 'keyhole') {
+        warningText = `Antenna Zenith Keyhole: Earth is directly overhead (${(generalLink.elevationDeg ?? 90).toFixed(1)}° el), exceeding antenna gimbal elevation limit`;
+      } else if (generalLink.reason === 'below-horizon') {
+        warningText = 'Earth below local lunar horizon (occulted by lunar curvature)';
+      } else if (generalLink.reason === 'station') {
+        warningText = `Target Earth ground station below minimum elevation mask (${(generalLink.stationElevationDeg ?? 0).toFixed(1)}°)`;
+      } else if (generalLink.reason === 'slew') {
+        warningText = 'Required antenna slew rate exceeds tracking gimbal limit';
+      }
       list.push({
         id: 'warn-dte-blocked',
         tone: 'warning',
-        text: `DTE Line-of-Sight blocked by local terrain (${(earthTerrainHorizon ?? 0).toFixed(1)}° horizon mask)`,
+        text: warningText,
       });
     }
 
@@ -641,6 +737,9 @@ export default function FeaturePanel({
     sun.status,
     sunTerrainHorizon,
     generalLink.status,
+    generalLink.reason,
+    generalLink.elevationDeg,
+    generalLink.stationElevationDeg,
     earthTerrainHorizon,
   ]);
 
@@ -682,11 +781,61 @@ export default function FeaturePanel({
     setTimeout(() => setShared(false), 2200);
   };
 
+  const handleCopyDossierMarkdown = () => {
+    if (!feature || isEarthFeature) return;
+    const isGo = dossierAssessment?.isGo ?? false;
+    const scoreStr =
+      dossierAssessment?.score !== null && dossierAssessment?.score !== undefined
+        ? `${dossierAssessment.score} / 100`
+        : 'Withheld / Data Unavailable';
+    const text = `# LUNA MISSION ASSESSMENT DOSSIER
+**Target Landing Site:** ${panelTitle} (${latStr}, ${lonStr})
+**Mission Window:** ${missionWindowDays}-Day Flight Evaluation
+**Evaluation Epoch:** ${new Date(settledTabTimeMs).toUTCString()}
+**Mission Readiness Score:** ${scoreStr} [${
+      dossierAssessment?.isDataWithheld
+        ? 'DATA WITHHELD'
+        : isGo
+        ? 'STATUS: GO FOR DESCENT'
+        : 'STATUS: CAUTION / CONSTRAINED'
+    }]
+
+## 1. SCIENTIFIC & OPERATIONAL CRITERIA
+- **Solar Illumination:** ${sun.status === 'sunlit' ? 'SUNLIT' : 'SHADOWED / OCCULTED'}
+  - Solar Elevation: ${sun.elevationDeg?.toFixed(2) ?? '0.00'}° (Ridge Clearance: ${(sun.elevationDeg - (sunTerrainHorizon ?? 0)).toFixed(2)}°)
+  - Solar Window Availability: ${missionWindowAssessment?.sunlitRatio ?? 0}% (Max Continuous Sun: ${missionWindowAssessment?.longestSunlitHours ?? 0}h)
+- **Direct-to-Earth Link (DTE):** ${generalLink.status.toUpperCase()} (${generalLink.reason})
+  - Earth Elevation: ${generalLink.elevationDeg?.toFixed(2) ?? '0.00'}°
+  - Terrain Clearance Margin: ${generalLink.marginDeg?.toFixed(2) ?? '0.00'}°
+  - DSN Window Availability: ${missionWindowAssessment?.dsnRatio ?? 0}%
+- **Analytical Thermal Regimen (Calculated):**
+  - Surface Temperature: ${localThermal?.tempC?.toFixed(0) ?? 'N/A'}°C (${localThermal?.tempC != null ? (localThermal.tempC + 273.15).toFixed(0) : 'N/A'} K)
+  - Window Temperature Extremes: ${missionWindowAssessment?.minTemp ?? -160}°C to ${missionWindowAssessment?.maxTemp ?? 20}°C
+- **Topography & Landing Terrain:**
+  - Elevation: ${terrainMetrics?.elevationM != null ? `${Math.round(terrainMetrics.elevationM)} m` : 'Not present in LOLA DEM'}
+  - Slope: ${terrainMetrics?.slopeDeg != null ? `${terrainMetrics.slopeDeg.toFixed(1)}°` : 'Not present in LOLA DEM'}
+
+## 2. OPERATIONAL RISK MATRIX
+${
+  !dossierAssessment?.risks || dossierAssessment.risks.length === 0
+    ? '- All primary operational safety constraints satisfied with zero critical flags.'
+    : dossierAssessment.risks.map((r) => `- [${r.severity}] ${r.title}: ${r.desc}`).join('\n')
+}
+
+Generated via LUNA — Lunar Landing Site Navigator
+`;
+    navigator.clipboard.writeText(text);
+    setCopiedDossier(true);
+    notifySuccess('Mission Dossier Copied', 'Full Markdown dossier copied to clipboard.');
+    setTimeout(() => setCopiedDossier(false), 2200);
+  };
+
   const handleTabSelect = (tabId) => {
     const currentTimeMs = celestialTimeStore.get().ms;
     setTabTimeMs(currentTimeMs);
     setSettledTabTimeMs(currentTimeMs);
     setActiveTab(tabId);
+    if (onTabChange) onTabChange(tabId);
   };
 
   const sunStatusMeta = isPlaceholderLocation
@@ -695,6 +844,16 @@ export default function FeaturePanel({
 
   const earthStatusMeta = isPlaceholderLocation
     ? { label: 'Coordinates TBD', color: '#94a3b8' }
+    : generalLink?.status === 'blocked'
+    ? generalLink?.reason === 'keyhole'
+      ? { label: 'Antenna Keyhole', color: '#f59e0b' }
+      : generalLink?.reason === 'below-horizon'
+      ? { label: 'Below Horizon', color: COMMUNICATION_TIMELINE_COLORS.blocked }
+      : generalLink?.reason === 'station'
+      ? { label: 'Station Masked', color: COMMUNICATION_TIMELINE_COLORS.blocked }
+      : generalLink?.reason === 'slew'
+      ? { label: 'Slew Exceeded', color: '#f59e0b' }
+      : { label: 'Terrain Blocked', color: COMMUNICATION_TIMELINE_COLORS.blocked }
     : EARTH_STATUS[generalLink?.status] || {
         label: 'Link Active',
         color: '#60a5fa',
@@ -2157,27 +2316,38 @@ export default function FeaturePanel({
             {activeTab === 'dossier' && (
               <>
             {/* Multi-Day Landing Window Suitability Verdict */}
-            <div className="p-2.5 rounded-xl bg-[#0C0D12] border border-slate-800/80 space-y-2.5">
+            <div className="p-3 rounded-xl bg-[#0C0D12] border border-slate-800/80 space-y-3">
               <div className="flex items-center justify-between gap-2">
                 <span className="text-xs font-semibold text-white flex items-center gap-1.5">
                   <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                  <span>Landing Feasibility Verdict</span>
+                  <span>Mission Feasibility &amp; Readiness Dossier</span>
                 </span>
-                <div className="flex items-center gap-1 bg-[#050507] p-0.5 rounded-lg border border-slate-800">
-                  {[7, 14, 28].map((days) => (
-                    <button
-                      key={days}
-                      type="button"
-                      onClick={() => setMissionWindowDays(days)}
-                      className={`px-2 py-0.5 rounded text-[10px] font-mono transition-colors ${
-                        missionWindowDays === days
-                          ? 'bg-cyan-400 text-slate-950 font-bold'
-                          : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      {days}d
-                    </button>
-                  ))}
+                <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-1 bg-[#050507] p-0.5 rounded-lg border border-slate-800">
+                    {[7, 14, 28].map((days) => (
+                      <button
+                        key={days}
+                        type="button"
+                        onClick={() => setMissionWindowDays(days)}
+                        className={`px-2 py-0.5 rounded text-[10px] font-mono transition-colors ${
+                          missionWindowDays === days
+                            ? 'bg-cyan-400 text-slate-950 font-bold'
+                            : 'text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        {days}d
+                      </button>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleCopyDossierMarkdown}
+                    className="px-2 py-1 rounded bg-[#050507] border border-slate-800 hover:border-slate-700 text-[10px] font-mono text-slate-300 hover:text-white flex items-center gap-1 transition"
+                    title="Copy full Mission Dossier as Markdown"
+                  >
+                    {copiedDossier ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3 text-slate-400" />}
+                    <span>{copiedDossier ? 'Copied' : 'Copy MD'}</span>
+                  </button>
                 </div>
               </div>
 
@@ -2193,60 +2363,161 @@ export default function FeaturePanel({
                 </div>
               ) : missionWindowAssessment && (
                 <>
-                  <div className="flex items-center justify-between gap-3 p-2.5 rounded-lg bg-[#050507] border border-slate-800/80 font-mono">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-12 h-12 rounded-xl border border-cyan-400/60 bg-cyan-950/30 flex flex-col items-center justify-center shrink-0">
-                        <span className="text-lg font-bold text-cyan-300 leading-none tabular-nums">
-                          {missionWindowAssessment.windowScore !== null
-                            ? missionWindowAssessment.windowScore
-                            : '--'}
-                        </span>
-                        <span className="text-[9px] text-slate-400 mt-0.5">
-                          {missionWindowDays}d Score
-                        </span>
+                  {/* Executive Verdict Banner */}
+                  <div
+                    className={`p-3 rounded-xl border flex items-center justify-between gap-3 ${
+                      dossierAssessment?.isDataWithheld
+                        ? 'bg-slate-950/40 border-slate-800'
+                        : dossierAssessment?.isGo
+                        ? 'bg-gradient-to-r from-emerald-950/40 via-[#050507] to-[#050507] border-emerald-500/40'
+                        : 'bg-gradient-to-r from-amber-950/40 via-[#050507] to-[#050507] border-amber-500/40'
+                    }`}
+                  >
+                    <div className="flex items-start gap-2.5">
+                      <div
+                        className={`p-1.5 rounded-lg border mt-0.5 shrink-0 ${
+                          dossierAssessment?.isDataWithheld
+                            ? 'bg-slate-900 border-slate-700 text-slate-400'
+                            : dossierAssessment?.isGo
+                            ? 'bg-emerald-950/80 text-emerald-400 border-emerald-600/60'
+                            : 'bg-amber-950/80 text-amber-400 border-amber-600/60'
+                        }`}
+                      >
+                        {dossierAssessment?.isGo ? (
+                          <CheckCircle2 className="w-4 h-4" />
+                        ) : (
+                          <AlertTriangle className="w-4 h-4" />
+                        )}
                       </div>
                       <div>
-                        <span
-                          className={`text-[11px] font-bold block ${
-                            missionWindowAssessment.windowScore === null
-                              ? 'text-slate-400'
-                              : missionWindowAssessment.windowScore >= 80
-                              ? 'text-emerald-400'
-                              : missionWindowAssessment.windowScore >= 55
-                              ? 'text-cyan-300'
-                              : 'text-rose-400'
-                          }`}
-                        >
-                          {missionWindowAssessment.windowScore === null
-                            ? 'INSUFFICIENT DATA FOR SCORING'
-                            : missionWindowAssessment.windowScore >= 80
-                            ? 'FAVORABLE SUITABILITY'
-                            : missionWindowAssessment.windowScore >= 55
-                            ? 'CONDITIONAL SUITABILITY'
-                            : 'CHALLENGING / CONSTRAINED'}
-                        </span>
-                        <span className="text-[10px] text-slate-400 block tabular-nums">
-                          Max Sun Streak: {missionWindowAssessment.longestSunlitHours}h · DSN:{' '}
-                          {missionWindowAssessment.dsnRatio}%
-                        </span>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span
+                            className={`px-1.5 py-0.5 rounded font-mono font-bold text-[10px] tracking-wider uppercase ${
+                              dossierAssessment?.isDataWithheld
+                                ? 'bg-slate-800 text-slate-300 border border-slate-700'
+                                : dossierAssessment?.isGo
+                                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                                : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                            }`}
+                          >
+                            {dossierAssessment?.isDataWithheld
+                              ? 'DATA WITHHELD'
+                              : dossierAssessment?.isGo
+                              ? 'STATUS: GO FOR DESCENT'
+                              : 'STATUS: CAUTION / CONSTRAINED'}
+                          </span>
+                          <span className="text-[10px] font-mono text-slate-400">
+                            {missionWindowDays}d Window
+                          </span>
+                        </div>
+                        <p className="text-[11px] font-sans text-slate-300 mt-1 leading-snug">
+                          {dossierAssessment?.isDataWithheld
+                            ? 'Topographic DEM coverage unavailable at these coordinates; suitability cannot be synthesized.'
+                            : dossierAssessment?.isGo
+                            ? 'Primary operational safety thresholds satisfied for power, RF direct link, and descent.'
+                            : 'Identified thermal, illumination, or communication hazards require mitigation.'}
+                        </p>
                       </div>
                     </div>
-                    <div className="text-right text-[10px] tabular-nums">
-                      <span className="text-slate-400 block">Sunlight</span>
-                      <span className="text-white font-bold">
-                        {missionWindowAssessment.sunlitRatio}%
-                      </span>
-                      <span className="text-slate-400 block mt-0.5">
-                        {missionWindowAssessment.minTemp}° to {missionWindowAssessment.maxTemp}°C
+
+                    <div className="text-right shrink-0 font-mono">
+                      <span className="text-[9px] text-slate-400 uppercase tracking-wider block">Suitability</span>
+                      <span
+                        className={`text-xl font-bold tabular-nums block ${
+                          missionWindowAssessment.windowScore === null
+                            ? 'text-slate-400'
+                            : dossierAssessment?.isGo
+                            ? 'text-emerald-400'
+                            : 'text-amber-400'
+                        }`}
+                      >
+                        {missionWindowAssessment.windowScore !== null ? `${missionWindowAssessment.windowScore}%` : '--'}
                       </span>
                     </div>
                   </div>
 
+                  {/* 4 Scientific Pillars Summary Grid */}
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    {/* Pillar 1: Solar */}
+                    <div className="p-2.5 rounded-lg bg-[#050507] border border-slate-800/80 space-y-1">
+                      <div className="flex items-center justify-between text-[10px] font-mono text-slate-400">
+                        <span className="flex items-center gap-1 font-semibold text-amber-300">
+                          <Sun className="w-3 h-3 text-amber-400" />
+                          <span>Solar</span>
+                        </span>
+                        <span className="text-white font-bold">{missionWindowAssessment.sunlitRatio}%</span>
+                      </div>
+                      <div className="text-[11px] font-mono text-slate-200">
+                        {sun.status === 'sunlit' ? 'Active Sunlit' : 'Shadow / Night'}
+                      </div>
+                      <div className="text-[9.5px] font-mono text-slate-400">
+                        El {sun.elevationDeg != null ? `${sun.elevationDeg.toFixed(1)}°` : '—'} · Max {missionWindowAssessment.longestSunlitHours}h
+                      </div>
+                    </div>
+
+                    {/* Pillar 2: Comms */}
+                    <div className="p-2.5 rounded-lg bg-[#050507] border border-slate-800/80 space-y-1">
+                      <div className="flex items-center justify-between text-[10px] font-mono text-slate-400">
+                        <span className="flex items-center gap-1 font-semibold text-cyan-300">
+                          <Radio className="w-3 h-3 text-cyan-400" />
+                          <span>Comms</span>
+                        </span>
+                        <span className="text-white font-bold">{missionWindowAssessment.dsnRatio}%</span>
+                      </div>
+                      <div className="text-[11px] font-mono text-slate-200 truncate">
+                        {earthStatusMeta.label}
+                      </div>
+                      <div className="text-[9.5px] font-mono text-slate-400">
+                        Earth {generalLink.elevationDeg != null ? `${generalLink.elevationDeg.toFixed(1)}°` : '—'} · {generalLink.marginDeg >= 0 ? '+' : ''}{generalLink.marginDeg != null ? `${generalLink.marginDeg.toFixed(1)}°` : '—'}
+                      </div>
+                    </div>
+
+                    {/* Pillar 3: Thermal */}
+                    <div className="p-2.5 rounded-lg bg-[#050507] border border-slate-800/80 space-y-1">
+                      <div className="flex items-center justify-between text-[10px] font-mono text-slate-400">
+                        <span className="flex items-center gap-1 font-semibold text-rose-300">
+                          <Thermometer className="w-3 h-3 text-rose-400" />
+                          <span>Thermal</span>
+                        </span>
+                        <span className="text-white font-bold">
+                          {localThermal?.tempC != null ? `${localThermal.tempC.toFixed(0)}°C` : '—'}
+                        </span>
+                      </div>
+                      <div className="text-[11px] font-mono text-slate-200">
+                        {localThermal?.tempC != null ? `${(localThermal.tempC + 273.15).toFixed(0)} K` : '—'}
+                      </div>
+                      <div className="text-[9.5px] font-mono text-slate-400">
+                        {missionWindowAssessment.minTemp}° to {missionWindowAssessment.maxTemp}°C
+                      </div>
+                    </div>
+
+                    {/* Pillar 4: Topography */}
+                    <div className="p-2.5 rounded-lg bg-[#050507] border border-slate-800/80 space-y-1">
+                      <div className="flex items-center justify-between text-[10px] font-mono text-slate-400">
+                        <span className="flex items-center gap-1 font-semibold text-purple-300">
+                          <Mountain className="w-3 h-3 text-purple-400" />
+                          <span>Terrain</span>
+                        </span>
+                        <span className="text-white font-bold">
+                          {terrainMetrics?.slopeDeg != null ? `${terrainMetrics.slopeDeg.toFixed(1)}°` : '—'}
+                        </span>
+                      </div>
+                      <div className="text-[11px] font-mono text-slate-200">
+                        {terrainMetrics?.elevationM != null
+                          ? `${Math.round(terrainMetrics.elevationM).toLocaleString()} m`
+                          : 'Not in DEM'}
+                      </div>
+                      <div className="text-[9.5px] font-mono text-slate-400">
+                        {terrainMetrics?.roughnessM != null ? `Roughness ${terrainMetrics.roughnessM.toFixed(1)} m` : '360° Profile'}
+                      </div>
+                    </div>
+                  </div>
+
                   {/* Daily Suitability Strip */}
-                  <div className="space-y-1">
+                  <div className="space-y-1 pt-1">
                     <div className="flex items-center justify-between text-[10px] font-mono text-slate-400">
-                      <span>Daily Suitability ({missionWindowDays}d Window)</span>
-                      <span>Sun + DSN Composite</span>
+                      <span>Daily Suitability Progression</span>
+                      <span>{missionWindowDays}d Timeline</span>
                     </div>
                     <div className="grid grid-cols-7 gap-1">
                       {missionWindowAssessment.dailyScores.map((d) => (
@@ -2265,6 +2536,47 @@ export default function FeaturePanel({
                         </div>
                       ))}
                     </div>
+                  </div>
+
+                  {/* Operational Hazard Identification & Flight Constraints */}
+                  <div className="space-y-1.5 pt-1.5 border-t border-slate-800/80">
+                    <div className="flex items-center gap-1.5 text-xs font-semibold text-white">
+                      <ShieldAlert className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Operational Hazard Matrix</span>
+                    </div>
+                    {!dossierAssessment?.risks || dossierAssessment.risks.length === 0 ? (
+                      <div className="p-2 rounded-lg bg-emerald-950/20 border border-emerald-800/40 text-emerald-300 text-[11px] font-sans flex items-center gap-1.5">
+                        <CheckCircle2 className="w-3.5 h-3.5 shrink-0 text-emerald-400" />
+                        <span>All primary operational safety constraints satisfied with zero critical flags.</span>
+                      </div>
+                    ) : (
+                      <div className="space-y-1.5">
+                        {dossierAssessment.risks.map((risk, index) => (
+                          <div
+                            key={index}
+                            className="p-2 rounded-lg bg-[#050507] border border-slate-800/80 flex items-start gap-2"
+                          >
+                            <span
+                              className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold uppercase mt-0.5 shrink-0 ${
+                                risk.severity === 'HIGH'
+                                  ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                                  : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                              }`}
+                            >
+                              {risk.severity}
+                            </span>
+                            <div className="min-w-0">
+                              <h5 className="text-[11px] font-sans font-semibold text-white leading-tight">
+                                {risk.title}
+                              </h5>
+                              <p className="text-[10px] font-sans text-slate-400 mt-0.5 leading-snug">
+                                {risk.desc}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </>
               )}

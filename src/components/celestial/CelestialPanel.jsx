@@ -307,38 +307,6 @@ export default function CelestialPanel({
           >
             <Maximize2 className="h-3.5 w-3.5" />
           </button>
-          <button
-            type="button"
-            id="btn-celestial-visibility"
-            onClick={handleToggleVisible}
-            className={iconButton}
-            title={overlayVisible ? 'Hide Earth and Sun in the 3D view' : 'Show Earth and Sun in the 3D view'}
-            aria-label={overlayVisible ? 'Hide Earth and Sun' : 'Show Earth and Sun'}
-            aria-pressed={overlayVisible}
-          >
-            {overlayVisible ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
-          </button>
-          <button
-            type="button"
-            id="btn-celestial-vectors-header"
-            onClick={handleToggleVectors}
-            className={`${iconButton} ${vectorsVisible ? 'text-cyan-300 bg-cyan-950/70 border border-cyan-500/40' : ''}`}
-            title={vectorsVisible ? 'Turn off Earth & Sun vector lines (currently ON)' : 'Turn on Earth & Sun vector lines (currently OFF)'}
-            aria-label={vectorsVisible ? 'Turn off vector lines' : 'Turn on vector lines'}
-            aria-pressed={vectorsVisible}
-          >
-            <Navigation className={`h-3.5 w-3.5 ${vectorsVisible ? 'rotate-45 text-cyan-300' : 'text-slate-400'}`} />
-          </button>
-          <button
-            type="button"
-            id="btn-celestial-collapse"
-            onClick={() => setExpanded((v) => !v)}
-            className={iconButton}
-            aria-label={expanded ? 'Collapse Earth and Sun panel' : 'Expand Earth and Sun panel'}
-            aria-expanded={expanded}
-          >
-            {expanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronUp className="h-3.5 w-3.5" />}
-          </button>
           {onClose && (
             <button
               type="button"

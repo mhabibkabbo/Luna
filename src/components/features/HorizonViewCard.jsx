@@ -136,7 +136,14 @@ export default function HorizonViewCard({
   );
 
   const sunStatusMeta = SUN_STATUS[sun?.status] || { label: 'Unknown', color: '#fde68a' };
-  const earthStatusMeta = EARTH_STATUS[link?.status] || { label: 'Unknown', color: '#60a5fa' };
+  const earthStatusMeta =
+    link?.status === 'blocked' && link?.reason === 'keyhole'
+      ? { label: 'Antenna Keyhole', color: '#f59e0b' }
+      : link?.status === 'blocked' && link?.reason === 'below-horizon'
+      ? { label: 'Below Horizon', color: COMMUNICATION_TIMELINE_COLORS.blocked }
+      : link?.status === 'blocked' && link?.reason === 'station'
+      ? { label: 'Station Masked', color: COMMUNICATION_TIMELINE_COLORS.blocked }
+      : EARTH_STATUS[link?.status] || { label: 'Unknown', color: '#60a5fa' };
 
   return (
     <section className="space-y-3 rounded-2xl border border-[#1E2028] bg-[#050507] p-4 text-[#F8FAFC]">
