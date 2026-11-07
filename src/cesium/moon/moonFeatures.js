@@ -27,6 +27,10 @@ export function createMoonFeatures({ viewer, container, callbacks, isMobile, fly
    * @param {1 | 2 | 3} tier LOD Tier (1 = Global, 2 = Regional, 3 = Close-up)
    */
   const addFeaturePin = (feat, category, markerType = 'crater_minor', tier = 3) => {
+    // Suppress 3D pin rendering for unannounced placeholder locations
+    if (!feat || feat.locationType === 'placeholder') {
+      return null;
+    }
     const dataUrl = getLunarMarkerDataUrl(markerType, false);
     const altitude = 2500; // Elevation in meters above lunar ellipsoid
 
@@ -161,12 +165,17 @@ export function createMoonFeatures({ viewer, container, callbacks, isMobile, fly
     type: 'south_pole',
     latitude: -90,
     longitude: 0,
-    description: 'Permanently shadowed craters (PSRs) harboring volatile water ice deposits. Prime target zone for NASA Artemis and CLPS lunar landers.',
+    elevationM: 1251,
+    rimElevationM: 1251,
+    description: 'Permanently shadowed craters (PSRs) harboring volatile water ice deposits. Prime target zone for NASA Artemis and CLPS lunar landers. Surface elevation: +1,251 m along Shackleton rim crest (NASA LOLA DEM).',
   };
   addFeaturePin(southPoleFeature, 'lunar-landing-sites', 'south_pole', 1);
 
   // B. Landing Sites (CLPS, Apollo, Chang\'e, Chandrayaan, SLIM)
   LANDING_SITES.forEach((site) => {
+    if (site.locationType === 'placeholder') {
+      return;
+    }
     const isApollo11 = site.id === 'landing-apollo-11';
     const isOdysseus = site.id === 'landing-odysseus';
     const isArtemisCandidate = site.id.includes('artemis');

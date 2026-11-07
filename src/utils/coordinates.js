@@ -143,21 +143,18 @@ export function calculateLunarDistance(lon1, lat1, lon2, lat2) {
 
 import { LUNAR_FEATURES } from '../data/lunarFeatures.js';
 import { LANDING_SITES } from '../data/landingSites.js';
+import { CANONICAL_POLAR_LANDMARKS } from '../data/lunarCanonicalCatalog.js';
 
-export const SOUTH_POLE_REFERENCE_LANDMARKS = [
-  { id: "shackleton-crater", name: "Shackleton Crater", type: "Crater (21 km)", lat: -89.67, lon: 129.78, elevM: -2768 },
-  { id: "malapert-mountain", name: "Malapert Massif", type: "Polar Massif (5.1 km)", lat: -86.02, lon: 2.7, elevM: 5113 },
-  { id: "haworth-crater", name: "Haworth Crater", type: "PSR Basin (51 km)", lat: -87.4, lon: -5.1, elevM: -3385 },
-  { id: "shoemaker-crater", name: "Shoemaker Crater", type: "PSR Basin (51 km)", lat: -88.1, lon: 45.0, elevM: -3934 },
-  { id: "cabeus-crater", name: "Cabeus Crater (LCROSS)", type: "Volatile Basin (98 km)", lat: -84.9, lon: -35.5, elevM: -2870 },
-  { id: "amundsen-crater", name: "Amundsen Crater", type: "Impact Basin (103 km)", lat: -84.5, lon: 82.8, elevM: -3628 },
-  { id: "de-gerlache-crater", name: "De Gerlache Crater", type: "PSR Crater (32 km)", lat: -88.5, lon: -87.1, elevM: -1013 },
-  { id: "faustini-crater", name: "Faustini Crater", type: "PSR Crater (42 km)", lat: -87.3, lon: 77.0, elevM: -2750 },
-  { id: "nobile-rim", name: "Nobile Crater (VIPER)", type: "Polar Rim (73 km)", lat: -85.2, lon: 53.5, elevM: 690 },
-  { id: "malapert-a", name: "Malapert A (IM-1)", type: "CLPS Landing Zone", lat: -80.13, lon: 1.44, elevM: 2584 },
-  { id: "sverdrup-crater", name: "Sverdrup Crater", type: "Far-Side PSR (33 km)", lat: -88.3, lon: -152.0, elevM: -2899 },
-  { id: "slater-crater", name: "Slater Crater", type: "Polar Crater (25 km)", lat: -88.1, lon: 111.0, elevM: -1753 },
-];
+export const SOUTH_POLE_REFERENCE_LANDMARKS = CANONICAL_POLAR_LANDMARKS.map((l) => ({
+  id: l.id,
+  name: l.name,
+  type: l.type === 'south_pole' ? 'Geographic Pole' : l.type ? `${l.type.charAt(0).toUpperCase() + l.type.slice(1)}${l.diameterKm ? ` (${l.diameterKm} km)` : ''}` : 'Lunar Feature',
+  lat: l.latitude,
+  lon: l.longitude,
+  elevM: l.elevationMeters,
+  rimElevM: l.rimElevationMeters,
+  depthM: l.depthMeters,
+}));
 
 /**
  * Determines the verified geological province and terrane based on published USGS and lunar science boundaries
@@ -412,7 +409,7 @@ function getAllLunarLandmarks() {
             type: f.type ? `${f.type.charAt(0).toUpperCase() + f.type.slice(1)}${f.diameterKm ? ` (${f.diameterKm} km)` : ''}` : 'Lunar Feature',
             lat,
             lon,
-            elevM: null,
+            elevM: f.elevationM ?? f.elevationMeters ?? null,
           });
         }
       }

@@ -21,22 +21,10 @@ import {
   evaluateCandidateForMissionWindow,
   DEFAULT_PLANNER_CONSTRAINTS,
 } from '../../utils/plannerEngine.js';
+import { SITES_TO_ANALYZE } from '../../data/slipSites.js';
 import { notifySuccess } from '../../utils/feedbackStore.js';
 
-const SITES_TO_ANALYZE = [
-  { id: 'landing-artemis3-shackleton', name: 'Shackleton Rim (A3)', lat: -89.67, lon: 129.78, elevationM: 1251, slopeDeg: 9.2, roughnessM: 1.8 },
-  { id: 'landing-artemis3-malapert', name: 'Malapert Massif', lat: -86.02, lon: 2.7, elevationM: 5113, slopeDeg: 8.6, roughnessM: 1.6 },
-  { id: 'haworth-crater', name: 'Haworth Rim', lat: -87.40, lon: -5.10, elevationM: 1420, slopeDeg: 10.4, roughnessM: 2.1 },
-  { id: 'de-gerlache-crater', name: 'De Gerlache Rim', lat: -88.50, lon: -87.10, elevationM: 1640, slopeDeg: 11.2, roughnessM: 2.2 },
-  { id: 'amundsen-crater', name: 'Amundsen Plains', lat: -84.50, lon: 82.8, elevationM: -3628, slopeDeg: 6.4, roughnessM: 1.2 },
-  { id: 'cabeus-crater', name: 'Cabeus Peak', lat: -84.90, lon: -35.50, elevationM: 1850, slopeDeg: 8.9, roughnessM: 1.7 },
-  { id: 'landing-artemis3-shackleton', name: 'Peak Near Shackleton (A3)', lat: -89.0066, lon: 132.0596 },
-  { id: 'landing-artemis3-malapert', name: 'Malapert Massif', lat: -85.90, lon: 0.00 },
-  { id: 'haworth-crater', name: 'Haworth Rim', lat: -87.40, lon: -5.10 },
-  { id: 'de-gerlache-crater', name: 'De Gerlache Rim', lat: -88.50, lon: -87.10 },
-  { id: 'amundsen-crater', name: 'Amundsen Plains', lat: -84.50, lon: 82.8 },
-  { id: 'cabeus-crater', name: 'Cabeus Peak', lat: -84.90, lon: -35.50 },
-];
+export { SITES_TO_ANALYZE };
 
 const LANDER_PRESETS = [
   {

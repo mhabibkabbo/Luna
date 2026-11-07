@@ -121,16 +121,25 @@ function sampleElevationAtMeters(xMeters, yMeters, halfExtent = HALF_EXTENT_M) {
 function computeSlopeAtMeters(xMeters, yMeters, stepM = 400, halfExtent = HALF_EXTENT_M) {
   const zC = sampleElevationAtMeters(xMeters, yMeters, halfExtent);
   if (zC === null) return { elevationM: null, slopeDeg: null };
-  const zN = sampleElevationAtMeters(xMeters, yMeters + stepM, halfExtent) ?? zC;
-  const zS = sampleElevationAtMeters(xMeters, yMeters - stepM, halfExtent) ?? zC;
-  const zE = sampleElevationAtMeters(xMeters + stepM, yMeters, halfExtent) ?? zC;
-  const zW = sampleElevationAtMeters(xMeters - stepM, yMeters, halfExtent) ?? zC;
-  const dzdx = (zE - zW) / (2 * stepM);
-  const dzdy = (zN - zS) / (2 * stepM);
-  const slopeRad = Math.atan(Math.sqrt(dzdx * dzdx + dzdy * dzdy));
+  const d = stepM;
+  const zNW = sampleElevationAtMeters(xMeters - d, yMeters + d, halfExtent) ?? zC;
+  const zN = sampleElevationAtMeters(xMeters, yMeters + d, halfExtent) ?? zC;
+  const zNE = sampleElevationAtMeters(xMeters + d, yMeters + d, halfExtent) ?? zC;
+  const zW = sampleElevationAtMeters(xMeters - d, yMeters, halfExtent) ?? zC;
+  const zE = sampleElevationAtMeters(xMeters + d, yMeters, halfExtent) ?? zC;
+  const zSW = sampleElevationAtMeters(xMeters - d, yMeters - d, halfExtent) ?? zC;
+  const zS = sampleElevationAtMeters(xMeters, yMeters - d, halfExtent) ?? zC;
+  const zSE = sampleElevationAtMeters(xMeters + d, yMeters - d, halfExtent) ?? zC;
+
+  // Horn (1981) 8-neighbor 3x3 weighted gradient stencil
+  const dzdx = (zNE + 2 * zE + zSE - (zNW + 2 * zW + zSW)) / (8 * d);
+  const dzdy = (zNW + 2 * zN + zNE - (zSW + 2 * zS + zSE)) / (8 * d);
+  const slopeRad = Math.atan(Math.hypot(dzdx, dzdy));
   return {
     elevationM: zC,
     slopeDeg: slopeRad * (180 / Math.PI),
+    dzdx,
+    dzdy,
   };
 }
 
@@ -253,7 +262,7 @@ function handleRenderTile(msgPayload) {
     }
   }
 
-  const invTwoRes = 1 / (2 * resolution);
+  const invEightRes = 1 / (8 * resolution);
 
   for (let py = 0; py < tileSize; py++) {
     const rPrev = py * stride;
@@ -267,13 +276,19 @@ function handleRenderTile(msgPayload) {
 
       const worldX = -mapExtentM + (baseTileX + px) * resolution;
       const elev = elevBuf[cIdx];
-      const zN = validBuf[rPrev + px + 1] ? elevBuf[rPrev + px + 1] : elev;
-      const zS = validBuf[rNext + px + 1] ? elevBuf[rNext + px + 1] : elev;
-      const zE = validBuf[rCurr + px + 2] ? elevBuf[rCurr + px + 2] : elev;
-      const zW = validBuf[rCurr + px] ? elevBuf[rCurr + px] : elev;
 
-      const dzdx = (zE - zW) * invTwoRes;
-      const dzdy = (zN - zS) * invTwoRes;
+      // Horn (1981) 8-neighbor 3x3 gradient stencil
+      const zNW = validBuf[rPrev + px] ? elevBuf[rPrev + px] : elev;
+      const zN = validBuf[rPrev + px + 1] ? elevBuf[rPrev + px + 1] : elev;
+      const zNE = validBuf[rPrev + px + 2] ? elevBuf[rPrev + px + 2] : elev;
+      const zW = validBuf[rCurr + px] ? elevBuf[rCurr + px] : elev;
+      const zE = validBuf[rCurr + px + 2] ? elevBuf[rCurr + px + 2] : elev;
+      const zSW = validBuf[rNext + px] ? elevBuf[rNext + px] : elev;
+      const zS = validBuf[rNext + px + 1] ? elevBuf[rNext + px + 1] : elev;
+      const zSE = validBuf[rNext + px + 2] ? elevBuf[rNext + px + 2] : elev;
+
+      const dzdx = (zNE + 2 * zE + zSE - (zNW + 2 * zW + zSW)) * invEightRes;
+      const dzdy = (zNW + 2 * zN + zNE - (zSW + 2 * zS + zSE)) * invEightRes;
 
       const slopeGradSq = dzdx * dzdx + dzdy * dzdy;
       const slopeRad = Math.atan(Math.sqrt(slopeGradSq));

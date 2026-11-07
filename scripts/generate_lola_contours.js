@@ -253,22 +253,42 @@ console.log(`[LOLA Contour Pipeline] Saved contours_100m.geojson (${contours100m
 console.log('[LOLA Contour Pipeline] Computing slope field and 15° hazard boundaries...');
 const slopeDegField = new Float32Array(DOWNSAMPLE_N * DOWNSAMPLE_N);
 let hazardCount = 0;
+const invEightCellM = 1 / (8 * CELL_DOWN_M);
 
 for (let r = 1; r < DOWNSAMPLE_N - 1; r++) {
-  for (let c = 1; c < DOWNSAMPLE_N - 1; c++) {
-    const idx = r * DOWNSAMPLE_N + c;
-    const zE = smoothedHeights[idx + 1];
-    const zW = smoothedHeights[idx - 1];
-    const zN = smoothedHeights[idx - DOWNSAMPLE_N];
-    const zS = smoothedHeights[idx + DOWNSAMPLE_N];
+  const rPrev = (r - 1) * DOWNSAMPLE_N;
+  const rCurr = r * DOWNSAMPLE_N;
+  const rNext = (r + 1) * DOWNSAMPLE_N;
 
-    if (Number.isNaN(zE) || Number.isNaN(zW) || Number.isNaN(zN) || Number.isNaN(zS)) {
+  for (let c = 1; c < DOWNSAMPLE_N - 1; c++) {
+    const idx = rCurr + c;
+    const zCenter = smoothedHeights[idx];
+    if (Number.isNaN(zCenter)) {
       slopeDegField[idx] = NaN;
       continue;
     }
 
-    const dzdx = (zE - zW) / (2 * CELL_DOWN_M);
-    const dzdy = (zS - zN) / (2 * CELL_DOWN_M);
+    const zNW = smoothedHeights[rPrev + c - 1];
+    const zN = smoothedHeights[rPrev + c];
+    const zNE = smoothedHeights[rPrev + c + 1];
+    const zW = smoothedHeights[rCurr + c - 1];
+    const zE = smoothedHeights[rCurr + c + 1];
+    const zSW = smoothedHeights[rNext + c - 1];
+    const zS = smoothedHeights[rNext + c];
+    const zSE = smoothedHeights[rNext + c + 1];
+
+    if (
+      Number.isNaN(zNW) || Number.isNaN(zN) || Number.isNaN(zNE) ||
+      Number.isNaN(zW)  || Number.isNaN(zE) ||
+      Number.isNaN(zSW) || Number.isNaN(zS) || Number.isNaN(zSE)
+    ) {
+      slopeDegField[idx] = NaN;
+      continue;
+    }
+
+    // Horn (1981) 8-neighbor 3x3 weighted gradient stencil
+    const dzdx = (zNE + 2 * zE + zSE - (zNW + 2 * zW + zSW)) * invEightCellM;
+    const dzdy = (zNW + 2 * zN + zNE - (zSW + 2 * zS + zSE)) * invEightCellM;
     const slopeDeg = (Math.atan(Math.hypot(dzdx, dzdy)) * 180) / Math.PI;
     slopeDegField[idx] = slopeDeg;
     if (slopeDeg >= 15.0) hazardCount++;

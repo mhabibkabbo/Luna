@@ -350,7 +350,6 @@ export function createEarth(container, callbacks = {}) {
   function setCommunicationLink(link) {
     latestCommunicationLink = link;
     if (!link) {
-      if (tiledImageryLayer) { scene.globe.imageryLayers.remove(tiledImageryLayer); tiledImageryLayer = null; }
       if (communicationEntity) {
         viewer.entities.remove(communicationEntity);
         communicationEntity = null;

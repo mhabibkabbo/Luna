@@ -174,6 +174,24 @@ test('LOLA DEM 360° Horizon Ray-Marching & Alias Resolution', async () => {
   assert.equal(rayMarched.isRayMarched, true);
   assert.equal(rayMarched.horizon.length, 360);
 
+  // Verify negative horizon dips on elevated peaks are not clamped to 0°
+  // Create an elevated peak (e.g. +3000m at center) with lower surrounding terrain (-2000m)
+  const peakGrid = new Int16Array(size * size);
+  peakGrid.fill(-2000);
+  const mid = Math.floor(size / 2);
+  peakGrid[mid * size + mid] = 3000;
+  peakGrid[mid * size + (mid - 1)] = 3000;
+  peakGrid[(mid - 1) * size + mid] = 3000;
+  peakGrid[(mid - 1) * size + (mid - 1)] = 3000;
+  registerPolarDemGrid(peakGrid, size);
+
+  // Observer at the South Pole (-90°, 0°) on the elevated peak
+  const peakProfile = computeDemHorizonProfile(-90.0, 0.0);
+  assert.ok(peakProfile, 'Peak profile computed');
+  // Check that horizon angles dip below 0° (unclamped negative horizon)
+  const hasNegativeDips = peakProfile.horizon.some((angle) => angle < 0);
+  assert.ok(hasNegativeDips, 'Elevated peak overlooking low terrain must register negative horizon dips (< 0°)');
+
   // Outside 80°S-90°S should return null so caller knows DEM is unmodeled there
   const outsidePolar = computeDemHorizonProfile(-45.0, 10.0);
   assert.equal(outsidePolar, null);
@@ -401,6 +419,51 @@ test('Audit Verification: LOLA Worker 0.5 m Vertical Scaling & Unified Planner E
   assert.equal(crisium.elevationM, null, 'Non-polar site outside 80°S-90°S DEM must have elevationM === null');
   assert.equal(crisium.slopeScore, null, 'Non-polar site slopeScore must be null, not coerced to 100');
   assert.equal(crisium.isPartialScore, true, 'Non-polar site must be flagged as partial 3-criterion score');
+});
+
+test('Horn (1981) 8-Neighbor Gradient Stencil Consistency Across Worker & Horizons', async () => {
+  const { computeSlopeAtMeters, initWorkerDemBuffer } = await import(
+    '../src/workers/lolaTileWorker.js'
+  );
+  const { computeHornSlopeAtMeters, registerPolarDemGrid } = await import(
+    '../src/utils/horizons.js'
+  );
+
+  // Initialize a synthetic 32x32 terrain grid with combined cardinal and diagonal relief
+  const size = 32;
+  const grid = new Int16Array(size * size);
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      // Elevation in raw DN (scale 0.5 m)
+      grid[y * size + x] = Math.round((Math.sin(x * 0.3) * 500 + Math.cos(y * 0.3) * 400 + (x * y) * 2) * 2);
+    }
+  }
+
+  initWorkerDemBuffer(grid, size, 0.5);
+  registerPolarDemGrid(grid, size, 0.5);
+
+  // Probe at stereographic coordinates (e.g. 1000m, -2000m)
+  const workerProbe = computeSlopeAtMeters(1000, -2000, 400);
+  const horizonsProbe = computeHornSlopeAtMeters(1000, -2000, 400);
+
+  assert.ok(workerProbe.slopeDeg !== null, 'Worker probe should return valid slope');
+  assert.ok(horizonsProbe.slopeDeg !== null, 'Horizons probe should return valid slope');
+  assert.ok(
+    Math.abs(workerProbe.slopeDeg - horizonsProbe.slopeDeg) < 1e-4,
+    `Worker slope (${workerProbe.slopeDeg}°) must match horizons Horn slope (${horizonsProbe.slopeDeg}°)`
+  );
+  assert.ok(
+    Math.abs(workerProbe.elevationM - horizonsProbe.elevationM) < 1e-4,
+    `Worker elevation (${workerProbe.elevationM}m) must match horizons elevation (${horizonsProbe.elevationM}m)`
+  );
+  assert.ok(
+    Math.abs(workerProbe.dzdx - horizonsProbe.dzdx) < 1e-6,
+    'Worker dzdx must match horizons dzdx'
+  );
+  assert.ok(
+    Math.abs(workerProbe.dzdy - horizonsProbe.dzdy) < 1e-6,
+    'Worker dzdy must match horizons dzdy'
+  );
 });
 
 test('South Polar Stereographic Pan Bounds: Symmetric 4-Quadrant Coverage Including Top Half (Y > 0)', async () => {

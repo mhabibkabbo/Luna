@@ -2,7 +2,10 @@ import React, { useEffect, useRef, useState, useMemo } from 'react';
 import * as THREE from 'three';
 import { ArrowUpRight } from 'lucide-react';
 import { CLPS_MISSIONS } from '../../data/clpsMissions.js';
+import { HERO_ORBITAL_MISSIONS } from '../../data/heroMissions.js';
 import { formatLunarCoordinates } from '../../utils/coordinates.js';
+
+export { HERO_ORBITAL_MISSIONS };
 
 // Reliable CDN endpoint for NASA LRO photographic lunar texture
 const NASA_LUNAR_COLOR_URLS = [
@@ -120,89 +123,11 @@ function selenographicToVector3(lat, lon, radius = 1.0) {
   return new THREE.Vector3(x, y, z);
 }
 
-export const HERO_ORBITAL_MISSIONS = [
-  {
-    id: 'clps-im1-odysseus',
-    indexLabel: '01',
-    name: 'IM-1 Odysseus',
-    taskOrder: 'TO 2-IM',
-    provider: 'Intuitive Machines',
-    lat: -80.13,
-    lon: 1.44,
-    siteName: 'Malapert A Rim',
-    region: 'Lunar South Pole',
-    status: 'Completed soft landing',
-    color: 0xf8fafc,
-    accentHex: '#F8FAFC',
-    payloadCount: 7,
-  },
-  {
-    id: 'clps-firefly-blueghost1',
-    indexLabel: '02',
-    name: 'Blue Ghost 1',
-    taskOrder: 'TO 19D',
-    provider: 'Firefly Aerospace',
-    lat: 18.56,
-    lon: 61.81,
-    siteName: 'Mare Crisium Basin',
-    region: 'Eastern Nearside',
-    status: 'Confirmed surface operations',
-    color: 0xe2e8f0,
-    accentHex: '#E2E8F0',
-    payloadCount: 10,
-  },
-  {
-    id: 'clps-im2-prime1',
-    indexLabel: '03',
-    name: 'IM-2 PRIME-1',
-    taskOrder: 'TO PRIME-1',
-    provider: 'Intuitive Machines',
-    lat: -89.4,
-    lon: 0.0,
-    siteName: 'Shackleton Ridge',
-    region: 'Lunar South Pole',
-    status: 'Polar volatile ice drill',
-    color: 0xf8fafc,
-    accentHex: '#F8FAFC',
-    payloadCount: 3,
-  },
-  {
-    id: 'apollo-11',
-    indexLabel: '04',
-    name: 'Apollo 11',
-    taskOrder: 'NASA Historic',
-    provider: 'NASA Apollo Program',
-    lat: 0.67,
-    lon: 23.47,
-    siteName: 'Tranquility Base',
-    region: 'Mare Tranquillitatis',
-    status: 'First crewed landing (1969)',
-    color: 0xf8fafc,
-    accentHex: '#F8FAFC',
-    payloadCount: 2,
-    isApollo: true,
-  },
-  {
-    id: 'clps-astrobotic-griffin1',
-    indexLabel: '05',
-    name: 'Griffin Mission 1',
-    taskOrder: 'TO 20A',
-    provider: 'Astrobotic',
-    lat: -84.5,
-    lon: 31.7,
-    siteName: 'Mons Mouton Plateau',
-    region: 'Lunar South Pole',
-    status: 'Medium-class polar lander',
-    color: 0xcbd5e1,
-    accentHex: '#CBD5E1',
-    payloadCount: 4,
-  },
-];
-
 export default function RealisticMoon({
   onLaunchExplorer,
   selectedMissionIndex = 0,
   onSelectMissionIndex,
+  onOpenMission,
 }) {
   const mountRef = useRef(null);
   const pinDomRefs = useRef([]);
@@ -230,6 +155,10 @@ export default function RealisticMoon({
   const handleLaunchToPin = (pin, idx) => {
     if (onSelectMissionIndex && typeof idx === 'number') {
       onSelectMissionIndex(idx);
+    }
+    if (onOpenMission) {
+      onOpenMission(pin);
+      return;
     }
     const mission = CLPS_MISSIONS.find((m) => m.id === pin.id);
     if (mission) {

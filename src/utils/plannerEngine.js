@@ -14,6 +14,14 @@ import {
   sampleLunarTerrainMetrics,
   ensurePolarDemLoaded,
 } from './horizons.js';
+import {
+  computeTerrainSuitability,
+  computeSolarSuitability,
+  computeCommunicationSuitability,
+  computeThermalSuitability,
+  computeOverallSuitability,
+  DEFAULT_STEP_HOURS,
+} from './suitabilityScoring.js';
 
 ensurePolarDemLoaded();
 
@@ -64,7 +72,8 @@ export function evaluateCandidateForMissionWindow(
       : Date.now();
   const safeDurationDays = Math.max(1, Number(durationDays) || 14);
   const durationMs = safeDurationDays * 86400000;
-  const numSteps = Math.max(16, Math.min(56, Math.round(safeDurationDays * 4)));
+  const stepHours = constraints.stepHours ?? DEFAULT_STEP_HOURS;
+  const numSteps = Math.max(16, Math.round((safeDurationDays * 24) / stepHours));
   const stepMs = durationMs / numSteps;
 
   const lat = candidate.lat ?? candidate.latitude ?? -85.9;
@@ -243,57 +252,55 @@ export function evaluateCandidateForMissionWindow(
     });
   }
 
-  // 4. Explainable Weighted Scoring (0 to 100) — Strictly Data-Driven (No Fabricated Values)
+  // 4. Explainable Weighted Scoring (0 to 100) via Unified Shared Scoring Engine
   const rawWeights = constraints.weights || DEFAULT_PLANNER_CONSTRAINTS.weights;
   const wSum =
-    (rawWeights.sun ?? 0.35) +
-    (rawWeights.dte ?? 0.3) +
-    (rawWeights.slope ?? 0.2) +
+    (rawWeights.sun ?? rawWeights.solar ?? 0.35) +
+    (rawWeights.dte ?? rawWeights.communication ?? 0.30) +
+    (rawWeights.slope ?? rawWeights.terrain ?? 0.20) +
     (rawWeights.thermal ?? 0.15) || 1;
-  const wSun = (rawWeights.sun ?? 0.35) / wSum;
-  const wDte = (rawWeights.dte ?? 0.3) / wSum;
-  const wSlope = (rawWeights.slope ?? 0.2) / wSum;
+  const wSun = (rawWeights.sun ?? rawWeights.solar ?? 0.35) / wSum;
+  const wDte = (rawWeights.dte ?? rawWeights.communication ?? 0.30) / wSum;
+  const wSlope = (rawWeights.slope ?? rawWeights.terrain ?? 0.20) / wSum;
   const wThermal = (rawWeights.thermal ?? 0.15) / wSum;
 
   const isCompliant = violations.filter((v) => v.severity === 'critical').length === 0;
 
-  // Component scores are exact physical [0, 100] percentages:
-  // - sunlitScore: exact % of window sunlit
-  // - dteScore: exact % of window with DTE line-of-sight (0% on farside)
-  // - slopeScore: linear safety margin relative to 15° tip-over limit, or null if outside 80°S–90°S LOLA DEM
-  // - thermalScore: Calculated minimum temperature stability relative to [40 K PSR floor, 250 K benign regime]
-  const sunlitScore = Math.max(0, Math.min(100, sunlitRatio));
-  const dteScore = candidate.isFarSide ? 0 : Math.max(0, Math.min(100, dteUptimeRatio));
-  const slopeScore = hasSlopeData
-    ? Math.max(0, Math.min(100, Math.round((1 - slopeDeg / 15) * 100)))
-    : null;
-  const minTempK = minTemp + 273.15;
-  const thermalScore = Math.max(0, Math.min(100, Math.round(((minTempK - 40) / (250 - 40)) * 100)));
+  const totalHours = safeDurationDays * 24;
+  const tempVariationC = maxTemp - minTemp;
 
-  let overallScore = 0;
-  let formulaString = '';
-  const isPartialScore = !hasSlopeData;
+  const slopeScore = computeTerrainSuitability(
+    slopeDeg,
+    candidate.roughnessM ?? sampledMetrics.roughnessM ?? null
+  );
+  const sunlitScore = computeSolarSuitability(
+    sunlitRatio,
+    longestDarkHours,
+    totalHours
+  );
+  const dteScore = computeCommunicationSuitability(
+    dteUptimeRatio,
+    longestBlackoutHours,
+    totalHours,
+    candidate.isFarSide
+  );
+  const thermalScore = computeThermalSuitability(
+    minTemp + 273.15,
+    tempVariationC
+  );
 
-  if (hasSlopeData) {
-    overallScore = Math.round(
-      sunlitScore * wSun +
-        dteScore * wDte +
-        slopeScore * wSlope +
-        thermalScore * wThermal
-    );
-    formulaString = `Score = ${(wSun * 100).toFixed(0)}%·Sun(${sunlitScore}) + ${(wDte * 100).toFixed(0)}%·DTE(${dteScore}) + ${(wSlope * 100).toFixed(0)}%·Slope(${slopeScore}) + ${(wThermal * 100).toFixed(0)}%·Thermal(${thermalScore})`;
-  } else {
-    // Slope data is not present in loaded dataset (outside 80°S–90°S LOLA DEM).
-    // Never invent a slope score; normalize only over the available calculated dimensions.
-    const activeWeightSum = wSun + wDte + wThermal || 1;
-    const nwSun = wSun / activeWeightSum;
-    const nwDte = wDte / activeWeightSum;
-    const nwThermal = wThermal / activeWeightSum;
-    overallScore = Math.round(
-      sunlitScore * nwSun + dteScore * nwDte + thermalScore * nwThermal
-    );
-    formulaString = `Score (Partial — Slope Not Present) = ${(nwSun * 100).toFixed(0)}%·Sun(${sunlitScore}) + ${(nwDte * 100).toFixed(0)}%·DTE(${dteScore}) + ${(nwThermal * 100).toFixed(0)}%·Thermal(${thermalScore}) [Slope: Not present outside 80°S–90°S DEM]`;
-  }
+  const overall = computeOverallSuitability({
+    solarSuitability: sunlitScore,
+    commSuitability: dteScore,
+    terrainSuitability: slopeScore,
+    thermalSuitability: thermalScore,
+    weights: rawWeights,
+    slopeDeg,
+  });
+
+  const isPartialScore = overall.isPartialScore;
+  const overallScore = overall.overallScore !== null ? overall.overallScore : overall.partialScore;
+  const formulaString = overall.formulaString;
 
   // Specification Section 8 Descriptive Feasibility Outcomes:
   // Favorable | Conditional | Challenging | Insufficient Data

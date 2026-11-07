@@ -24,6 +24,14 @@ import {
 } from './horizons.js';
 import { determineLunarGeologicalRegion } from './coordinates.js';
 import { NASA_DATASETS_REGISTRY } from '../data/nasaProvenance.js';
+import {
+  computeTerrainSuitability,
+  computeSolarSuitability,
+  computeCommunicationSuitability,
+  computeThermalSuitability,
+  computeOverallSuitability,
+  DEFAULT_SUITABILITY_WEIGHTS,
+} from './suitabilityScoring.js';
 
 ensurePolarDemLoaded();
 
@@ -662,7 +670,7 @@ export const COMPARISON_PARAMETER_DEFINITIONS = [
       version: 'v1.0',
       spatialResolution: '400 m/px DEM horizon mask (80°S–90°S)',
       temporalResolution: '7 / 14 / 28-day window',
-      method: 'S_solar = round(0.75 * sunlitPct + 0.25 * max(0, 100 - longestDarkHours / 1.5)). Reflects both cumulative insolation and battery survival through continuous darkness.',
+      method: 'S_solar = round(0.75 * sunlitPct + 0.25 * max(0, min(100, round(100 - (longestDarkHours / totalHours) * 100)))). Reflects both cumulative insolation and continuous darkness survival relative to mission window.',
       derivationType: 'Model-Derived',
     },
   },
@@ -681,7 +689,7 @@ export const COMPARISON_PARAMETER_DEFINITIONS = [
       version: 'v1.0',
       spatialResolution: '400 m/px DEM horizon mask (80°S–90°S)',
       temporalResolution: '7 / 14 / 28-day window',
-      method: 'S_comm = round(0.80 * dteAvailabilityPct + 0.20 * max(0, 100 - maxBlackoutHours)). Zero on lunar farside without orbital relay.',
+      method: 'S_comm = earthVisibilityPct === 0 ? 0 : round(0.80 * dteAvailabilityPct + 0.20 * max(0, min(100, round(100 - (maxBlackoutHours / totalHours) * 100)))). Zero on lunar farside without orbital relay.',
       derivationType: 'Model-Derived',
     },
   },
@@ -700,7 +708,7 @@ export const COMPARISON_PARAMETER_DEFINITIONS = [
       version: 'v1.0',
       spatialResolution: 'Point evaluation',
       temporalResolution: '7 / 14 / 28-day window',
-      method: 'S_thermal = round(0.70 * ((minTempK - 40) / 210) * 100 + 0.30 * max(0, 100 - tempVariationC / 3)).',
+      method: 'S_thermal = round(0.70 * max(0, min(100, round(((minTempK - 40) / 210) * 100))) + 0.30 * max(0, min(100, round(100 - tempVariationC / 3.2)))). Reflects cryogenic floor survival and thermal swing stability.',
       derivationType: 'Model-Derived',
     },
   },
@@ -1016,73 +1024,34 @@ export function evaluateComparisonLocation(location, startMs, durationDays = 14)
     hazardFlags.push('Local DEM Slope Unmodeled (North of 80°S)');
   }
 
-  // ── Suitability Pillar Scores (0–100) ──────────────────────────────────────
-  // 1. Terrain Suitability: ONLY calculated when slopeDeg is actually available
-  let terrainSuitability = null;
-  if (slopeDeg !== null) {
-    const baseSlopeScore = Math.max(0, Math.min(100, Math.round((1 - slopeDeg / 15) * 100)));
-    const roughnessPenalty =
-      roughnessM !== null && roughnessM > 10
-        ? Math.min(15, Math.round((roughnessM - 10) * 1.2))
-        : 0;
-    terrainSuitability = Math.max(0, baseSlopeScore - roughnessPenalty);
-  }
-
-  // 2. Solar-Energy Suitability: combines illumination % and continuous darkness survival
-  const darkSurvivalScore = Math.max(
-    0,
-    Math.min(100, Math.round(100 - (longestContinuousDarkHours / totalHours) * 100))
+  // ── Suitability Pillar Scores (0–100) via Unified Shared Engine ───────────
+  const terrainSuitability = computeTerrainSuitability(slopeDeg, roughnessM);
+  const solarSuitability = computeSolarSuitability(
+    solarIlluminationPct,
+    longestContinuousDarkHours,
+    totalHours
   );
-  const solarSuitability = Math.round(0.75 * solarIlluminationPct + 0.25 * darkSurvivalScore);
-
-  // 3. Communication Suitability: combines DTE availability % and blackout resistance
-  const blackoutSurvivalScore = Math.max(
-    0,
-    Math.min(100, Math.round(100 - (maxBlackoutHours / totalHours) * 100))
+  const commSuitability = computeCommunicationSuitability(
+    earthVisibilityPct,
+    maxBlackoutHours,
+    totalHours,
+    isFarSide
   );
-  const commSuitability =
-    earthVisibilityPct === 0
-      ? 0
-      : Math.round(0.8 * earthVisibilityPct + 0.2 * blackoutSurvivalScore);
+  const thermalSuitability = computeThermalSuitability(minTempK, tempVariationC);
 
-  // 4. Thermal Suitability: combines minimum temperature survival and thermal swing stability
-  const minTempNorm = Math.max(0, Math.min(100, Math.round(((minTempK - 40) / (250 - 40)) * 100)));
-  const swingNorm = Math.max(0, Math.min(100, Math.round(100 - tempVariationC / 3.2)));
-  const thermalSuitability = Math.round(0.7 * minTempNorm + 0.3 * swingNorm);
+  const overall = computeOverallSuitability({
+    solarSuitability,
+    commSuitability,
+    terrainSuitability,
+    thermalSuitability,
+    weights: SUITABILITY_WEIGHTS,
+    slopeDeg,
+  });
 
-  // 5. Overall Suitability: ONLY calculated when ALL 4 pillars (including terrainSuitability) are present!
-  // Never fabricate an overall score or penalize missing terrain data as zero.
-  const hasCompleteScoringInputs =
-    terrainSuitability !== null &&
-    Number.isFinite(solarSuitability) &&
-    Number.isFinite(commSuitability) &&
-    Number.isFinite(thermalSuitability);
-
-  const rawOverallSuitability = hasCompleteScoringInputs
-    ? Math.round(
-        (SUITABILITY_WEIGHTS.solar * solarSuitability +
-          SUITABILITY_WEIGHTS.communication * commSuitability +
-          SUITABILITY_WEIGHTS.terrain * terrainSuitability +
-          SUITABILITY_WEIGHTS.thermal * thermalSuitability) *
-          100
-      ) / 100
-    : null;
-
-  const overallSuitability =
-    rawOverallSuitability !== null ? Math.round(rawOverallSuitability) : null;
-
-  let suitabilityLabel = 'Insufficient Data for Scoring';
-  if (overallSuitability !== null) {
-    if (slopeDeg >= 15.0) {
-      suitabilityLabel = `${overallSuitability}/100 (Disqualified: Slope ≥ 15°)`;
-    } else if (overallSuitability >= 75) {
-      suitabilityLabel = `${overallSuitability}/100 (Favorable)`;
-    } else if (overallSuitability >= 50) {
-      suitabilityLabel = `${overallSuitability}/100 (Conditional)`;
-    } else {
-      suitabilityLabel = `${overallSuitability}/100 (Challenging)`;
-    }
-  }
+  const hasCompleteScoringInputs = overall.hasCompleteScoringInputs;
+  const rawOverallSuitability = overall.overallSuitability;
+  const overallSuitability = overall.overallSuitability;
+  const suitabilityLabel = overall.suitabilityLabel;
 
   // ── Data Completeness Classification ───────────────────────────────────────
   const missingDatasets = [];

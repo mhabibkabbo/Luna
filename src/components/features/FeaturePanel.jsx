@@ -63,6 +63,13 @@ import {
   evaluateCandidateForMissionWindow,
   DEFAULT_PLANNER_CONSTRAINTS,
 } from '../../utils/plannerEngine.js';
+import {
+  computeTerrainSuitability,
+  computeSolarSuitability,
+  computeCommunicationSuitability,
+  computeThermalSuitability,
+  computeOverallSuitability,
+} from '../../utils/suitabilityScoring.js';
 import { comparisonSelectionStore } from '../../utils/comparisonEngine.js';
 
 const TABS = [
@@ -248,6 +255,12 @@ export default function FeaturePanel({
     clpsData || safeFeature.isClps || safeFeature.type === 'clps-mission'
   );
 
+  const isPlaceholderLocation = Boolean(
+    feature?.locationType === 'placeholder' ||
+    clpsData?.locationType === 'placeholder' ||
+    safeFeature?.locationType === 'placeholder'
+  );
+
   const regionInfo = useMemo(() => {
     if (!feature || isEarthFeature) return null;
     return feature.regionInfo || getLunarRegionInfo(featLon, featLat);
@@ -280,28 +293,36 @@ export default function FeaturePanel({
     [siteId, isCustomPin, clpsData, safeFeature.name, featLat, featLon]
   );
 
-  const flatSun = useMemo(
-    () => solarPosition(state, featLat, featLon),
-    [state, featLat, featLon]
-  );
+  const flatSun = useMemo(() => {
+    if (isPlaceholderLocation) {
+      return { azimuthDeg: null, elevationDeg: null, status: 'unmodeled', distanceKm: null };
+    }
+    return solarPosition(state, featLat, featLon);
+  }, [state, featLat, featLon, isPlaceholderLocation]);
+
   const sunTerrainHorizon = terrainFn(flatSun.azimuthDeg) ?? 0;
-  const sun = useMemo(
-    () => solarPosition(state, featLat, featLon, sunTerrainHorizon),
-    [state, featLat, featLon, sunTerrainHorizon]
-  );
+  const sun = useMemo(() => {
+    if (isPlaceholderLocation) {
+      return { azimuthDeg: null, elevationDeg: null, status: 'unmodeled', discPct: null };
+    }
+    return solarPosition(state, featLat, featLon, sunTerrainHorizon);
+  }, [state, featLat, featLon, sunTerrainHorizon, isPlaceholderLocation]);
 
   const localThermal = useMemo(() => {
-    if (!feature || isEarthFeature) return null;
+    if (!feature || isEarthFeature || isPlaceholderLocation) return null;
     return getLunarTemperature(featLat, featLon, new Date(tabTimeMs), {
       terrainHorizonDeg: sunTerrainHorizon,
       elevationM: terrainMetrics?.elevationM ?? null,
     });
-  }, [feature, isEarthFeature, featLat, featLon, tabTimeMs, sunTerrainHorizon, terrainMetrics?.elevationM]);
+  }, [feature, isEarthFeature, isPlaceholderLocation, featLat, featLon, tabTimeMs, sunTerrainHorizon, terrainMetrics?.elevationM]);
 
-  const earthLook = useMemo(
-    () => earthLookFromMoon(state, moonPoint),
-    [state, moonPoint]
-  );
+  const earthLook = useMemo(() => {
+    if (isPlaceholderLocation) {
+      return { azimuthDeg: null, elevationDeg: null, radiusDeg: 0, isDirectToEarth: false };
+    }
+    return earthLookFromMoon(state, moonPoint);
+  }, [state, moonPoint, isPlaceholderLocation]);
+
   const earthTerrainHorizon = terrainFn(earthLook.azimuthDeg) ?? 0;
 
   const activeStation = useMemo(() => {
@@ -314,26 +335,28 @@ export default function FeaturePanel({
     );
   }, [selectedStationId, communicationEarthFeature]);
 
-  const generalLink = useMemo(
-    () =>
-      evaluateEarthLink({
-        state,
-        moonFeature: moonPoint,
-        earthFeature: activeStation,
-        constraints: DEFAULT_DTE_CONSTRAINTS,
-        terrainFn,
-      }),
-    [state, moonPoint, activeStation, terrainFn]
-  );
+  const generalLink = useMemo(() => {
+    if (isPlaceholderLocation) {
+      return { status: 'unmodeled', isVisible: false, reason: 'Coordinates TBD' };
+    }
+    return evaluateEarthLink({
+      state,
+      moonFeature: moonPoint,
+      earthFeature: activeStation,
+      constraints: DEFAULT_DTE_CONSTRAINTS,
+      terrainFn,
+    });
+  }, [state, moonPoint, activeStation, terrainFn, isPlaceholderLocation]);
 
   const solarDiscPct = useMemo(() => {
+    if (isPlaceholderLocation || flatSun.elevationDeg == null) return null;
     const r = (state?.sun?.angularDiameterDeg || 0.533) / 2;
     const upperLimb = flatSun.elevationDeg + r;
     const lowerLimb = flatSun.elevationDeg - r;
     if (upperLimb <= sunTerrainHorizon) return 0;
     if (lowerLimb >= sunTerrainHorizon) return 100;
     return Math.round(((upperLimb - sunTerrainHorizon) / (2 * r)) * 100);
-  }, [flatSun.elevationDeg, sunTerrainHorizon, state]);
+  }, [flatSun.elevationDeg, sunTerrainHorizon, state, isPlaceholderLocation]);
 
   const currentSun = useMemo(
     () => ({
@@ -360,22 +383,23 @@ export default function FeaturePanel({
 
   const solarTransition = useMemo(
     () =>
-      feature && !isEarthFeature && (activeTab === 'terrain' || activeTab === 'info')
+      feature && !isEarthFeature && !isPlaceholderLocation && (activeTab === 'terrain' || activeTab === 'info')
         ? calculateSolarTransition(settledTabTimeMs, featLat, featLon, siteId)
         : null,
-    [feature, isEarthFeature, activeTab, settledTabTimeMs, featLat, featLon, siteId]
+    [feature, isEarthFeature, isPlaceholderLocation, activeTab, settledTabTimeMs, featLat, featLon, siteId]
   );
 
   const earthTransition = useMemo(
     () =>
-      feature && !isEarthFeature && (activeTab === 'terrain' || activeTab === 'info')
+      feature && !isEarthFeature && !isPlaceholderLocation && (activeTab === 'terrain' || activeTab === 'info')
         ? calculateEarthPositionTransition(settledTabTimeMs, moonPoint)
         : null,
-    [feature, isEarthFeature, activeTab, settledTabTimeMs, moonPoint]
+    [feature, isEarthFeature, isPlaceholderLocation, activeTab, settledTabTimeMs, moonPoint]
   );
 
   // Only calculate station-by-station link status while the Comms tab is active.
   const dsnSitesCalculations = useMemo(() => {
+    if (isEarthFeature || isPlaceholderLocation || activeTab !== 'communication') return [];
     if (isEarthFeature || activeTab !== 'communication') return [];
     return EARTH_COMMUNICATION_SITES.map((station) => {
       const evaluation = evaluateEarthLink({
@@ -394,7 +418,7 @@ export default function FeaturePanel({
 
   // Multi-day mission window assessment for Dossier tab
   const missionWindowAssessment = useMemo(() => {
-    if (!feature || isEarthFeature || activeTab !== 'dossier') return null;
+    if (!feature || isEarthFeature || isPlaceholderLocation || activeTab !== 'dossier') return null;
 
     const numSamples = missionWindowDays * 4;
     const isFarside = regionInfo?.face === 'Farside';
@@ -412,6 +436,8 @@ export default function FeaturePanel({
     const dailyScores = Array.from({ length: missionWindowDays }, (_, dayIdx) => {
       let daySunSteps = 0;
       let dayDsnSteps = 0;
+      let dayMinTemp = 1000;
+      let dayMaxTemp = -1000;
       const dayStartMs = settledTabTimeMs + dayIdx * 86400000;
 
       for (let s = 0; s < 4; s++) {
@@ -425,6 +451,8 @@ export default function FeaturePanel({
         });
         minTemp = Math.min(minTemp, therm.tempC);
         maxTemp = Math.max(maxTemp, therm.tempC);
+        dayMinTemp = Math.min(dayMinTemp, therm.tempC);
+        dayMaxTemp = Math.max(dayMaxTemp, therm.tempC);
 
         const isSunlit = localSun.elevationDeg > thElev && !therm.isPSR;
         if (isSunlit) {
@@ -456,7 +484,25 @@ export default function FeaturePanel({
 
       const daySunPct = Math.round((daySunSteps / 4) * 100);
       const dayDsnPct = isFarside ? 0 : Math.round((dayDsnSteps / 4) * 100);
-      const dayScore = Math.round(daySunPct * 0.5 + dayDsnPct * 0.5);
+
+      // Score each day using the unified 4-pillar suitability scoring engine
+      const daySolar = computeSolarSuitability(daySunPct, (4 - daySunSteps) * 6, 24);
+      const dayComm = computeCommunicationSuitability(dayDsnPct, (4 - dayDsnSteps) * 6, 24, isFarside);
+      const dayThermal = computeThermalSuitability(dayMinTemp + 273.15, dayMaxTemp - dayMinTemp);
+      const dayTerrain = computeTerrainSuitability(terrainMetrics?.slopeDeg ?? null, terrainMetrics?.roughnessM ?? null);
+
+      const dayOverall = computeOverallSuitability({
+        solarSuitability: daySolar,
+        commSuitability: dayComm,
+        terrainSuitability: dayTerrain,
+        thermalSuitability: dayThermal,
+        slopeDeg: terrainMetrics?.slopeDeg ?? null,
+      });
+
+      const dayScore =
+        dayOverall.overallScore !== null
+          ? dayOverall.overallScore
+          : dayOverall.partialScore ?? Math.round(daySolar * 0.45 + dayComm * 0.35 + dayThermal * 0.20);
 
       return {
         day: dayIdx + 1,
@@ -486,7 +532,11 @@ export default function FeaturePanel({
     const sunlitRatio = unifiedEval?.sunlitRatio ?? Math.round((sunlitSteps / numSamples) * 100);
     const dsnRatio = unifiedEval?.dteUptimeRatio ?? (isFarside ? 0 : Math.round((dsnSteps / numSamples) * 100));
     const longestSunlitHours = Math.round(maxSunStreak * 6);
-    const windowScore = unifiedEval?.overallScore ?? 50;
+    // Never fabricate a 50 fallback score if terrain slope is unmodeled
+    const windowScore =
+      unifiedEval?.isPartialScore && unifiedEval?.overallScore === null
+        ? null
+        : unifiedEval?.overallScore ?? null;
 
     return {
       windowScore,
@@ -497,7 +547,7 @@ export default function FeaturePanel({
       maxTemp: Math.round(maxTemp),
       dailyScores,
       formulaString: unifiedEval?.formulaString,
-      isPartialScore: unifiedEval?.isPartialScore,
+      isPartialScore: unifiedEval?.isPartialScore ?? (windowScore === null),
     };
   }, [
     feature,
@@ -518,6 +568,15 @@ export default function FeaturePanel({
   const overviewWarnings = useMemo(() => {
     if (!feature || isEarthFeature || activeTab !== 'info') return [];
     const list = [];
+
+    if (isPlaceholderLocation) {
+      list.push({
+        id: 'warn-placeholder',
+        tone: 'neutral',
+        text: 'Landing Coordinates Not Published: Official coordinates have not been announced by NASA or Firefly Aerospace. Coordinate-dependent solar, thermal, and DTE telemetry are withheld to prevent fabricated metrics.',
+      });
+      return list;
+    }
 
     if (terrainMetrics?.slopeDeg != null && terrainMetrics.slopeDeg >= 15) {
       list.push({
@@ -625,11 +684,16 @@ export default function FeaturePanel({
     setActiveTab(tabId);
   };
 
-  const sunStatusMeta = SUN_STATUS[sun?.status] || { label: 'Sunlit', color: '#fde68a' };
-  const earthStatusMeta = EARTH_STATUS[generalLink?.status] || {
-    label: 'Link Active',
-    color: '#60a5fa',
-  };
+  const sunStatusMeta = isPlaceholderLocation
+    ? { label: 'Coordinates TBD', color: '#94a3b8' }
+    : SUN_STATUS[sun?.status] || { label: 'Sunlit', color: '#fde68a' };
+
+  const earthStatusMeta = isPlaceholderLocation
+    ? { label: 'Coordinates TBD', color: '#94a3b8' }
+    : EARTH_STATUS[generalLink?.status] || {
+        label: 'Link Active',
+        color: '#60a5fa',
+      };
   const lightTravelSec = (state.earth.distanceKm / 299792.458).toFixed(2);
 
   const panelTitle = isCustomPin
@@ -851,8 +915,14 @@ export default function FeaturePanel({
                   Coordinates · {regionInfo?.face || 'Nearside'}
                 </div>
                 <div className="font-mono text-[13px] font-medium text-white tabular-nums whitespace-nowrap mt-0.5">
-                  {Math.abs(featLat).toFixed(3)}°{featLat >= 0 ? 'N' : 'S'},{' '}
-                  {Math.abs(featLon).toFixed(3)}°{featLon >= 0 ? 'E' : 'W'}
+                  {isPlaceholderLocation ? (
+                    <span className="text-amber-300 font-sans text-xs">Unannounced (Far Side TBD)</span>
+                  ) : (
+                    <>
+                      {Math.abs(featLat).toFixed(3)}°{featLat >= 0 ? 'N' : 'S'},{' '}
+                      {Math.abs(featLon).toFixed(3)}°{featLon >= 0 ? 'E' : 'W'}
+                    </>
+                  )}
                 </div>
               </div>
               <div className="flex items-center gap-2.5 shrink-0">
@@ -860,7 +930,9 @@ export default function FeaturePanel({
                   <div className="text-right">
                     <span className="text-[10.5px] font-sans font-medium text-[#8E95A5] block">Elev / Slope</span>
                     <span className="text-[12.5px] font-mono font-medium text-[#E2E8F0] tabular-nums whitespace-nowrap mt-0.5 block">
-                      {terrainMetrics.elevationM != null && terrainMetrics.slopeDeg != null ? (
+                      {isPlaceholderLocation ? (
+                        <span className="font-sans font-normal text-amber-300/80 text-[11.5px]">Withheld (TBD)</span>
+                      ) : terrainMetrics.elevationM != null && terrainMetrics.slopeDeg != null ? (
                         <>
                           {terrainMetrics.elevationM > 0 ? '+' : ''}
                           {Math.round(terrainMetrics.elevationM).toLocaleString()}m ·{' '}
@@ -980,7 +1052,11 @@ export default function FeaturePanel({
                   </span>
                 </div>
                 <div className="text-[11px] font-sans text-[#8E95A5] leading-snug break-words">
-                  {solarTransition.timeUntilMs === null
+                  {isPlaceholderLocation
+                    ? 'Data Withheld (Coordinates TBD)'
+                    : !solarTransition
+                    ? 'No transition data'
+                    : solarTransition.timeUntilMs === null
                     ? solarTransition.isCurrentlySunlit
                       ? 'Continuous Sunlight'
                       : 'Continuous Shadow'
@@ -1019,7 +1095,11 @@ export default function FeaturePanel({
                   </span>
                 </div>
                 <div className="text-[11px] font-sans text-[#8E95A5] leading-snug break-words">
-                  {earthTransition.timeUntilMs === null
+                  {isPlaceholderLocation
+                    ? 'Data Withheld (Coordinates TBD)'
+                    : !earthTransition
+                    ? 'No transition data'
+                    : earthTransition.timeUntilMs === null
                     ? earthTransition.isAboveHorizon
                       ? 'Continuous Visibility'
                       : 'No Earthrise (35d+)'
@@ -1040,14 +1120,18 @@ export default function FeaturePanel({
                 <div className="flex items-center gap-1.5">
                   <span
                     className={`px-1.5 py-0.5 rounded text-[9.5px] font-mono font-semibold border ${
-                      localThermal?.isPSR
+                      isPlaceholderLocation
+                        ? 'bg-slate-900/60 text-slate-400 border-slate-700/50'
+                        : localThermal?.isPSR
                         ? 'bg-purple-950/40 text-purple-300 border-purple-500/40'
                         : localThermal?.isDaylight
                         ? 'bg-amber-950/40 text-amber-300 border-amber-500/40'
                         : 'bg-blue-950/40 text-blue-300 border-blue-500/40'
                     }`}
                   >
-                    {localThermal?.isPSR
+                    {isPlaceholderLocation
+                      ? 'Coordinates TBD'
+                      : localThermal?.isPSR
                       ? 'Permanent Shadow'
                       : localThermal?.isDaylight
                       ? 'Daylight Insolation'
@@ -2029,13 +2113,25 @@ export default function FeaturePanel({
                 </div>
               </div>
 
-              {missionWindowAssessment && (
+              {isPlaceholderLocation ? (
+                <div className="p-3 rounded-xl bg-[#050507] border border-amber-500/30 text-amber-200 text-xs font-mono space-y-1.5">
+                  <div className="flex items-center gap-1.5 font-bold text-amber-300">
+                    <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+                    <span>Mission Window Evaluation Withheld</span>
+                  </div>
+                  <p className="text-[11px] text-slate-300 leading-relaxed font-sans">
+                    Official landing coordinates have not been announced by NASA or Firefly Aerospace for Blue Ghost Mission 2. Multi-day solar illumination windows, Earth line-of-sight availability, surface temperatures, and composite landing suitability scores cannot be computed for placeholder coordinates.
+                  </p>
+                </div>
+              ) : missionWindowAssessment && (
                 <>
                   <div className="flex items-center justify-between gap-3 p-2.5 rounded-lg bg-[#050507] border border-slate-800/80 font-mono">
                     <div className="flex items-center gap-2.5">
                       <div className="w-12 h-12 rounded-xl border border-cyan-400/60 bg-cyan-950/30 flex flex-col items-center justify-center shrink-0">
                         <span className="text-lg font-bold text-cyan-300 leading-none tabular-nums">
-                          {missionWindowAssessment.windowScore}
+                          {missionWindowAssessment.windowScore !== null
+                            ? missionWindowAssessment.windowScore
+                            : '--'}
                         </span>
                         <span className="text-[9px] text-slate-400 mt-0.5">
                           {missionWindowDays}d Score
@@ -2044,14 +2140,18 @@ export default function FeaturePanel({
                       <div>
                         <span
                           className={`text-[11px] font-bold block ${
-                            missionWindowAssessment.windowScore >= 80
+                            missionWindowAssessment.windowScore === null
+                              ? 'text-slate-400'
+                              : missionWindowAssessment.windowScore >= 80
                               ? 'text-emerald-400'
                               : missionWindowAssessment.windowScore >= 55
                               ? 'text-cyan-300'
                               : 'text-rose-400'
                           }`}
                         >
-                          {missionWindowAssessment.windowScore >= 80
+                          {missionWindowAssessment.windowScore === null
+                            ? 'INSUFFICIENT DATA FOR SCORING'
+                            : missionWindowAssessment.windowScore >= 80
                             ? 'FAVORABLE SUITABILITY'
                             : missionWindowAssessment.windowScore >= 55
                             ? 'CONDITIONAL SUITABILITY'

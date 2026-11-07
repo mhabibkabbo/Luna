@@ -36,7 +36,7 @@
  * @property {string} provider - Commercial lander provider
  * @property {string} lander - Spacecraft lander vehicle model
  * @property {'completed'|'planned'|'failed'|'in-progress'|'postponed'} missionStatus - Verified status
- * @property {'confirmed'|'planned'|'approximate'} locationType - Landing coordinate fidelity
+ * @property {'confirmed'|'planned'|'approximate'|'placeholder'} locationType - Landing coordinate fidelity
  * @property {number} latitude - Selenographic latitude (-90 to +90)
  * @property {number} longitude - Selenographic longitude (-180 to +180)
  * @property {string} landingSiteName - Named lunar geographical site
@@ -64,6 +64,7 @@ export const CLPS_MISSIONS = [
     locationType: 'confirmed',
     latitude: -80.13,
     longitude: 1.44,
+    elevationMeters: 2617,
     landingSiteName: 'Malapert A Rim (South Pole)',
     targetRegion: 'South Pole',
     launchDate: '2024-02-15',
@@ -133,6 +134,7 @@ export const CLPS_MISSIONS = [
     locationType: 'confirmed',
     latitude: -84.7906,
     longitude: 29.1958,
+    elevationMeters: 5325,
     landingSiteName: 'Mons Mouton (South Pole Plateau)',
     targetRegion: 'South Pole',
     launchDate: '2025-02-27',
@@ -325,6 +327,7 @@ export const CLPS_MISSIONS = [
     locationType: 'approximate',
     latitude: -84.50,
     longitude: 31.70,
+    elevationMeters: 5234,
     landingSiteName: 'Nobile Crater region near Mons Mouton (South Pole)',
     targetRegion: 'South Pole',
     launchDate: 'NET November 2026 (NASA, Sep 2026)',
@@ -469,7 +472,7 @@ export const CLPS_MISSIONS = [
     provider: 'Firefly Aerospace',
     lander: 'Blue Ghost Lander',
     missionStatus: 'planned',
-    locationType: 'approximate',
+    locationType: 'placeholder',
     horizonEligible: false,
     positionNote: 'Display placeholder only; the real far-side landing coordinates are not public.',
     latitude: -45.00,
@@ -513,6 +516,7 @@ export const CLPS_MISSIONS = [
     locationType: 'approximate',
     latitude: -89.374,
     longitude: -96.204,
+    elevationMeters: 103,
     landingSiteName: 'Shackleton Connecting Ridge (South Pole)',
     targetRegion: 'South Pole',
     launchDate: 'NET Q1 2027 (NASA lists Jan 2027)',

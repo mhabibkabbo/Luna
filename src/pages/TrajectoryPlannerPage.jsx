@@ -456,6 +456,36 @@ export default function TrajectoryPlannerPage({ onNavigate }) {
               </div>
             </div>
 
+            {/* Launch Vehicle Selector */}
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-[11px] font-sans uppercase text-[#8E95A5] font-semibold tracking-[0.08em] flex items-center gap-1.5">
+                  <Rocket className="w-3.5 h-3.5 text-[#F8FAFC]" />
+                  <span>Launch Vehicle</span>
+                </span>
+                <span className="text-[11px] font-mono tabular-nums text-[#38BDF8]">
+                  {selectedRocket?.tliPayloadKg ? `${(selectedRocket.tliPayloadKg / 1000).toFixed(0)}t to TLI` : ''}
+                </span>
+              </div>
+              <select
+                value={selectedRocketId}
+                onChange={(e) => setSelectedRocketId(e.target.value)}
+                className="w-full bg-[#050507] border border-[#1E2028] text-white text-xs rounded-xl px-2.5 py-2 font-sans focus:outline-none focus:border-white/40 transition-colors cursor-pointer"
+              >
+                {LUNAR_ROCKETS.map((r) => (
+                  <option key={r.id} value={r.id} className="bg-[#0C0D12] text-white">
+                    {r.name} ({r.agency}) &middot; {(r.tliPayloadKg / 1000).toFixed(0)}t TLI
+                  </option>
+                ))}
+              </select>
+              {selectedRocket && (
+                <div className="mt-1 text-[11px] font-sans text-[#8E95A5] flex items-center justify-between px-1">
+                  <span>{selectedRocket.family} &middot; {selectedRocket.stages} stages</span>
+                  <span className="font-mono text-[#CBD5E1]">{((selectedRocket.liftoffThrustKn || 0) / 1000).toFixed(1)} MN thrust</span>
+                </div>
+              )}
+            </div>
+
             {/* 2. Trajectory Profile Selection (Path Selection) */}
             <div>
               <div className="flex items-center justify-between mb-1.5">
@@ -483,7 +513,14 @@ export default function TrajectoryPlannerPage({ onNavigate }) {
                       }`}
                     >
                       <div>
-                        <div className="font-sans font-semibold text-xs text-white leading-tight">{p.name}</div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-sans font-semibold text-xs text-white leading-tight">{p.name}</span>
+                          {p.isSchematic && (
+                            <span className="text-[9px] font-mono uppercase px-1.5 py-0.2 bg-amber-500/15 text-amber-400 border border-amber-500/30 rounded">
+                              Bézier
+                            </span>
+                          )}
+                        </div>
                         <div className="text-[11px] font-sans text-[#8E95A5] mt-0.5">{p.subtitle}</div>
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0 ml-2">
@@ -501,10 +538,18 @@ export default function TrajectoryPlannerPage({ onNavigate }) {
                 })}
               </div>
 
-              {/* Path description summary */}
-              <div className="mt-2 text-[11.5px] font-sans text-[#CBD5E1] bg-[#050507] border border-[#1E2028] rounded-lg p-2.5 leading-relaxed">
-                <span className="text-white font-semibold">{orbitPlan.profile.name}: </span>
-                {orbitPlan.profile.description}
+              {/* Path description summary & Physics model disclosure */}
+              <div className="mt-2 text-[11.5px] font-sans text-[#CBD5E1] bg-[#050507] border border-[#1E2028] rounded-lg p-2.5 leading-relaxed space-y-1.5">
+                <div>
+                  <span className="text-white font-semibold">{orbitPlan.profile.name}: </span>
+                  {orbitPlan.profile.description}
+                </div>
+                <div className="text-[10.5px] text-[#8E95A5] pt-1.5 border-t border-[#1E2028]/80 flex items-center justify-between">
+                  <span>Model: <strong className="text-[#E2E8F0] font-mono">{orbitPlan.profile.modelType || 'Analytic Transfer'}</strong></span>
+                  {orbitPlan.profile.isSchematic && (
+                    <span className="text-amber-400 font-mono text-[10px]">Schematic Approximation</span>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -744,7 +789,7 @@ export default function TrajectoryPlannerPage({ onNavigate }) {
             <div className="text-[10.5px] font-sans font-semibold tracking-wider text-[#38BDF8] uppercase">PHASE 1 &middot; LIFTOFF</div>
             <div className="text-[13px] font-display font-semibold text-white mt-1">LEO Parking Orbit</div>
             <div className="text-xs font-sans text-[#8E95A5] mt-1.5 leading-relaxed">
-              Launch via Payload Rocket into <span className="font-mono text-[#E2E8F0]">{orbitPlan.parkingOrbit?.altKm ?? 185} km</span> LEO orbit (<span className="font-mono text-[#E2E8F0]">v = {orbitPlan.parkingOrbit?.velocityKmS?.toFixed(2) ?? '7.79'} km/s</span>).
+              Launch via <span className="font-semibold text-white">{selectedRocket?.name || 'Payload Rocket'}</span> ({selectedRocket?.agency || 'Space Agency'}, <span className="font-mono text-[#E2E8F0]">{selectedRocket?.tliPayloadKg ? `${(selectedRocket.tliPayloadKg / 1000).toFixed(0)}t TLI` : ''}</span>) into <span className="font-mono text-[#E2E8F0]">{orbitPlan.parkingOrbit?.altKm ?? 185} km</span> LEO orbit (<span className="font-mono text-[#E2E8F0]">v = {orbitPlan.parkingOrbit?.velocityKmS?.toFixed(2) ?? '7.79'} km/s</span>).
             </div>
           </div>
 

@@ -1,11 +1,12 @@
 [
   {
     "id": "south-pole",
-    "name": "Lunar South Pole (90S)",
+    "name": "Lunar South Pole (90°S)",
     "lat": -89.99,
     "lon": 0,
     "kind": "south_pole",
-    "locationType": "confirmed"
+    "locationType": "confirmed",
+    "elevM": 1251
   },
   {
     "id": "landing-artemis3-site-004",
@@ -13,7 +14,8 @@
     "lat": -89.9592,
     "lon": 135.8185,
     "kind": "mission-site",
-    "locationType": "approximate"
+    "locationType": "approximate",
+    "elevM": 801
   },
   {
     "id": "crater-shackleton",
@@ -21,7 +23,8 @@
     "lat": -89.67,
     "lon": 129.78,
     "kind": "crater",
-    "locationType": "confirmed"
+    "locationType": "confirmed",
+    "elevM": -2768
   },
   {
     "id": "clps-blueorigin-cp22",
@@ -29,7 +32,8 @@
     "lat": -89.374,
     "lon": -96.204,
     "kind": "clps-mission",
-    "locationType": "approximate"
+    "locationType": "approximate",
+    "elevM": 103
   },
   {
     "id": "landing-artemis3-connecting-ridge",
@@ -37,7 +41,8 @@
     "lat": -89.374,
     "lon": -96.204,
     "kind": "mission-site",
-    "locationType": "approximate"
+    "locationType": "approximate",
+    "elevM": 103
   },
   {
     "id": "landing-artemis3-shackleton",
@@ -45,7 +50,8 @@
     "lat": -89.0066,
     "lon": 132.0596,
     "kind": "mission-site",
-    "locationType": "approximate"
+    "locationType": "approximate",
+    "elevM": 1070
   },
   {
     "id": "landing-change-7",
@@ -53,7 +59,8 @@
     "lat": -88.8,
     "lon": 123.4,
     "kind": "mission-site",
-    "locationType": "planned"
+    "locationType": "planned",
+    "elevM": 1620
   },
   {
     "id": "crater-henson",
@@ -61,7 +68,8 @@
     "lat": -88.57,
     "lon": -130.63,
     "kind": "crater",
-    "locationType": "confirmed"
+    "locationType": "confirmed",
+    "elevM": -2487
   },
   {
     "id": "landing-artemis3-de-gerlache-rim-2",
@@ -69,7 +77,8 @@
     "lat": -88.5157,
     "lon": -61.1673,
     "kind": "mission-site",
-    "locationType": "approximate"
+    "locationType": "approximate",
+    "elevM": 552
   },
   {
     "id": "crater-de-gerlache",
@@ -77,15 +86,17 @@
     "lat": -88.5,
     "lon": -87.1,
     "kind": "crater",
-    "locationType": "confirmed"
+    "locationType": "confirmed",
+    "elevM": -1014
   },
   {
     "id": "crater-sverdrup",
     "name": "Sverdrup",
-    "lat": -88.5,
-    "lon": -152,
+    "lat": -88.3,
+    "lon": -153.4,
     "kind": "crater",
-    "locationType": "confirmed"
+    "locationType": "confirmed",
+    "elevM": -2888
   },
   {
     "id": "crater-shoemaker",
@@ -93,7 +104,8 @@
     "lat": -88.1,
     "lon": 45.9,
     "kind": "crater",
-    "locationType": "confirmed"
+    "locationType": "confirmed",
+    "elevM": -3945
   },
   {
     "id": "crater-slater",
@@ -101,7 +113,8 @@
     "lat": -88.08,
     "lon": 111.29,
     "kind": "crater",
-    "locationType": "confirmed"
+    "locationType": "confirmed",
+    "elevM": -1739
   },
   {
     "id": "landing-artemis3-faustini-rim-a",
@@ -109,15 +122,17 @@
     "lat": -88.0573,
     "lon": 89.1596,
     "kind": "mission-site",
-    "locationType": "approximate"
+    "locationType": "approximate",
+    "elevM": -701
   },
   {
     "id": "crater-haworth",
     "name": "Haworth",
-    "lat": -87.4,
-    "lon": -5.1,
+    "lat": -87.45,
+    "lon": -5.17,
     "kind": "crater",
-    "locationType": "confirmed"
+    "locationType": "confirmed",
+    "elevM": -3300
   },
   {
     "id": "crater-faustini",
@@ -125,7 +140,17 @@
     "lat": -87.3,
     "lon": 77,
     "kind": "crater",
-    "locationType": "confirmed"
+    "locationType": "confirmed",
+    "elevM": -2737
+  },
+  {
+    "id": "mons-malapert",
+    "name": "Mons Malapert (Malapert Massif)",
+    "lat": -86.02,
+    "lon": 2.7,
+    "kind": "mountain",
+    "locationType": "confirmed",
+    "elevM": 5098
   },
   {
     "id": "landing-artemis3-malapert",
@@ -133,15 +158,8 @@
     "lat": -85.9,
     "lon": 0,
     "kind": "mission-site",
-    "locationType": "confirmed"
-  },
-  {
-    "id": "mons-malapert",
-    "name": "Mons Malapert (Malapert Massif)",
-    "lat": -85.9,
-    "lon": 0,
-    "kind": "mountain",
-    "locationType": "confirmed"
+    "locationType": "confirmed",
+    "elevM": 4482
   },
   {
     "id": "crater-nobile",
@@ -149,7 +167,8 @@
     "lat": -85.2,
     "lon": 53.5,
     "kind": "crater",
-    "locationType": "confirmed"
+    "locationType": "confirmed",
+    "elevM": 690
   },
   {
     "id": "montes-leibnitz",
@@ -157,7 +176,8 @@
     "lat": -85,
     "lon": 30,
     "kind": "mountain",
-    "locationType": "confirmed"
+    "locationType": "confirmed",
+    "elevM": 5191
   },
   {
     "id": "crater-cabeus",
@@ -165,7 +185,8 @@
     "lat": -84.9,
     "lon": -35.5,
     "kind": "crater",
-    "locationType": "confirmed"
+    "locationType": "confirmed",
+    "elevM": -2856
   },
   {
     "id": "crater-malapert",
@@ -173,7 +194,8 @@
     "lat": -84.9,
     "lon": 12.9,
     "kind": "crater",
-    "locationType": "confirmed"
+    "locationType": "confirmed",
+    "elevM": -1868
   },
   {
     "id": "clps-im2-athena",
@@ -181,7 +203,8 @@
     "lat": -84.7906,
     "lon": 29.1958,
     "kind": "clps-mission",
-    "locationType": "confirmed"
+    "locationType": "confirmed",
+    "elevM": 5325
   },
   {
     "id": "landing-lcross",
@@ -189,7 +212,8 @@
     "lat": -84.675,
     "lon": -48.725,
     "kind": "mission-site",
-    "locationType": "confirmed"
+    "locationType": "confirmed",
+    "elevM": -3830
   },
   {
     "id": "clps-griffin-gm1",
@@ -197,7 +221,8 @@
     "lat": -84.5,
     "lon": 31.7,
     "kind": "clps-mission",
-    "locationType": "approximate"
+    "locationType": "approximate",
+    "elevM": 5234
   },
   {
     "id": "landing-artemis3-mouton",
@@ -205,7 +230,8 @@
     "lat": -84.5,
     "lon": 31.7,
     "kind": "mission-site",
-    "locationType": "approximate"
+    "locationType": "approximate",
+    "elevM": 5234
   },
   {
     "id": "crater-amundsen",
@@ -213,7 +239,8 @@
     "lat": -84.5,
     "lon": 82.8,
     "kind": "crater",
-    "locationType": "confirmed"
+    "locationType": "confirmed",
+    "elevM": -3627
   },
   {
     "id": "mons-mouton",
@@ -221,7 +248,8 @@
     "lat": -84.5,
     "lon": 31.7,
     "kind": "mountain",
-    "locationType": "confirmed"
+    "locationType": "confirmed",
+    "elevM": 5234
   },
   {
     "id": "crater-wiechert",
@@ -229,7 +257,8 @@
     "lat": -84.5,
     "lon": 165,
     "kind": "crater",
-    "locationType": "confirmed"
+    "locationType": "confirmed",
+    "elevM": -2408
   },
   {
     "id": "crater-kocher",
@@ -237,7 +266,8 @@
     "lat": -84.47,
     "lon": -134.02,
     "kind": "crater",
-    "locationType": "confirmed"
+    "locationType": "confirmed",
+    "elevM": -4970
   },
   {
     "id": "landing-artemis3-nobile-rim-2",
@@ -245,7 +275,8 @@
     "lat": -84.2016,
     "lon": 60.6999,
     "kind": "mission-site",
-    "locationType": "approximate"
+    "locationType": "approximate",
+    "elevM": 1112
   },
   {
     "id": "landing-artemis3-amundsen-rim",
@@ -253,7 +284,8 @@
     "lat": -84.1918,
     "lon": 67.229,
     "kind": "mission-site",
-    "locationType": "approximate"
+    "locationType": "approximate",
+    "elevM": -149
   },
   {
     "id": "crater-scott",
@@ -261,7 +293,8 @@
     "lat": -81.9,
     "lon": 45.3,
     "kind": "crater",
-    "locationType": "confirmed"
+    "locationType": "confirmed",
+    "elevM": -3923
   },
   {
     "id": "crater-idelson",
@@ -269,7 +302,8 @@
     "lat": -81.5,
     "lon": 110.9,
     "kind": "crater",
-    "locationType": "confirmed"
+    "locationType": "confirmed",
+    "elevM": -4142
   },
   {
     "id": "clps-im1-odysseus",
@@ -277,7 +311,8 @@
     "lat": -80.13,
     "lon": 1.44,
     "kind": "clps-mission",
-    "locationType": "confirmed"
+    "locationType": "confirmed",
+    "elevM": 2617
   },
   {
     "id": "landing-odysseus",
@@ -285,7 +320,8 @@
     "lat": -80.13,
     "lon": 1.44,
     "kind": "clps-mission",
-    "locationType": "confirmed"
+    "locationType": "confirmed",
+    "elevM": 2617
   },
   {
     "id": "crater-drygalski",
@@ -429,7 +465,8 @@
     "lat": -22.1,
     "lon": -7.8,
     "kind": "rille",
-    "locationType": "confirmed"
+    "locationType": "confirmed",
+    "elevM": 300
   },
   {
     "id": "mare-nubium",
@@ -645,7 +682,8 @@
     "lat": 14.5,
     "lon": -24.4,
     "kind": "mountain",
-    "locationType": "confirmed"
+    "locationType": "confirmed",
+    "elevM": 2000
   },
   {
     "id": "mare-crisium",
@@ -677,7 +715,8 @@
     "lat": 19.9,
     "lon": 0,
     "kind": "mountain",
-    "locationType": "confirmed"
+    "locationType": "confirmed",
+    "elevM": 5400
   },
   {
     "id": "mons-huygens",
@@ -685,7 +724,8 @@
     "lat": 20,
     "lon": -2.9,
     "kind": "mountain",
-    "locationType": "confirmed"
+    "locationType": "confirmed",
+    "elevM": 5500
   },
   {
     "id": "landing-apollo-17",
@@ -741,7 +781,8 @@
     "lat": 26.5,
     "lon": 4.7,
     "kind": "mountain",
-    "locationType": "confirmed"
+    "locationType": "confirmed",
+    "elevM": 4200
   },
   {
     "id": "mare-serenitatis",
@@ -757,7 +798,8 @@
     "lat": 28.4,
     "lon": 40.3,
     "kind": "mountain",
-    "locationType": "confirmed"
+    "locationType": "confirmed",
+    "elevM": 3000
   },
   {
     "id": "landing-luna-2",
@@ -821,7 +863,8 @@
     "lat": 38.4,
     "lon": 10,
     "kind": "mountain",
-    "locationType": "confirmed"
+    "locationType": "confirmed",
+    "elevM": 3600
   },
   {
     "id": "mons-piton",
@@ -829,7 +872,8 @@
     "lat": 40.6,
     "lon": -1.1,
     "kind": "mountain",
-    "locationType": "confirmed"
+    "locationType": "confirmed",
+    "elevM": 2250
   },
   {
     "id": "mons-rumker",
@@ -837,7 +881,8 @@
     "lat": 40.8,
     "lon": -58.1,
     "kind": "mountain",
-    "locationType": "confirmed"
+    "locationType": "confirmed",
+    "elevM": 1100
   },
   {
     "id": "landing-change-5",
@@ -869,7 +914,8 @@
     "lat": 45.7,
     "lon": -8.9,
     "kind": "mountain",
-    "locationType": "confirmed"
+    "locationType": "confirmed",
+    "elevM": 2400
   },
   {
     "id": "montes-alpes",
@@ -877,7 +923,8 @@
     "lat": 46.4,
     "lon": -0.8,
     "kind": "mountain",
-    "locationType": "confirmed"
+    "locationType": "confirmed",
+    "elevM": 2400
   },
   {
     "id": "montes-jura",
@@ -885,7 +932,8 @@
     "lat": 47.1,
     "lon": -34,
     "kind": "mountain",
-    "locationType": "confirmed"
+    "locationType": "confirmed",
+    "elevM": 3800
   },
   {
     "id": "landing-hakuto-r-m1-impact",

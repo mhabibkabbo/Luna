@@ -81,6 +81,31 @@ test('computeTransferOrbit handles Low-Energy WSB trajectory profile', () => {
   assert.equal(orbit.profile.id, 'low-energy');
   // WSB transit is ~100 days
   assert.ok(orbit.transfer.transitDays >= 90);
+  assert.equal(orbit.profile.isSchematic, true, 'WSB profile must disclose schematic approximation');
+  assert.ok(orbit.profile.modelType.includes('Bézier'), 'WSB must disclose Bézier model type');
+
+  // Verify WSB outbound & inbound distEarthKm accounts for y_km (Math.hypot(x_km, y_km))
+  const DU = 384400;
+  for (const p of orbit.waypoints) {
+    if (Math.abs(p.y) > 0.05) {
+      assert.ok(
+        p.distEarthKm > Math.abs(p.x * DU),
+        `distEarthKm (${p.distEarthKm}) must exceed x_km (${p.x * DU}) due to y_km hypotenuse`
+      );
+    }
+  }
+
+  // Verify WSB inbound waypoints do NOT freeze at transitTimeS
+  // Check timestamps across coast waypoints
+  const coastPts = orbit.waypoints.filter((p) => p.phase === 'coast');
+  assert.ok(coastPts.length >= 60, 'Should have at least 60 coast waypoints');
+  const midPt = coastPts[Math.floor(coastPts.length * 0.5)];
+  const latePt = coastPts[Math.floor(coastPts.length * 0.8)];
+  const finalPt = coastPts[coastPts.length - 1];
+
+  assert.ok(midPt.t < latePt.t, 'MET clock must continuously advance between 50% and 80%');
+  assert.ok(latePt.t < finalPt.t, 'MET clock must continuously advance to final waypoint');
+  assert.ok(midPt.t < orbit.transfer.transitTimeS * 0.7, 'Midpoint timestamp must not freeze at transitTimeS');
 });
 
 test('getInterpolatedStateAtFrac interpolates coordinates and heading along flight path', () => {

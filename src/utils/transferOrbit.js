@@ -64,22 +64,28 @@ export const TRAJECTORY_PROFILES = [
     parkingAltKm: 185,
     description: 'Hohmann-like direct TLI to lunar orbit. Shortest transit (~3 to 5 days). High TLI ΔV.',
     transitNote: 'Direct high-energy insertion',
+    modelType: 'Keplerian Two-Body Analytic',
+    isSchematic: false,
   },
   {
     id: 'free-return',
     name: 'Free-Return Trajectory',
     subtitle: 'Apollo 13 safety loop',
     parkingAltKm: 185,
-    description: 'Circumlunar figure-8 loop. If lunar insertion aborts, passive lunar gravity slingshots the craft back to Earth.',
+    description: 'Circumlunar figure-8 loop. If lunar insertion aborts, passive lunar gravity slingshots the craft back to Earth. (Kinematic cubic Bézier schematic approximation).',
     transitNote: 'Circumlunar safety abort trajectory',
+    modelType: 'Cubic Bézier Schematic Approximation',
+    isSchematic: true,
   },
   {
     id: 'low-energy',
     name: 'Low-Energy Transfer',
     subtitle: 'CAPSTONE / Danuri style (WSB)',
     parkingAltKm: 200,
-    description: 'Weak Stability Boundary path via Sun–Earth L1/L2. Saves ~15-20% insertion ΔV but takes 3–4 months.',
+    description: 'Weak Stability Boundary path via Sun–Earth L1/L2. Saves ~15-20% insertion ΔV but takes 3–4 months. (Kinematic cubic Bézier schematic approximation).',
     transitNote: 'Ballistic capture via Lagrange manifolds',
+    modelType: 'Cubic Bézier Schematic Approximation',
+    isSchematic: true,
   },
 ];
 
@@ -516,15 +522,18 @@ function generateWaypoints({
       const dE_km = Math.hypot(x_km, y_km);
       const dM_km = Math.hypot(x_km - DU, y_km);
       const { x3d, y3d, z3d } = mapTo3D(x_km, y_km, h_peri_km);
-      points.push({ x: x_km/DU, y: y_km/DU, x3d, y3d, z3d, t: u * t_mid, velocityKmS: 10.9, distEarthKm: dE_km, distMoonKm: dM_km, phase: 'coast' });
+      // Realistic gravitational velocity profile: decelerates as it climbs Earth's gravity well
+      const vApprox = Math.max(1.0, Math.sqrt(Math.max(1.0, v_tli * v_tli - 2 * EARTH_MU * (1 / r_park - 1 / Math.max(r_park, dE_km)))));
+      points.push({ x: x_km/DU, y: y_km/DU, x3d, y3d, z3d, t: u * t_mid, velocityKmS: vApprox, distEarthKm: dE_km, distMoonKm: dM_km, phase: 'coast' });
     }
 
     for (let i = 1; i < 20; i++) {
       const angle = Math.PI * 0.5 - (i / 20) * Math.PI;
       const x_km = DU + r_peri_km * Math.cos(angle);
       const y_km = r_peri_km * Math.sin(angle);
+      const dE_km = Math.hypot(x_km, y_km);
       const { x3d, y3d, z3d } = mapTo3D(x_km, y_km, h_peri_km);
-      points.push({ x: x_km/DU, y: y_km/DU, x3d, y3d, z3d, t: t_mid, velocityKmS: 2.32, distEarthKm: DU, distMoonKm: r_peri_km, phase: 'lunar-approach' });
+      points.push({ x: x_km/DU, y: y_km/DU, x3d, y3d, z3d, t: t_mid, velocityKmS: 2.32, distEarthKm: dE_km, distMoonKm: r_peri_km, phase: 'lunar-approach' });
     }
 
     const pIn0 = { x: DU, y: -r_peri_km };
@@ -538,7 +547,9 @@ function generateWaypoints({
       const dE_km = Math.hypot(x_km, y_km);
       const dM_km = Math.hypot(x_km - DU, y_km);
       const { x3d, y3d, z3d } = mapTo3D(x_km, y_km, h_peri_km);
-      points.push({ x: x_km/DU, y: y_km/DU, x3d, y3d, z3d, t: t_mid + u * t_mid, velocityKmS: 10.9, distEarthKm: dE_km, distMoonKm: dM_km, phase: 'return' });
+      // Accelerates from ~1.0 km/s back to atmospheric entry interface ~11.0 km/s
+      const vApprox = Math.max(1.0, Math.sqrt(Math.max(1.0, 1.0 + 2 * EARTH_MU * (1 / Math.max(r_park, dE_km) - 1 / DU))));
+      points.push({ x: x_km/DU, y: y_km/DU, x3d, y3d, z3d, t: t_mid + u * t_mid, velocityKmS: vApprox, distEarthKm: dE_km, distMoonKm: dM_km, phase: 'return' });
     }
 
     for (let i = 1; i <= 12; i++) {
@@ -554,6 +565,7 @@ function generateWaypoints({
     // Regime 3: Low-Energy Transfer (WSB Ballistic Loop)
     // ══════════════════════════════════════════════════════════════════════════
     const r_wsb = 1450000;
+    const t_apex = transitTimeS * 0.55; // Outbound to Sun-Earth WSB manifold takes ~55% of transit
 
     for (let i = 0; i <= 12; i++) {
       const angle = Math.PI * 0.5 + (i / 12) * Math.PI;
@@ -572,8 +584,23 @@ function generateWaypoints({
     for (let i = 1; i <= 60; i++) {
       const u = i / 60;
       const { x: x_km, y: y_km } = getBezier2D(pOut0, pOut1, pOut2, pOut3, u);
+      const dE_km = Math.hypot(x_km, y_km);
+      const dM_km = Math.hypot(x_km - DU, y_km);
       const { x3d, y3d, z3d } = mapTo3D(x_km, y_km, 100);
-      points.push({ x: x_km/DU, y: y_km/DU, x3d, y3d, z3d, t: u * transitTimeS, velocityKmS: 11.0, distEarthKm: x_km, distMoonKm: DU, phase: 'coast' });
+      // Realistic velocity profile: decelerates from v_tli (~11.0 km/s) as potential energy increases to ~0.45 km/s at apogee
+      const vApprox = v_tli * Math.pow(1 - u, 1.8) + 0.45;
+      points.push({
+        x: x_km / DU,
+        y: y_km / DU,
+        x3d,
+        y3d,
+        z3d,
+        t: u * t_apex,
+        velocityKmS: vApprox,
+        distEarthKm: dE_km,
+        distMoonKm: dM_km,
+        phase: 'coast',
+      });
     }
 
     // Inbound Physical KM Arc (Continuous trajectory matching Outbound tangency)
@@ -585,9 +612,23 @@ function generateWaypoints({
     for (let i = 1; i <= 60; i++) {
       const u = i / 60;
       const { x: x_km, y: y_km } = getBezier2D(pIn0, pIn1, pIn2, pIn3, u);
+      const dE_km = Math.hypot(x_km, y_km);
       const dM_km = Math.hypot(x_km - DU, y_km);
       const { x3d, y3d, z3d } = mapTo3D(x_km, y_km, 100);
-      points.push({ x: x_km/DU, y: y_km/DU, x3d, y3d, z3d, t: transitTimeS, velocityKmS: 0.5, distEarthKm: x_km, distMoonKm: dM_km, phase: 'coast' });
+      // Realistic inbound velocity: accelerates from ~0.45 km/s to ~1.65 km/s at weak lunar ballistic capture
+      const vApprox = 0.45 + (1.65 - 0.45) * Math.pow(u, 1.5);
+      points.push({
+        x: x_km / DU,
+        y: y_km / DU,
+        x3d,
+        y3d,
+        z3d,
+        t: t_apex + u * (transitTimeS - t_apex),
+        velocityKmS: vApprox,
+        distEarthKm: dE_km,
+        distMoonKm: dM_km,
+        phase: 'coast',
+      });
     }
   }
 

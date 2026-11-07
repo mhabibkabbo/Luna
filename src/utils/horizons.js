@@ -1,4 +1,5 @@
 import horizonData from "../data/horizons.json" with { type: "json" };
+import { CANONICAL_POLAR_COORDS } from "../data/lunarCanonicalCatalog.js";
 import {
   determineLunarGeologicalRegion,
   findNearestLunarLandmark,
@@ -8,11 +9,8 @@ import {
 
 const MOON_RADIUS_M = 1737400;
 const DEM_LIMIT_LAT_DEG = -80.0;
-const k0 = 2 / (1 + Math.sin((Math.abs(DEM_LIMIT_LAT_DEG) * Math.PI) / 180));
-const MAX_EXTENT_M =
-  MOON_RADIUS_M *
-  k0 *
-  Math.cos((Math.abs(DEM_LIMIT_LAT_DEG) * Math.PI) / 180);
+const HALF_EXTENT_M = 304000;
+const MAX_EXTENT_M = HALF_EXTENT_M;
 
 // Map ids that features carry on the 2D/3D maps to the ids used in horizons.json
 const ALIASES = {
@@ -20,9 +18,10 @@ const ALIASES = {
   "im-1-odysseus": "clps-im1-odysseus",
   "im-2-athena": "clps-im2-athena",
   "clps-im2-prime1": "clps-im2-athena",
+  "clps-firefly-blueghost1": "clps-firefly-bgm1",
+  "clps-astrobotic-griffin1": "clps-griffin-gm1",
   "viper-nobile": "clps-griffin-gm1",
-  "mons-malapert": "landing-artemis3-malapert",
-  "malapert-massif": "landing-artemis3-malapert",
+  "malapert-massif": "mons-malapert",
   "artemis-3-malapert": "landing-artemis3-malapert",
   "mons-mouton": "landing-artemis3-mouton",
   "artemis-3-shackleton": "landing-artemis3-shackleton",
@@ -34,28 +33,16 @@ const ALIASES = {
   "cabeus-crater": "crater-cabeus",
   "amundsen-crater": "crater-amundsen",
   "nobile-crater": "crater-nobile",
-  "south-pole-90s": "landing-artemis3-site-004",
+  "sverdrup-crater": "crater-sverdrup",
+  "slater-crater": "crater-slater",
+  "malapert-a": "clps-im1-odysseus",
+  "malapert-mountain": "mons-malapert",
+  "nobile-rim": "crater-nobile",
+  "south-pole-90s": "south-pole",
+  "south-pole": "south-pole",
 };
 
-const KNOWN_POLAR_COORDS = {
-  "clps-im1-odysseus": { lat: -80.13, lon: 1.44 },
-  "landing-odysseus": { lat: -80.13, lon: 1.44 },
-  "clps-im2-athena": { lat: -84.7906, lon: 29.1958 },
-  "clps-griffin-gm1": { lat: -84.62, lon: 31.4 },
-  "clps-blueorigin-cp22": { lat: -89.45, lon: -137.2 },
-  "landing-artemis3-shackleton": { lat: -89.8, lon: 120.0 },
-  "landing-artemis3-malapert": { lat: -85.9, lon: 0.0 },
-  "landing-artemis3-mouton": { lat: -84.62, lon: 31.4 },
-  "landing-artemis3-connecting-ridge": { lat: -89.45, lon: -137.2 },
-  "landing-artemis3-faustini-rim-a": { lat: -87.3, lon: 84.0 },
-  "landing-artemis3-de-gerlache-rim-2": { lat: -88.4, lon: -68.5 },
-  "landing-artemis3-amundsen-rim": { lat: -84.5, lon: 82.8 },
-  "landing-artemis3-nobile-rim-1": { lat: -85.2, lon: 53.5 },
-  "landing-artemis3-nobile-rim-2": { lat: -84.8, lon: 56.0 },
-  "landing-artemis3-peak-near-shackleton": { lat: -89.0066, lon: 132.0596 },
-  "landing-artemis3-haworth": { lat: -86.8, lon: -10.5 },
-  "landing-artemis3-cabeus-b": { lat: -84.9, lon: -35.5 },
-};
+const KNOWN_POLAR_COORDS = CANONICAL_POLAR_COORDS;
 
 const resolveId = (id) => (id ? ALIASES[id] || id : id);
 
@@ -182,10 +169,47 @@ export function latLonToStereoMeters(latDeg, lonDeg) {
 }
 
 /**
- * Ray-marches a 360° terrain horizon silhouette directly from the NASA LRO LOLA South Pole DEM
- * for any coordinate inside 80°S-90°S, accounting for lunar spherical curvature drop.
+ * Computes slope in degrees using Horn's (1981) 8-neighbor 3x3 gradient stencil on the LOLA DEM.
+ * @param {number} xMeters - Polar stereographic X coordinate in meters
+ * @param {number} yMeters - Polar stereographic Y coordinate in meters
+ * @param {number} [stepM] - Stencil distance spacing in meters (defaults to native DEM cell ~400m)
+ * @returns {{ elevationM: number|null, slopeDeg: number|null, dzdx: number|null, dzdy: number|null }}
  */
-export function computeDemHorizonProfile(latDeg, lonDeg, observerHeightM = 1.8) {
+export function computeHornSlopeAtMeters(xMeters, yMeters, stepM = null) {
+  if (!polarDemGrid || polarDemSize === 0) {
+    return { elevationM: null, slopeDeg: null, dzdx: null, dzdy: null };
+  }
+  const centerZ = sampleDemMeters(xMeters, yMeters);
+  if (centerZ === null || !Number.isFinite(centerZ)) {
+    return { elevationM: null, slopeDeg: null, dzdx: null, dzdy: null };
+  }
+  const d = stepM || ((2 * MAX_EXTENT_M) / (polarDemSize - 1));
+  const zNW = sampleDemMeters(xMeters - d, yMeters + d) ?? centerZ;
+  const zN = sampleDemMeters(xMeters, yMeters + d) ?? centerZ;
+  const zNE = sampleDemMeters(xMeters + d, yMeters + d) ?? centerZ;
+  const zW = sampleDemMeters(xMeters - d, yMeters) ?? centerZ;
+  const zE = sampleDemMeters(xMeters + d, yMeters) ?? centerZ;
+  const zSW = sampleDemMeters(xMeters - d, yMeters - d) ?? centerZ;
+  const zS = sampleDemMeters(xMeters, yMeters - d) ?? centerZ;
+  const zSE = sampleDemMeters(xMeters + d, yMeters - d) ?? centerZ;
+
+  // Horn (1981) 8-neighbor 3x3 weighted gradient
+  const dzdx = (zNE + 2 * zE + zSE - (zNW + 2 * zW + zSW)) / (8 * d);
+  const dzdy = (zNW + 2 * zN + zNE - (zSW + 2 * zS + zSE)) / (8 * d);
+  const slopeRad = Math.atan(Math.hypot(dzdx, dzdy));
+  return {
+    elevationM: centerZ,
+    slopeDeg: (slopeRad * 180) / Math.PI,
+    dzdx,
+    dzdy,
+  };
+}
+
+/**
+ * Ray-marches a 360° terrain horizon silhouette directly from the NASA LRO LOLA South Pole DEM
+ * for any coordinate inside 80°S-90°S, accounting for lunar spherical curvature drop and stereographic scale distortion.
+ */
+export function computeDemHorizonProfile(latDeg, lonDeg, observerHeightM = 2.0) {
   if (!Number.isFinite(latDeg) || !Number.isFinite(lonDeg) || latDeg > -80.0) {
     return null;
   }
@@ -205,6 +229,11 @@ export function computeDemHorizonProfile(latDeg, lonDeg, observerHeightM = 1.8) 
 
   const obsElev = baseElev + observerHeightM;
   const lonRad = (lonDeg * Math.PI) / 180;
+  const latRad = (Math.abs(latDeg) * Math.PI) / 180;
+  // Stereographic conformal scale factor: k = 2 / (1 + sin(|lat|))
+  // Maps 1 ground meter to k plane meters in polar stereographic projection
+  const kScale = 2 / (1 + Math.sin(latRad));
+
   // At South Pole stereographic plane (+Y = 0°E, +X = 90°E):
   // At selenographic (lat, lon), local North points radially away from the South Pole:
   // North unit vector in stereographic plane = (sin(lon), cos(lon))
@@ -227,18 +256,24 @@ export function computeDemHorizonProfile(latDeg, lonDeg, observerHeightM = 1.8) 
     const dirX = cosAz * northX + sinAz * eastX;
     const dirY = cosAz * northY + sinAz * eastY;
 
-    let maxAngleDeg = 0;
+    // Initialize to -90° to avoid clamping negative horizon dips on elevated peaks/rims
+    let maxAngleDeg = -90;
     // Adaptive range steps from 600m out to 110km
     let distM = 600;
     while (distM <= 110000) {
-      const sx = origin.x + dirX * distM;
-      const sy = origin.y + dirY * distM;
+      // Apply stereographic scale correction to obtain true ground distance sampling
+      const planeDistM = distM * kScale;
+      const sx = origin.x + dirX * planeDistM;
+      const sy = origin.y + dirY * planeDistM;
       const sampleZ = sampleDemMeters(sx, sy);
       if (sampleZ !== null) {
-        // Lunar curvature drop: d^2 / (2 * R_moon)
-        const curvatureDropM = (distM * distM) / (2 * MOON_RADIUS_M);
-        const dz = sampleZ - curvatureDropM - obsElev;
-        const angleDeg = (Math.atan2(dz, distM) * 180) / Math.PI;
+        // Rigorous spherical trigonometry matching compute_horizons.py:
+        // theta = d / R_moon
+        // angle = atan2((R + sampleZ) * cos(theta) - (R + obsElev), (R + sampleZ) * sin(theta))
+        const theta = distM / MOON_RADIUS_M;
+        const num = (MOON_RADIUS_M + sampleZ) * Math.cos(theta) - (MOON_RADIUS_M + obsElev);
+        const den = (MOON_RADIUS_M + sampleZ) * Math.sin(theta);
+        const angleDeg = (Math.atan2(num, den) * 180) / Math.PI;
         if (angleDeg > maxAngleDeg) {
           maxAngleDeg = angleDeg;
         }
@@ -498,11 +533,57 @@ export function sampleRadialElevationProfile(latDeg, lonDeg, baseElevationM = 0)
  * Never uses random numbers, artificial hashes, or fabricated values.
  */
 export function sampleLunarTerrainMetrics(latDeg, lonDeg, feature = null, options = {}) {
+  const isPlaceholder = Boolean(
+    feature?.locationType === 'placeholder' ||
+    feature?.clpsData?.locationType === 'placeholder'
+  );
+  const radiusM = options?.radiusM ?? options?.roughnessRadiusM ?? 2000;
+
+  if (isPlaceholder) {
+    return {
+      elevationM: null,
+      elevationSource: 'Coordinates Withheld (Placeholder)',
+      slopeDeg: null,
+      slopeSource: 'Coordinates Withheld (Placeholder)',
+      roughnessM: null,
+      roughnessDetails: null,
+      roughnessRadiusM: radiusM,
+      reliefM: null,
+      craterDensityPer100Km2: null,
+      craterDensityLabel: 'Not present in loaded dataset',
+      geologicalRegion: {
+        province: feature?.targetRegion || 'Lunar Far Side (TBD)',
+        terrane: 'Farside Highlands Terrane (FHT)',
+        isSouthPole: false,
+        face: 'Farside',
+      },
+      terrainClassification: 'Unannounced Landing Site',
+      nearestLandmark: null,
+      radialProfile: null,
+      uncertainty: {
+        isAvailable: false,
+        verticalAccuracy: 'Coordinates unannounced',
+        horizontalAccuracy: 'Coordinates unannounced',
+        provenance: 'NASA / Mission Team (Coordinates TBD)',
+      },
+      isSlopeHazard: false,
+      isPlaceholder: true,
+      inSouthPoleCap: false,
+      warnings: [
+        {
+          id: 'placeholder-coordinates',
+          severity: 'info',
+          title: 'Landing Coordinates Not Published',
+          detail: 'Official landing coordinates have not been announced. Terrain and coordinate-dependent metrics are withheld to prevent fabricated telemetry.',
+        },
+      ],
+    };
+  }
+
   const safeLat = Number.isFinite(latDeg) ? latDeg : -85.0;
   const safeLon = Number.isFinite(lonDeg) ? lonDeg : 0.0;
   const siteId = feature?.id || null;
   const resolvedProfile = siteId ? HORIZON_TABLE?.[resolveId(siteId)] : null;
-  const radiusM = options?.radiusM ?? options?.roughnessRadiusM ?? 2000;
 
   const inSouthPoleCap = safeLat <= -80.0;
   let isDirectDem = false;
@@ -520,20 +601,10 @@ export function sampleLunarTerrainMetrics(latDeg, lonDeg, feature = null, option
       isDirectDem = true;
       demElevationM = Math.round(centerZ);
 
-      // 3x3 Horn gradient stencil at step d = cell spacing (~400m)
+      // 3x3 Horn (1981) 8-neighbor gradient stencil at step d = cell spacing (~400m)
       const d = (2 * MAX_EXTENT_M) / (polarDemSize - 1);
-      const zNW = sampleDemMeters(origin.x - d, origin.y + d) ?? centerZ;
-      const zN = sampleDemMeters(origin.x, origin.y + d) ?? centerZ;
-      const zNE = sampleDemMeters(origin.x + d, origin.y + d) ?? centerZ;
-      const zW = sampleDemMeters(origin.x - d, origin.y) ?? centerZ;
-      const zE = sampleDemMeters(origin.x + d, origin.y) ?? centerZ;
-      const zSW = sampleDemMeters(origin.x - d, origin.y - d) ?? centerZ;
-      const zS = sampleDemMeters(origin.x, origin.y - d) ?? centerZ;
-      const zSE = sampleDemMeters(origin.x + d, origin.y - d) ?? centerZ;
-
-      const dzdx = (zNE + 2 * zE + zSE - (zNW + 2 * zW + zSW)) / (8 * d);
-      const dzdy = (zNW + 2 * zN + zNE - (zSW + 2 * zS + zSE)) / (8 * d);
-      hornSlope = (Math.atan(Math.hypot(dzdx, dzdy)) * 180) / Math.PI;
+      const hornRes = computeHornSlopeAtMeters(origin.x, origin.y, d);
+      hornSlope = hornRes.slopeDeg;
 
       // Local RMS vertical roughness and relief within configurable radiusM
       roughnessDetails = computeRoughnessAndRelief(origin.x, origin.y, radiusM);

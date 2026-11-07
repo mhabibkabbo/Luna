@@ -38,30 +38,34 @@ const round4 = (v) => Math.round(v * 1e4) / 1e4;
 const byId = new Map();
 const skipped = [];
 
-const add = (id, name, lat, lon, kind, locationType, eligible = true) => {
+const add = (id, name, lat, lon, kind, locationType, eligible = true, elev = null) => {
   if (!id || byId.has(id)) return;
   if (eligible === false) { skipped.push(`${id} (placeholder position)`); return; }
   if (typeof lat !== 'number' || typeof lon !== 'number' || Number.isNaN(lat) || Number.isNaN(lon)) return;
   let la = Math.max(-90, Math.min(90, lat));
   if (la <= -89.995) la = -89.99; // azimuth is undefined exactly at the pole
-  byId.set(id, {
+  const entry = {
     id,
     name,
     lat: round4(la),
     lon: round4(((((lon + 180) % 360) + 360) % 360) - 180),
     kind,
     locationType: locationType ?? 'confirmed',
-  });
+  };
+  if (typeof elev === 'number' && Number.isFinite(elev)) {
+    entry.elevM = Math.round(elev);
+  }
+  byId.set(id, entry);
 };
 
 // 1. CLPS missions (ids like "clps-im1-odysseus")
 for (const m of CLPS_MISSIONS) {
-  add(m.id, m.name, m.latitude, m.longitude, 'clps-mission', m.locationType, m.horizonEligible);
+  add(m.id, m.name, m.latitude, m.longitude, 'clps-mission', m.locationType, m.horizonEligible, m.elevationMeters);
 }
 
 // 2. Landing / mission sites (ids like "landing-apollo-11"); CLPS-derived entries share ids with step 1 and are skipped there.
 for (const s of LANDING_SITES) {
-  if (SITE_TYPES.has(s.type)) add(s.id, s.name, s.latitude, s.longitude, s.type, s.locationType, s.horizonEligible);
+  if (SITE_TYPES.has(s.type)) add(s.id, s.name, s.latitude, s.longitude, s.type, s.locationType, s.horizonEligible, s.elevationMeters);
 }
 
 // 3. Named lunar features (craters, mountains, maria, valleys, rilles)
@@ -69,11 +73,11 @@ for (const f of LUNAR_FEATURES) {
   const large =
     LARGE_FEATURE_TYPES.has(f.type) || (f.type === 'crater' && (f.diameterKm ?? 0) > LARGE_CRATER_KM);
   if (pointLikeOnly && large) { skipped.push(`${f.id} (large feature)`); continue; }
-  add(f.id, f.name, f.latitude, f.longitude, f.type, f.locationType, f.horizonEligible);
+  add(f.id, f.name, f.latitude, f.longitude, f.type, f.locationType, f.horizonEligible, f.elevationM);
 }
 
 // 4. Hard-coded pin created in src/cesium/moon/moonFeatures.js (keep in sync if that file changes)
-add('south-pole', 'Lunar South Pole (90S)', -90, 0, 'south_pole', 'confirmed');
+add('south-pole', 'Lunar South Pole (90S)', -90, 0, 'south_pole', 'confirmed', true, 1251);
 
 const sites = [...byId.values()].sort((a, b) => a.lat - b.lat);
 writeFileSync(outPath, JSON.stringify(sites, null, 2));

@@ -128,9 +128,21 @@ export default function LandingPage({ onLaunchExplorer }) {
               onSelectMissionIndex={setSelectedMissionIndex}
               onLaunchExplorer={onLaunchExplorer}
               onOpenMission={(missionObj) => {
-                const matched = CLPS_MISSIONS.find((m) => m.id === missionObj.id);
+                const matched = CLPS_MISSIONS.find((m) => m.id === missionObj?.id);
                 if (matched) {
-                  onLaunchExplorer({ selectedMission: matched, missionId: matched.id });
+                  onLaunchExplorer({
+                    selectedMission: matched,
+                    missionId: matched.id,
+                    lon: matched.longitude,
+                    lat: matched.latitude,
+                    zoom: 5.2,
+                  });
+                } else if (typeof missionObj?.lon === 'number' && typeof missionObj?.lat === 'number') {
+                  onLaunchExplorer({
+                    lon: missionObj.lon,
+                    lat: missionObj.lat,
+                    zoom: missionObj.isApollo ? 4.5 : 5.0,
+                  });
                 } else {
                   onLaunchExplorer({ target: 'south-pole' });
                 }
