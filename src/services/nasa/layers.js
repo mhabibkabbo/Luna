@@ -5,7 +5,7 @@
  */
 
 /**
- * @type {Array<import('../../types/lunar.js').LunarLayer>}
+ * @type {Array<Object>}
  */
 export const LUNAR_LAYERS_CATALOG = [
   // ==========================================

@@ -17,6 +17,7 @@
 
 import { CLPS_MISSIONS } from './clpsMissions.js';
 
+/** @internal CLPS mission feature mapping used internally to build landing site catalog. */
 export const CLPS_SITE_FEATURES = CLPS_MISSIONS.map((m) => ({
   id: m.id,
   name: m.name,
@@ -26,6 +27,8 @@ export const CLPS_SITE_FEATURES = CLPS_MISSIONS.map((m) => ({
   elevationMeters: m.elevationMeters,
   agency: `${m.provider} / NASA CLPS`,
   date: m.landingDate || m.launchDate,
+  dateStatus: m.dateStatus || (m.isPlanningEstimate ? 'Planning Estimate (NET)' : 'Confirmed Historical / Published'),
+  isPlanningEstimate: Boolean(m.isPlanningEstimate),
   status:
     m.missionStatus === 'completed'
       ? 'Completed soft landing'
@@ -47,7 +50,7 @@ export const CLPS_SITE_FEATURES = CLPS_MISSIONS.map((m) => ({
 }));
 
 /**
- * @type {Array<import('../types/lunar.js').LunarFeature>}
+ * @type {Array<Object>}
  */
 export const LANDING_SITES = [
   // ==========================================
@@ -312,7 +315,9 @@ export const LANDING_SITES = [
     longitude: 0.00,
     elevationMeters: 4482,
     agency: 'NASA Artemis',
-    date: 'Target 2026+',
+    date: 'Planning Estimate (NET 2027+)',
+    dateStatus: 'Planning Estimate (NET)',
+    isPlanningEstimate: true,
     status: 'Primary Crewed South Pole Candidate',
     description: 'Top-tier Artemis III candidate landing site. The high summit offers 90%+ annual solar illumination, direct line-of-sight to Earth ground stations, and direct access to shadowed ice traps.',
     source: 'NASA Artemis Program / LROC',
@@ -329,7 +334,9 @@ export const LANDING_SITES = [
     longitude: 132.0596,
     elevationMeters: 1070,
     agency: 'NASA Artemis',
-    date: 'Candidate region (announced 2022-08-19)',
+    date: 'Candidate region (2022); Planning Estimate (NET 2027+)',
+    dateStatus: 'Planning Estimate (NET)',
+    isPlanningEstimate: true,
     status: 'Artemis III candidate region (representative point)',
     locationType: 'approximate',
     description: 'One of NASA\'s 13 Artemis III candidate landing regions (about 15 x 15 km), on the ridge outside Shackleton crater (+1,070 m based on LOLA DEM). Offers long sunlit periods next to permanently shadowed ground with water-ice signatures. Pin marks a documented 120 m crater inside the region.',
@@ -349,7 +356,9 @@ export const LANDING_SITES = [
     longitude: 31.70,
     elevationMeters: 5234,
     agency: 'NASA Artemis / CLPS',
-    date: 'IM-2 landed 2025-03-06; Griffin-1 NET Nov 2026',
+    date: 'IM-2 landed 2025-03-06; Griffin-1 Planning Estimate (NET Nov 2026)',
+    dateStatus: 'Planning Estimate (NET)',
+    isPlanningEstimate: true,
     status: 'Plateau & Ice Prospecting Zone',
     locationType: 'approximate',
     description: 'Plateau roughly 160 km from the south pole, adjacent to the western rim of Nobile crater (+5,234 m based on LOLA DEM). Site of the IM-2 landing and the target region for Griffin-1 and the (re-manifested) VIPER rover.',
@@ -374,7 +383,9 @@ export const LANDING_SITES = [
     longitude: 89.1596,
     elevationMeters: -701,
     agency: 'NASA Artemis',
-    date: 'Candidate region (announced 2022-08-19)',
+    date: 'Candidate region (2022); Planning Estimate (NET 2027+)',
+    dateStatus: 'Planning Estimate (NET)',
+    isPlanningEstimate: true,
     status: 'Artemis III candidate region (representative point)',
     locationType: 'approximate',
     description: 'Candidate landing region (about 15 x 15 km) on the rim of Faustini crater (-701 m based on LOLA DEM). The pin marks an unnamed crater inside the region that is documented in the LPI Artemis III candidate-region workshop abstract.',
@@ -390,7 +401,9 @@ export const LANDING_SITES = [
     longitude: 60.6999,
     elevationMeters: 1112,
     agency: 'NASA Artemis',
-    date: 'Candidate region (announced 2022-08-19)',
+    date: 'Candidate region (2022); Planning Estimate (NET 2027+)',
+    dateStatus: 'Planning Estimate (NET)',
+    isPlanningEstimate: true,
     status: 'Artemis III candidate region (top-ranked point in published study)',
     locationType: 'approximate',
     description: 'Candidate landing region on the rim of Nobile crater (+1,112 m based on LOLA DEM). The pin is the location ranked highest inside this region by a 2025 multi-criteria landing-site study (Peña-Asensio et al.).',
@@ -406,7 +419,9 @@ export const LANDING_SITES = [
     longitude: 67.2290,
     elevationMeters: -149,
     agency: 'NASA Artemis',
-    date: 'Candidate region (announced 2022-08-19)',
+    date: 'Candidate region (2022); Planning Estimate (NET 2027+)',
+    dateStatus: 'Planning Estimate (NET)',
+    isPlanningEstimate: true,
     status: 'Artemis III candidate region (top-ranked point in published study)',
     locationType: 'approximate',
     description: 'Candidate landing region on the rim of Amundsen crater (-149 m based on LOLA DEM). The pin is a top-ranked location inside the region from a 2025 multi-criteria landing-site study (Peña-Asensio et al.).',
@@ -422,7 +437,9 @@ export const LANDING_SITES = [
     longitude: -61.1673,
     elevationMeters: 552,
     agency: 'NASA Artemis',
-    date: 'Candidate region (announced 2022-08-19)',
+    date: 'Candidate region (2022); Planning Estimate (NET 2027+)',
+    dateStatus: 'Planning Estimate (NET)',
+    isPlanningEstimate: true,
     status: 'Artemis III candidate region (representative point)',
     locationType: 'approximate',
     description: 'Candidate landing region on the rim of de Gerlache crater (+552 m based on LOLA DEM). The pin is a candidate location inside the region from a 2025 landing-site study (site SL2).',
@@ -457,7 +474,9 @@ export const LANDING_SITES = [
     longitude: -96.204,
     elevationMeters: 103,
     agency: 'NASA Artemis / CLPS',
-    date: 'Candidate region (2022); Blue Moon MK1 NET 2027',
+    date: 'Candidate region (2022); Blue Moon MK1 Planning Estimate (NET 2027)',
+    dateStatus: 'Planning Estimate (NET)',
+    isPlanningEstimate: true,
     status: 'Artemis III candidate region (estimated position)',
     locationType: 'approximate',
     description: 'The ridge joining the rims of Shackleton and de Gerlache craters (+103 m based on LOLA DEM), known for long periods of sunlight, and the announced landing target of Blue Origin\'s Endurance lander. The position is an estimate between the two crater centres.',
@@ -478,7 +497,9 @@ export const LANDING_SITES = [
     longitude: 123.40,
     elevationMeters: 1620,
     agency: 'CNSA',
-    date: 'Launch stood down 2026-08-23; no new date announced',
+    date: 'Planning Estimate (NET Stand-Down / TBD)',
+    dateStatus: 'Planning Estimate (NET)',
+    isPlanningEstimate: true,
     status: 'Planned mission target',
     locationType: 'planned',
     description: 'Orbiter, lander, rover and hopping probe aimed at a sunlit peak near the south-east ridge of Shackleton crater to search for water ice in nearby shadowed craters.',

@@ -25,13 +25,13 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks(id) {
-          if (id.includes('node_modules/ol') || id.includes('node_modules/proj4') || id.includes('node_modules/geotiff')) {
-            return 'vendor-openlayers';
+          if (id.includes('node_modules/leaflet') || id.includes('node_modules/proj4')) {
+            return 'vendor-leaflet';
           }
           if (id.includes('node_modules/three')) {
             return 'vendor-three';
           }
-          if (id.includes('node_modules/recharts') || id.includes('node_modules/d3') || id.includes('node_modules/victory')) {
+          if (id.includes('node_modules/d3')) {
             return 'vendor-charts';
           }
           if (id.includes('node_modules/astronomy-engine')) {

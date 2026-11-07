@@ -20,6 +20,7 @@ export const DEFAULT_SUITABILITY_WEIGHTS = {
   thermal: 0.15,
 };
 
+/** @internal Mission planner scoring weight constants matching DEFAULT_PLANNER_CONSTRAINTS.weights. */
 export const DEFAULT_PLANNER_WEIGHTS = {
   sun: 0.35,
   dte: 0.30,

@@ -1,8 +1,36 @@
+/**
+ * @file illumination.js
+ * High-precision time-series solar illumination and shadow transition sweep engine.
+ *
+ * Couples sub-arcsecond solar selenographic ephemeris vectors (Astronomy Engine + IAU WGCCRE 2009)
+ * with 360° ray-marched LOLA DEM local terrain horizon profiles (LDEM_80S_400M) to compute
+ * rigorous topocentric solar disk masking without taulogical or truncated analytical approximations.
+ */
+
 import { computeCelestialState, solarPosition } from "./lunarEphemeris.js";
 
 /**
- * Samples Sun visibility over a time window. Yields regularly so it never blocks the
- * browser's main thread. horizonFn(azDeg) -> horizon angle in degrees (0 if unmodeled).
+ * Samples Sun visibility and disk elevation over a configurable time window.
+ * Yields regularly so it never blocks the browser's main thread.
+ *
+ * @param {Object} params
+ * @param {string} params.key - Unique cache or task identifier
+ * @param {number} params.lat - Selenographic latitude (-90° to +90°)
+ * @param {number} params.lon - Selenographic longitude (-180° to +180°)
+ * @param {(azDeg: number) => number} params.horizonFn - Horizon elevation angle lookup in degrees
+ * @param {number} [params.startMs=Date.now()] - UTC start epoch in milliseconds
+ * @param {number} [params.days=30] - Total sweep duration in days
+ * @param {number} [params.stepMin=30] - Temporal discretization step in minutes
+ * @param {AbortSignal} [params.signal] - Cancellation signal
+ * @returns {Promise<{
+ *   key: string,
+ *   startMs: number,
+ *   endMs: number,
+ *   stepMin: number,
+ *   visibility: ('sunlit'|'blocked'|'night')[],
+ *   sunlitPct: number,
+ *   longestDarkHours: number
+ * } | null>}
  */
 export async function sweepIllumination({
   key,

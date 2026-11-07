@@ -10,9 +10,12 @@
  * local IAU/WGCCRE planetary ephemerides powered by `astronomy-engine`.
  */
 
-import { computeCelestialState, EARTH_MEAN_RADIUS_KM, MOON_RADIUS_KM } from './lunarEphemeris.js';
+import * as Astronomy from 'astronomy-engine';
 
-// NASA JPL Horizons Web Service endpoint
+/**
+ * NASA JPL Horizons Web Service endpoint.
+ * @internal Test & API endpoint configuration export.
+ */
 export const JPL_HORIZONS_API_URL = 'https://ssd.jpl.nasa.gov/api/horizons.api';
 
 // Curated lunar launch vehicles (with The Space Devs metadata & TLI capabilities)
@@ -175,29 +178,27 @@ export async function fetchJplMoonEphemeris(targetDate = new Date(), timeoutMs =
     // Graceful fallback to local high-precision astronomy-engine
   }
 
-  // Fallback using local Meeus analytical ephemeris with central-difference velocity
+  // Fallback using high-precision astronomy-engine GeoVector with central-difference velocity
   const tMs = dateObj.getTime();
   const dtSec = 60;
-  const state0 = computeCelestialState(tMs);
-  const stateMinus = computeCelestialState(tMs - dtSec * 1000);
-  const statePlus = computeCelestialState(tMs + dtSec * 1000);
+  const kmPerAu = Astronomy.KM_PER_AU || 149597870.69098932;
 
-  const toGeocentricEclipticKm = (st) => {
-    const r = st.earth?.distanceKm || 384400;
-    // Direction from Moon to Earth is (subLat, subLon); Earth to Moon is opposite
-    const latRad = -((st.earth?.subLat || 0) * Math.PI) / 180;
-    const lonRad = (((st.earth?.subLon || 0) + 180) * Math.PI) / 180;
+  const toGeoVectorKm = (d) => {
+    const v = Astronomy.GeoVector('Moon', d, true);
+    const x = v.x * kmPerAu;
+    const y = v.y * kmPerAu;
+    const z = v.z * kmPerAu;
     return {
-      x: r * Math.cos(latRad) * Math.cos(lonRad),
-      y: r * Math.cos(latRad) * Math.sin(lonRad),
-      z: r * Math.sin(latRad),
-      r,
+      x,
+      y,
+      z,
+      r: Math.hypot(x, y, z),
     };
   };
 
-  const p0 = toGeocentricEclipticKm(state0);
-  const pMinus = toGeocentricEclipticKm(stateMinus);
-  const pPlus = toGeocentricEclipticKm(statePlus);
+  const p0 = toGeoVectorKm(dateObj);
+  const pMinus = toGeoVectorKm(new Date(tMs - dtSec * 1000));
+  const pPlus = toGeoVectorKm(new Date(tMs + dtSec * 1000));
 
   const vxKmS = Number(((pPlus.x - pMinus.x) / (2 * dtSec)).toFixed(4));
   const vyKmS = Number(((pPlus.y - pMinus.y) / (2 * dtSec)).toFixed(4));
@@ -216,7 +217,7 @@ export async function fetchJplMoonEphemeris(targetDate = new Date(), timeoutMs =
     lightTimeSec: Number((p0.r / 299792.458).toFixed(4)),
     dateStr,
     isLive: false,
-    source: 'Calculated (Meeus Analytical Ephemeris — Central Difference)',
+    source: 'Calculated (astronomy-engine GeoVector — Central Difference)',
   };
 }
 

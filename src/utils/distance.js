@@ -8,7 +8,9 @@
  * Earth radius (~6371 km) is STRICTLY PROHIBITED.
  */
 
+/** @internal Scientific mean lunar radius constant in kilometers (IAU / LOLA standard). */
 export const MOON_MEAN_RADIUS_KM = 1737.4;
+/** @internal Scientific mean lunar radius constant in meters. */
 export const MOON_MEAN_RADIUS_M = 1737400;
 
 /**
@@ -32,6 +34,7 @@ function toDeg(rad) {
 /**
  * Calculates the great-circle geodesic distance between two selenographic points
  * using the Haversine formula on a sphere of radius R_MOON = 1737.4 km.
+ * @internal Test & geodesic distance utility export.
  * 
  * @param {[number, number]} coordA - [longitude, latitude] in degrees
  * @param {[number, number]} coordB - [longitude, latitude] in degrees
@@ -133,6 +136,7 @@ export function formatLunarDistance(distanceKm) {
 /**
  * Calculates the great-circle spherical polygon area on the Moon in square kilometers.
  * Uses Girard's theorem / l'Huilier formula on a sphere of R_MOON = 1737.4 km.
+ * @internal Test & spherical polygon area utility export.
  * 
  * @param {Array<[number, number]>} ring - Array of [lon, lat] closed loop
  * @returns {number} Area in km²

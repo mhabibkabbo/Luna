@@ -35,12 +35,15 @@ export const EARTH_RADIUS_KM = 6371.0;
 export const MOON_RADIUS_KM = 1737.4;
 export const EARTH_MOON_DIST_KM = 384400.0;   // mean centre-to-centre distance
 export const MOON_SOI_KM = 66183.0;           // Lunar sphere of influence radius
+/** @internal Lunar sidereal orbital period in seconds. */
 export const MOON_ORBITAL_PERIOD_S = 27.321661 * 86400; // Sidereal period (s)
 
 // CR3BP Normalized System Parameters
 export const CR3BP_MU = MOON_MU / (EARTH_MU + MOON_MU);
 export const CR3BP_DU = EARTH_MOON_DIST_KM;
+/** @internal CR3BP canonical time unit in seconds. */
 export const CR3BP_TU = Math.sqrt(Math.pow(CR3BP_DU, 3) / (EARTH_MU + MOON_MU));
+/** @internal CR3BP canonical velocity unit in km/s. */
 export const CR3BP_VU = CR3BP_DU / CR3BP_TU;
 
 // 3D Scene Visualization Dimensions & Scale
@@ -646,6 +649,10 @@ function generateWaypoints({
   return points;
 }
 
+/**
+ * Extracts key trajectory milestones from integrated transfer orbit waypoints.
+ * @internal Test & trajectory milestone analyzer export.
+ */
 export function getTrajectoryMilestones(waypoints, profileId = 'direct') {
   if (!waypoints || !waypoints.length) return [];
 
@@ -804,6 +811,10 @@ export function getTrajectoryMilestones(waypoints, profileId = 'direct') {
 
 // ── Synchronized 2D Trajectory Projection Panel Generator ──────────────────
 
+/**
+ * Computes synchronized 2D trajectory projection panel coordinates and view scaling.
+ * @internal Test & 2D trajectory projection generator export.
+ */
 export function get2DTrajectoryProjection(waypoints, profileId = 'direct', options = {}) {
   const isBlt = profileId === 'low-energy';
   const width = 920;

@@ -70,7 +70,6 @@ const LABEL_FONT_SMALL = '600 11px "Plus Jakarta Sans", system-ui, -apple-system
 
 const { Cartesian3, Color } = Cesium;
 
-const scaled = (dir, k) => new Cartesian3(dir[0] * k, dir[1] * k, dir[2] * k);
 const dot3 = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 const cross3 = (a, b) => [
   a[1] * b[2] - a[2] * b[1],
@@ -83,26 +82,6 @@ const unit3 = (a) => {
 };
 
 const formatInt = (n) => Math.round(n).toLocaleString('en-US');
-
-/** Radial-gradient sprite: bright disc with a soft corona. */
-function createSunSprite() {
-  const size = 256;
-  const c = size / 2;
-  const canvas = document.createElement('canvas');
-  canvas.width = size;
-  canvas.height = size;
-  const ctx = canvas.getContext('2d');
-  const g = ctx.createRadialGradient(c, c, 0, c, c, c);
-  g.addColorStop(0, 'rgba(255, 251, 235, 1)');
-  g.addColorStop(0.2, 'rgba(254, 240, 138, 1)');
-  g.addColorStop(0.3, 'rgba(251, 191, 36, 1)');
-  g.addColorStop(0.36, 'rgba(251, 191, 36, 0.55)');
-  g.addColorStop(0.6, 'rgba(245, 158, 11, 0.16)');
-  g.addColorStop(1, 'rgba(245, 158, 11, 0)');
-  ctx.fillStyle = g;
-  ctx.fillRect(0, 0, size, size);
-  return canvas;
-}
 
 /** Resolves with the first URL that loads as an image, or null. */
 function firstLoadableImage(urls) {

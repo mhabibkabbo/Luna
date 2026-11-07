@@ -68,7 +68,10 @@ export function earthLookFromMoon(state, moonFeature) {
   };
 }
 
-/** Rates (deg/h) at which the antenna must move to follow Earth around `whenMs`. */
+/**
+ * Rates (deg/h) at which the antenna must move to follow Earth around `whenMs`.
+ * @internal Test & gimbal slew rate analysis utility.
+ */
 export function earthSlewRates(moonFeature, whenMs, halfSpanMin = 15) {
   const before = earthLookFromMoon(computeCelestialState(whenMs - halfSpanMin * 60000), moonFeature);
   const after = earthLookFromMoon(computeCelestialState(whenMs + halfSpanMin * 60000), moonFeature);

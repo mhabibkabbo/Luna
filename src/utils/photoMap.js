@@ -1,7 +1,8 @@
 /**
  * @file photoMap.js
  * Utility for mapping lunar features, CLPS missions, and Earth DSN stations
- * to authentic NASA mission photographs in /pictures/.
+ * to authentic NASA mission photographs in /pictures/ with scientific provenance
+ * distinguishing site-specific photography from representative regional illustrations.
  */
 
 export const NASA_PICTURES = [
@@ -43,63 +44,160 @@ export const NASA_PICTURES = [
 ];
 
 /**
- * Returns the best-matching NASA photograph object for a given feature or mission.
- * @param {Object} feature - Feature object or CLPS mission
- * @returns {typeof NASA_PICTURES[0]}
+ * Returns the best-matching NASA photograph object for a given feature or mission,
+ * explicitly annotating whether the imagery is in-situ/site-specific or a
+ * representative regional illustration.
+ *
+ * @param {Object} [feature] - Feature object, landing site, or CLPS mission
+ * @returns {typeof NASA_PICTURES[0] & {
+ *   isSiteSpecific: boolean,
+ *   photoType: 'site-specific' | 'representative',
+ *   label: 'Site-Specific Photograph' | 'Representative Regional Illustration',
+ *   representationNotice: string | null
+ * }}
  */
 export function getPhotoForFeature(feature) {
-  if (!feature) return NASA_PICTURES[0];
-
-  const body = feature.body;
-  if (body === 'earth' || feature.type === 'earth-station') {
-    return NASA_PICTURES.find((p) => p.id === 'pic-earth-marble');
+  if (!feature) {
+    const defaultPhoto = NASA_PICTURES.find((p) => p.id === 'pic-south-pole-horizon') || NASA_PICTURES[0];
+    return {
+      ...defaultPhoto,
+      isSiteSpecific: false,
+      photoType: 'representative',
+      label: 'Representative Regional Illustration',
+      representationNotice: 'Representative Regional Illustration: General lunar surface illustration.',
+    };
   }
 
-  const name = (feature.name || '').toLowerCase();
-  const id = (feature.id || '').toLowerCase();
-  const provider = (feature.provider || '').toLowerCase();
-  const site = (feature.landingSiteName || '').toLowerCase();
-
-  // IM-1 / Odysseus / Malapert A
-  if (
-    id.includes('odysseus') ||
-    id.includes('im1') ||
-    name.includes('odysseus') ||
-    name.includes('im-1') ||
-    site.includes('malapert')
-  ) {
-    return NASA_PICTURES.find((p) => p.id === 'pic-odysseus-malapert');
-  }
-
-  // Blue Ghost / Mare Crisium / Firefly
-  if (
-    id.includes('blueghost') ||
-    id.includes('firefly') ||
-    name.includes('blue ghost') ||
-    provider.includes('firefly') ||
-    site.includes('crisium')
-  ) {
-    return NASA_PICTURES.find((p) => p.id === 'pic-blue-ghost-crisium');
-  }
-
-  // Shackleton / PRIME-1 / IM-2 / Artemis
-  if (
-    id.includes('shackleton') ||
-    id.includes('im2') ||
-    name.includes('shackleton') ||
-    name.includes('artemis') ||
-    site.includes('shackleton')
-  ) {
-    return NASA_PICTURES.find((p) => p.id === 'pic-shackleton-ridge');
-  }
-
-  // Latitude fallback
+  const name = (feature.name || '').trim();
+  const id = (feature.id || '').trim().toLowerCase();
+  const provider = (feature.provider || '').trim().toLowerCase();
+  const site = (feature.landingSiteName || '').trim().toLowerCase();
+  const body = (feature.body || '').trim().toLowerCase();
+  const type = (feature.type || '').trim().toLowerCase();
   const lat = typeof feature.latitude === 'number' ? feature.latitude : feature.lat;
-  if (typeof lat === 'number') {
-    if (Math.abs(lat) >= 80) {
-      return NASA_PICTURES.find((p) => p.id === 'pic-south-pole-horizon');
-    }
+  const displayName = name || feature.id || 'this site';
+
+  // 1. Earth DSN & Ground Facilities
+  if (
+    body === 'earth' ||
+    type === 'earth-station' ||
+    type === 'earth-launch-site' ||
+    id.startsWith('earth-') ||
+    id.includes('goldstone') ||
+    id.includes('madrid') ||
+    id.includes('canberra')
+  ) {
+    const photo = NASA_PICTURES.find((p) => p.id === 'pic-earth-marble');
+    return {
+      ...photo,
+      isSiteSpecific: true,
+      photoType: 'site-specific',
+      label: 'Site-Specific Photograph',
+      representationNotice: null,
+    };
   }
 
-  return NASA_PICTURES[0];
+  // 2. IM-1 / Odysseus · Malapert A Landing Site (Authentic In-Situ Landing Image)
+  const isOdysseusExact =
+    id === 'clps-im1-odysseus' ||
+    id === 'landing-odysseus' ||
+    name.toLowerCase() === 'im-1 (odysseus)' ||
+    name.toLowerCase() === 'odysseus' ||
+    (id === 'malapert-a') ||
+    (site === 'malapert a' && id.includes('odysseus'));
+
+  if (isOdysseusExact) {
+    const photo = NASA_PICTURES.find((p) => p.id === 'pic-odysseus-malapert');
+    return {
+      ...photo,
+      isSiteSpecific: true,
+      photoType: 'site-specific',
+      label: 'Site-Specific Photograph',
+      representationNotice: null,
+    };
+  }
+
+  // 3. Firefly Blue Ghost Mission 1 · Mare Crisium (Basin Plain Photography)
+  // Note: Blue Ghost Mission 2 (clps-firefly-bgm2) is farside and NOT Mare Crisium
+  const isBlueGhost1Exact =
+    id === 'clps-firefly-bgm1' ||
+    id === 'landing-firefly-bgm1' ||
+    (id.includes('firefly') && !id.includes('bgm2') && (name.toLowerCase().includes('blue ghost 1') || name.toLowerCase().includes('blue ghost mission 1')));
+
+  const isMareCrisiumBasin =
+    id === 'mare-crisium' ||
+    name.toLowerCase() === 'mare crisium';
+
+  if (isBlueGhost1Exact || isMareCrisiumBasin) {
+    const photo = NASA_PICTURES.find((p) => p.id === 'pic-blue-ghost-crisium');
+    return {
+      ...photo,
+      isSiteSpecific: true,
+      photoType: 'site-specific',
+      label: 'Site-Specific Photograph',
+      representationNotice: null,
+    };
+  }
+
+  // 4. Shackleton Connecting Ridge & Rim (LOLA Altimetric Render & LROC Imagery)
+  const isShackletonExact =
+    id === 'crater-shackleton' ||
+    id === 'landing-artemis3-shackleton' ||
+    id === 'landing-artemis3-connecting-ridge' ||
+    id === 'landing-artemis3-site-004' ||
+    name.toLowerCase() === 'shackleton' ||
+    name.toLowerCase() === 'shackleton crater' ||
+    name.toLowerCase() === 'shackleton connecting ridge';
+
+  if (isShackletonExact) {
+    const photo = NASA_PICTURES.find((p) => p.id === 'pic-shackleton-ridge');
+    return {
+      ...photo,
+      isSiteSpecific: true,
+      photoType: 'site-specific',
+      label: 'Site-Specific Photograph',
+      representationNotice: null,
+    };
+  }
+
+  // 5. South Pole Exact Datum (90°S)
+  const isSouthPoleExact =
+    id === 'south-pole' ||
+    id === 'south-pole-90s' ||
+    name.toLowerCase() === 'south pole' ||
+    (typeof lat === 'number' && Math.abs(lat) === 90);
+
+  if (isSouthPoleExact) {
+    const photo = NASA_PICTURES.find((p) => p.id === 'pic-south-pole-horizon');
+    return {
+      ...photo,
+      isSiteSpecific: true,
+      photoType: 'site-specific',
+      label: 'Site-Specific Photograph',
+      representationNotice: null,
+    };
+  }
+
+  // 6. Non-site-specific features: Route to representative regional illustrations
+  // Mare/basalt plains: use Mare Crisium basin illustration
+  const isMareBasin =
+    id.startsWith('mare-') ||
+    id.startsWith('oceanus-') ||
+    id.startsWith('sinus-') ||
+    id.startsWith('palus-') ||
+    id.startsWith('lacus-') ||
+    /mare|oceanus|sinus|sea of/i.test(name) ||
+    /mare|oceanus|sinus|sea of/i.test(site);
+
+  const selectedPhoto = isMareBasin
+    ? NASA_PICTURES.find((p) => p.id === 'pic-blue-ghost-crisium')
+    : NASA_PICTURES.find((p) => p.id === 'pic-south-pole-horizon');
+
+  return {
+    ...selectedPhoto,
+    isSiteSpecific: false,
+    photoType: 'representative',
+    label: 'Representative Regional Illustration',
+    representationNotice: `Representative Regional Illustration: Not an in-situ photograph of ${displayName}.`,
+  };
 }

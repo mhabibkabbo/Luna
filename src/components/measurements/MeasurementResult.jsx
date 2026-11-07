@@ -5,7 +5,7 @@ import { formatLunarDistance } from '../../utils/distance.js';
  * Visual display card for active lunar distance measurement results.
  * 
  * @param {{
- *   measurement: import('../../types/lunar.js').LunarMeasurement
+ *   measurement: Object
  * }} props
  */
 export default function MeasurementResult({ measurement }) {

@@ -8,8 +8,14 @@
  * - ESA Estrack (https://esoc.esa.int/explore-our-ground-stations)
  * - ISRO / JAXA / Commercial Deep Space Ground Stations
  *
- * Generated automatically by scripts/fetch_earth_data.mjs
+ * Scientific Source Verification Note:
+ * Ground tracking station geometric elevations (elevationM above the WGS84 reference ellipsoid)
+ * are planning estimates / geometric approximations rather than published survey-grade benchmarks.
+ * Station elevation is formally classified as "Unable to Verify / Data Not Available" (defaulted to 0 m
+ * in topocentric DTE LOS calculations).
  */
+
+export const STATION_ELEVATION_STATUS = 'Unable to Verify / Data Not Available';
 
 export const EARTH_COMMUNICATION_SITES = [
   {
@@ -24,7 +30,9 @@ export const EARTH_COMMUNICATION_SITES = [
     "status": "Operational",
     "description": "One of NASA’s three globally distributed Deep Space Network complexes, located in California’s Mojave Desert.",
     "source": "NASA Deep Space Network",
-    "sourceUrl": "https://eyes.nasa.gov/apps/dsn-now/dsn.html"
+    "sourceUrl": "https://eyes.nasa.gov/apps/dsn-now/dsn.html",
+    "elevationM": null,
+    "elevationStatus": "Unable to Verify / Data Not Available"
   },
   {
     "id": "earth-antenna-dsn-dss14",
@@ -38,7 +46,9 @@ export const EARTH_COMMUNICATION_SITES = [
     "status": "Operational",
     "description": "Massive 70-metre dish antenna capable of deep-space telecommunications, planetary radar, and high-power command uplinks for distant spacecraft and lunar missions.",
     "source": "NASA Eyes on the DSN",
-    "sourceUrl": "https://eyes.nasa.gov/apps/dsn-now/dsn.html"
+    "sourceUrl": "https://eyes.nasa.gov/apps/dsn-now/dsn.html",
+    "elevationM": null,
+    "elevationStatus": "Unable to Verify / Data Not Available"
   },
   {
     "id": "earth-antenna-dsn-dss24",
@@ -52,7 +62,9 @@ export const EARTH_COMMUNICATION_SITES = [
     "status": "Operational",
     "description": "34-metre Beam Waveguide (BWG) antenna providing telemetry and command support in S and X bands.",
     "source": "NASA Eyes on the DSN",
-    "sourceUrl": "https://eyes.nasa.gov/apps/dsn-now/dsn.html"
+    "sourceUrl": "https://eyes.nasa.gov/apps/dsn-now/dsn.html",
+    "elevationM": null,
+    "elevationStatus": "Unable to Verify / Data Not Available"
   },
   {
     "id": "earth-antenna-dsn-dss25",
@@ -66,7 +78,9 @@ export const EARTH_COMMUNICATION_SITES = [
     "status": "Operational",
     "description": "34-metre BWG antenna equipped with solar transmitter capabilities and high-rate Ka-band reception.",
     "source": "NASA Eyes on the DSN",
-    "sourceUrl": "https://eyes.nasa.gov/apps/dsn-now/dsn.html"
+    "sourceUrl": "https://eyes.nasa.gov/apps/dsn-now/dsn.html",
+    "elevationM": null,
+    "elevationStatus": "Unable to Verify / Data Not Available"
   },
   {
     "id": "earth-antenna-dsn-dss26",
@@ -80,7 +94,9 @@ export const EARTH_COMMUNICATION_SITES = [
     "status": "Operational",
     "description": "Modernized 34-metre BWG antenna supporting Artemis lunar missions and outer-planet robotic explorers.",
     "source": "NASA Eyes on the DSN",
-    "sourceUrl": "https://eyes.nasa.gov/apps/dsn-now/dsn.html"
+    "sourceUrl": "https://eyes.nasa.gov/apps/dsn-now/dsn.html",
+    "elevationM": null,
+    "elevationStatus": "Unable to Verify / Data Not Available"
   },
   {
     "id": "earth-comms-nasa-madrid",
@@ -94,7 +110,9 @@ export const EARTH_COMMUNICATION_SITES = [
     "status": "Operational",
     "description": "NASA DSN European complex in Robledo de Chavela, Spain. Its longitude ensures continuous contact with deep-space probes as the Earth rotates.",
     "source": "NASA Deep Space Network",
-    "sourceUrl": "https://eyes.nasa.gov/apps/dsn-now/dsn.html"
+    "sourceUrl": "https://eyes.nasa.gov/apps/dsn-now/dsn.html",
+    "elevationM": null,
+    "elevationStatus": "Unable to Verify / Data Not Available"
   },
   {
     "id": "earth-antenna-dsn-dss63",
@@ -108,7 +126,9 @@ export const EARTH_COMMUNICATION_SITES = [
     "status": "Operational",
     "description": "The European 70-metre giant dish of the Deep Space Network, commanding deep-space probes and tracking lunar spacecraft.",
     "source": "NASA Eyes on the DSN",
-    "sourceUrl": "https://eyes.nasa.gov/apps/dsn-now/dsn.html"
+    "sourceUrl": "https://eyes.nasa.gov/apps/dsn-now/dsn.html",
+    "elevationM": null,
+    "elevationStatus": "Unable to Verify / Data Not Available"
   },
   {
     "id": "earth-antenna-dsn-dss65",
@@ -122,7 +142,9 @@ export const EARTH_COMMUNICATION_SITES = [
     "status": "Operational",
     "description": "34-metre High Efficiency antenna utilized for robotic planetary missions and lunar exploration.",
     "source": "NASA Eyes on the DSN",
-    "sourceUrl": "https://eyes.nasa.gov/apps/dsn-now/dsn.html"
+    "sourceUrl": "https://eyes.nasa.gov/apps/dsn-now/dsn.html",
+    "elevationM": null,
+    "elevationStatus": "Unable to Verify / Data Not Available"
   },
   {
     "id": "earth-antenna-dsn-dss56",
@@ -136,7 +158,9 @@ export const EARTH_COMMUNICATION_SITES = [
     "status": "Operational",
     "description": "State-of-the-art 34-metre Beam Waveguide antenna capable of communicating across all DSN frequency bands simultaneously.",
     "source": "NASA Eyes on the DSN",
-    "sourceUrl": "https://eyes.nasa.gov/apps/dsn-now/dsn.html"
+    "sourceUrl": "https://eyes.nasa.gov/apps/dsn-now/dsn.html",
+    "elevationM": null,
+    "elevationStatus": "Unable to Verify / Data Not Available"
   },
   {
     "id": "earth-comms-nasa-canberra",
@@ -150,7 +174,9 @@ export const EARTH_COMMUNICATION_SITES = [
     "status": "Operational",
     "description": "Southern hemisphere DSN complex in the Tidbinbilla Valley near Canberra, Australia.",
     "source": "NASA Deep Space Network",
-    "sourceUrl": "https://eyes.nasa.gov/apps/dsn-now/dsn.html"
+    "sourceUrl": "https://eyes.nasa.gov/apps/dsn-now/dsn.html",
+    "elevationM": null,
+    "elevationStatus": "Unable to Verify / Data Not Available"
   },
   {
     "id": "earth-antenna-dsn-dss43",
@@ -164,7 +190,9 @@ export const EARTH_COMMUNICATION_SITES = [
     "status": "Operational",
     "description": "The largest steerable parabolic antenna in the Southern Hemisphere. The only dish capable of transmitting commands to Voyager 2 in the deep southern sky.",
     "source": "NASA Eyes on the DSN",
-    "sourceUrl": "https://eyes.nasa.gov/apps/dsn-now/dsn.html"
+    "sourceUrl": "https://eyes.nasa.gov/apps/dsn-now/dsn.html",
+    "elevationM": null,
+    "elevationStatus": "Unable to Verify / Data Not Available"
   },
   {
     "id": "earth-antenna-dsn-dss34",
@@ -178,7 +206,9 @@ export const EARTH_COMMUNICATION_SITES = [
     "status": "Operational",
     "description": "34-metre BWG antenna supporting Artemis Orion spacecraft tracking and lunar robotic missions.",
     "source": "NASA Eyes on the DSN",
-    "sourceUrl": "https://eyes.nasa.gov/apps/dsn-now/dsn.html"
+    "sourceUrl": "https://eyes.nasa.gov/apps/dsn-now/dsn.html",
+    "elevationM": null,
+    "elevationStatus": "Unable to Verify / Data Not Available"
   },
   {
     "id": "earth-comms-esa-new-norcia",
@@ -192,7 +222,9 @@ export const EARTH_COMMUNICATION_SITES = [
     "status": "Operational",
     "description": "ESA 35-metre deep-space antenna used for tracking, telemetry, telecommand and radiometric measurements for deep-space and lunar missions.",
     "source": "ESA Estrack",
-    "sourceUrl": "https://esoc.esa.int/explore-our-ground-stations"
+    "sourceUrl": "https://esoc.esa.int/explore-our-ground-stations",
+    "elevationM": null,
+    "elevationStatus": "Unable to Verify / Data Not Available"
   },
   {
     "id": "earth-comms-esa-cebreros",
@@ -206,7 +238,9 @@ export const EARTH_COMMUNICATION_SITES = [
     "status": "Operational",
     "description": "ESA 35-metre deep-space station in Ávila, Spain, supporting interplanetary spacecraft tracking and precise radio science.",
     "source": "ESA Estrack",
-    "sourceUrl": "https://esoc.esa.int/explore-our-ground-stations"
+    "sourceUrl": "https://esoc.esa.int/explore-our-ground-stations",
+    "elevationM": null,
+    "elevationStatus": "Unable to Verify / Data Not Available"
   },
   {
     "id": "earth-comms-esa-malargue",
@@ -220,7 +254,9 @@ export const EARTH_COMMUNICATION_SITES = [
     "status": "Operational",
     "description": "ESA 35-metre deep-space antenna in Mendoza, Argentina, providing complete 360° longitudinal coverage alongside New Norcia and Cebreros.",
     "source": "ESA Estrack",
-    "sourceUrl": "https://esoc.esa.int/explore-our-ground-stations"
+    "sourceUrl": "https://esoc.esa.int/explore-our-ground-stations",
+    "elevationM": null,
+    "elevationStatus": "Unable to Verify / Data Not Available"
   },
   {
     "id": "earth-comms-isro-byalalu",
@@ -234,7 +270,9 @@ export const EARTH_COMMUNICATION_SITES = [
     "status": "Operational",
     "description": "Houses India’s 32-metre and 18-metre deep space communication antennas, which operated the Chandrayaan-1, 2, and 3 lunar missions and Mangalyaan Mars probe.",
     "source": "ISRO",
-    "sourceUrl": "https://www.isro.gov.in/"
+    "sourceUrl": "https://www.isro.gov.in/",
+    "elevationM": null,
+    "elevationStatus": "Unable to Verify / Data Not Available"
   },
   {
     "id": "earth-comms-jaxa-usuda",
@@ -248,7 +286,9 @@ export const EARTH_COMMUNICATION_SITES = [
     "status": "Operational",
     "description": "Historic 64-metre antenna nestled in Nagano Prefecture used to communicate with Halley’s Comet probes, Hayabusa asteroids sample returns, and lunar spacecraft.",
     "source": "JAXA",
-    "sourceUrl": "https://global.jaxa.jp/"
+    "sourceUrl": "https://global.jaxa.jp/",
+    "elevationM": null,
+    "elevationStatus": "Unable to Verify / Data Not Available"
   },
   {
     "id": "earth-comms-jaxa-misasa",
@@ -262,7 +302,9 @@ export const EARTH_COMMUNICATION_SITES = [
     "status": "Operational",
     "description": "JAXA’s newest 54-metre high-precision antenna designed for lunar and deep-space missions with Ka-band reception.",
     "source": "JAXA",
-    "sourceUrl": "https://global.jaxa.jp/"
+    "sourceUrl": "https://global.jaxa.jp/",
+    "elevationM": null,
+    "elevationStatus": "Unable to Verify / Data Not Available"
   },
   {
     "id": "earth-comms-goonhilly-ghy6",
@@ -276,7 +318,9 @@ export const EARTH_COMMUNICATION_SITES = [
     "status": "Operational",
     "description": "World’s first privately owned commercial deep space ground station. Upgraded 32-metre parabolic dish communicating with lunar CLPS landers and Mars orbiters.",
     "source": "Goonhilly Earth Station",
-    "sourceUrl": "https://www.goonhilly.org/"
+    "sourceUrl": "https://www.goonhilly.org/",
+    "elevationM": null,
+    "elevationStatus": "Unable to Verify / Data Not Available"
   },
   {
     "id": "earth-comms-svalbard-svalsat",
@@ -290,7 +334,9 @@ export const EARTH_COMMUNICATION_SITES = [
     "status": "Operational",
     "description": "World’s largest commercial ground station at 78° North, providing all 14 daily passes for polar orbiting spacecraft and lunar transfer tracking.",
     "source": "KSAT",
-    "sourceUrl": "https://www.ksat.no/"
+    "sourceUrl": "https://www.ksat.no/",
+    "elevationM": null,
+    "elevationStatus": "Unable to Verify / Data Not Available"
   },
   {
     "id": "earth-comms-esa-kourou",
@@ -304,7 +350,9 @@ export const EARTH_COMMUNICATION_SITES = [
     "status": "Operational",
     "description": "15-metre ground station used for Earth-orbiting spacecraft operations and launch/early-orbit support near Europe’s Spaceport.",
     "source": "ESA Ground Stations",
-    "sourceUrl": "https://www.esa.int/Enabling_Support/Operations/ESA_Ground_Stations"
+    "sourceUrl": "https://www.esa.int/Enabling_Support/Operations/ESA_Ground_Stations",
+    "elevationM": null,
+    "elevationStatus": "Unable to Verify / Data Not Available"
   },
   {
     "id": "earth-comms-esa-kiruna",
@@ -318,7 +366,9 @@ export const EARTH_COMMUNICATION_SITES = [
     "status": "Operational",
     "description": "High-latitude station used to communicate with and track Earth-orbiting and polar spacecraft.",
     "source": "ESA Ground Stations",
-    "sourceUrl": "https://www.esa.int/Enabling_Support/Operations/ESA_Ground_Stations"
+    "sourceUrl": "https://www.esa.int/Enabling_Support/Operations/ESA_Ground_Stations",
+    "elevationM": null,
+    "elevationStatus": "Unable to Verify / Data Not Available"
   },
   {
     "id": "earth-comms-esa-santa-maria",
@@ -332,7 +382,9 @@ export const EARTH_COMMUNICATION_SITES = [
     "status": "Operational",
     "description": "Supports tracking of launch vehicles and spacecraft during launch and early orbit operations across the Atlantic corridor.",
     "source": "ESA Ground Stations",
-    "sourceUrl": "https://www.esa.int/Enabling_Support/Operations/ESA_Ground_Stations"
+    "sourceUrl": "https://www.esa.int/Enabling_Support/Operations/ESA_Ground_Stations",
+    "elevationM": null,
+    "elevationStatus": "Unable to Verify / Data Not Available"
   },
   {
     "id": "earth-comms-nasa-white-sands",
@@ -346,7 +398,9 @@ export const EARTH_COMMUNICATION_SITES = [
     "status": "Operational",
     "description": "Hub of NASA’s Tracking and Data Relay Satellite System (TDRSS), providing near-continuous relay communication with human spaceflight and Earth observation satellites.",
     "source": "NASA SCaN",
-    "sourceUrl": "https://www.nasa.gov/communicating-with-missions/"
+    "sourceUrl": "https://www.nasa.gov/communicating-with-missions/",
+    "elevationM": null,
+    "elevationStatus": "Unable to Verify / Data Not Available"
   },
   {
     "id": "earth-comms-nasa-jpl",
@@ -360,12 +414,15 @@ export const EARTH_COMMUNICATION_SITES = [
     "status": "Operational",
     "description": "The Space Flight Operations Facility (SFOF), the central hub coordinating DSN tracking and planetary missions.",
     "source": "NASA / JPL",
-    "sourceUrl": "https://www.jpl.nasa.gov/missions/dsn/"
+    "sourceUrl": "https://www.jpl.nasa.gov/missions/dsn/",
+    "elevationM": null,
+    "elevationStatus": "Unable to Verify / Data Not Available"
   }
 ];
 
 /**
  * Filter Earth communication locations by type, country, network, or keyword.
+ * @internal Test & communication station filter utility.
  */
 export function filterEarthCommunicationSites({
   type,
@@ -398,4 +455,17 @@ export function filterEarthCommunicationSites({
 
     return true;
   });
+}
+
+/**
+ * Resolves station elevation metadata and verification status.
+ * @internal Test & station elevation query utility.
+ * @param {object} station
+ * @returns {{ elevationM: number|null, status: string }}
+ */
+export function getStationElevation(station) {
+  return {
+    elevationM: station?.elevationM ?? null,
+    status: station?.elevationStatus ?? STATION_ELEVATION_STATUS,
+  };
 }

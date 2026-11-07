@@ -1959,6 +1959,7 @@ export const MIN_COMPARISON_LOCATIONS = 2;
 
 /**
  * Returns initial comparison locations (starts empty so no sites are unexpectedly preselected).
+ * @internal Test & comparison store initialization export.
  */
 export function getDefaultComparisonLocations() {
   return [];
@@ -1968,6 +1969,7 @@ export function getDefaultComparisonLocations() {
  * Normalizes any feature selected on the 3D Lunar Globe or 2D Map
  * (predefined landing site, CLPS mission, crater, mare, or Custom Dropped Pin)
  * into a comparison location entry.
+ * @internal Test & location normalization utility export.
  */
 export function normalizeFeatureToComparisonLocation(feature, existingCount = 0) {
   if (!feature) return null;

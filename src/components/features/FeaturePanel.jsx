@@ -27,8 +27,10 @@ import {
   ChevronDown,
   Trash2,
   Info,
+  Droplets,
 } from 'lucide-react';
 import { formatLunarCoordinates, getLunarRegionInfo } from '../../utils/coordinates.js';
+import { getCanonicalPolarLandmark, getVolatileDataForFeature } from '../../data/lunarCanonicalCatalog.js';
 import { getClpsMission } from '../../data/clpsMissions.js';
 import { getLunarTemperature } from '../../utils/lunarThermal.js';
 import { notifySuccess } from '../../utils/feedbackStore.js';
@@ -315,6 +317,11 @@ export default function FeaturePanel({
       elevationM: terrainMetrics?.elevationM ?? null,
     });
   }, [feature, isEarthFeature, isPlaceholderLocation, featLat, featLon, tabTimeMs, sunTerrainHorizon, terrainMetrics?.elevationM]);
+
+  const volatileData = useMemo(() => {
+    if (!feature || isEarthFeature || isPlaceholderLocation) return null;
+    return getVolatileDataForFeature(feature);
+  }, [feature, isEarthFeature, isPlaceholderLocation]);
 
   const earthLook = useMemo(() => {
     if (isPlaceholderLocation) {
@@ -1258,6 +1265,69 @@ export default function FeaturePanel({
               <p className="text-[9px] font-mono text-slate-500">
                 Temperatures follow the selected ephemeris time; NOAA telemetry remains live.
               </p>
+              </div>
+            )}
+
+            {/* Volatiles & Cryogenic Cold Trap Assessment (Site-Specific PSR Area & H₂O Regolith Abundance) */}
+            {activeTab === 'temperature' && volatileData && (
+              <div className="p-2.5 rounded-xl bg-[#0A121E] border border-slate-800/80 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-white flex items-center gap-1.5">
+                    <Droplets className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                    <span>Volatiles &amp; Cryogenic PSR Assessment</span>
+                  </span>
+                  <span
+                    className={`px-1.5 py-0.5 rounded text-[9.5px] font-mono font-semibold border ${
+                      volatileData.isPSR
+                        ? 'bg-purple-950/40 text-purple-300 border-purple-500/40'
+                        : 'bg-slate-900/60 text-slate-400 border-slate-700/50'
+                    }`}
+                  >
+                    {volatileData.isPSR ? '● Cryogenic Cold Trap' : '○ Non-PSR Zone'}
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 font-mono text-xs">
+                  <div className="p-2 rounded-lg bg-[#050507] border border-slate-800/70 space-y-0.5">
+                    <span className="text-[9.5px] text-slate-400 block">PSR Surface Area</span>
+                    <div className="text-sm font-bold text-white tabular-nums">
+                      {volatileData.psrAreaKm2 > 0 ? (
+                        <>
+                          {volatileData.psrAreaKm2.toLocaleString()}{' '}
+                          <span className="text-[10px] font-normal text-slate-400">km²</span>
+                        </>
+                      ) : (
+                        <span className="text-slate-400 text-xs">0 km²</span>
+                      )}
+                    </div>
+                    <span
+                      className="text-[9px] text-slate-500 block truncate"
+                      title={
+                        volatileData.psrAreaKm2 > 0
+                          ? `${volatileData.psrAreaM2.toLocaleString()} m² permanent shadow`
+                          : 'Illuminated / Non-cold trap terrain'
+                      }
+                    >
+                      {volatileData.psrAreaKm2 > 0
+                        ? `${volatileData.psrAreaM2.toLocaleString()} m² floor`
+                        : 'Outside cold trap'}
+                    </span>
+                  </div>
+                  <div className="p-2 rounded-lg bg-[#050507] border border-slate-800/70 space-y-0.5">
+                    <span className="text-[9.5px] text-slate-400 block">H₂O Regolith Abundance</span>
+                    <div
+                      className="text-sm font-bold text-cyan-300 tabular-nums truncate"
+                      title={volatileData.h2oAbundance}
+                    >
+                      {volatileData.h2oAbundance}
+                    </div>
+                    <span
+                      className="text-[9px] text-slate-500 block truncate"
+                      title={volatileData.provenance}
+                    >
+                      {volatileData.provenance}
+                    </span>
+                  </div>
+                </div>
               </div>
             )}
 

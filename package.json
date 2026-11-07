@@ -11,7 +11,6 @@
     "lint": "node -e 'console.log(\"Lint passed\")'"
   },
   "dependencies": {
-    "@types/d3": "^7.4.3",
     "astronomy-engine": "^2.1.19",
     "cesium": "^1.145.0",
     "d3": "^7.9.1",
@@ -19,16 +18,14 @@
     "jspdf-autotable": "^5.0.9",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.468.0",
-    "ol": "^10.10.0",
     "proj4": "^2.22.0",
     "proj4leaflet": "^1.0.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "recharts": "^2.15.4",
-    "three": "^0.186.0",
-    "vite-plugin-cesium": "^1.2.23"
+    "three": "^0.186.0"
   },
   "devDependencies": {
+    "@types/d3": "^7.4.3",
     "@types/react": "^18.3.1",
     "@types/react-dom": "^18.3.1",
     "@types/three": "^0.186.0",
@@ -37,6 +34,7 @@
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.19",
     "typescript": "^5.9.3",
-    "vite": "^6.4.3"
+    "vite": "^6.4.3",
+    "vite-plugin-cesium": "^1.2.23"
   }
 }

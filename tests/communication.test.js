@@ -115,7 +115,18 @@ test('Communication Analysis: Orbital Relay Mechanics (LRO 50 km Polar & EML-2 H
   // Position should hover south of the Moon (negative Z)
   assert.ok(haloPos[2] < -10000, `EML-2 Halo should hover over lunar South Pole (Z < -10000 km), got ${haloPos[2]}`);
 
-  // 3. Relay visibility evaluation
+  // 2b. Verify orthogonal phasing (Y uses sin, Z uses cos) preventing 1D diagonal collapse
+  const haloPeriodMs = LUNAR_RELAYS.EML2_HALO.periodSec * 1000;
+  const p0 = computeRelayPositionKm('eml2_halo', 0);
+  const pQuarter = computeRelayPositionKm('eml2_halo', haloPeriodMs / 4);
+  // At t=0 (phase=0): Y = 0, Z = -28000 + 12000 = -16000
+  assert.ok(Math.abs(p0[1]) < 1e-3, `Y at phase 0 should be 0, got ${p0[1]}`);
+  assert.ok(Math.abs(p0[2] - -16000) < 1, `Z at phase 0 should be -16000 km, got ${p0[2]}`);
+  // At t=T/4 (phase=pi/2): Y = 14000, Z = -28000
+  assert.ok(Math.abs(pQuarter[1] - 14000) < 1, `Y at phase pi/2 should be 14000 km, got ${pQuarter[1]}`);
+  assert.ok(Math.abs(pQuarter[2] - -28000) < 1, `Z at phase pi/2 should be -28000 km, got ${pQuarter[2]}`);
+
+  // 3. Relay visibility evaluation with siteId
   const relayEval = evaluateRelayVisibility({
     latDeg: -85.97,
     lonDeg: 0.0,
@@ -123,6 +134,7 @@ test('Communication Analysis: Orbital Relay Mechanics (LRO 50 km Polar & EML-2 H
     relayType: 'eml2_halo',
     timeMs: testEpochMs,
     state,
+    siteId: 'mons-malapert',
   });
 
   assert.equal(typeof relayEval.isRelayAvailable, 'boolean');

@@ -184,9 +184,29 @@ export function computeCommunicationLink({
   };
 }
 
+/**
+ * Computes communication link status ('clear' or 'blocked') between Moon and Earth targets.
+ * @internal Test & internal sweep helper export.
+ */
 export function communicationStatus(options) {
   return computeCommunicationLink(options).status;
 }
+
+/**
+ * Computes link margin delta relative to a minimum required safety threshold (in dB or degrees).
+ * Positive delta indicates adequate margin above threshold; negative indicates margin deficit.
+ * @internal Test & link budget utility export.
+ * @param {number} currentMargin - Measured or calculated elevation/RF link margin
+ * @param {number} [threshold=3.0] - Minimum acceptable margin threshold (default: 3.0)
+ * @returns {number} Link margin delta (currentMargin - threshold)
+ */
+export function computeLinkMarginDelta(currentMargin, threshold = 3.0) {
+  if (typeof currentMargin !== 'number' || Number.isNaN(currentMargin)) {
+    return -threshold;
+  }
+  return Math.round((currentMargin - threshold) * 100) / 100;
+}
+
 
 export async function sweepCommunication({
   moonFeature,

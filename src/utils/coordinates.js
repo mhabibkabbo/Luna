@@ -9,6 +9,7 @@
 
 /**
  * Normalizes selenographic longitude to the range [-180, 180].
+ * @internal Coordinate normalization helper & test export.
  * @param {number} lon 
  * @returns {number}
  */
@@ -21,6 +22,7 @@ export function normalizeLongitude(lon) {
 
 /**
  * Clamps selenographic latitude to [-90, 90].
+ * @internal Coordinate boundary helper & test export.
  * @param {number} lat 
  * @returns {number}
  */
@@ -117,6 +119,7 @@ export function parseLunarCoordinates(input) {
 /**
  * Calculates great-circle geodesic distance between two selenographic points in kilometers.
  * Lunar radius = 1737.4 km.
+ * @internal Test & legacy distance utility export.
  * 
  * @param {number} lon1 
  * @param {number} lat1 

@@ -42,6 +42,10 @@ export const DEFAULT_PLANNER_CONSTRAINTS = {
   },
 };
 
+/**
+ * Normalizes landing timestamp, duration, and constraint options for mission planning sweeps.
+ * @internal Test & sweep arguments normalization helper export.
+ */
 export function normalizeMissionWindowArgs(
   landingMsOrOpts,
   durationDaysArg,

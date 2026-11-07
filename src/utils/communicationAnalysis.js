@@ -25,7 +25,9 @@ import {
   ensurePolarDemLoaded,
 } from './horizons.js';
 import { earthLookFromMoon, DEFAULT_DTE_CONSTRAINTS } from './earthLink.js';
-import { computeCommunicationLink } from './communication.js';
+import { computeCommunicationLink, computeLinkMarginDelta } from './communication.js';
+
+export { computeLinkMarginDelta };
 
 const DEG = Math.PI / 180;
 const RAD = 180 / Math.PI;
@@ -131,6 +133,7 @@ export function getTerrainHorizonAngleDeg(latDeg, lonDeg, azimuthDeg, siteId = n
 /**
  * Calculates 3D Cartesian position vector of a point on the lunar surface
  * in the Moon body-fixed frame (km).
+ * @internal Test & spatial frame utility export.
  */
 export function lunarSurfacePositionKm(latDeg, lonDeg, elevationM = 0) {
   const lat = latDeg * DEG;
@@ -214,7 +217,7 @@ export function computeRelayPositionKm(relayType, timeMs) {
     // Halo trajectory extends -Z into southern hemisphere (-15,000 to -45,000 km)
     const x = -61350 + 8000 * Math.cos(phase); // On farside of Moon at L2 (~61,350 km behind Moon)
     const y = 14000 * Math.sin(phase);
-    const z = -28000 + 12000 * Math.sin(phase); // Hovering high over South Pole
+    const z = -28000 + 12000 * Math.cos(phase); // Hovering high over South Pole (orthogonal phasing)
     return [x, y, z];
   }
 
@@ -231,6 +234,7 @@ export function evaluateRelayVisibility({
   relayType = 'lro',
   timeMs,
   state,
+  siteId = null,
 }) {
   if (!relayType || relayType === 'none') {
     return { isRelayAvailable: false, reason: 'Relay model disabled' };
@@ -272,7 +276,7 @@ export function evaluateRelayVisibility({
     360;
 
   // Check terrain horizon toward relay
-  const terrainMaskDeg = getTerrainHorizonAngleDeg(latDeg, lonDeg, satAzDeg);
+  const terrainMaskDeg = getTerrainHorizonAngleDeg(latDeg, lonDeg, satAzDeg, siteId);
   const isSiteToSatClear = satElevDeg > terrainMaskDeg && satElevDeg > 5.0; // 5 deg lander antenna elevation mask
 
   if (!isSiteToSatClear) {
@@ -406,6 +410,7 @@ export function evaluateDteInstantaneous({
       relayType,
       timeMs,
       state,
+      siteId,
     });
 
     if (relayEval.isRelayAvailable) {

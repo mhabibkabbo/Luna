@@ -8,7 +8,7 @@ import { notifyInfo } from '../../utils/feedbackStore.js';
  * 
  * @param {{
  *   isActive: boolean,
- *   measurement: import('../../types/lunar.js').LunarMeasurement,
+ *   measurement: Object,
  *   onToggleActive: () => void,
  *   onClear: () => void,
  * }} props

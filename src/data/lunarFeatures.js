@@ -11,7 +11,7 @@
  */
 
 /**
- * @type {Array<import('../types/lunar.js').LunarFeature>}
+ * @type {Array<Object>}
  */
 export const LUNAR_FEATURES = [
   // ==========================================

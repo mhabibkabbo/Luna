@@ -313,6 +313,7 @@ export function computeDemHorizonProfile(latDeg, lonDeg, observerHeightM = 2.0) 
   return profile;
 }
 
+/** @internal Test & horizon preloader utility. */
 export function loadHorizons() {
   return Promise.resolve(horizonData);
 }
@@ -373,7 +374,10 @@ export function horizonAt(table, siteId, azDeg, latDeg = null, lonDeg = null) {
   return h[i0] * (1 - f) + h[i1] * f;
 }
 
-/** Convenience for sweeps: terrain horizon toward azDeg, falling back to the flat 0° horizon. */
+/**
+ * Convenience for sweeps: terrain horizon toward azDeg, falling back to the flat 0° horizon.
+ * @internal Test & horizon elevation sweep utility.
+ */
 export function horizonOrFlat(table, siteId, azDeg, latDeg = null, lonDeg = null) {
   return horizonAt(table, siteId, azDeg, latDeg, lonDeg) ?? 0;
 }

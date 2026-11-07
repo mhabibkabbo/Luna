@@ -13,6 +13,9 @@ import {
   DEFAULT_DTE_CONSTRAINTS,
 } from './earthLink.js';
 import { horizonAt, HORIZON_TABLE } from './horizons.js';
+import { formatMissionDate } from './celestialTime.js';
+
+export { formatMissionDate };
 
 const MINUTE_MS = 60000;
 const HOUR_MS = 3600000;
@@ -20,6 +23,7 @@ const DAY_MS = 86400000;
 
 /**
  * Formats a duration in milliseconds into a concise, readable string.
+ * @internal Test & mission timeline duration formatting utility.
  * e.g. "14d 6h 25m" or "3h 42m" or "< 1m"
  */
 export function formatDuration(ms) {

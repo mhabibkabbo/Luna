@@ -5,7 +5,7 @@ import { Check, Mountain, CircleDot, Waves, Diamond, Rocket, Radio } from 'lucid
  * Individual layer toggle row with checkbox, description, and opacity control.
  * 
  * @param {{
- *   layer: import('../../types/lunar.js').LunarLayer,
+ *   layer: Object,
  *   onToggle: (layerId: string, visible: boolean) => void,
  *   onChangeOpacity?: (layerId: string, opacity: number) => void
  * }} props

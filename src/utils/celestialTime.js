@@ -43,3 +43,16 @@ export const celestialTimeStore = {
 
   subscribe: store.subscribe,
 };
+
+/**
+ * Formats a celestial or mission date into a standardized UTC timestamp string.
+ * @internal Test & mission timeline utility export.
+ * @param {Date|number|string} when - Date instance, epoch timestamp in ms, or ISO date string
+ * @returns {string} Standardized UTC string (e.g., "2026-03-15 12:00 UTC")
+ */
+export function formatMissionDate(when) {
+  const d = when instanceof Date ? when : new Date(when);
+  if (!Number.isFinite(d.getTime())) return 'Invalid Date';
+  return `${d.toISOString().replace('T', ' ').substring(0, 16)} UTC`;
+}
+

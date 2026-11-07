@@ -173,6 +173,14 @@ test('fetchJplMoonEphemeris retrieves ephemerides or falls back gracefully', asy
   assert.ok(ephem.source.length > 0);
   assert.ok(typeof ephem.lightTimeSec === 'number' && ephem.lightTimeSec > 1.0);
   assert.ok(LUNAR_ROCKETS.length >= 5, 'Should have curated lunar rockets');
+
+  // Velocity should be physically consistent with Moon's ~1.02 km/s geocentric orbital velocity
+  const speed = Math.hypot(ephem.vxKmS, ephem.vyKmS, ephem.vzKmS);
+  assert.ok(speed >= 0.9 && speed <= 1.15, `Orbital speed should be ~1.02 km/s, got ${speed} km/s`);
+
+  // Verify vector length matches range
+  const computedRange = Math.hypot(ephem.xKm, ephem.yKm, ephem.zKm);
+  assert.ok(Math.abs(computedRange - ephem.rangeKm) < 5.0, 'Vector magnitude must match rangeKm');
 });
 
 test('Trajectory guarantees non-penetration of Earth and Moon in km and 3D space', () => {

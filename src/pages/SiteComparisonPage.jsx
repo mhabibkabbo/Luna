@@ -899,6 +899,22 @@ export default function SiteComparisonPage({
                           <div className="text-[11.5px] font-mono tabular-nums text-[#8E95A5] mt-0.5">
                             {ev.formattedCoords}
                           </div>
+                          <div className="flex items-center gap-1.5 mt-1.5">
+                            <span
+                              className={`px-1.5 py-0.5 rounded text-[9.5px] font-mono font-medium border ${
+                                ev.inSouthPoleDem
+                                  ? 'bg-cyan-950/60 text-cyan-300 border-cyan-500/40'
+                                  : 'bg-slate-900/60 text-slate-400 border-slate-700/50'
+                              }`}
+                              title={
+                                ev.inSouthPoleDem
+                                  ? 'Active dataset: NASA LRO LOLA 400 m/px Polar DEM binary grid (80°S–90°S)'
+                                  : 'Outside 80°S polar DEM coverage boundary'
+                              }
+                            >
+                              {ev.inSouthPoleDem ? 'LOLA 400 m/px DEM' : 'Outside 80°S DEM'}
+                            </span>
+                          </div>
                         </div>
                       </div>
 
@@ -1603,7 +1619,7 @@ export default function SiteComparisonPage({
           >
             <div>
               <span className="text-[13.5px] font-display font-semibold text-white">
-                3. Terrain Characteristics (NASA LRO LOLA DEM)
+                3. Terrain Characteristics (NASA LRO LOLA 400 m/px DEM)
               </span>
               <span className="block text-[12px] font-sans text-[#8E95A5] mt-0.5">
                 Surface elevation, Horn 3×3 slope gradient, 2 km RMS roughness, local relief, crater density status, and landing hazards.

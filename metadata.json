@@ -1,6 +1,6 @@
 {
-  "name": "Lunar Explorer",
-  "description": "Interactive 3D Cesium Moon and 2D lunar GIS map, powered by CesiumJS and NASA Moon Trek WMTS data, exploring NASA CLPS missions, landing sites, and live ephemeris.",
+  "name": "Lunar Explorer - Interactive 3D Moon & Artemis Mission Visualizer",
+  "description": "Professional lunar exploration platform and GIS mission control for NASA Commercial Lunar Payload Services (CLPS) and Artemis missions. Features high-definition 3D lunar terrain, orbital trajectory planning, solar illumination, and direct-to-Earth link analysis.",
   "requestFramePermissions": [],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"

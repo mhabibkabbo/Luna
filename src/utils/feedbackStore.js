@@ -69,10 +69,20 @@ export function dismissNotification(id) {
 
 /**
  * Clear all notifications.
+ * @internal Test & store cleanup utility.
  */
 export function clearAllNotifications() {
   feedbackStore.set([]);
 }
+
+/**
+ * Resets/clears feedback notifications. Alias for clearAllNotifications.
+ * @internal Test & feedback reset utility export.
+ */
+export function clearFeedback() {
+  clearAllNotifications();
+}
+
 
 /**
  * Helper shortcuts for common feedback events
