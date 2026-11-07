@@ -476,16 +476,15 @@ export default function FeaturePanel({
         elevationM: terrainMetrics?.elevationM ?? null,
         roughnessM: terrainMetrics?.roughnessM ?? null,
       },
-      {
-        ...DEFAULT_PLANNER_CONSTRAINTS,
-        landingTimeMs: settledTabTimeMs,
-        missionDurationDays: missionWindowDays,
-      }
+      settledTabTimeMs,
+      missionWindowDays,
+      DEFAULT_PLANNER_CONSTRAINTS
     );
 
     const sunlitRatio = unifiedEval?.sunlitRatio ?? Math.round((sunlitSteps / numSamples) * 100);
     const dsnRatio = unifiedEval?.dteUptimeRatio ?? (isFarside ? 0 : Math.round((dsnSteps / numSamples) * 100));
-    const longestSunlitHours = Math.round(maxSunStreak * 6);
+    const longestSunlitHours =
+      unifiedEval?.durationOutlook?.longestSunlitHours ?? Math.round(maxSunStreak * 6);
     const windowScore = unifiedEval?.overallScore ?? 50;
 
     return {

@@ -20,6 +20,7 @@ import DteCalculationModal from './components/communication/DteCalculationModal.
 import SiteAnalysisModal from './components/analysis/SiteAnalysisModal.jsx';
 import LunarWeatherModal from './components/status/LunarWeatherModal.jsx';
 import LandingPage from './components/landing/LandingPage.jsx';
+import LunaIntroAnimation from './components/landing/LunaIntroAnimation.jsx';
 import MissionsPage from './components/missions/MissionsPage.jsx';
 import AboutPage from './components/landing/AboutPage.jsx';
 import TransparentLunarSearch from './components/search/TransparentLunarSearch.jsx';
@@ -96,6 +97,9 @@ export default function App() {
     }
     return 'landing';
   });
+
+  // Show cinematic LUNA intro animation when the user first arrives at the landing page
+  const [showIntro, setShowIntro] = useState(() => currentView === 'landing');
 
   // Mobile navigation drawer state
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
@@ -1164,10 +1168,15 @@ export default function App() {
   // Render Landing Page if currentView is 'landing'
   if (currentView === 'landing') {
     return (
-      <LandingPage
-        onLaunchExplorer={handleLaunchExplorer}
-        onNavigate={handleNavigate}
-      />
+      <>
+        {showIntro && (
+          <LunaIntroAnimation onComplete={() => setShowIntro(false)} />
+        )}
+        <LandingPage
+          onLaunchExplorer={handleLaunchExplorer}
+          onNavigate={handleNavigate}
+        />
+      </>
     );
   }
 

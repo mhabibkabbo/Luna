@@ -58,5 +58,6 @@
   "slopeHazardFile": "slope_hazard_15deg.geojson",
   "plannedTraversesFile": "planned_traverses.geojson",
   "ridgesAndRimsFile": "ridges_and_rims.geojson",
-  "generatedAt": "2026-11-03T05:51:32.559Z"
+  "psrFootprintsFile": "psr_footprints.geojson",
+  "generatedAt": "2026-11-07T06:30:38.663Z"
 }

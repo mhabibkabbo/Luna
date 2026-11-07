@@ -112,11 +112,9 @@ export default function MissionBriefingPage({
           elevationM: terrainMetrics?.elevationM ?? null,
           roughnessM: terrainMetrics?.roughnessM ?? null,
         },
-        {
-          ...DEFAULT_PLANNER_CONSTRAINTS,
-          landingTimeMs: simulationTime,
-          missionDurationDays: 14,
-        }
+        simulationTime,
+        14,
+        DEFAULT_PLANNER_CONSTRAINTS
       );
       const score = unifiedEval?.overallScore ?? 50;
 
@@ -222,7 +220,7 @@ Generated via LUNA — Lunar Landing Site Navigator (NASA Space Apps Challenge)
         <div>
           <div className="flex items-center gap-2 text-[11px] font-sans font-semibold tracking-[0.14em] text-[#8E95A5] uppercase">
             <FileText className="w-3.5 h-3.5 text-[#F8FAFC]" />
-            <span>Workspace 06 · Mission Assessment &amp; Briefing Dossier</span>
+            <span>Workspace 05 · Mission Assessment &amp; Briefing Dossier</span>
           </div>
           <h1 className="text-2xl sm:text-[26px] font-display font-semibold tracking-tight text-white mt-1.5">
             Flight Readiness Review &amp; Mission Dossier

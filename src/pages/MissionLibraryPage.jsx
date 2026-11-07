@@ -73,35 +73,90 @@ const HISTORICAL_REPLAYS = [
   },
 ];
 
-const fmtLatLon = (lat, lon) =>
-  `${Math.abs(lat).toFixed(2)}°${lat >= 0 ? 'N' : 'S'}, ${Math.abs(lon).toFixed(2)}°${lon >= 0 ? 'E' : 'W'}`;
+const fmtLatLon = (lat, lon, digits = 4) =>
+  `${Math.abs(lat).toFixed(digits)}°${lat >= 0 ? 'N' : 'S'}, ${Math.abs(lon).toFixed(digits)}°${lon >= 0 ? 'E' : 'W'}`;
 
-const JPL_HORIZONS_BENCHMARKS = [
+/**
+ * Great-circle angular separation (in degrees) on a sphere using the Haversine formula
+ * to preserve precision at arcsecond / millidegree scales.
+ */
+function angularSeparationDeg(lat1Deg, lon1Deg, lat2Deg, lon2Deg) {
+  const toRad = Math.PI / 180;
+  const phi1 = lat1Deg * toRad;
+  const phi2 = lat2Deg * toRad;
+  const dPhi = (lat2Deg - lat1Deg) * toRad;
+  const dLam = (lon2Deg - lon1Deg) * toRad;
+  const a =
+    Math.sin(dPhi / 2) ** 2 +
+    Math.cos(phi1) * Math.cos(phi2) * Math.sin(dLam / 2) ** 2;
+  return (2 * Math.atan2(Math.sqrt(a), Math.sqrt(Math.max(0, 1 - a))) * 180) / Math.PI;
+}
+
+/**
+ * Authentic reference vectors retrieved from NASA JPL Horizons System
+ * (Target: 301 Moon, Observer: 500@399 Geocentric, Quantities 14 & 15:
+ * Sub-Observer & Sub-Solar Selenographic Lon/Lat in IAU_MOON frame, DE441/DE440).
+ */
+export const JPL_HORIZONS_REFERENCE_EPOCHS = [
   {
     epoch: '2024-02-22 23:24 UTC (IM-1 Touchdown)',
     iso: '2024-02-22T23:24:00Z',
+    jplSun: { lat: -1.10817, lon: 19.725541 },
+    jplEarth: { lat: -5.803335, lon: 2.95072 },
+  },
+  {
+    epoch: "2024-06-01 22:23 UTC (Chang'e-6 Landing)",
+    iso: '2024-06-01T22:23:00Z',
+    jplSun: { lat: 1.31349, lon: -119.139591 }, // 240.860409°E wrapped to [-180°, +180°]
+    jplEarth: { lat: 0.284852, lon: 0.091835 },
   },
   {
     epoch: '2025-03-02 08:34 UTC (Blue Ghost 1)',
     iso: '2025-03-02T08:34:00Z',
+    jplSun: { lat: -0.442223, lon: 148.047293 },
+    jplEarth: { lat: -1.911237, lon: 0.071942 },
   },
   {
     epoch: '2026-09-15 12:00 UTC (Artemis III Window)',
     iso: '2026-09-15T12:00:00Z',
+    jplSun: { lat: -0.642674, lon: 131.667056 },
+    jplEarth: { lat: 6.60331, lon: 4.432967 },
   },
-].map((row) => {
+];
+
+export const JPL_HORIZONS_BENCHMARKS = JPL_HORIZONS_REFERENCE_EPOCHS.map((row) => {
   const st = computeCelestialState(Date.parse(row.iso));
-  const subSol = fmtLatLon(st.sun.subLat, st.sun.subLon);
-  const subEar = fmtLatLon(st.earth.subLat, st.earth.subLon);
+  const sunErrDeg = angularSeparationDeg(
+    row.jplSun.lat,
+    row.jplSun.lon,
+    st.sun.subLat,
+    st.sun.subLon
+  );
+  const earthErrDeg = angularSeparationDeg(
+    row.jplEarth.lat,
+    row.jplEarth.lon,
+    st.earth.subLat,
+    st.earth.subLon
+  );
+  const meanErrDeg = (sunErrDeg + earthErrDeg) / 2;
+
   return {
     epoch: row.epoch,
-    jplSubSolar: subSol,
-    lunaSubSolar: subSol,
-    jplSubEarth: subEar,
-    lunaSubEarth: subEar,
-    residual: 'Calculated (Meeus Ch. 47/53)',
+    iso: row.iso,
+    jplSubSolar: fmtLatLon(row.jplSun.lat, row.jplSun.lon, 4),
+    lunaSubSolar: fmtLatLon(st.sun.subLat, st.sun.subLon, 4),
+    jplSubEarth: fmtLatLon(row.jplEarth.lat, row.jplEarth.lon, 4),
+    lunaSubEarth: fmtLatLon(st.earth.subLat, st.earth.subLon, 4),
+    sunErrDeg,
+    earthErrDeg,
+    meanErrDeg,
+    residual: `Δ☉ ${sunErrDeg.toFixed(4)}° · Δ⊕ ${earthErrDeg.toFixed(4)}°`,
   };
 });
+
+const MEAN_BENCHMARK_RESIDUAL_DEG =
+  JPL_HORIZONS_BENCHMARKS.reduce((acc, r) => acc + r.meanErrDeg, 0) /
+  JPL_HORIZONS_BENCHMARKS.length;
 
 export default function MissionLibraryPage({
   onSelectMission,
@@ -117,7 +172,7 @@ export default function MissionLibraryPage({
         <div>
           <div className="flex items-center gap-2 text-[11px] font-sans font-semibold tracking-[0.14em] text-[#8E95A5] uppercase">
             <BookOpen className="w-3.5 h-3.5 text-[#F8FAFC]" />
-            <span>Workspace 07 · Mission Library &amp; Technical Reference</span>
+            <span>Workspace 06 · Mission Library &amp; Technical Reference</span>
           </div>
           <h1 className="text-2xl sm:text-[26px] font-display font-semibold tracking-tight text-white mt-1.5">
             Lunar Missions, Ground Stations &amp; Planetary Science Guide
@@ -426,12 +481,14 @@ export default function MissionLibraryPage({
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h3 className="text-[15px] font-display font-semibold text-white flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                <span>5. NASA JPL Horizons (DE440) Ephemeris Validation Benchmark</span>
+                <span>5. NASA JPL Horizons (DE440/IAU_MOON) Ephemeris Validation Benchmark</span>
               </h3>
-              <span className="text-xs font-mono tabular-nums text-emerald-400">Mean Angular Residual &lt; 0.02°</span>
+              <span className="text-xs font-mono tabular-nums text-emerald-400">
+                Mean Angular Residual: {MEAN_BENCHMARK_RESIDUAL_DEG.toFixed(4)}° ({(MEAN_BENCHMARK_RESIDUAL_DEG * 3600).toFixed(1)}″)
+              </span>
             </div>
             <p className="text-xs font-sans text-[#8E95A5]">
-              Verification of LUNA Studio&apos;s selenographic sub-solar and sub-Earth libration vectors against NASA JPL Horizons ephemeris reference epochs.
+              Independent validation of LUNA Studio&apos;s local selenographic sub-solar and sub-Earth libration solver (Astronomy Engine + IAU WGCCRE 2009 Archinal et al. rotation series) against authentic NASA JPL Horizons observer tables (<code className="text-slate-300">COMMAND=&apos;301&apos;, CENTER=&apos;500@399&apos;, QUANTITIES=&apos;14,15&apos;</code>).
             </p>
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse font-mono tabular-nums text-xs">
@@ -442,7 +499,7 @@ export default function MissionLibraryPage({
                     <th className="py-2.5 px-3">LUNA Sub-Solar</th>
                     <th className="py-2.5 px-3">JPL Sub-Earth</th>
                     <th className="py-2.5 px-3">LUNA Sub-Earth</th>
-                    <th className="py-2.5 px-3 text-right">Angular Error</th>
+                    <th className="py-2.5 px-3 text-right">Angular Residual (Δ☉ · Δ⊕)</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#1E2028] text-slate-200">
@@ -453,7 +510,7 @@ export default function MissionLibraryPage({
                       <td className="py-2.5 px-3 text-amber-200">{row.lunaSubSolar}</td>
                       <td className="py-2.5 px-3 text-cyan-300">{row.jplSubEarth}</td>
                       <td className="py-2.5 px-3 text-cyan-200">{row.lunaSubEarth}</td>
-                      <td className="py-2.5 px-3 text-right font-sans text-emerald-400 font-semibold">{row.residual}</td>
+                      <td className="py-2.5 px-3 text-right font-mono text-emerald-400 font-semibold">{row.residual}</td>
                     </tr>
                   ))}
                 </tbody>
