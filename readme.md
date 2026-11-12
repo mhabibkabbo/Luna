@@ -8,9 +8,9 @@
 
 | | |
 | :---: | :---: |
-| ![Homepage](docs/screenshots/Homepage.png)<br>**Homepage** | ![3D Moon](docs/screenshots/3D_Moon.png)<br>**3D Moon Explorer** |
-| ![2D South Pole Topo Map](docs/screenshots/2D_Topo_Map.png)<br>**2D South Pole Topo Map** | ![Orbit Planner](docs/screenshots/Orbit_Planner.png)<br>**Orbit Planner** |
-| ![Landing Suggestions](docs/screenshots/Landing_Suggestions.png)<br>**Landing Site Planner** | ![Site Comparison](docs/screenshots/Site_Comparison.png)<br>**Site Comparison** |
+| ![Homepage](docs/screenshots/Homepage.png)<br>**Homepage** | ![3D Moon](docs/screenshots/3DMoon.png)<br>**3D Moon Explorer** |
+| ![2D South Pole Topo Map](docs/screenshots/2DTopoMap.png)<br>**2D South Pole Topo Map** | ![Orbit Planner](docs/screenshots/OrbitPlanner.png)<br>**Orbit Planner** |
+| ![Landing Suggestions](docs/screenshots/LandingSuggestions.png)<br>**Landing Site Planner** | ![Site Comparison](docs/screenshots/SiteComparison.png)<br>**Site Comparison** |
 
 ---
 
