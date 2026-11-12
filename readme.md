@@ -2,7 +2,7 @@
 
 > 🚀 Built for the **NASA Space Apps Challenge 2026** by team **awaylander.exe**
 
-**Luna** is a lunar exploration, GIS mission-control, and landing-site trade-study platform for NASA **CLPS** and **Artemis** missions. It combines 3D/2D lunar cartography, topocentric Sun/Earth ephemerides, LRO LOLA South Pole elevation data, 360° horizon ray-marching, RF link budgets, and orbital transfer planning.
+**LUNA** is a lunar mission browser for NASA **CLPS** and **Artemis** missions. Answering the challenge mentioned here : https://www.spaceappschallenge.org/2026/challenges/lunar-landing-site-navigator/, we, team **awaylander.exe** built **LUNA**.
 
 ## Screenshots
 
@@ -18,11 +18,11 @@
 
 | Workspace | What it does |
 | :--- | :--- |
-| **Explorer** (`#explorer`) | CesiumJS Moon/Earth globe (LRO WAC, LOLA topography, DSN stations) plus a 2D South Pole polar-stereographic map (80°S–90°S, 400 m/px LOLA DEM) with contours, slope hazards, PSRs, and an A* least-cost EVA/rover route planner. Real-time 360° horizon mask classifies sites as Sunlit, Terrain-Shadowed, Night, or PSR. |
+| **Explorer** (`#explorer`) | CesiumJS Moon/Earth globe plus a 2D South Pole polar-stereographic map (80°S–90°S, 400 m/px LOLA DEM) with contours, slope hazards, PSRs, and an A* least-cost EVA/rover route planner. Real-time 360° horizon mask classifies sites as Sunlit, Terrain-Shadowed, Night, or PSR. |
 | **Trajectory** (`#trajectory`) | Cislunar planner for Direct TLI, Low-Energy WSB/BLT, Free-Return, and NRHO transfers with Δv budgets, transit timelines, and 3D/2D viewports. |
 | **Landing Planner** (`#planner`) | Ranks 19 candidate sites over 3/7/14/28-day windows with a 4-factor suitability index: **Solar Illumination 35%**, **Direct-to-Earth 30%**, **Terrain & Slope 20%**, **Thermal 15%**. Includes polar ridge discovery and a LOLA literature validation panel. |
 | **Comparison** (`#comparison`) | Side-by-side trade study of up to 8 sites/pins across mission epochs, with multi-page PDF export. |
-| **Library** (`#library`) | CLPS and historic lander archive (IM-1/2, Blue Ghost, Peregrine, Apollo, Chandrayaan-3, Chang'e 6, SLIM…) with outcome filters, plus 25 Earth ground stations and their link specs. |
+| **Library** (`#library`) | CLPS and historic lander archive (IM-1/2, Blue Ghost etc.) with outcome filters, plus 25 Earth ground stations and their link specs. |
 
 ## Data & Methods
 
@@ -90,8 +90,8 @@ npm run lint         # type checking
 
 **NASA Space Apps Challenge 2026 — Team `awaylander.exe`**
 
-- Nahid Iqbal
 - Mishkatul Habib
+- Nahid Iqbal
 - Rafid Muammar
 - Yeasin Anzam Rifat
 
