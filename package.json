@@ -22,7 +22,8 @@
     "proj4leaflet": "^1.0.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "three": "^0.186.0"
+    "three": "^0.186.0",
+    "y": "^0.3.2"
   },
   "devDependencies": {
     "@types/d3": "^7.4.3",
