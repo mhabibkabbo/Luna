@@ -270,7 +270,7 @@ export default function AboutPage({ onLaunchExplorer, onNavigate }) {
 
           <section>
             <ScrollReveal delay={50}>
-              <div className="mb-8">
+              <div className="mb-8 flex-col items-center justify-center gap-4 sm:flex sm:justify-bottom">
                 <span className="inline-block rounded-full border border-white/[0.12] bg-white/[0.03] px-3.5 py-1 text-[11px] font-sans font-semibold uppercase tracking-[0.14em] text-[#CBD5E1]">
                   Creators & Engineers
                 </span>
