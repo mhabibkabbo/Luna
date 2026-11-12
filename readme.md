@@ -2,7 +2,7 @@
 
 > 🚀 Built for the **NASA Space Apps Challenge 2026** by team **awaylander.exe**
 
-**LUNA** is a lunar mission browser for NASA **CLPS** and **Artemis** missions. Answering the challenge : [Lunar Landing Site Navigator](https://www.spaceappschallenge.org/2026/challenges/lunar-landing-site-navigator/), we, team **awaylander.exe** built **LUNA**.
+**LUNA** is a lunar mission browser for NASA **CLPS** and **Artemis** missions. Answering the challenge : [Lunar Landing Site Navigator](https://www.spaceappschallenge.org/2026/challenges/lunar-landing-site-navigator/), we, team **awaylander.exe**, built **LUNA**.
 
 ## Screenshots
 
