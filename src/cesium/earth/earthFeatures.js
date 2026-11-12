@@ -1,0 +1,613 @@
+import * as Cesium from 'cesium';
+import { EARTH_COMMUNICATION_SITES } from '../../data/earthCommunicationSites.js';
+import { EARTH_LAUNCH_SITES } from '../../data/earthLaunchSites.js';
+import { formatLunarCoordinates } from '../../utils/coordinates.js';
+
+const EARTH_PIN_STYLE = {
+  baseScale: 0.22,
+  selectedScale: 0.30,
+  nearDistance: 100_000,
+  overviewDistance: 120_000_000,
+  farDistance: 260_000_000,
+  labelFarDistance: 60_000_000,
+  surfaceClearance: 1200,
+};
+
+const SITE_MARKER_COLORS = {
+  'deep-space-communication': '#22d3ee',
+  'spacecraft-tracking': '#60a5fa',
+  'launch-tracking': '#c084fc',
+  'relay-communications': '#fbbf24',
+  'mission-operations': '#34d399',
+  'launch-site': '#f97316',
+  'launch-pad': '#fb923c',
+};
+
+const EARTH_DRAG_THRESHOLD_PIXELS = 6;
+const sitePinImages = new Map();
+
+function createSitePinImage(type, selected) {
+  const cacheKey = `${type}:${selected}`;
+  if (sitePinImages.has(cacheKey)) return sitePinImages.get(cacheKey);
+
+  const canvas = document.createElement('canvas');
+  canvas.width = 112;
+  canvas.height = 112;
+  const context = canvas.getContext('2d');
+  if (!context) {
+    throw new Error('Unable to create the Earth communication-site marker canvas.');
+  }
+
+  const color = selected ? '#FDE047' : SITE_MARKER_COLORS[type] || '#00D2C4';
+  context.clearRect(0, 0, canvas.width, canvas.height);
+  context.save();
+  context.shadowColor = selected ? 'rgba(253, 224, 71, 0.95)' : color;
+  context.shadowBlur = selected ? 24 : 14;
+
+  context.beginPath();
+  context.arc(56, 56, 35, 0, Math.PI * 2);
+  context.fillStyle = 'rgba(18, 17, 13, 0.94)';
+  context.fill();
+  context.lineWidth = selected ? 7 : 6;
+  context.strokeStyle = color;
+  context.stroke();
+
+  context.beginPath();
+  context.arc(56, 56, 22, 0, Math.PI * 2);
+  context.fillStyle = color;
+  context.fill();
+  context.restore();
+
+  if (type === 'launch-site' || type === 'launch-pad') {
+    context.fillStyle = '#ffffff';
+    context.beginPath();
+    context.moveTo(56, 38);
+    context.bezierCurveTo(63, 48, 63, 60, 63, 64);
+    context.lineTo(49, 64);
+    context.bezierCurveTo(49, 60, 49, 48, 56, 38);
+    context.fill();
+
+    context.beginPath();
+    context.moveTo(49, 58);
+    context.lineTo(43, 67);
+    context.lineTo(49, 65);
+    context.moveTo(63, 58);
+    context.lineTo(69, 67);
+    context.lineTo(63, 65);
+    context.fill();
+
+    context.strokeStyle = selected ? '#fde047' : '#f97316';
+    context.lineWidth = 3;
+    context.beginPath();
+    context.moveTo(56, 65);
+    context.lineTo(56, 73);
+    context.stroke();
+  } else {
+    context.strokeStyle = '#ffffff';
+    context.lineWidth = 5;
+    context.lineCap = 'round';
+    context.beginPath();
+    context.moveTo(44, 62);
+    context.lineTo(56, 48);
+    context.lineTo(68, 62);
+    context.moveTo(56, 48);
+    context.lineTo(56, 72);
+    context.moveTo(47, 72);
+    context.lineTo(65, 72);
+    context.stroke();
+
+    context.beginPath();
+    context.arc(56, 43, 7, Math.PI, Math.PI * 2);
+    context.stroke();
+  }
+
+  const image = canvas.toDataURL('image/png');
+  sitePinImages.set(cacheKey, image);
+  return image;
+}
+
+function createPinImage(selected) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 112;
+  canvas.height = 112;
+  const context = canvas.getContext('2d');
+
+  if (!context) {
+    throw new Error('Unable to create the Earth pin marker canvas.');
+  }
+
+  const cx = canvas.width / 2;
+  const primaryColor = selected ? '#FDE047' : '#00D2C4';
+
+  context.save();
+  context.shadowColor = selected ? 'rgba(253, 224, 71, 0.95)' : 'rgba(0, 210, 196, 0.75)';
+  context.shadowBlur = selected ? 20 : 12;
+
+  context.beginPath();
+  context.ellipse(cx, 104, 28, 8, 0, 0, Math.PI * 2);
+  context.fillStyle = 'rgba(0, 0, 0, 0.5)';
+  context.fill();
+
+  context.beginPath();
+  context.arc(cx, 36, 28, Math.PI * 0.8, Math.PI * 0.2, true);
+  context.lineTo(cx, 100);
+  context.closePath();
+  context.fillStyle = primaryColor;
+  context.fill();
+  context.lineWidth = 4;
+  context.strokeStyle = '#060B13';
+  context.stroke();
+  context.restore();
+
+  context.beginPath();
+  context.arc(cx, 36, 10, 0, Math.PI * 2);
+  context.fillStyle = '#060B13';
+  context.fill();
+
+  return canvas.toDataURL('image/png');
+}
+
+export function createEarthFeatures({ viewer, container, callbacks }) {
+  const scene = viewer.scene;
+  const handler = new Cesium.ScreenSpaceEventHandler(scene.canvas);
+  const sitePinEntities = [];
+  const launchSitePinEntities = [];
+  let customPinEntity = null;
+  let selectedEntity = null;
+  let hoveredEntity = null;
+  let clickStartPosition = null;
+  let pointerIsDown = false;
+  let lastCoordsThrottleTime = 0;
+  let lastHoverPickTime = 0;
+
+  const updatePinStyle = (entity) => {
+    if (!entity || viewer.isDestroyed() || !viewer.entities.contains(entity)) return;
+    const selected = entity === selectedEntity || entity === hoveredEntity;
+    const feature = entity.properties?.feature?.getValue();
+    const markerType = entity.properties?.markerType?.getValue();
+    const baseScale =
+      entity.properties?.baseScale?.getValue() ?? EARTH_PIN_STYLE.baseScale;
+
+    if (entity.billboard) {
+      entity.billboard.scale = selected
+        ? feature?.isCustomPin && entity === selectedEntity
+          ? EARTH_PIN_STYLE.selectedScale
+          : baseScale * (entity === selectedEntity ? 1.38 : 1.2)
+        : baseScale;
+      entity.billboard.distanceDisplayCondition =
+        new Cesium.DistanceDisplayCondition(
+          0,
+          entity === selectedEntity
+            ? EARTH_PIN_STYLE.farDistance
+            : EARTH_PIN_STYLE.overviewDistance
+        );
+      entity.billboard.image =
+        feature?.isCustomPin
+          ? createPinImage(selected)
+          : createSitePinImage(markerType, selected);
+    }
+    if (entity.label) {
+      const maxLabelDistance =
+        entity.properties?.maxLabelDistance?.getValue() ??
+        EARTH_PIN_STYLE.labelFarDistance;
+      const isVisible = entity === selectedEntity;
+      entity.label.show = isVisible;
+      if (isVisible) {
+        entity.label.distanceDisplayCondition = new Cesium.DistanceDisplayCondition(0, EARTH_PIN_STYLE.farDistance);
+      }
+      entity.label.fillColor = selected
+        ? Cesium.Color.fromCssColorString('#FDE047')
+        : Cesium.Color.fromCssColorString('#FFFFFF');
+    }
+  };
+
+  const addSiteEntity = (site, category) => {
+    const isLaunch = category === 'earth-launch-sites';
+    const feature = { ...site, body: 'earth' };
+    const baseScale = isLaunch
+      ? EARTH_PIN_STYLE.baseScale * 0.95
+      : site.type === 'deep-space-communication'
+      ? EARTH_PIN_STYLE.baseScale
+      : EARTH_PIN_STYLE.baseScale * 0.88;
+    const maxLabelDistance = isLaunch
+      ? 28_000_000
+      : site.type === 'deep-space-communication'
+      ? 35_000_000
+      : 18_000_000;
+
+    const entity = viewer.entities.add({
+      name: feature.name,
+      position: Cesium.Cartesian3.fromDegrees(
+        feature.longitude,
+        feature.latitude,
+        EARTH_PIN_STYLE.surfaceClearance,
+        Cesium.Ellipsoid.WGS84
+      ),
+      billboard: {
+        image: createSitePinImage(feature.type, false),
+        verticalOrigin: Cesium.VerticalOrigin.CENTER,
+        horizontalOrigin: Cesium.HorizontalOrigin.CENTER,
+        scale: baseScale,
+        eyeOffset: new Cesium.Cartesian3(0, 0, -2500),
+        scaleByDistance: new Cesium.NearFarScalar(
+          EARTH_PIN_STYLE.nearDistance,
+          1.0,
+          EARTH_PIN_STYLE.farDistance,
+          0.72
+        ),
+      },
+      label: {
+        text: feature.name,
+        font: '600 11px "Plus Jakarta Sans", system-ui, sans-serif',
+        style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+        fillColor: Cesium.Color.fromCssColorString('#F8FAFC'),
+        outlineColor: Cesium.Color.fromCssColorString('#060B13'),
+        outlineWidth: 3,
+        showBackground: true,
+        backgroundColor: Cesium.Color.fromCssColorString('rgba(6, 11, 19, 0.9)'),
+        backgroundPadding: new Cesium.Cartesian2(7, 4),
+        verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+        pixelOffset: new Cesium.Cartesian2(0, -24),
+        eyeOffset: new Cesium.Cartesian3(0, 0, -3500),
+        scaleByDistance: new Cesium.NearFarScalar(
+          EARTH_PIN_STYLE.nearDistance,
+          1.0,
+          EARTH_PIN_STYLE.farDistance,
+          0.82
+        ),
+        show: false,
+        distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, EARTH_PIN_STYLE.farDistance),
+      },
+      properties: {
+        feature,
+        category,
+        markerType: feature.type,
+        baseScale,
+        maxLabelDistance,
+      },
+    });
+
+    if (isLaunch) {
+      launchSitePinEntities.push(entity);
+    } else {
+      sitePinEntities.push(entity);
+    }
+    updatePinStyle(entity);
+  };
+
+  EARTH_COMMUNICATION_SITES.forEach((site) => addSiteEntity(site, 'earth-communication-sites'));
+  EARTH_LAUNCH_SITES.forEach((site) => addSiteEntity(site, 'earth-launch-sites'));
+
+  const getSurfaceCartesian = (position) => {
+    return viewer.camera.pickEllipsoid(position, Cesium.Ellipsoid.WGS84);
+  };
+
+  const getSurfacePosition = (position) => {
+    const cartesian = getSurfaceCartesian(position);
+    if (!cartesian) return null;
+    return Cesium.Cartographic.fromCartesian(
+      cartesian,
+      Cesium.Ellipsoid.WGS84
+    );
+  };
+
+  const dropCustomPin = (longitude, latitude, customName, terrainHeight = 0) => {
+    if (
+      !Number.isFinite(longitude) ||
+      !Number.isFinite(latitude)
+    ) {
+      throw new TypeError('Earth pin coordinates must be finite numbers.');
+    }
+    if (!viewer || viewer.isDestroyed()) return null;
+
+    const normalizedLongitude =
+      ((((longitude + 180) % 360) + 360) % 360) - 180;
+    const normalizedLatitude = Cesium.Math.clamp(latitude, -90, 90);
+    const pinTitle = customName || 'Custom Earth Station';
+
+    if (customPinEntity && viewer.entities.contains(customPinEntity)) {
+      const existing = customPinEntity.properties?.feature?.getValue?.();
+      if (
+        existing &&
+        Math.abs(existing.longitude - normalizedLongitude) < 1e-5 &&
+        Math.abs(existing.latitude - normalizedLatitude) < 1e-5 &&
+        existing.name === pinTitle
+      ) {
+        selectFeaturePin(existing.id);
+        scene.requestRender();
+        return existing;
+      }
+    }
+
+    const pinHeight = EARTH_PIN_STYLE.surfaceClearance;
+    const { latStr, lonStr } = formatLunarCoordinates(
+      normalizedLongitude,
+      normalizedLatitude,
+      4
+    );
+    const feature = {
+      id: 'custom-earth-pin',
+      name: pinTitle,
+      type: 'custom_pin',
+      latitude: normalizedLatitude,
+      longitude: normalizedLongitude,
+      height: Number.isFinite(terrainHeight) ? terrainHeight : 0,
+      isCustomPin: true,
+      body: 'earth',
+      latStr,
+      lonStr,
+      combinedCoordinates: `${latStr}, ${lonStr}`,
+      description: `Custom Earth ground station waypoint at ${latStr}, ${lonStr}. Ready for direct-to-Earth (DTE) lunar line-of-sight link evaluation.`,
+      source: 'User Earth Waypoint',
+    };
+
+    if (selectedEntity) {
+      const previousSelectedEntity = selectedEntity;
+      selectedEntity = null;
+      updatePinStyle(previousSelectedEntity);
+    }
+
+    if (customPinEntity) {
+      if (hoveredEntity === customPinEntity) hoveredEntity = null;
+      viewer.entities.remove(customPinEntity);
+    }
+
+    customPinEntity = viewer.entities.add({
+      name: pinTitle,
+      position: Cesium.Cartesian3.fromDegrees(
+        normalizedLongitude,
+        normalizedLatitude,
+        pinHeight,
+        Cesium.Ellipsoid.WGS84
+      ),
+      billboard: {
+        image: createPinImage(true),
+        verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+        horizontalOrigin: Cesium.HorizontalOrigin.CENTER,
+        scale: EARTH_PIN_STYLE.selectedScale,
+        eyeOffset: new Cesium.Cartesian3(0, 0, -3000),
+        scaleByDistance: new Cesium.NearFarScalar(
+          EARTH_PIN_STYLE.nearDistance,
+          1.0,
+          EARTH_PIN_STYLE.farDistance,
+          0.75
+        ),
+      },
+      label: {
+        text: `${pinTitle}\n${latStr}, ${lonStr}`,
+        font: 'bold 12px "Space Mono", monospace',
+        style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+        fillColor: Cesium.Color.fromCssColorString('#F8FAFC'),
+        outlineColor: Cesium.Color.fromCssColorString('#060B13'),
+        outlineWidth: 2,
+        showBackground: true,
+        backgroundColor: Cesium.Color.fromCssColorString('rgba(6, 11, 19, 0.94)'),
+        backgroundPadding: new Cesium.Cartesian2(7, 4),
+        verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+        pixelOffset: new Cesium.Cartesian2(0, -42),
+        eyeOffset: new Cesium.Cartesian3(0, 0, -4000),
+        scale: 1.0,
+        scaleByDistance: new Cesium.NearFarScalar(
+          EARTH_PIN_STYLE.nearDistance,
+          1.0,
+          18_000_000,
+          0.9
+        ),
+        distanceDisplayCondition: new Cesium.DistanceDisplayCondition(
+          0,
+          EARTH_PIN_STYLE.farDistance
+        ),
+      },
+      properties: {
+        feature,
+        category: 'custom-pin',
+        baseScale: EARTH_PIN_STYLE.baseScale,
+      },
+    });
+
+    selectedEntity = customPinEntity;
+    updatePinStyle(customPinEntity);
+    scene.requestRender();
+    return feature;
+  };
+
+  const clearCustomPin = () => {
+    if (customPinEntity) {
+      if (selectedEntity === customPinEntity) selectedEntity = null;
+      if (hoveredEntity === customPinEntity) hoveredEntity = null;
+      if (!viewer.isDestroyed() && viewer.entities.contains(customPinEntity)) {
+        viewer.entities.remove(customPinEntity);
+      }
+      customPinEntity = null;
+      scene.requestRender();
+    }
+  };
+
+  const selectFeaturePin = (featureId) => {
+    if (!viewer || viewer.isDestroyed()) return;
+
+    if (selectedEntity && !viewer.entities.contains(selectedEntity)) {
+      selectedEntity = null;
+    }
+
+    const target = featureId
+      ? [...sitePinEntities, ...launchSitePinEntities, customPinEntity]
+          .filter((entity) => entity && viewer.entities.contains(entity))
+          .find(
+            (entity) =>
+              entity?.properties?.feature?.getValue()?.id === featureId
+          ) || null
+      : null;
+
+    if (target && target === selectedEntity) {
+      updatePinStyle(selectedEntity);
+      scene.requestRender();
+      return;
+    }
+
+    if (selectedEntity) {
+      const previous = selectedEntity;
+      selectedEntity = null;
+      updatePinStyle(previous);
+    }
+
+    selectedEntity = target;
+    updatePinStyle(selectedEntity);
+    scene.requestRender();
+  };
+
+  handler.setInputAction((movement) => {
+    if (pointerIsDown) return;
+
+    const now = performance.now();
+
+    if (now - lastCoordsThrottleTime >= 100) {
+      lastCoordsThrottleTime = now;
+      const cartographic = getSurfacePosition(movement.endPosition);
+      if (cartographic) {
+        callbacks.onPointerCoordinates?.(
+          Cesium.Math.toDegrees(cartographic.longitude),
+          Cesium.Math.toDegrees(cartographic.latitude)
+        );
+      }
+    }
+
+    if (now - lastHoverPickTime < 200) return;
+    lastHoverPickTime = now;
+    if (hoveredEntity && !viewer.entities.contains(hoveredEntity)) {
+      hoveredEntity = null;
+    }
+    const pickedObject = scene.pick(movement.endPosition);
+    const pickedEntity = pickedObject?.id;
+    const feature = pickedEntity?.properties?.feature?.getValue();
+
+    if (feature) {
+      container.style.cursor = 'pointer';
+      if (hoveredEntity !== pickedEntity) {
+        const previous = hoveredEntity;
+        hoveredEntity = pickedEntity;
+        updatePinStyle(previous);
+        updatePinStyle(hoveredEntity);
+        scene.requestRender();
+      }
+      callbacks.onFeatureHover?.(
+        feature,
+        movement.endPosition.x,
+        movement.endPosition.y
+      );
+    } else if (hoveredEntity) {
+      container.style.cursor = 'default';
+      const previous = hoveredEntity;
+      hoveredEntity = null;
+      updatePinStyle(previous);
+      scene.requestRender();
+      callbacks.onFeatureHover?.(null, 0, 0);
+    }
+  }, Cesium.ScreenSpaceEventType.MOUSE_MOVE);
+
+  handler.setInputAction((down) => {
+    clickStartPosition = Cesium.Cartesian2.clone(down.position);
+    pointerIsDown = true;
+  }, Cesium.ScreenSpaceEventType.LEFT_DOWN);
+
+  handler.setInputAction(() => {
+    pointerIsDown = false;
+  }, Cesium.ScreenSpaceEventType.LEFT_UP);
+
+  handler.setInputAction((click) => {
+    pointerIsDown = false;
+    if (clickStartPosition) {
+      const dx = click.position.x - clickStartPosition.x;
+      const dy = click.position.y - clickStartPosition.y;
+      clickStartPosition = null;
+      if (Math.hypot(dx, dy) > EARTH_DRAG_THRESHOLD_PIXELS) return;
+    }
+
+    if (!viewer || viewer.isDestroyed()) return;
+    if (viewer.trackedEntity) {
+      viewer.trackedEntity = undefined;
+    }
+
+    const pickedObject = scene.pick(click.position);
+    const feature = pickedObject?.id?.properties?.feature?.getValue();
+    if (feature) {
+      selectFeaturePin(feature.id);
+      callbacks.onFeatureSelect?.(feature);
+      if (Number.isFinite(feature.longitude) && Number.isFinite(feature.latitude)) {
+        const rawHeight = viewer.camera.positionCartographic?.height;
+        const currentHeight =
+          Number.isFinite(rawHeight) && rawHeight > 0 ? rawHeight : 4_500_000;
+        viewer.camera.cancelFlight?.();
+        viewer.camera.flyTo({
+          destination: Cesium.Cartesian3.fromDegrees(
+            feature.longitude,
+            feature.latitude,
+            Math.max(
+              currentHeight,
+              scene.screenSpaceCameraController.minimumZoomDistance
+            ),
+            Cesium.Ellipsoid.WGS84
+          ),
+          duration: 0.9,
+        });
+      }
+      return;
+    }
+
+    const cartographic = getSurfacePosition(click.position);
+    if (!cartographic) return;
+    const pin = dropCustomPin(
+      Cesium.Math.toDegrees(cartographic.longitude),
+      Cesium.Math.toDegrees(cartographic.latitude),
+      undefined,
+      cartographic.height
+    );
+    if (pin) {
+      callbacks.onDropCustomPin?.(pin);
+      callbacks.onFeatureSelect?.(pin);
+    }
+  }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
+
+  handler.setInputAction(() => {
+    pointerIsDown = false;
+    clickStartPosition = null;
+    if (viewer && !viewer.isDestroyed() && viewer.trackedEntity) {
+      viewer.trackedEntity = undefined;
+    }
+  }, Cesium.ScreenSpaceEventType.LEFT_DOUBLE_CLICK);
+
+  return {
+    dropCustomPin,
+    clearCustomPin,
+    selectFeaturePin,
+    setLayerVisibility(layerId, visible) {
+      if (layerId === 'earth-communication-sites') {
+        sitePinEntities.forEach((entity) => {
+          entity.show = visible;
+        });
+        scene.requestRender();
+      }
+      if (layerId === 'earth-launch-sites') {
+        launchSitePinEntities.forEach((entity) => {
+          entity.show = visible;
+        });
+        scene.requestRender();
+      }
+      if (layerId === 'earth-custom-pin' && customPinEntity) {
+        customPinEntity.show = visible;
+        scene.requestRender();
+      }
+    },
+    destroy() {
+      if (!viewer.isDestroyed()) {
+        clearCustomPin();
+        sitePinEntities.forEach((entity) => viewer.entities.remove(entity));
+        launchSitePinEntities.forEach((entity) => viewer.entities.remove(entity));
+        handler.destroy();
+      }
+      sitePinEntities.length = 0;
+      launchSitePinEntities.length = 0;
+      if (container) container.style.cursor = 'default';
+    },
+  };
+}

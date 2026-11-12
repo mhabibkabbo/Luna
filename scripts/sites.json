@@ -1,0 +1,978 @@
+[
+  {
+    "id": "south-pole",
+    "name": "Lunar South Pole (90°S)",
+    "lat": -89.99,
+    "lon": 0,
+    "kind": "south_pole",
+    "locationType": "confirmed",
+    "elevM": 1251
+  },
+  {
+    "id": "landing-artemis3-site-004",
+    "name": "Artemis Site 004 (Shackleton Rim)",
+    "lat": -89.9592,
+    "lon": 135.8185,
+    "kind": "mission-site",
+    "locationType": "approximate",
+    "elevM": 801
+  },
+  {
+    "id": "crater-shackleton",
+    "name": "Shackleton",
+    "lat": -89.67,
+    "lon": 129.78,
+    "kind": "crater",
+    "locationType": "confirmed",
+    "elevM": -2768
+  },
+  {
+    "id": "clps-blueorigin-cp22",
+    "name": "Blue Moon Mark 1 \"Endurance\" (Moon Base I)",
+    "lat": -89.374,
+    "lon": -96.204,
+    "kind": "clps-mission",
+    "locationType": "approximate",
+    "elevM": 103
+  },
+  {
+    "id": "landing-artemis3-connecting-ridge",
+    "name": "Shackleton Connecting Ridge (Artemis III region / Blue Moon MK1 target)",
+    "lat": -89.374,
+    "lon": -96.204,
+    "kind": "mission-site",
+    "locationType": "approximate",
+    "elevM": 103
+  },
+  {
+    "id": "landing-artemis3-shackleton",
+    "name": "Artemis III Candidate: Peak Near Shackleton",
+    "lat": -89.0066,
+    "lon": 132.0596,
+    "kind": "mission-site",
+    "locationType": "approximate",
+    "elevM": 1070
+  },
+  {
+    "id": "landing-change-7",
+    "name": "Chang'e 7 (planned south pole landing)",
+    "lat": -88.8,
+    "lon": 123.4,
+    "kind": "mission-site",
+    "locationType": "planned",
+    "elevM": 1620
+  },
+  {
+    "id": "crater-henson",
+    "name": "Henson",
+    "lat": -88.57,
+    "lon": -130.63,
+    "kind": "crater",
+    "locationType": "confirmed",
+    "elevM": -2487
+  },
+  {
+    "id": "landing-artemis3-de-gerlache-rim-2",
+    "name": "Artemis III Candidate: de Gerlache Rim 2",
+    "lat": -88.5157,
+    "lon": -61.1673,
+    "kind": "mission-site",
+    "locationType": "approximate",
+    "elevM": 552
+  },
+  {
+    "id": "crater-de-gerlache",
+    "name": "de Gerlache",
+    "lat": -88.5,
+    "lon": -87.1,
+    "kind": "crater",
+    "locationType": "confirmed",
+    "elevM": -1014
+  },
+  {
+    "id": "crater-sverdrup",
+    "name": "Sverdrup",
+    "lat": -88.3,
+    "lon": -153.4,
+    "kind": "crater",
+    "locationType": "confirmed",
+    "elevM": -2888
+  },
+  {
+    "id": "crater-shoemaker",
+    "name": "Shoemaker",
+    "lat": -88.1,
+    "lon": 45.9,
+    "kind": "crater",
+    "locationType": "confirmed",
+    "elevM": -3945
+  },
+  {
+    "id": "crater-slater",
+    "name": "Slater",
+    "lat": -88.08,
+    "lon": 111.29,
+    "kind": "crater",
+    "locationType": "confirmed",
+    "elevM": -1739
+  },
+  {
+    "id": "landing-artemis3-faustini-rim-a",
+    "name": "Artemis III Candidate: Faustini Rim A",
+    "lat": -88.0573,
+    "lon": 89.1596,
+    "kind": "mission-site",
+    "locationType": "approximate",
+    "elevM": -701
+  },
+  {
+    "id": "crater-haworth",
+    "name": "Haworth",
+    "lat": -87.45,
+    "lon": -5.17,
+    "kind": "crater",
+    "locationType": "confirmed",
+    "elevM": -3300
+  },
+  {
+    "id": "crater-faustini",
+    "name": "Faustini",
+    "lat": -87.3,
+    "lon": 77,
+    "kind": "crater",
+    "locationType": "confirmed",
+    "elevM": -2737
+  },
+  {
+    "id": "mons-malapert",
+    "name": "Mons Malapert (Malapert Massif)",
+    "lat": -86.02,
+    "lon": 2.7,
+    "kind": "mountain",
+    "locationType": "confirmed",
+    "elevM": 5098
+  },
+  {
+    "id": "landing-artemis3-malapert",
+    "name": "Artemis III Candidate: Malapert Massif",
+    "lat": -85.9,
+    "lon": 0,
+    "kind": "mission-site",
+    "locationType": "confirmed",
+    "elevM": 4482
+  },
+  {
+    "id": "crater-nobile",
+    "name": "Nobile",
+    "lat": -85.2,
+    "lon": 53.5,
+    "kind": "crater",
+    "locationType": "confirmed",
+    "elevM": 690
+  },
+  {
+    "id": "montes-leibnitz",
+    "name": "Montes Leibnitz",
+    "lat": -85,
+    "lon": 30,
+    "kind": "mountain",
+    "locationType": "confirmed",
+    "elevM": 5191
+  },
+  {
+    "id": "crater-cabeus",
+    "name": "Cabeus",
+    "lat": -84.9,
+    "lon": -35.5,
+    "kind": "crater",
+    "locationType": "confirmed",
+    "elevM": -2856
+  },
+  {
+    "id": "crater-malapert",
+    "name": "Malapert",
+    "lat": -84.9,
+    "lon": 12.9,
+    "kind": "crater",
+    "locationType": "confirmed",
+    "elevM": -1868
+  },
+  {
+    "id": "clps-im2-athena",
+    "name": "IM-2 (Athena / PRIME-1)",
+    "lat": -84.7906,
+    "lon": 29.1958,
+    "kind": "clps-mission",
+    "locationType": "confirmed",
+    "elevM": 5325
+  },
+  {
+    "id": "landing-lcross",
+    "name": "LCROSS Impact (Cabeus Crater)",
+    "lat": -84.675,
+    "lon": -48.725,
+    "kind": "mission-site",
+    "locationType": "confirmed",
+    "elevM": -3830
+  },
+  {
+    "id": "clps-griffin-gm1",
+    "name": "Griffin Mission 1 (GM1)",
+    "lat": -84.5,
+    "lon": 31.7,
+    "kind": "clps-mission",
+    "locationType": "approximate",
+    "elevM": 5234
+  },
+  {
+    "id": "landing-artemis3-mouton",
+    "name": "Mons Mouton Region (IM-2 landing / Griffin-1 / VIPER target)",
+    "lat": -84.5,
+    "lon": 31.7,
+    "kind": "mission-site",
+    "locationType": "approximate",
+    "elevM": 5234
+  },
+  {
+    "id": "crater-amundsen",
+    "name": "Amundsen",
+    "lat": -84.5,
+    "lon": 82.8,
+    "kind": "crater",
+    "locationType": "confirmed",
+    "elevM": -3627
+  },
+  {
+    "id": "mons-mouton",
+    "name": "Mons Mouton (Melba Mouton Plateau)",
+    "lat": -84.5,
+    "lon": 31.7,
+    "kind": "mountain",
+    "locationType": "confirmed",
+    "elevM": 5234
+  },
+  {
+    "id": "crater-wiechert",
+    "name": "Wiechert",
+    "lat": -84.5,
+    "lon": 165,
+    "kind": "crater",
+    "locationType": "confirmed",
+    "elevM": -2408
+  },
+  {
+    "id": "crater-kocher",
+    "name": "Kocher",
+    "lat": -84.47,
+    "lon": -134.02,
+    "kind": "crater",
+    "locationType": "confirmed",
+    "elevM": -4970
+  },
+  {
+    "id": "landing-artemis3-nobile-rim-2",
+    "name": "Artemis III Candidate: Nobile Rim 2",
+    "lat": -84.2016,
+    "lon": 60.6999,
+    "kind": "mission-site",
+    "locationType": "approximate",
+    "elevM": 1112
+  },
+  {
+    "id": "landing-artemis3-amundsen-rim",
+    "name": "Artemis III Candidate: Amundsen Rim",
+    "lat": -84.1918,
+    "lon": 67.229,
+    "kind": "mission-site",
+    "locationType": "approximate",
+    "elevM": -149
+  },
+  {
+    "id": "crater-scott",
+    "name": "Scott",
+    "lat": -81.9,
+    "lon": 45.3,
+    "kind": "crater",
+    "locationType": "confirmed",
+    "elevM": -3923
+  },
+  {
+    "id": "crater-idelson",
+    "name": "Idel'son",
+    "lat": -81.5,
+    "lon": 110.9,
+    "kind": "crater",
+    "locationType": "confirmed",
+    "elevM": -4142
+  },
+  {
+    "id": "clps-im1-odysseus",
+    "name": "IM-1 (Odysseus / Nova-C)",
+    "lat": -80.13,
+    "lon": 1.44,
+    "kind": "clps-mission",
+    "locationType": "confirmed",
+    "elevM": 2617
+  },
+  {
+    "id": "landing-odysseus",
+    "name": "Odysseus (IM-1 Nova-C)",
+    "lat": -80.13,
+    "lon": 1.44,
+    "kind": "clps-mission",
+    "locationType": "confirmed",
+    "elevM": 2617
+  },
+  {
+    "id": "crater-drygalski",
+    "name": "Drygalski",
+    "lat": -79.3,
+    "lon": -84.9,
+    "kind": "crater",
+    "locationType": "confirmed"
+  },
+  {
+    "id": "crater-demonax",
+    "name": "Demonax",
+    "lat": -78.2,
+    "lon": 59,
+    "kind": "crater",
+    "locationType": "confirmed"
+  },
+  {
+    "id": "crater-zeeman",
+    "name": "Zeeman",
+    "lat": -75.2,
+    "lon": -134.8,
+    "kind": "crater",
+    "locationType": "confirmed"
+  },
+  {
+    "id": "clps-draper-cp12",
+    "name": "Draper CP-12 (APEX 1.0)",
+    "lat": -75,
+    "lon": 132.4,
+    "kind": "clps-mission",
+    "locationType": "planned"
+  },
+  {
+    "id": "crater-hale",
+    "name": "Hale",
+    "lat": -74.2,
+    "lon": 90.8,
+    "kind": "crater",
+    "locationType": "confirmed"
+  },
+  {
+    "id": "crater-boguslawsky",
+    "name": "Boguslawsky",
+    "lat": -72.9,
+    "lon": 43.2,
+    "kind": "crater",
+    "locationType": "confirmed"
+  },
+  {
+    "id": "landing-vikram-impact",
+    "name": "Chandrayaan-2 (Vikram impact site)",
+    "lat": -70.881,
+    "lon": 22.784,
+    "kind": "mission-site",
+    "locationType": "confirmed"
+  },
+  {
+    "id": "landing-chandrayaan-3",
+    "name": "Chandrayaan-3 (Vikram / Pragyan)",
+    "lat": -69.3741,
+    "lon": 32.32,
+    "kind": "mission-site",
+    "locationType": "confirmed"
+  },
+  {
+    "id": "crater-clavius",
+    "name": "Clavius",
+    "lat": -58.4,
+    "lon": -14.4,
+    "kind": "crater",
+    "locationType": "confirmed"
+  },
+  {
+    "id": "landing-luna-25-impact",
+    "name": "Luna 25 (impact site)",
+    "lat": -57.87,
+    "lon": 61.36,
+    "kind": "mission-site",
+    "locationType": "confirmed"
+  },
+  {
+    "id": "landing-change-4",
+    "name": "Chang'e 4 (Yutu-2)",
+    "lat": -45.44,
+    "lon": 177.6,
+    "kind": "mission-site",
+    "locationType": "confirmed"
+  },
+  {
+    "id": "crater-schickard",
+    "name": "Schickard",
+    "lat": -44.4,
+    "lon": -55.1,
+    "kind": "crater",
+    "locationType": "confirmed"
+  },
+  {
+    "id": "crater-tycho",
+    "name": "Tycho",
+    "lat": -43.31,
+    "lon": -11.36,
+    "kind": "crater",
+    "locationType": "confirmed"
+  },
+  {
+    "id": "vallis-rheita",
+    "name": "Vallis Rheita",
+    "lat": -42.5,
+    "lon": 51.5,
+    "kind": "valley",
+    "locationType": "confirmed"
+  },
+  {
+    "id": "landing-change-6",
+    "name": "Chang'e 6",
+    "lat": -41.64,
+    "lon": -153.99,
+    "kind": "mission-site",
+    "locationType": "confirmed"
+  },
+  {
+    "id": "crater-petavius",
+    "name": "Petavius",
+    "lat": -25.3,
+    "lon": 60.4,
+    "kind": "crater",
+    "locationType": "confirmed"
+  },
+  {
+    "id": "mare-humorum",
+    "name": "Mare Humorum",
+    "lat": -24.4,
+    "lon": -38.6,
+    "kind": "mare",
+    "locationType": "confirmed"
+  },
+  {
+    "id": "rupes-recta",
+    "name": "Rupes Recta",
+    "lat": -22.1,
+    "lon": -7.8,
+    "kind": "rille",
+    "locationType": "confirmed",
+    "elevM": 300
+  },
+  {
+    "id": "mare-nubium",
+    "name": "Mare Nubium",
+    "lat": -21.3,
+    "lon": -16.6,
+    "kind": "mare",
+    "locationType": "confirmed"
+  },
+  {
+    "id": "crater-bullialdus",
+    "name": "Bullialdus",
+    "lat": -20.7,
+    "lon": -22.2,
+    "kind": "crater",
+    "locationType": "confirmed"
+  },
+  {
+    "id": "crater-tsiolkovskiy",
+    "name": "Tsiolkovskiy",
+    "lat": -20.38,
+    "lon": 128.97,
+    "kind": "crater",
+    "locationType": "confirmed"
+  },
+  {
+    "id": "mare-orientale",
+    "name": "Mare Orientale",
+    "lat": -19.4,
+    "lon": -92.8,
+    "kind": "mare",
+    "locationType": "confirmed"
+  },
+  {
+    "id": "crater-gassendi",
+    "name": "Gassendi",
+    "lat": -17.55,
+    "lon": -39.96,
+    "kind": "crater",
+    "locationType": "confirmed"
+  },
+  {
+    "id": "mare-nectaris",
+    "name": "Mare Nectaris",
+    "lat": -15.2,
+    "lon": 35.5,
+    "kind": "mare",
+    "locationType": "confirmed"
+  },
+  {
+    "id": "crater-alphonsus",
+    "name": "Alphonsus",
+    "lat": -13.4,
+    "lon": -2.8,
+    "kind": "crater",
+    "locationType": "confirmed"
+  },
+  {
+    "id": "landing-slim",
+    "name": "SLIM (Smart Lander for Investigating Moon)",
+    "lat": -13.31,
+    "lon": 25.25,
+    "kind": "mission-site",
+    "locationType": "confirmed"
+  },
+  {
+    "id": "crater-theophilus",
+    "name": "Theophilus",
+    "lat": -11.45,
+    "lon": 26.28,
+    "kind": "crater",
+    "locationType": "confirmed"
+  },
+  {
+    "id": "crater-ptolemaeus",
+    "name": "Ptolemaeus",
+    "lat": -9.2,
+    "lon": -1.8,
+    "kind": "crater",
+    "locationType": "confirmed"
+  },
+  {
+    "id": "landing-apollo-16",
+    "name": "Apollo 16 (Descartes Highlands)",
+    "lat": -8.973,
+    "lon": 15.5002,
+    "kind": "landing-site",
+    "locationType": "confirmed"
+  },
+  {
+    "id": "crater-langrenus",
+    "name": "Langrenus",
+    "lat": -8.86,
+    "lon": 60.97,
+    "kind": "crater",
+    "locationType": "confirmed"
+  },
+  {
+    "id": "mare-fecunditatis",
+    "name": "Mare Fecunditatis",
+    "lat": -7.8,
+    "lon": 51.3,
+    "kind": "mare",
+    "locationType": "confirmed"
+  },
+  {
+    "id": "crater-grimaldi",
+    "name": "Grimaldi",
+    "lat": -5.2,
+    "lon": -68.6,
+    "kind": "crater",
+    "locationType": "confirmed"
+  },
+  {
+    "id": "landing-apollo-14",
+    "name": "Apollo 14 (Fra Mauro)",
+    "lat": -3.6453,
+    "lon": -17.4714,
+    "kind": "landing-site",
+    "locationType": "confirmed"
+  },
+  {
+    "id": "landing-surveyor-3",
+    "name": "Surveyor 3",
+    "lat": -3.016,
+    "lon": -23.418,
+    "kind": "mission-site",
+    "locationType": "confirmed"
+  },
+  {
+    "id": "landing-apollo-12",
+    "name": "Apollo 12 (Ocean of Storms)",
+    "lat": -3.0124,
+    "lon": -23.4216,
+    "kind": "landing-site",
+    "locationType": "confirmed"
+  },
+  {
+    "id": "landing-surveyor-1",
+    "name": "Surveyor 1",
+    "lat": -2.474,
+    "lon": -43.339,
+    "kind": "mission-site",
+    "locationType": "confirmed"
+  },
+  {
+    "id": "landing-luna-16",
+    "name": "Luna 16",
+    "lat": -0.68,
+    "lon": 56.3,
+    "kind": "mission-site",
+    "locationType": "confirmed"
+  },
+  {
+    "id": "landing-apollo-11",
+    "name": "Apollo 11 (Tranquility Base)",
+    "lat": 0.6741,
+    "lon": 23.473,
+    "kind": "landing-site",
+    "locationType": "confirmed"
+  },
+  {
+    "id": "landing-luna-9",
+    "name": "Luna 9",
+    "lat": 7.08,
+    "lon": -64.37,
+    "kind": "mission-site",
+    "locationType": "confirmed"
+  },
+  {
+    "id": "clps-im3-vertex",
+    "name": "IM-3 (Nova-C / Lunar Vertex)",
+    "lat": 7.5,
+    "lon": -59,
+    "kind": "clps-mission",
+    "locationType": "planned"
+  },
+  {
+    "id": "crater-kepler",
+    "name": "Kepler",
+    "lat": 8.12,
+    "lon": -38.01,
+    "kind": "crater",
+    "locationType": "confirmed"
+  },
+  {
+    "id": "mare-tranquillitatis",
+    "name": "Mare Tranquillitatis",
+    "lat": 8.5,
+    "lon": 31.4,
+    "kind": "mare",
+    "locationType": "confirmed"
+  },
+  {
+    "id": "crater-copernicus",
+    "name": "Copernicus",
+    "lat": 9.62,
+    "lon": -20.08,
+    "kind": "crater",
+    "locationType": "confirmed"
+  },
+  {
+    "id": "crater-eratosthenes",
+    "name": "Eratosthenes",
+    "lat": 14.5,
+    "lon": -11.3,
+    "kind": "crater",
+    "locationType": "confirmed"
+  },
+  {
+    "id": "montes-carpatus",
+    "name": "Montes Carpatus",
+    "lat": 14.5,
+    "lon": -24.4,
+    "kind": "mountain",
+    "locationType": "confirmed",
+    "elevM": 2000
+  },
+  {
+    "id": "mare-crisium",
+    "name": "Mare Crisium",
+    "lat": 17,
+    "lon": 59.1,
+    "kind": "mare",
+    "locationType": "confirmed"
+  },
+  {
+    "id": "oceanus-procellarum",
+    "name": "Oceanus Procellarum",
+    "lat": 18.4,
+    "lon": -57.4,
+    "kind": "mare",
+    "locationType": "confirmed"
+  },
+  {
+    "id": "clps-firefly-bgm1",
+    "name": "Blue Ghost Mission 1",
+    "lat": 18.56,
+    "lon": 61.81,
+    "kind": "clps-mission",
+    "locationType": "confirmed"
+  },
+  {
+    "id": "montes-apenninus",
+    "name": "Montes Apenninus",
+    "lat": 19.9,
+    "lon": 0,
+    "kind": "mountain",
+    "locationType": "confirmed",
+    "elevM": 5400
+  },
+  {
+    "id": "mons-huygens",
+    "name": "Mons Huygens",
+    "lat": 20,
+    "lon": -2.9,
+    "kind": "mountain",
+    "locationType": "confirmed",
+    "elevM": 5500
+  },
+  {
+    "id": "landing-apollo-17",
+    "name": "Apollo 17 (Taurus-Littrow)",
+    "lat": 20.1908,
+    "lon": 30.7717,
+    "kind": "landing-site",
+    "locationType": "confirmed"
+  },
+  {
+    "id": "crater-jackson",
+    "name": "Jackson",
+    "lat": 22.05,
+    "lon": -163.32,
+    "kind": "crater",
+    "locationType": "confirmed"
+  },
+  {
+    "id": "crater-aristarchus",
+    "name": "Aristarchus",
+    "lat": 23.73,
+    "lon": -47.49,
+    "kind": "crater",
+    "locationType": "confirmed"
+  },
+  {
+    "id": "rima-hadley",
+    "name": "Rima Hadley",
+    "lat": 25,
+    "lon": 3,
+    "kind": "rille",
+    "locationType": "confirmed"
+  },
+  {
+    "id": "landing-apollo-15",
+    "name": "Apollo 15 (Hadley-Apennine)",
+    "lat": 26.1322,
+    "lon": 3.6339,
+    "kind": "landing-site",
+    "locationType": "confirmed"
+  },
+  {
+    "id": "vallis-schroteri",
+    "name": "Vallis Schröteri",
+    "lat": 26.2,
+    "lon": -50.8,
+    "kind": "valley",
+    "locationType": "confirmed"
+  },
+  {
+    "id": "mons-hadley",
+    "name": "Mons Hadley",
+    "lat": 26.5,
+    "lon": 4.7,
+    "kind": "mountain",
+    "locationType": "confirmed",
+    "elevM": 4200
+  },
+  {
+    "id": "mare-serenitatis",
+    "name": "Mare Serenitatis",
+    "lat": 28,
+    "lon": 17.5,
+    "kind": "mare",
+    "locationType": "confirmed"
+  },
+  {
+    "id": "montes-taurus",
+    "name": "Montes Taurus",
+    "lat": 28.4,
+    "lon": 40.3,
+    "kind": "mountain",
+    "locationType": "confirmed",
+    "elevM": 3000
+  },
+  {
+    "id": "landing-luna-2",
+    "name": "Luna 2",
+    "lat": 29.1,
+    "lon": 0,
+    "kind": "mission-site",
+    "locationType": "confirmed"
+  },
+  {
+    "id": "crater-archimedes",
+    "name": "Archimedes",
+    "lat": 29.7,
+    "lon": -4,
+    "kind": "crater",
+    "locationType": "confirmed"
+  },
+  {
+    "id": "crater-posidonius",
+    "name": "Posidonius",
+    "lat": 31.8,
+    "lon": 29.9,
+    "kind": "crater",
+    "locationType": "confirmed"
+  },
+  {
+    "id": "landing-beresheet-impact",
+    "name": "Beresheet (impact site)",
+    "lat": 32.5956,
+    "lon": 19.3496,
+    "kind": "mission-site",
+    "locationType": "confirmed"
+  },
+  {
+    "id": "mare-imbrium",
+    "name": "Mare Imbrium",
+    "lat": 32.8,
+    "lon": -15.6,
+    "kind": "mare",
+    "locationType": "confirmed"
+  },
+  {
+    "id": "clps-peregrine-pm1",
+    "name": "Peregrine Mission 1 (PM-1)",
+    "lat": 35.25,
+    "lon": -40.99,
+    "kind": "clps-mission",
+    "locationType": "planned"
+  },
+  {
+    "id": "clps-firefly-cp21",
+    "name": "Blue Ghost Mission 3 (Gruithuisen Domes)",
+    "lat": 36.6,
+    "lon": -40.5,
+    "kind": "clps-mission",
+    "locationType": "approximate"
+  },
+  {
+    "id": "montes-caucasus",
+    "name": "Montes Caucasus",
+    "lat": 38.4,
+    "lon": 10,
+    "kind": "mountain",
+    "locationType": "confirmed",
+    "elevM": 3600
+  },
+  {
+    "id": "mons-piton",
+    "name": "Mons Piton",
+    "lat": 40.6,
+    "lon": -1.1,
+    "kind": "mountain",
+    "locationType": "confirmed",
+    "elevM": 2250
+  },
+  {
+    "id": "mons-rumker",
+    "name": "Mons Rümker",
+    "lat": 40.8,
+    "lon": -58.1,
+    "kind": "mountain",
+    "locationType": "confirmed",
+    "elevM": 1100
+  },
+  {
+    "id": "landing-change-5",
+    "name": "Chang'e 5",
+    "lat": 43.06,
+    "lon": -51.92,
+    "kind": "mission-site",
+    "locationType": "confirmed"
+  },
+  {
+    "id": "sinus-iridum",
+    "name": "Sinus Iridum",
+    "lat": 44.1,
+    "lon": -31.5,
+    "kind": "valley",
+    "locationType": "confirmed"
+  },
+  {
+    "id": "landing-change-3",
+    "name": "Chang'e 3 (Yutu)",
+    "lat": 44.12,
+    "lon": -19.51,
+    "kind": "mission-site",
+    "locationType": "confirmed"
+  },
+  {
+    "id": "mons-pico",
+    "name": "Mons Pico",
+    "lat": 45.7,
+    "lon": -8.9,
+    "kind": "mountain",
+    "locationType": "confirmed",
+    "elevM": 2400
+  },
+  {
+    "id": "montes-alpes",
+    "name": "Montes Alpes",
+    "lat": 46.4,
+    "lon": -0.8,
+    "kind": "mountain",
+    "locationType": "confirmed",
+    "elevM": 2400
+  },
+  {
+    "id": "montes-jura",
+    "name": "Montes Jura",
+    "lat": 47.1,
+    "lon": -34,
+    "kind": "mountain",
+    "locationType": "confirmed",
+    "elevM": 3800
+  },
+  {
+    "id": "landing-hakuto-r-m1-impact",
+    "name": "HAKUTO-R Mission 1 (impact site)",
+    "lat": 47.581,
+    "lon": 44.094,
+    "kind": "mission-site",
+    "locationType": "confirmed"
+  },
+  {
+    "id": "vallis-alpes",
+    "name": "Vallis Alpes",
+    "lat": 48.5,
+    "lon": 3.2,
+    "kind": "valley",
+    "locationType": "confirmed"
+  },
+  {
+    "id": "crater-aristoteles",
+    "name": "Aristoteles",
+    "lat": 50.2,
+    "lon": 17.4,
+    "kind": "crater",
+    "locationType": "confirmed"
+  },
+  {
+    "id": "crater-plato",
+    "name": "Plato",
+    "lat": 51.62,
+    "lon": -9.38,
+    "kind": "crater",
+    "locationType": "confirmed"
+  },
+  {
+    "id": "mare-frigoris",
+    "name": "Mare Frigoris",
+    "lat": 56,
+    "lon": 1.4,
+    "kind": "mare",
+    "locationType": "confirmed"
+  }
+]

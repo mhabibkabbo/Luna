@@ -1,0 +1,199 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {
+  COMMUNICATION_DATA_SOURCES,
+  LUNAR_RELAYS,
+  getSurfaceElevationM,
+  getTerrainHorizonAngleDeg,
+  computeRelayPositionKm,
+  evaluateRelayVisibility,
+  evaluateDteInstantaneous,
+  sweepCommunicationAvailability,
+} from '../src/utils/communicationAnalysis.js';
+import { ensurePolarDemLoaded } from '../src/utils/horizons.js';
+import { computeCelestialState } from '../src/utils/lunarEphemeris.js';
+import { evaluateEarthLink, DEFAULT_DTE_CONSTRAINTS } from '../src/utils/earthLink.js';
+
+test('Communication Analysis: NASA Data Sources & Provenance Metadata', () => {
+  // LOLA DEM verification
+  assert.ok(COMMUNICATION_DATA_SOURCES.LOLA_DEM);
+  assert.ok(COMMUNICATION_DATA_SOURCES.LOLA_DEM.name.includes('LOLA'));
+  assert.equal(COMMUNICATION_DATA_SOURCES.LOLA_DEM.verticalDatum, 'IAU Lunar Reference Sphere (R₀ = 1,737,400.0 m)');
+  assert.ok(COMMUNICATION_DATA_SOURCES.LOLA_DEM.verticalAccuracy.includes('±1.0 m'));
+
+  // SPICE ephemeris verification
+  assert.ok(COMMUNICATION_DATA_SOURCES.SPICE_EPHEMERIS);
+  assert.ok(COMMUNICATION_DATA_SOURCES.SPICE_EPHEMERIS.name.includes('SPICE'));
+  assert.equal(COMMUNICATION_DATA_SOURCES.SPICE_EPHEMERIS.frame, 'MOON_ME (Mean-Earth / Polar Axis Body-Fixed Frame)');
+
+  assert.ok(COMMUNICATION_DATA_SOURCES.DSN_NETWORK);
+  assert.ok(COMMUNICATION_DATA_SOURCES.DSN_NETWORK.complexes.includes('Goldstone'));
+  assert.ok(COMMUNICATION_DATA_SOURCES.DSN_NETWORK.elevationMask.includes('10.0°'));
+
+  assert.ok(COMMUNICATION_DATA_SOURCES.RADIO_SCIENCE);
+  assert.ok(COMMUNICATION_DATA_SOURCES.RADIO_SCIENCE.methodologyNote.includes('geometric line-of-sight physics rather than fabricated RF signal measurements'));
+});
+
+test('Communication Analysis: Surface Elevation Retrieval & South Pole Boundary Guards', async () => {
+  await ensurePolarDemLoaded(true);
+
+  // South Pole coordinate within 80°S-90°S DEM
+  const malapertElev = getSurfaceElevationM(-85.97, 0.0);
+  assert.ok(malapertElev !== null, 'Should return numeric elevation for South Pole coordinate');
+  assert.ok(Number.isFinite(malapertElev));
+
+  // Non-South-Pole coordinate (> -80°S) should return null (Data unavailable) rather than fake numbers
+  const equatorElev = getSurfaceElevationM(0.0, 23.47);
+  assert.equal(equatorElev, null, 'Should return null for non-South-Pole coordinates outside DEM');
+
+  const crisiumElev = getSurfaceElevationM(17.0, 59.1);
+  assert.equal(crisiumElev, null, 'Mare Crisium is outside 80°S-90°S DEM');
+});
+
+test('Communication Analysis: Topocentric Line-of-Sight & Terrain Obstacle Masking', async () => {
+  await ensurePolarDemLoaded(true);
+
+  const testEpochMs = new Date('2026-11-04T00:00:00Z').getTime();
+
+  const malapertEval = evaluateDteInstantaneous({
+    lat: -85.97,
+    lon: 0.0,
+    timeMs: testEpochMs,
+    relayType: 'none',
+  });
+
+  assert.ok(Number.isFinite(malapertEval.elevationDeg));
+  assert.ok(Number.isFinite(malapertEval.azimuthDeg));
+  assert.ok(Number.isFinite(malapertEval.terrainMaskDeg));
+  assert.ok(Number.isFinite(malapertEval.marginDeg));
+  assert.ok(Number.isFinite(malapertEval.oneWayLightTimeSec));
+  assert.ok(malapertEval.oneWayLightTimeSec > 1.1 && malapertEval.oneWayLightTimeSec < 1.4);
+
+  const shackletonEval = evaluateDteInstantaneous({
+    lat: -89.9,
+    lon: 0.0,
+    timeMs: testEpochMs,
+    relayType: 'none',
+  });
+
+  assert.ok(shackletonEval.status === 'clear' || shackletonEval.status === 'blocked' || shackletonEval.status === 'doubtful');
+  assert.ok(typeof shackletonEval.reason === 'string');
+});
+
+test('Communication Analysis: Orbital Relay Mechanics (LRO 50 km Polar & EML-2 Halo)', () => {
+  const testEpochMs = new Date('2026-11-04T12:00:00Z').getTime();
+  const state = computeCelestialState(testEpochMs);
+
+  const lroPos = computeRelayPositionKm('lro', testEpochMs);
+  assert.ok(lroPos, 'Should return LRO 3D position vector');
+  assert.equal(lroPos.length, 3);
+  const lroDistFromCenter = Math.hypot(...lroPos);
+  // Radius should match ~1787.4 km (1737.4 + 50 km)
+  assert.ok(Math.abs(lroDistFromCenter - 1787.4) < 1.0, `LRO radius should be ~1787.4 km, got ${lroDistFromCenter}`);
+
+  const haloPos = computeRelayPositionKm('eml2_halo', testEpochMs);
+  assert.ok(haloPos, 'Should return EML-2 Halo 3D position vector');
+  assert.equal(haloPos.length, 3);
+  // Position should hover south of the Moon (negative Z)
+  assert.ok(haloPos[2] < -10000, `EML-2 Halo should hover over lunar South Pole (Z < -10000 km), got ${haloPos[2]}`);
+
+  const haloPeriodMs = LUNAR_RELAYS.EML2_HALO.periodSec * 1000;
+  const p0 = computeRelayPositionKm('eml2_halo', 0);
+  const pQuarter = computeRelayPositionKm('eml2_halo', haloPeriodMs / 4);
+  assert.ok(Math.abs(p0[1]) < 1e-3, `Y at phase 0 should be 0, got ${p0[1]}`);
+  assert.ok(Math.abs(p0[2] - -16000) < 1, `Z at phase 0 should be -16000 km, got ${p0[2]}`);
+  assert.ok(Math.abs(pQuarter[1] - 14000) < 1, `Y at phase pi/2 should be 14000 km, got ${pQuarter[1]}`);
+  assert.ok(Math.abs(pQuarter[2] - -28000) < 1, `Z at phase pi/2 should be -28000 km, got ${pQuarter[2]}`);
+
+  const relayEval = evaluateRelayVisibility({
+    latDeg: -85.97,
+    lonDeg: 0.0,
+    elevationM: 3000,
+    relayType: 'eml2_halo',
+    timeMs: testEpochMs,
+    state,
+    siteId: 'mons-malapert',
+  });
+
+  assert.equal(typeof relayEval.isRelayAvailable, 'boolean');
+  assert.ok(typeof relayEval.reason === 'string');
+});
+
+test('Communication Analysis: Multi-Day Time Sweep & Contact Window Clustering', async () => {
+  await ensurePolarDemLoaded(true);
+
+  const startEpochMs = new Date('2026-11-04T00:00:00Z').getTime();
+
+  const sweep = await sweepCommunicationAvailability({
+    lat: -85.97,
+    lon: 0.0,
+    startMs: startEpochMs,
+    durationDays: 7,
+    stepMinutes: 120,
+    relayType: 'none',
+  });
+
+  assert.ok(sweep, 'Sweep result should be defined');
+  assert.ok(sweep.meta);
+  assert.equal(sweep.meta.lat, -85.97);
+  assert.equal(sweep.meta.durationDays, 7);
+
+  const stats = sweep.statistics;
+  assert.ok(Number.isFinite(stats.directAvailabilityPct));
+  assert.ok(stats.directAvailabilityPct >= 0 && stats.directAvailabilityPct <= 100);
+  assert.ok(Number.isFinite(stats.totalAvailableHours));
+  assert.ok(Number.isFinite(stats.totalBlackoutHours));
+  assert.ok(Number.isFinite(stats.longestBlackoutHours));
+  assert.ok(Number.isInteger(stats.windowCount));
+  assert.ok(typeof stats.terrainObstructionStatus === 'string');
+
+  const sumHours = stats.totalAvailableHours + stats.totalBlackoutHours;
+  const expectedTotalHours = 7 * 24;
+  assert.ok(Math.abs(sumHours - expectedTotalHours) < 1.0, `Sum of hours (${sumHours}) should equal 168h`);
+
+  const expectedSamples = Math.round((7 * 24 * 60) / 120);
+  assert.equal(sweep.samples.length, expectedSamples);
+
+  for (const sample of sweep.samples) {
+    assert.equal(sample.signalDbm, undefined, 'Must NEVER generate fabricated dBm values');
+    assert.ok(['clear', 'blocked', 'doubtful', 'relay', 'unavailable'].includes(sample.status));
+  }
+});
+
+test('Communication Analysis: Sub-Earth Point Zenith Line-of-Sight & Keyhole Constraints', () => {
+  const epochMs = Date.UTC(2026, 6, 1, 12, 0);
+  const state = computeCelestialState(epochMs);
+
+  // Sub-Earth point coordinates where Earth is directly overhead at zenith (~90° elevation)
+  const subEarthFeature = {
+    latitude: state.earth.subLat,
+    longitude: state.earth.subLon,
+    elevationM: 0,
+  };
+
+  const defaultLink = evaluateEarthLink({
+    state,
+    moonFeature: subEarthFeature,
+    constraints: DEFAULT_DTE_CONSTRAINTS,
+  });
+  assert.equal(defaultLink.status, 'clear', 'Sub-Earth point must evaluate as clear under default constraints');
+  assert.equal(defaultLink.reason, 'ok');
+  assert.ok(defaultLink.elevationDeg >= 89.0, 'Sub-Earth elevation must be near 90° zenith');
+  assert.ok(defaultLink.marginDeg >= 89.0, 'Sub-Earth terrain margin must be near 90°');
+
+  const originLink = evaluateEarthLink({
+    state,
+    moonFeature: { latitude: 0, longitude: 0, elevationM: 0 },
+    constraints: DEFAULT_DTE_CONSTRAINTS,
+  });
+  assert.equal(originLink.status, 'clear', 'Nearside origin (0, 0) must evaluate as clear under default constraints');
+  assert.equal(originLink.reason, 'ok');
+
+  const keyholeLink = evaluateEarthLink({
+    state,
+    moonFeature: subEarthFeature,
+    constraints: { ...DEFAULT_DTE_CONSTRAINTS, antennaMaxElevationDeg: 88 },
+  });
+  assert.equal(keyholeLink.status, 'blocked');
+  assert.equal(keyholeLink.reason, 'keyhole', 'Exceeding gimbal limit must flag keyhole, not terrain blockage');
+});

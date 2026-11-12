@@ -1,0 +1,116 @@
+{
+  "type": "FeatureCollection",
+  "name": "NASA Artemis & VIPER South Pole Candidate Traverse Routes",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "traverse-connecting-ridge",
+        "name": "Connecting Ridge Traverse (Shackleton → De Gerlache)",
+        "source": "NASA Artemis III Science Definition Team",
+        "lengthKm": 23,
+        "maxSlopeDeg": 21.5,
+        "meanSlopeDeg": 12.2,
+        "minElevationM": 85,
+        "maxElevationM": 1750
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -140,
+            -89.56
+          ],
+          [
+            -132,
+            -89.48
+          ],
+          [
+            -120,
+            -89.38
+          ],
+          [
+            -104,
+            -89.26
+          ],
+          [
+            -87.1,
+            -89.12
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "traverse-malapert-plateau",
+        "name": "Malapert Massif Summit Approach",
+        "source": "NASA Lunar Exploration Analysis Group",
+        "lengthKm": 22.6,
+        "maxSlopeDeg": 20.4,
+        "meanSlopeDeg": 10.2,
+        "minElevationM": 2146,
+        "maxElevationM": 5128
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            0,
+            -86.5
+          ],
+          [
+            1.5,
+            -86.25
+          ],
+          [
+            2.7,
+            -86.02
+          ],
+          [
+            3.8,
+            -85.8
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "traverse-nobile-viper",
+        "name": "Nobile Rim Volatiles Prospecting Loop",
+        "source": "NASA VIPER Science Team",
+        "lengthKm": 15,
+        "maxSlopeDeg": 13.2,
+        "meanSlopeDeg": 5.5,
+        "minElevationM": 296,
+        "maxElevationM": 845
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            53.5,
+            -85.2
+          ],
+          [
+            54.6,
+            -85.28
+          ],
+          [
+            55.6,
+            -85.36
+          ],
+          [
+            54.5,
+            -85.44
+          ],
+          [
+            53.3,
+            -85.34
+          ]
+        ]
+      }
+    }
+  ]
+}

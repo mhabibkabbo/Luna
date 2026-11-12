@@ -1,0 +1,205 @@
+import { computeCelestialState, EARTH_MEAN_RADIUS_KM } from './lunarEphemeris.js';
+import {
+  computeCommunicationLink,
+  lunarFixedPositionKm,
+  lunarLocalCoordinates,
+} from './communication.js';
+
+const RAD = 180 / Math.PI;
+
+export const DEFAULT_DTE_CONSTRAINTS = Object.freeze({
+  stationMinElevationDeg: 10,
+  /**
+   * Maximum antenna elevation angle (deg).
+   * Default 90° for omnidirectional / wide-beam / 3-axis lunar surface antennas
+   * (Earth is quasi-stationary at zenith near the sub-Earth point with no rapid tracking slew required).
+   * Steerable 2-axis Az/El tracking gimbal mounts with a zenith keyhole limit can specify 88° or lower.
+   */
+  antennaMaxElevationDeg: 90,
+  /** Maximum gimbal slew rate needed to keep tracking Earth. */
+  maxSlewDegPerHour: 360,
+});
+
+export const LINK_REASON_LABELS = {
+  ok: 'Link available',
+  'below-horizon': 'Earth below horizon',
+  terrain: 'Blocked by terrain',
+  'terrain-partial': 'Earth disc grazes terrain',
+  station: 'Below station mask',
+  'earth-facing-away': 'Selected site faces away from the Moon',
+  keyhole: 'Antenna zenith keyhole',
+  slew: 'Antenna slew limit exceeded',
+};
+
+const coordinates = (feature) => ({
+  lat: feature?.latitude ?? feature?.lat,
+  lon: feature?.longitude ?? feature?.lon,
+});
+
+/**
+ * Topocentric Earth-centre direction from a lunar site. Includes the ~0.25° parallax
+ * from standing on the surface rather than at the Moon's centre.
+ */
+export function earthLookFromMoon(state, moonFeature) {
+  const { lat, lon } = coordinates(moonFeature);
+  const site = lunarFixedPositionKm(lat, lon, (moonFeature.elevationM ?? 0) / 1000);
+  const centre = state.earth.dir.map((v) => v * state.earth.distanceKm);
+  const toEarth = [centre[0] - site[0], centre[1] - site[1], centre[2] - site[2]];
+  const rangeKm = Math.hypot(...toEarth);
+  const local = lunarLocalCoordinates(
+    lat,
+    lon,
+    toEarth.map((v) => v / rangeKm)
+  );
+  return {
+    azimuthDeg: local.azimuthDeg,
+    elevationDeg: local.elevationDeg,
+    rangeKm,
+    radiusDeg: Math.asin(EARTH_MEAN_RADIUS_KM / rangeKm) * RAD,
+  };
+}
+
+/**
+ * Rates (deg/h) at which the antenna must move to follow Earth around `whenMs`.
+ * @internal Test & gimbal slew rate analysis utility.
+ */
+export function earthSlewRates(moonFeature, whenMs, halfSpanMin = 15) {
+  const before = earthLookFromMoon(computeCelestialState(whenMs - halfSpanMin * 60000), moonFeature);
+  const after = earthLookFromMoon(computeCelestialState(whenMs + halfSpanMin * 60000), moonFeature);
+  const hours = (2 * halfSpanMin) / 60;
+  const dAz = ((after.azimuthDeg - before.azimuthDeg + 540) % 360) - 180;
+  return {
+    azimuthDegPerHour: Math.abs(dAz) / hours,
+    elevationDegPerHour: Math.abs(after.elevationDeg - before.elevationDeg) / hours,
+  };
+}
+
+/**
+ * @param {object} options
+ * @param {object} options.state - computeCelestialState() result
+ * @param {object} options.moonFeature
+ * @param {object} [options.earthFeature] - ground station; omit to look at Earth's centre
+ * @param {object} [options.constraints]
+ * @param {(azDeg:number)=>number|null} [options.terrainFn] - terrain horizon, null = not modeled
+ * @param {number} [options.slewDegPerHour] - required antenna slew rate, if known
+ * @returns {{status:'clear'|'doubtful'|'blocked'|'away', reason:string, elevationDeg:number,
+ *   azimuthDeg:number, radiusDeg:number, terrainHorizonDeg:number|null,
+ *   stationElevationDeg:number|null, marginDeg:number}}
+ */
+export function evaluateEarthLink({
+  state,
+  moonFeature,
+  earthFeature = null,
+  constraints = DEFAULT_DTE_CONSTRAINTS,
+  terrainFn = null,
+  slewDegPerHour = null,
+}) {
+  const look = earthLookFromMoon(state, moonFeature);
+  let azimuthDeg = look.azimuthDeg;
+  let elevationDeg = look.elevationDeg;
+  let stationElevationDeg = null;
+
+  if (earthFeature) {
+    const link = computeCommunicationLink({ moonFeature, earthFeature, state });
+    azimuthDeg = link.moonAzimuthDeg;
+    elevationDeg = link.moonElevationDeg;
+    stationElevationDeg = link.earthElevationDeg;
+  }
+
+  const radius = look.radiusDeg;
+  const terrainHorizonDeg = terrainFn ? terrainFn(azimuthDeg) : null;
+  const terrain = terrainHorizonDeg ?? 0;
+  const isEarthStationTarget = earthFeature !== null;
+  const earthTerrainHorizonDeg = terrainFn ? terrainFn(look.azimuthDeg) : null;
+  const earthDiscClearsHorizon =
+    look.elevationDeg + radius > (earthTerrainHorizonDeg ?? 0);
+  const c = constraints;
+  const minGeometricHorizon = Math.min(0, terrain);
+
+  let status = 'clear';
+  let reason = 'ok';
+  const block = (why) => {
+    status = 'blocked';
+    reason = why;
+  };
+
+  if (
+    isEarthStationTarget &&
+    stationElevationDeg < 0 &&
+    earthDiscClearsHorizon
+  ) {
+    status = 'away';
+    reason = 'earth-facing-away';
+  } else if (
+    isEarthStationTarget
+      ? elevationDeg <= minGeometricHorizon
+      : elevationDeg + radius <= minGeometricHorizon
+  ) {
+    block('below-horizon');
+  }
+  else if (
+    stationElevationDeg !== null &&
+    stationElevationDeg < c.stationMinElevationDeg
+  ) {
+    block('station');
+  } else if (
+    isEarthStationTarget
+      ? elevationDeg <= terrain
+      : elevationDeg + radius <= terrain
+  ) {
+    block('terrain');
+  }
+  else if (elevationDeg > c.antennaMaxElevationDeg) block('keyhole');
+  else if (slewDegPerHour !== null && slewDegPerHour > c.maxSlewDegPerHour) block('slew');
+  else if (
+    !isEarthStationTarget &&
+    elevationDeg - radius < terrain
+  ) {
+    status = 'doubtful';
+    reason = 'terrain-partial';
+  }
+
+  return {
+    status,
+    isLinked: status === 'clear' || status === 'doubtful',
+    reason,
+    elevationDeg,
+    azimuthDeg,
+    radiusDeg: radius,
+    terrainHorizonDeg,
+    stationElevationDeg,
+    marginDeg: elevationDeg - terrain,
+  };
+}
+
+/**
+ * Samples the DTE link over a window. Same result shape as sweepCommunication, plus the
+ * reason for every sample. Slew is not evaluated here (it needs extra ephemeris calls);
+ * the keyhole check covers the case where it matters most.
+ */
+export async function sweepEarthLink({
+  moonFeature,
+  earthFeature = null,
+  startMs,
+  days = 30,
+  stepMin = 30,
+  constraints = DEFAULT_DTE_CONSTRAINTS,
+  terrainFn = null,
+  signal,
+}) {
+  const sampleCount = Math.round((days * 1440) / stepMin);
+  const stepMs = stepMin * 60000;
+  const visibility = new Array(sampleCount);
+  const reasons = new Array(sampleCount);
+
+  for (let index = 0; index < sampleCount; index++) {
+    if (signal?.aborted) return null;
+    const state = computeCelestialState(startMs + (index + 0.5) * stepMs);
+    const result = evaluateEarthLink({ state, moonFeature, earthFeature, constraints, terrainFn });
+    visibility[index] = result.status;
+    reasons[index] = result.reason;
+    if (index % 30 === 29) await new Promise((resolve) => setTimeout(resolve, 0));
+  }
+
+  return { startMs, endMs: startMs + days * 86400000, stepMin, visibility, reasons };
+}

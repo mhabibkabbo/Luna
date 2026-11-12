@@ -1,0 +1,27 @@
+export function createStore(initial) {
+  let value = initial;
+  const subs = new Set();
+  return {
+    get: () => value,
+    set(next) {
+      value = next;
+      subs.forEach((fn) => fn(value));
+    },
+    subscribe(fn) {
+      subs.add(fn);
+      return () => subs.delete(fn);
+    },
+  };
+}
+
+export const pointerStore = createStore({ lon: 0, lat: 0 });
+export const mapViewStore = createStore({ zoom: 2.5, resolution: 0.24859 });
+
+/**
+ * Resets pointer coordinates back to prime meridian and lunar equator origin (0, 0).
+ * @internal Test & pointer store reset utility export.
+ */
+export function resetPointerStore() {
+  pointerStore.set({ lon: 0, lat: 0 });
+}
+

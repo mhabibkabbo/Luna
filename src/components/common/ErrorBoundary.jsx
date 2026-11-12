@@ -1,0 +1,86 @@
+import React from 'react';
+import { AlertTriangle, RefreshCw } from 'lucide-react';
+
+export class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+    this.headingRef = React.createRef();
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error('ErrorBoundary caught an error:', error, errorInfo);
+  }
+
+  componentDidUpdate(_, prevState) {
+    if (!prevState.hasError && this.state.hasError) {
+      this.headingRef.current?.focus();
+    }
+  }
+
+  handleSoftRetry = () => {
+    this.setState({ hasError: false, error: null });
+  };
+
+  handleReset = () => {
+    this.setState({ hasError: false, error: null });
+    window.location.reload();
+  };
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div
+          role="alert"
+          className="w-full h-full min-h-screen bg-[#050507] flex flex-col items-center justify-center p-6 text-slate-100"
+        >
+          <div className="max-w-md w-full bg-[#0C0D12] border border-white/[0.08] rounded-2xl p-6 shadow-2xl backdrop-blur-xl text-center space-y-4">
+            <div className="w-12 h-12 rounded-xl bg-red-500/10 text-red-400 mx-auto flex items-center justify-center border border-red-500/20">
+              <AlertTriangle className="w-6 h-6" />
+            </div>
+            <div>
+              <h2
+                ref={this.headingRef}
+                tabIndex={-1}
+                className="text-lg font-semibold text-white tracking-tight focus:outline-none"
+              >
+                Something went wrong
+              </h2>
+              <p className="text-xs text-[#8E95A5] mt-1 leading-relaxed">
+                An unexpected error occurred while rendering this workspace.
+              </p>
+            </div>
+            {this.state.error && (
+              <div className="text-[11px] font-mono text-red-300/90 bg-red-950/40 border border-red-900/50 p-2.5 rounded-lg text-left overflow-y-auto max-h-32 break-words whitespace-pre-wrap">
+                {this.state.error.message || String(this.state.error)}
+              </div>
+            )}
+            <div className="flex flex-col sm:flex-row gap-2">
+              <button
+                type="button"
+                onClick={this.handleSoftRetry}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-[#14161D] hover:bg-[#1E2028] text-white border border-white/[0.12] rounded-xl text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+              >
+                Try Again
+              </button>
+              <button
+                type="button"
+                onClick={this.handleReset}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-white hover:bg-[#E2E8F0] text-[#050507] rounded-xl text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Reload Application
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}

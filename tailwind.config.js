@@ -1,0 +1,125 @@
+/** @type {import('tailwindcss').Config} */
+export default {
+  content: [
+    "./index.html",
+    "./src/**/*.{js,ts,jsx,tsx}",
+  ],
+  theme: {
+    extend: {
+      fontFamily: {
+        sans: [
+          '"Inter"',
+          '-apple-system',
+          'BlinkMacSystemFont',
+          '"SF Pro Text"',
+          '"Plus Jakarta Sans"',
+          'system-ui',
+          'sans-serif',
+        ],
+        display: [
+          '"Space Grotesk"',
+          '"Plus Jakarta Sans"',
+          '"Inter"',
+          '-apple-system',
+          'BlinkMacSystemFont',
+          '"SF Pro Display"',
+          'system-ui',
+          'sans-serif',
+        ],
+        serif: [
+          '"Space Grotesk"',
+          '"Plus Jakarta Sans"',
+          '-apple-system',
+          'BlinkMacSystemFont',
+          'system-ui',
+          'sans-serif',
+        ],
+        mono: [
+          '"JetBrains Mono"',
+          'ui-monospace',
+          'SFMono-Regular',
+          'Menlo',
+          'Monaco',
+          'Consolas',
+          'monospace',
+        ],
+      },
+      opacity: {
+        '85': '0.85',
+        '96': '0.96',
+        '98': '0.98',
+      },
+      gridTemplateColumns: {
+        '14': 'repeat(14, minmax(0, 1fr))',
+      },
+      zIndex: {
+        '15': '15',
+      },
+      transitionDuration: {
+        '400': '400ms',
+        '800': '800ms',
+        '900': '900ms',
+      },
+      transitionDelay: {
+        '450': '450ms',
+      },
+      spacing: {
+        '7.5': '1.875rem',
+        '92': '23rem',
+      },
+      colors: {
+        lunar: {
+          dark: '#050507',
+          card: '#0C0D12',
+          border: '#1C1E26',
+          accent: '#F8FAFC',
+          cyan: '#E2E8F0',
+          teal: '#CBD5E1',
+          sage: '#94A3B8',
+          gold: '#CBD5E1',
+          cream: '#F8FAFC',
+          regolith: '#8E95A5',
+        },
+        // Deep black & charcoal neutral system
+        slate: {
+          50: '#FAFAFC',
+          100: '#F4F5F8',
+          200: '#E4E6EC',
+          300: '#C8CCD6',
+          400: '#8E95A5',
+          500: '#636978',
+          600: '#434854',
+          700: '#262932',
+          800: '#181A20',
+          850: '#12141A',
+          900: '#0C0D12',
+          950: '#050507',
+        },
+        // Remap cyan to refined monochrome / cool silver-white for minimalist discipline
+        cyan: {
+          50: '#F8FAFC',
+          100: '#F1F5F9',
+          200: '#E2E8F0',
+          300: '#CBD5E1',
+          400: '#E2E8F0',
+          500: '#94A3B8',
+          600: '#64748B',
+          700: '#475569',
+          800: '#262932',
+          850: '#1C1E26',
+          900: '#14161C',
+          950: '#0D0F14',
+        },
+        emerald: {
+          300: '#A7F3D0',
+          400: '#6EE7B7',
+          500: '#34D399',
+          600: '#10B981',
+          900: '#064E3B',
+          950: '#022C22',
+        },
+      },
+    },
+  },
+  plugins: [],
+};

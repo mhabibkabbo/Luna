@@ -1,0 +1,7 @@
+node_modules
+dist
+.vite
+PROJECT_DOCUMENTATION.md
+.env*
+!.env.example
+scripts/dem/

@@ -1,0 +1,364 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Plus Jakarta Sans', system-ui, 'Segoe UI', sans-serif;
+  --space-bg: #050507;
+  --space-surface: #0A0B0E;
+  --space-card: #0E1015;
+  --space-border: #1C1E26;
+  --space-border-subtle: rgba(255, 255, 255, 0.08);
+  --cyan-accent: #F8FAFC;
+  --terracotta-accent: #F8FAFC;
+  --sage-accent: #94A3B8;
+  --cream-text: #F8FAFC;
+  --muted-stone: #8E95A5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+}
+
+body {
+  background-color: #050507;
+  color: #F8FAFC;
+  letter-spacing: -0.011em;
+  line-height: 1.55;
+}
+
+h1, h2 {
+  font-family: 'Space Grotesk', 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  letter-spacing: -0.028em;
+  line-height: 1.18;
+}
+
+h3, h4, h5, h6 {
+  font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  letter-spacing: -0.018em;
+  line-height: 1.3;
+}
+
+code, kbd, samp, pre, .font-mono {
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.015em;
+}
+
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: #050507;
+}
+::-webkit-scrollbar-thumb {
+  background: #1C1E26;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #3A3F4B;
+}
+
+@layer components {
+  .luna-btn-primary {
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full bg-white hover:bg-neutral-200 text-[#050507] font-sans font-medium text-xs tracking-tight transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none;
+  }
+
+  .luna-btn-secondary {
+    @apply inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-full bg-white/[0.04] hover:bg-white/[0.08] text-[#F8FAFC] border border-white/[0.1] hover:border-white/[0.2] text-xs font-sans font-medium tracking-tight transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none;
+  }
+
+  .luna-btn-active {
+    @apply bg-white/[0.1] text-white border-white/[0.25];
+  }
+
+  .luna-panel {
+    @apply bg-[#0A0B0E]/95 backdrop-blur-xl border border-white/[0.08] rounded-2xl shadow-[0_16px_40px_rgba(0,0,0,0.85)];
+  }
+}
+
+.cesium-widget, .cesium-widget canvas {
+  width: 100% !important;
+  height: 100% !important;
+  touch-action: none;
+}
+.cesium-viewer-bottom {
+  display: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@layer utilities {
+  .font-editorial {
+    font-family: 'Space Grotesk', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: #262932 #050507;
+  }
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: #050507;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #262932;
+    border-radius: 9999px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #3A3F4B;
+  }
+}
+
+@keyframes enterAnimation {
+  from {
+    opacity: var(--tw-enter-opacity, 1);
+    transform: translate3d(var(--tw-enter-translate-x, 0), var(--tw-enter-translate-y, 0), 0) scale3d(var(--tw-enter-scale, 1), var(--tw-enter-scale, 1), 1);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale3d(1, 1, 1);
+  }
+}
+
+.animate-in {
+  animation-name: enterAnimation;
+  animation-duration: 180ms;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  animation-fill-mode: both;
+}
+
+.animate-in.duration-100 { animation-duration: 100ms; }
+.animate-in.duration-150 { animation-duration: 150ms; }
+.animate-in.duration-200 { animation-duration: 200ms; }
+.animate-in.duration-300 { animation-duration: 300ms; }
+.animate-in.duration-700 { animation-duration: 700ms; }
+.animate-in.duration-800 { animation-duration: 800ms; }
+.animate-in.duration-1000 { animation-duration: 1000ms; }
+.animate-in.delay-150 { animation-delay: 150ms; }
+.animate-in.delay-200 { animation-delay: 200ms; }
+.animate-in.delay-300 { animation-delay: 300ms; }
+.animate-in.delay-450 { animation-delay: 450ms; }
+
+.fade-in {
+  --tw-enter-opacity: 0;
+}
+
+.zoom-in-80 {
+  --tw-enter-scale: 0.92;
+}
+
+.zoom-in-95 {
+  --tw-enter-scale: 0.96;
+}
+
+.slide-in-from-top-1 {
+  --tw-enter-translate-y: -4px;
+}
+
+.slide-in-from-top-2 {
+  --tw-enter-translate-y: -8px;
+}
+
+.slide-in-from-top-3 {
+  --tw-enter-translate-y: -12px;
+}
+
+.slide-in-from-bottom-2 {
+  --tw-enter-translate-y: 8px;
+}
+
+.slide-in-from-bottom-3 {
+  --tw-enter-translate-y: 12px;
+}
+
+.slide-in-from-bottom-4 {
+  --tw-enter-translate-y: 16px;
+}
+
+.slide-in-from-bottom {
+  --tw-enter-translate-y: 100%;
+}
+
+.slide-in-from-left-2 {
+  --tw-enter-translate-x: -8px;
+}
+
+.slide-in-from-left {
+  --tw-enter-translate-x: -100%;
+}
+
+@keyframes morphZoom {
+  0% {
+    opacity: 0.35;
+    transform: scale(1.06) translate3d(0, 0, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translate3d(0, 0, 0);
+  }
+}
+
+.animate-morph-bg {
+  animation: morphZoom 950ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
+}
+
+.mask-feather-right {
+  -webkit-mask-image: linear-gradient(to right, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 1) 50%, rgba(0, 0, 0, 0) 100%);
+  mask-image: linear-gradient(to right, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 1) 50%, rgba(0, 0, 0, 0) 100%);
+}
+
+.mask-feather-left {
+  -webkit-mask-image: linear-gradient(to left, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 1) 50%, rgba(0, 0, 0, 0) 100%);
+  mask-image: linear-gradient(to left, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 1) 50%, rgba(0, 0, 0, 0) 100%);
+}
+
+@keyframes starTwinkle {
+  0%, 100% {
+    opacity: 0.2;
+    transform: scale(0.85);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.25);
+  }
+}
+
+@keyframes meteorStreak {
+  0% {
+    transform: translateX(0) translateY(0) rotate(-35deg);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.9;
+  }
+  60% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: translateX(-350px) translateY(350px) rotate(-35deg);
+    opacity: 0;
+  }
+}
+
+.animate-star-twinkle {
+  animation: starTwinkle var(--twinkle-duration, 3s) ease-in-out infinite var(--twinkle-delay, 0s);
+  will-change: transform, opacity;
+}
+
+.animate-meteor-1 {
+  animation: meteorStreak 7s ease-in-out infinite 1.5s;
+}
+
+.animate-meteor-2 {
+  animation: meteorStreak 11s ease-in-out infinite 5s;
+}
+
+@keyframes floatSlow {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    opacity: 0.35;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.65;
+    transform: scale(1.05);
+  }
+}
+
+.animate-float-slow {
+  animation: floatSlow 5s ease-in-out infinite;
+  will-change: transform;
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 6s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+@keyframes searchEmerge {
+  0% {
+    opacity: 0;
+    transform: scale3d(0.82, 0.82, 1) translate3d(-10px, -8px, 0);
+    filter: blur(4px);
+  }
+  65% {
+    opacity: 1;
+    transform: scale3d(1.015, 1.015, 1) translate3d(0, 0, 0);
+    filter: blur(0px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale3d(1, 1, 1) translate3d(0, 0, 0);
+    filter: blur(0px);
+  }
+}
+
+.animate-search-emerge {
+  animation: searchEmerge 240ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transform-origin: 16px -6px;
+  will-change: transform, opacity, filter;
+}
+
+@keyframes searchFieldEnter {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, -6px, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.animate-search-field {
+  animation: searchFieldEnter 200ms cubic-bezier(0.16, 1, 0.3, 1) 40ms both;
+}
+
+@keyframes caretFade {
+  0% {
+    opacity: 0;
+    transform: scale(0.5) rotate(45deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(45deg);
+  }
+}
+
+.animate-caret-fade {
+  animation: caretFade 200ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Keep the planetary viewport backdrop static so it never triggers non-composited background-position repaints. */
+.planet-starfield {
+  background-position: 0 0;
+}

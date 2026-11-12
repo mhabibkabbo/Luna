@@ -1,0 +1,63 @@
+{
+  "sourceProduct": "NASA PDS LRO-L-LOLA-4-GDR-V1.0",
+  "instrument": "Lunar Orbiter Laser Altimeter (LOLA)",
+  "spacecraft": "Lunar Reconnaissance Orbiter (LRO)",
+  "coordinateSystem": "South Polar Stereographic",
+  "proj4Def": "+proj=stere +lat_0=-90 +lon_0=0 +k=1 +a=1737400 +b=1737400 +units=m",
+  "datum": "Lunar Reference Sphere (R = 1,737,400.0 m)",
+  "elevationOffsetM": 1737400,
+  "scalingFactorM": 0.5,
+  "dimensions": {
+    "width": 1520,
+    "height": 1520
+  },
+  "boundsMeters": {
+    "minX": -304000,
+    "maxX": 304000,
+    "minY": -304000,
+    "maxY": 304000
+  },
+  "cellSizeM": 400,
+  "elevationRangeM": {
+    "min": -7273.5,
+    "max": 7020
+  },
+  "contourIntervals": [
+    {
+      "zoom": "0-1",
+      "intervalM": 500,
+      "indexIntervalM": 2500,
+      "file": "contours_500m.geojson"
+    },
+    {
+      "zoom": "2",
+      "intervalM": 200,
+      "indexIntervalM": 1000,
+      "file": "contours_200m.geojson"
+    },
+    {
+      "zoom": "3",
+      "intervalM": 100,
+      "indexIntervalM": 500,
+      "file": "contours_100m.geojson"
+    },
+    {
+      "zoom": "4",
+      "intervalM": 50,
+      "indexIntervalM": 250,
+      "mode": "dynamic-worker"
+    },
+    {
+      "zoom": "5-6",
+      "intervalM": 20,
+      "indexIntervalM": 100,
+      "mode": "dynamic-worker"
+    }
+  ],
+  "slopeHazardThresholdDeg": 15,
+  "slopeHazardFile": "slope_hazard_15deg.geojson",
+  "plannedTraversesFile": "planned_traverses.geojson",
+  "ridgesAndRimsFile": "ridges_and_rims.geojson",
+  "psrFootprintsFile": "psr_footprints.geojson",
+  "generatedAt": "2026-11-07T06:30:38.663Z"
+}
