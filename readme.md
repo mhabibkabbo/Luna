@@ -1,8 +1,8 @@
-# Luna — Interactive 3D Moon & Artemis Mission Visualizer
+# Luna — A Lunar Mission Browser
 
 > 🚀 Built for the **NASA Space Apps Challenge 2026** by team **awaylander.exe**
 
-**LUNA** is a lunar mission browser for NASA **CLPS** and **Artemis** missions. Answering the challenge mentioned here : https://www.spaceappschallenge.org/2026/challenges/lunar-landing-site-navigator/, we, team **awaylander.exe** built **LUNA**.
+**LUNA** is a lunar mission browser for NASA **CLPS** and **Artemis** missions. Answering the challenge : [Lunar Landing Site Navigator](https://www.spaceappschallenge.org/2026/challenges/lunar-landing-site-navigator/), we, team **awaylander.exe** built **LUNA**.
 
 ## Screenshots
 
@@ -98,5 +98,3 @@ npm run lint         # type checking
 All members are from **BUET CSE '24**.
 
 ---
-
-*Suitability scores are decision-support approximations computed from LOLA DEM altimetry and DE440 ephemerides — not official NASA flight certification.*
