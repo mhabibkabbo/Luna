@@ -42,7 +42,8 @@ const coordinates = (feature) => ({
  */
 export function earthLookFromMoon(state, moonFeature) {
   const { lat, lon } = coordinates(moonFeature);
-  const site = lunarFixedPositionKm(lat, lon, (moonFeature.elevationM ?? 0) / 1000);
+  const elevationM = moonFeature?.elevationM ?? moonFeature?.elevationMeters ?? 0;
+  const site = lunarFixedPositionKm(lat, lon, elevationM / 1000);
   const centre = state.earth.dir.map((v) => v * state.earth.distanceKm);
   const toEarth = [centre[0] - site[0], centre[1] - site[1], centre[2] - site[2]];
   const rangeKm = Math.hypot(...toEarth);

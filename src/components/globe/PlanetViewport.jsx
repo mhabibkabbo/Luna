@@ -26,6 +26,7 @@ const PlanetViewport = forwardRef(function PlanetViewport(
   const communicationLinkRef = useRef(null);
   const planetSwitchSeqRef = useRef(0);
   const activePlanetRef = useRef(activePlanet || 'moon');
+  const isMountedRef = useRef(true);
   const [initRetryKey, setInitRetryKey] = useState(0);
   const [currentPlanet, setCurrentPlanet] = useState(activePlanet || 'moon');
   const [initializedPlanets, setInitializedPlanets] = useState(() => [
@@ -38,7 +39,15 @@ const PlanetViewport = forwardRef(function PlanetViewport(
   const [hoveredInfo, setHoveredInfo] = useState(null);
   const [webglError, setWebglError] = useState(null);
 
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
   const refreshInitializedPlanets = () => {
+    if (!isMountedRef.current) return;
     const list = planetManagerRef.current?.getInitializedPlanets?.();
     if (Array.isArray(list)) {
       setInitializedPlanets((prev) =>
@@ -66,6 +75,7 @@ const PlanetViewport = forwardRef(function PlanetViewport(
   useEffect(() => {
     // Generous fallback safety timeout in case offline or network stall
     const safetyTimer = setTimeout(() => {
+      if (!isMountedRef.current) return;
       setIsCesiumLoading((prev) => {
         if (prev) {
           console.info('[PlanetViewport] Fallback timer elapsed, revealing available terrain.');
@@ -94,21 +104,21 @@ const PlanetViewport = forwardRef(function PlanetViewport(
     );
 
     requestAnimationFrame(() => {
-      if (seq !== planetSwitchSeqRef.current || !planetManagerRef.current) return;
+      if (!isMountedRef.current || seq !== planetSwitchSeqRef.current || !planetManagerRef.current) return;
       try {
         manager.switchTo(targetPlanet);
-        refreshInitializedPlanets();
+        if (isMountedRef.current) refreshInitializedPlanets();
         syncPlanetLayerVisibility(targetPlanet);
         const activeCtrl = manager.active;
         const readyPromise = activeCtrl?.waitUntilReady?.() || Promise.resolve();
         readyPromise.finally(() => {
-          if (seq === planetSwitchSeqRef.current) {
+          if (isMountedRef.current && seq === planetSwitchSeqRef.current) {
             setIsCesiumLoading(false);
           }
         });
       } catch (err) {
         console.error('Failed to switch planet:', err);
-        if (seq === planetSwitchSeqRef.current) {
+        if (isMountedRef.current && seq === planetSwitchSeqRef.current) {
           setIsCesiumLoading(false);
         }
       }
@@ -162,10 +172,11 @@ const PlanetViewport = forwardRef(function PlanetViewport(
           onDropCustomPin,
 
           onLoadingStageChange: (stage) => {
-            setLoadingStage(stage);
+            if (isMountedRef.current) setLoadingStage(stage);
           },
 
           onTileLoadProgress: (queuedCount) => {
+            if (!isMountedRef.current) return;
             setPendingTiles(queuedCount);
             if (queuedCount === 0) {
               setIsCesiumLoading(false);
@@ -173,11 +184,11 @@ const PlanetViewport = forwardRef(function PlanetViewport(
           },
 
           onInitialized: () => {
-            setIsCesiumLoading(false);
+            if (isMountedRef.current) setIsCesiumLoading(false);
           },
 
           onFeatureHover: (feature, x, y, sourcePlanet) => {
-            if (sourcePlanet !== activePlanetRef.current) return;
+            if (!isMountedRef.current || sourcePlanet !== activePlanetRef.current) return;
             if (feature) {
               setHoveredInfo((prev) =>
                 prev &&
@@ -205,6 +216,7 @@ const PlanetViewport = forwardRef(function PlanetViewport(
 
       const activeCtrl = planetManager.active;
       activeCtrl?.waitUntilReady?.().finally(() => {
+        if (!isMountedRef.current) return;
         setIsCesiumLoading(false);
         if (customPin) {
           const isCustom = Boolean(
@@ -219,7 +231,7 @@ const PlanetViewport = forwardRef(function PlanetViewport(
             if (Number.isFinite(lon) && Number.isFinite(lat) && planetManager.hasPlanet(pinPlanet)) {
               try {
                 planetManager.planet(pinPlanet).extras.features.dropCustomPin(lon, lat, customPin.name);
-                refreshInitializedPlanets();
+                if (isMountedRef.current) refreshInitializedPlanets();
               } catch {}
             }
           }

@@ -107,7 +107,8 @@ export const LUNAR_ROCKETS = [
  * }>}
  */
 export async function fetchJplMoonEphemeris(targetDate = new Date(), timeoutMs = 6000) {
-  const dateObj = targetDate instanceof Date ? targetDate : new Date(targetDate);
+  const parsed = targetDate instanceof Date ? targetDate : new Date(targetDate);
+  const dateObj = Number.isNaN(parsed.getTime()) ? new Date() : parsed;
   const dateStr = dateObj.toISOString().split('T')[0];
   const nextDateObj = new Date(dateObj.getTime() + 86400000);
   const nextDateStr = nextDateObj.toISOString().split('T')[0];

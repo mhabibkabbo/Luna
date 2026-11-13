@@ -64,6 +64,9 @@ function earthSurfaceNormal(latitude, longitude) {
 }
 
 export function lunarLocalCoordinates(latitude, longitude, direction) {
+  if (!Array.isArray(direction) || direction.length < 3) {
+    return { azimuthDeg: 0, elevationDeg: 0 };
+  }
   const lat = latitude * DEG;
   const lon = longitude * DEG;
   const east = [-Math.sin(lon), Math.cos(lon), 0];
@@ -108,15 +111,17 @@ export function computeCommunicationLink({
     state.earth.dir,
     state.earth.distanceKm
   );
+  const moonElevationM = moonFeature?.elevationM ?? moonFeature?.elevationMeters ?? 0;
+  const earthHeightM = earthFeature?.height ?? earthFeature?.elevationM ?? earthFeature?.elevationMeters ?? 0;
   const moonPositionMoonFixedKm = lunarFixedPositionKm(
     moonCoordinates.latitude,
     moonCoordinates.longitude,
-    (moonFeature.elevationM ?? 0) / KM_TO_METERS
+    moonElevationM / KM_TO_METERS
   );
   const earthPositionEarthFixedKm = earthFixedPositionKm(
     earthCoordinates.latitude,
     earthCoordinates.longitude,
-    (earthFeature.height ?? 0) / KM_TO_METERS
+    earthHeightM / KM_TO_METERS
   );
   const earthPositionMoonFixedKm = add(
     earthCenterMoonFixedKm,

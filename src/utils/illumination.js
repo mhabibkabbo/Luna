@@ -73,7 +73,7 @@ export async function sweepIllumination({
     endMs: startMs + days * 86400000,
     stepMin,
     visibility,
-    sunlitPct: (lit / n) * 100,
+    sunlitPct: (lit / Math.max(1, n)) * 100,
     longestDarkHours: (longestDark * stepMin) / 60,
   };
   return result;

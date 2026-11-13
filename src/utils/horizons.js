@@ -102,15 +102,19 @@ export function ensurePolarDemLoaded(force = false) {
   // Node.js environment fallback (e.g., node --test test runner)
   polarDemLoadPromise = (async () => {
     try {
-      const fs = await import("node:fs");
-      const path = await import("node:path");
-      const demFile = path.resolve("public/data/lola_sp_80s_int16.bin");
-      if (fs.existsSync(demFile)) {
-        const buf = fs.readFileSync(demFile);
-        const arr = new Int16Array(buf.buffer, buf.byteOffset, buf.length / 2);
-        const sz = Math.round(Math.sqrt(arr.length));
-        registerPolarDemGrid(arr, sz, 0.5);
-        return polarDemGrid;
+      if (typeof process !== "undefined" && process?.versions?.node) {
+        const fsMod = "node:fs";
+        const pathMod = "node:path";
+        const fs = await import(/* @vite-ignore */ fsMod);
+        const path = await import(/* @vite-ignore */ pathMod);
+        const demFile = path.resolve("public/data/lola_sp_80s_int16.bin");
+        if (fs.existsSync(demFile)) {
+          const buf = fs.readFileSync(demFile);
+          const arr = new Int16Array(buf.buffer, buf.byteOffset, buf.length / 2);
+          const sz = Math.round(Math.sqrt(arr.length));
+          registerPolarDemGrid(arr, sz, 0.5);
+          return polarDemGrid;
+        }
       }
     } catch {}
     return null;

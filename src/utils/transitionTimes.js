@@ -45,6 +45,22 @@ export function formatDuration(ms) {
  * @returns {object} Solar transition & power generation report
  */
 export function calculateSolarTransition(currentTimeMs, latitude, longitude, siteId = null) {
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude) || !Number.isFinite(currentTimeMs)) {
+    return {
+      isCurrentlySunlit: false,
+      currentStatus: 'unavailable',
+      nextEvent: null,
+      timeUntilMs: null,
+      formattedDuration: 'Unavailable',
+      transitionDate: null,
+      solarElevationDeg: 0,
+      solarAzimuthDeg: 0,
+      terrainHorizonDeg: 0,
+      powerEfficiencyPct: 0,
+      isPolar: false,
+    };
+  }
+
   const getHz = (az) => (horizonAt(HORIZON_TABLE, siteId, az, latitude, longitude) ?? 0);
 
   const currentState = computeCelestialState(currentTimeMs);
@@ -141,6 +157,25 @@ export function calculateEarthTransition(
   earthFeature = null,
   constraints = DEFAULT_DTE_CONSTRAINTS
 ) {
+  if (!moonFeature) {
+    return {
+      status: 'unavailable',
+      isLinked: false,
+      isPermanent: true,
+      nextEvent: null,
+      timeUntilMs: null,
+      formattedDuration: 'Unavailable',
+      transitionDate: null,
+      headline: 'No Site Selected',
+      message: 'Select a lunar landing site or custom coordinates to compute DTE communication windows.',
+      earthElevationDeg: 0,
+      earthAzimuthDeg: 0,
+      terrainHorizonDeg: 0,
+      linkMarginDeg: 0,
+      reason: 'No site selected',
+    };
+  }
+
   const siteId = moonFeature.id;
   const lat = moonFeature.latitude ?? moonFeature.lat ?? 0;
   const lon = moonFeature.longitude ?? moonFeature.lon ?? 0;
@@ -269,6 +304,16 @@ export function calculateEarthTransition(
 }
 
 export function calculateEarthPositionTransition(currentTimeMs, moonFeature) {
+  if (!moonFeature) {
+    return {
+      isAboveHorizon: false,
+      nextEvent: null,
+      timeUntilMs: null,
+      formattedDuration: 'Unavailable',
+      transitionDate: null,
+    };
+  }
+
   const isAboveHorizonAt = (whenMs) => {
     const position = earthLookFromMoon(computeCelestialState(whenMs), moonFeature);
     return position.elevationDeg + position.radiusDeg > 0;

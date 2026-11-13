@@ -640,7 +640,10 @@ export default function SiteComparisonPage({
                   style={{ colorScheme: 'dark' }}
                   value={toDatetimeLocalUtc(referenceEpochMs)}
                   onChange={(e) => {
-                    const parsed = new Date(`${e.target.value}:00Z`).getTime();
+                    const val = e.target.value;
+                    if (!val) return;
+                    const hasSeconds = /:\d{2}$/.test(val);
+                    const parsed = new Date(hasSeconds ? `${val}Z` : `${val}:00Z`).getTime();
                     if (Number.isFinite(parsed)) {
                       const nextMs = normalizeCelestialTimeMs(parsed);
                       setReferenceEpochMs(nextMs);

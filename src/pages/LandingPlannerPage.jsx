@@ -85,7 +85,9 @@ export default function LandingPlannerPage({
 
   const handleDateChange = (e) => {
     const val = e.target.value;
-    const ms = Date.parse(`${val}:00Z`);
+    if (!val) return;
+    const hasSeconds = /:\d{2}$/.test(val);
+    const ms = Date.parse(hasSeconds ? `${val}Z` : `${val}:00Z`);
     if (!Number.isNaN(ms)) {
       setLandingMs(celestialTimeStore.setTime(ms));
     }
