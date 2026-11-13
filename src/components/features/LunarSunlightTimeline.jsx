@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Pause, Play, Radio, Sun, ZoomIn, ZoomOut } from 'lucide-react';
+import { Clock3, Pause, Play, Radio, Sun, ZoomIn, ZoomOut } from 'lucide-react';
 import {
   CELESTIAL_MINUTE_MS,
   celestialTimeStore,
@@ -148,6 +148,7 @@ export default function LunarSunlightTimeline({ feature, earthFeature = null }) 
   const pendingPointerFraction = useRef(null);
   const sunlightPlayheadRef = useRef(null);
   const communicationPlayheadRef = useRef(null);
+  const sunlightTrackRef = useRef(null);
   const currentTimeRef = useRef(currentMs);
   const zoomStartMsRef = useRef(null);
   const rangeDays = DAYS / (2 ** zoomLevel);
@@ -339,9 +340,11 @@ export default function LunarSunlightTimeline({ feature, earthFeature = null }) 
 
   const handlePointer = (event) => {
     if (!dragging.current) return;
-    const bounds = event.currentTarget.getBoundingClientRect();
+    const bounds =
+      sunlightTrackRef.current?.getBoundingClientRect() ??
+      event.currentTarget.getBoundingClientRect();
     pendingPointerFraction.current =
-      (event.clientX - bounds.left) / bounds.width;
+      Math.max(0, Math.min(1, (event.clientX - bounds.left) / bounds.width));
     if (pointerFrame.current !== 0) return;
     pointerFrame.current = requestAnimationFrame(() => {
       pointerFrame.current = 0;
@@ -420,7 +423,10 @@ export default function LunarSunlightTimeline({ feature, earthFeature = null }) 
     >
       <div className="mb-1.5 flex items-center justify-between gap-2 sm:gap-3">
         <div className="flex min-w-0 items-center gap-2 sm:gap-2.5 font-sans">
-          <Sun className="h-3.5 w-3.5 shrink-0 text-lime-400" />
+          <Clock3 className="h-3.5 w-3.5 shrink-0 text-lime-400" />
+          <span className="shrink-0 text-[11px] font-semibold uppercase tracking-[0.06em] text-[#F8FAFC]">
+            Timeline:
+          </span>
           <span className="truncate text-[11px] font-semibold uppercase tracking-[0.06em] text-[#F8FAFC]">
             {feature.name}
           </span>
@@ -556,58 +562,80 @@ export default function LunarSunlightTimeline({ feature, earthFeature = null }) 
         className="relative flex w-full cursor-ew-resize touch-none flex-col rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-lime-400/80 gap-1"
         style={{ touchAction: 'none' }}
       >
-        <TimelineTrack
-          kind="sunlight"
-          statuses={forecast?.visibility}
-          colors={SUNLIGHT_TIMELINE_COLORS}
-          transitions={sunlightTransitions}
-          anchorMs={anchorMs}
-          playheadRef={sunlightPlayheadRef}
-          earthFeatureName={showCommTrack ? activeCommLabel : null}
-        />
+        <div className="grid grid-cols-[14px_minmax(0,1fr)] items-center gap-x-1.5">
+          <span
+            aria-label="Solar illumination timeline"
+            title="Solar illumination: sunlit, terrain-shadowed, and lunar night"
+            className="flex items-center justify-center pointer-events-none"
+          >
+            <Sun className="h-3 w-3 text-lime-400" aria-hidden="true" />
+          </span>
+          <div ref={sunlightTrackRef} className="min-w-0">
+            <TimelineTrack
+              kind="sunlight"
+              statuses={forecast?.visibility}
+              colors={SUNLIGHT_TIMELINE_COLORS}
+              transitions={sunlightTransitions}
+              anchorMs={anchorMs}
+              playheadRef={sunlightPlayheadRef}
+              earthFeatureName={showCommTrack ? activeCommLabel : null}
+            />
+          </div>
+        </div>
         {showCommTrack && (
-          <TimelineTrack
-            kind="communication"
-            statuses={communicationForecast?.visibility}
-            colors={COMMUNICATION_TIMELINE_COLORS}
-            transitions={communicationTransitions}
-            anchorMs={anchorMs}
-            playheadRef={communicationPlayheadRef}
-            earthFeatureName={activeCommLabel}
-          />
+          <div className="grid grid-cols-[14px_minmax(0,1fr)] items-center gap-x-1.5">
+            <span
+              aria-label="Direct-to-Earth communication timeline"
+              title={`Direct-to-Earth visibility: ${activeCommLabel}`}
+              className="flex items-center justify-center pointer-events-none"
+            >
+              <Radio className="h-3 w-3 text-emerald-400" aria-hidden="true" />
+            </span>
+            <TimelineTrack
+              kind="communication"
+              statuses={communicationForecast?.visibility}
+              colors={COMMUNICATION_TIMELINE_COLORS}
+              transitions={communicationTransitions}
+              anchorMs={anchorMs}
+              playheadRef={communicationPlayheadRef}
+              earthFeatureName={activeCommLabel}
+            />
+          </div>
         )}
       </div>
-      {showCommTrack && (
-        <div
-          data-testid="dte-timeline-color-legend"
-          className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[10px] font-sans font-medium text-[#94A3B8] leading-none"
-        >
-          <span className="text-[10px] font-mono uppercase tracking-wider text-emerald-400 font-semibold">
-            DTE Link:
-          </span>
-          <span className="inline-flex items-center gap-1">
-            <i
-              className="h-2 w-2 rounded-sm inline-block"
-              style={{ backgroundColor: COMMUNICATION_TIMELINE_COLORS.clear }}
-            />
-            <span>Clear / Link Active</span>
-          </span>
-          <span className="inline-flex items-center gap-1">
-            <i
-              className="h-2 w-2 rounded-sm inline-block"
-              style={{ backgroundColor: COMMUNICATION_TIMELINE_COLORS.doubtful }}
-            />
-            <span>Marginal / Grazing</span>
-          </span>
-          <span className="inline-flex items-center gap-1">
-            <i
-              className="h-2 w-2 rounded-sm inline-block"
-              style={{ backgroundColor: COMMUNICATION_TIMELINE_COLORS.blocked }}
-            />
-            <span>Blocked / No LOS</span>
-          </span>
-        </div>
-      )}
+      <div
+        data-testid="dte-timeline-color-legend"
+        className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[10px] font-sans font-medium text-[#94A3B8] leading-none"
+      >
+        {showCommTrack && (
+          <>
+            <span className="text-[10px] font-mono uppercase tracking-wider text-emerald-400 font-semibold">
+              DTE Link:
+            </span>
+            <span className="inline-flex items-center gap-1">
+              <i
+                className="h-2 w-2 rounded-sm inline-block"
+                style={{ backgroundColor: COMMUNICATION_TIMELINE_COLORS.clear }}
+              />
+              <span>Clear / Link Active</span>
+            </span>
+            <span className="inline-flex items-center gap-1">
+              <i
+                className="h-2 w-2 rounded-sm inline-block"
+                style={{ backgroundColor: COMMUNICATION_TIMELINE_COLORS.doubtful }}
+              />
+              <span>Marginal / Grazing</span>
+            </span>
+            <span className="inline-flex items-center gap-1">
+              <i
+                className="h-2 w-2 rounded-sm inline-block"
+                style={{ backgroundColor: COMMUNICATION_TIMELINE_COLORS.blocked }}
+              />
+              <span>Blocked / No LOS</span>
+            </span>
+          </>
+        )}
+      </div>
 
       <div className="mt-1.5 flex items-center justify-between gap-2 text-[11px]">
         <span className="truncate font-mono text-[#8E95A5] tabular-nums">{formatUTC(anchorMs)}</span>
