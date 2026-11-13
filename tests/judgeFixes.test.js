@@ -427,6 +427,18 @@ describe('Regression Fixes: Repeated Multi-Click & Double-Click Stability', () =
         `${relPath} dropCustomPin must reuse an unchanged custom pin instead of destroying and recreating it`
       );
       assert.ok(
+        src.includes('const customPinEntities = [];') &&
+          src.includes('customPinEntities.push(customPinEntity)') &&
+          src.includes('clearCustomPin = (featureId)'),
+        `${relPath} must retain multiple custom pins and support deleting one by feature ID`
+      );
+      assert.ok(
+        src.includes("from '../../utils/comparisonEngine.js'") &&
+          src.includes('comparisonSelectionStore.subscribe(refreshComparisonStyles)') &&
+          src.includes("'#00D2C4'"),
+        `${relPath} must restyle comparison-selected markers teal when comparison membership changes`
+      );
+      assert.ok(
         src.includes('Cesium.ScreenSpaceEventType.LEFT_DOUBLE_CLICK'),
         `${relPath} must handle LEFT_DOUBLE_CLICK cleanly without stale drag state or entity tracking`
       );
@@ -446,6 +458,12 @@ describe('Regression Fixes: Repeated Multi-Click & Double-Click Stability', () =
     assert.ok(
       appSrc.includes('Number.isFinite(lon) && Number.isFinite(lat)'),
       'App handleFeatureSelect must validate finite coordinates before dropping a custom pin'
+    );
+    assert.ok(
+      appSrc.includes('comparisonSelectionStore.isFeatureInComparison(pin)') &&
+        appSrc.includes('clearCustomPin?.(pinBody, pin.id)') &&
+        appSrc.includes('comparisonSelectionStore.isFeatureInComparison(targetFeature)'),
+      'App must retain compared custom pins, clear un-compared pins on new selection, and preserve compared pins when closing their panel'
     );
   });
 

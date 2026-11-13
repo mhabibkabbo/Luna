@@ -3,6 +3,7 @@ import { Check, Mountain, CircleDot, Waves, Diamond, Rocket, Radio } from 'lucid
 
 export default function LayerToggle({ layer, onToggle, onChangeOpacity }) {
   const isRaster = layer.type === 'wmts';
+  const opacityFillPercent = Math.min(100, Math.max(0, ((layer.opacity - 0.1) / 0.9) * 100));
 
   const getSymbolBadge = (id) => {
     switch (id) {
@@ -103,6 +104,9 @@ export default function LayerToggle({ layer, onToggle, onChangeOpacity }) {
             aria-label={`${layer.name} layer opacity`}
             onChange={(e) => onChangeOpacity(layer.id, parseFloat(e.target.value))}
             className="w-full h-1.5 bg-[#181A20] rounded-lg appearance-none cursor-pointer accent-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+            style={{
+              background: `linear-gradient(to right, #fff 0%, #fff ${opacityFillPercent}%, #181A20 ${opacityFillPercent}%, #181A20 100%)`,
+            }}
             title={`Opacity: ${Math.round(layer.opacity * 100)}%`}
           />
           <span className="font-mono text-[10px] text-white tabular-nums w-8 text-right shrink-0">

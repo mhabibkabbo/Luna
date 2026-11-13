@@ -230,6 +230,7 @@ export default function App() {
   const [selectedFeature2D, setSelectedFeature2D] = useState(null);
   const selectedFeature3DRef = useRef(null);
   const selectedFeature2DRef = useRef(null);
+  const customPinsRef = useRef(new Map());
 
   const [layers, setLayers] = useState(LUNAR_LAYERS_CATALOG);
   const [isLayersOpen3D, setIsLayersOpen3D] = useState(false);
@@ -395,11 +396,25 @@ export default function App() {
       longitude: feature.longitude ?? feature.lon ?? 0,
       elevationMeters: feature.elevationMeters ?? feature.elevationM ?? null,
     };
-    setSelectedFeature(normalized);
-    if (body === 'earth') {
-      setSelectedEarthFeature(normalized);
-    } else {
-      setSelectedMoonFeature(normalized);
+
+    if (viewModeRef.current === '3d') {
+      for (const [key, pin] of customPinsRef.current) {
+        if (
+          pin.id === normalized.id ||
+          comparisonSelectionStore.isFeatureInComparison(pin)
+        ) {
+          continue;
+        }
+
+        const pinBody = pin.body === 'earth' ? 'earth' : 'moon';
+        globeRef.current?.clearCustomPin?.(pinBody, pin.id);
+        customPinsRef.current.delete(key);
+        if (pinBody === 'earth') {
+          setCustomEarthPin((current) => (current?.id === pin.id ? null : current));
+        } else {
+          setCustomMoonPin((current) => (current?.id === pin.id ? null : current));
+        }
+      }
     }
 
     const isCustom = Boolean(
@@ -407,6 +422,16 @@ export default function App() {
       normalized.type === 'custom_pin' ||
       (typeof normalized.id === 'string' && (normalized.id.startsWith('sp-probe-') || normalized.id.startsWith('custom-')))
     );
+    if (isCustom) {
+      customPinsRef.current.set(`${body}:${normalized.id}`, normalized);
+    }
+    setSelectedFeature(normalized);
+    if (body === 'earth') {
+      setSelectedEarthFeature(normalized);
+    } else {
+      setSelectedMoonFeature(normalized);
+    }
+
     if (isCustom) {
       if (body === 'earth') {
         setCustomEarthPin(normalized);
@@ -510,36 +535,35 @@ export default function App() {
     );
   }, [setFeatureSelection]);
 
-  const handleClearCustomPin = useCallback((planetId = activePlanet) => {
+  const handleClearCustomPin = useCallback((planetId = activePlanet, featureId = selectedFeature?.id) => {
     const body = planetId === 'earth' ? 'earth' : 'moon';
-    if (body === 'earth') {
-      setCustomEarthPin(null);
-      setSelectedEarthFeature((feature) =>
-        feature?.isCustomPin || feature?.type === 'custom_pin' ? null : feature
-      );
-    } else {
-      setCustomMoonPin(null);
-      setSelectedMoonFeature((feature) =>
-        feature?.isCustomPin || feature?.type === 'custom_pin' ? null : feature
-      );
-    }
-    globeRef.current?.clearCustomPin?.(body);
-    globeRef.current?.selectFeaturePin?.(null, body);
-    setSelectedFeature((feature) =>
+    const isTargetCustomPin = (feature) =>
       (feature?.isCustomPin || feature?.type === 'custom_pin') &&
-      (feature.body || 'moon') === body
-        ? null
-        : feature
+      (!featureId || feature.id === featureId);
+    if (body === 'earth') {
+      setCustomEarthPin((pin) => (isTargetCustomPin(pin) ? null : pin));
+      setSelectedEarthFeature((feature) => (isTargetCustomPin(feature) ? null : feature));
+    } else {
+      setCustomMoonPin((pin) => (isTargetCustomPin(pin) ? null : pin));
+      setSelectedMoonFeature((feature) => (isTargetCustomPin(feature) ? null : feature));
+    }
+    globeRef.current?.clearCustomPin?.(body, featureId);
+    if (featureId) customPinsRef.current.delete(`${body}:${featureId}`);
+    if (isTargetCustomPin(selectedFeature) && (selectedFeature.body || 'moon') === body) {
+      globeRef.current?.selectFeaturePin?.(null, body);
+    }
+    setSelectedFeature((feature) =>
+      isTargetCustomPin(feature) && (feature.body || 'moon') === body ? null : feature
     );
     if (
-      (selectedFeature3DRef.current?.isCustomPin || selectedFeature3DRef.current?.type === 'custom_pin') &&
+      isTargetCustomPin(selectedFeature3DRef.current) &&
       (selectedFeature3DRef.current.body || 'moon') === body
     ) {
       selectedFeature3DRef.current = null;
       setSelectedFeature3D(null);
     }
     if (
-      (selectedFeature2DRef.current?.isCustomPin || selectedFeature2DRef.current?.type === 'custom_pin') &&
+      isTargetCustomPin(selectedFeature2DRef.current) &&
       (selectedFeature2DRef.current.body || 'moon') === body
     ) {
       selectedFeature2DRef.current = null;
@@ -548,7 +572,7 @@ export default function App() {
     southPoleMapRef.current?.clearSelectedLocation?.();
     setIsFeaturePanelOpen(false);
     notifyInfo('Waypoint Removed', `Custom waypoint cleared from ${body === 'earth' ? 'Earth' : 'Moon'} surface.`);
-  }, [activePlanet]);
+  }, [activePlanet, selectedFeature]);
 
   const handleCloseFeaturePanel = useCallback(() => {
     setIsFeaturePanelOpen(false);
@@ -557,7 +581,24 @@ export default function App() {
       targetFeature?.isCustomPin || targetFeature?.type === 'custom_pin'
     );
     if (isCustom) {
-      handleClearCustomPin(targetFeature?.body || activePlanet);
+      if (comparisonSelectionStore.isFeatureInComparison(targetFeature)) {
+        setSelectedFeature(null);
+        setSelectedMoonFeature((feature) => (feature?.id === targetFeature.id ? null : feature));
+        setSelectedEarthFeature((feature) => (feature?.id === targetFeature.id ? null : feature));
+        selectedFeature3DRef.current =
+          selectedFeature3DRef.current?.id === targetFeature.id
+            ? null
+            : selectedFeature3DRef.current;
+        setSelectedFeature3D(selectedFeature3DRef.current);
+        selectedFeature2DRef.current =
+          selectedFeature2DRef.current?.id === targetFeature.id
+            ? null
+            : selectedFeature2DRef.current;
+        setSelectedFeature2D(selectedFeature2DRef.current);
+        globeRef.current?.selectFeaturePin?.(null, targetFeature.body || activePlanet);
+      } else {
+        handleClearCustomPin(targetFeature?.body || activePlanet, targetFeature.id);
+      }
     } else {
       setSelectedFeature(null);
       setSelectedMoonFeature(null);

@@ -2,6 +2,8 @@ import * as Cesium from 'cesium';
 import { EARTH_COMMUNICATION_SITES } from '../../data/earthCommunicationSites.js';
 import { EARTH_LAUNCH_SITES } from '../../data/earthLaunchSites.js';
 import { formatLunarCoordinates } from '../../utils/coordinates.js';
+import { comparisonSelectionStore } from '../../utils/comparisonEngine.js';
+import { createCustomPinId } from '../../utils/customPinId.js';
 
 const EARTH_PIN_STYLE = {
   baseScale: 0.22,
@@ -26,8 +28,8 @@ const SITE_MARKER_COLORS = {
 const EARTH_DRAG_THRESHOLD_PIXELS = 6;
 const sitePinImages = new Map();
 
-function createSitePinImage(type, selected) {
-  const cacheKey = `${type}:${selected}`;
+function createSitePinImage(type, selected, compared = false) {
+  const cacheKey = `${type}:${selected}:${compared}`;
   if (sitePinImages.has(cacheKey)) return sitePinImages.get(cacheKey);
 
   const canvas = document.createElement('canvas');
@@ -38,10 +40,14 @@ function createSitePinImage(type, selected) {
     throw new Error('Unable to create the Earth communication-site marker canvas.');
   }
 
-  const color = selected ? '#FDE047' : SITE_MARKER_COLORS[type] || '#00D2C4';
+  const color = compared ? '#00D2C4' : selected ? '#FDE047' : SITE_MARKER_COLORS[type] || '#00D2C4';
   context.clearRect(0, 0, canvas.width, canvas.height);
   context.save();
-  context.shadowColor = selected ? 'rgba(253, 224, 71, 0.95)' : color;
+  context.shadowColor = compared
+    ? 'rgba(0, 210, 196, 0.85)'
+    : selected
+    ? 'rgba(253, 224, 71, 0.95)'
+    : color;
   context.shadowBlur = selected ? 24 : 14;
 
   context.beginPath();
@@ -76,7 +82,7 @@ function createSitePinImage(type, selected) {
     context.lineTo(63, 65);
     context.fill();
 
-    context.strokeStyle = selected ? '#fde047' : '#f97316';
+    context.strokeStyle = compared ? '#00D2C4' : selected ? '#fde047' : '#f97316';
     context.lineWidth = 3;
     context.beginPath();
     context.moveTo(56, 65);
@@ -106,7 +112,7 @@ function createSitePinImage(type, selected) {
   return image;
 }
 
-function createPinImage(selected) {
+function createPinImage(selected, compared = false) {
   const canvas = document.createElement('canvas');
   canvas.width = 112;
   canvas.height = 112;
@@ -117,10 +123,14 @@ function createPinImage(selected) {
   }
 
   const cx = canvas.width / 2;
-  const primaryColor = selected ? '#FDE047' : '#00D2C4';
+  const primaryColor = compared ? '#00D2C4' : selected ? '#FDE047' : '#00D2C4';
 
   context.save();
-  context.shadowColor = selected ? 'rgba(253, 224, 71, 0.95)' : 'rgba(0, 210, 196, 0.75)';
+  context.shadowColor = compared
+    ? 'rgba(0, 210, 196, 0.85)'
+    : selected
+    ? 'rgba(253, 224, 71, 0.95)'
+    : 'rgba(0, 210, 196, 0.75)';
   context.shadowBlur = selected ? 20 : 12;
 
   context.beginPath();
@@ -152,7 +162,7 @@ export function createEarthFeatures({ viewer, container, callbacks }) {
   const handler = new Cesium.ScreenSpaceEventHandler(scene.canvas);
   const sitePinEntities = [];
   const launchSitePinEntities = [];
-  let customPinEntity = null;
+  const customPinEntities = [];
   let selectedEntity = null;
   let hoveredEntity = null;
   let clickStartPosition = null;
@@ -164,6 +174,7 @@ export function createEarthFeatures({ viewer, container, callbacks }) {
     if (!entity || viewer.isDestroyed() || !viewer.entities.contains(entity)) return;
     const selected = entity === selectedEntity || entity === hoveredEntity;
     const feature = entity.properties?.feature?.getValue();
+    const compared = comparisonSelectionStore.isFeatureInComparison(feature);
     const markerType = entity.properties?.markerType?.getValue();
     const baseScale =
       entity.properties?.baseScale?.getValue() ?? EARTH_PIN_STYLE.baseScale;
@@ -183,8 +194,8 @@ export function createEarthFeatures({ viewer, container, callbacks }) {
         );
       entity.billboard.image =
         feature?.isCustomPin
-          ? createPinImage(selected)
-          : createSitePinImage(markerType, selected);
+          ? createPinImage(selected, compared)
+          : createSitePinImage(markerType, selected, compared);
     }
     if (entity.label) {
       const maxLabelDistance =
@@ -195,7 +206,9 @@ export function createEarthFeatures({ viewer, container, callbacks }) {
       if (isVisible) {
         entity.label.distanceDisplayCondition = new Cesium.DistanceDisplayCondition(0, EARTH_PIN_STYLE.farDistance);
       }
-      entity.label.fillColor = selected
+      entity.label.fillColor = compared
+        ? Cesium.Color.fromCssColorString('#00D2C4')
+        : selected
         ? Cesium.Color.fromCssColorString('#FDE047')
         : Cesium.Color.fromCssColorString('#FFFFFF');
     }
@@ -278,6 +291,16 @@ export function createEarthFeatures({ viewer, container, callbacks }) {
   EARTH_COMMUNICATION_SITES.forEach((site) => addSiteEntity(site, 'earth-communication-sites'));
   EARTH_LAUNCH_SITES.forEach((site) => addSiteEntity(site, 'earth-launch-sites'));
 
+  const refreshComparisonStyles = () => {
+    [
+      ...sitePinEntities,
+      ...launchSitePinEntities,
+      ...customPinEntities,
+    ].forEach(updatePinStyle);
+    scene.requestRender();
+  };
+  const unsubscribeComparison = comparisonSelectionStore.subscribe(refreshComparisonStyles);
+
   const getSurfaceCartesian = (position) => {
     return viewer.camera.pickEllipsoid(position, Cesium.Ellipsoid.WGS84);
   };
@@ -305,17 +328,22 @@ export function createEarthFeatures({ viewer, container, callbacks }) {
     const normalizedLatitude = Cesium.Math.clamp(latitude, -90, 90);
     const pinTitle = customName || 'Custom Earth Station';
 
-    if (customPinEntity && viewer.entities.contains(customPinEntity)) {
-      const existing = customPinEntity.properties?.feature?.getValue?.();
-      if (
+    const matchingEntity = customPinEntities.find((entity) => {
+      const existing = entity.properties?.feature?.getValue?.();
+      return (
+        viewer.entities.contains(entity) &&
         existing &&
         Math.abs(existing.longitude - normalizedLongitude) < 1e-5 &&
         Math.abs(existing.latitude - normalizedLatitude) < 1e-5 &&
         existing.name === pinTitle
-      ) {
-        selectFeaturePin(existing.id);
+      );
+    });
+    if (matchingEntity) {
+      const existingFeature = matchingEntity.properties?.feature?.getValue?.();
+      if (existingFeature) {
+        selectFeaturePin(existingFeature.id);
         scene.requestRender();
-        return existing;
+        return existingFeature;
       }
     }
 
@@ -326,7 +354,7 @@ export function createEarthFeatures({ viewer, container, callbacks }) {
       4
     );
     const feature = {
-      id: 'custom-earth-pin',
+      id: createCustomPinId('custom-earth-pin', normalizedLatitude, normalizedLongitude),
       name: pinTitle,
       type: 'custom_pin',
       latitude: normalizedLatitude,
@@ -347,12 +375,7 @@ export function createEarthFeatures({ viewer, container, callbacks }) {
       updatePinStyle(previousSelectedEntity);
     }
 
-    if (customPinEntity) {
-      if (hoveredEntity === customPinEntity) hoveredEntity = null;
-      viewer.entities.remove(customPinEntity);
-    }
-
-    customPinEntity = viewer.entities.add({
+    const customPinEntity = viewer.entities.add({
       name: pinTitle,
       position: Cesium.Cartesian3.fromDegrees(
         normalizedLongitude,
@@ -404,6 +427,7 @@ export function createEarthFeatures({ viewer, container, callbacks }) {
         baseScale: EARTH_PIN_STYLE.baseScale,
       },
     });
+    customPinEntities.push(customPinEntity);
 
     selectedEntity = customPinEntity;
     updatePinStyle(customPinEntity);
@@ -411,14 +435,23 @@ export function createEarthFeatures({ viewer, container, callbacks }) {
     return feature;
   };
 
-  const clearCustomPin = () => {
-    if (customPinEntity) {
-      if (selectedEntity === customPinEntity) selectedEntity = null;
-      if (hoveredEntity === customPinEntity) hoveredEntity = null;
-      if (!viewer.isDestroyed() && viewer.entities.contains(customPinEntity)) {
-        viewer.entities.remove(customPinEntity);
+  const clearCustomPin = (featureId) => {
+    const entitiesToRemove = featureId
+      ? customPinEntities.filter(
+          (entity) => entity.properties?.feature?.getValue?.()?.id === featureId
+        )
+      : [...customPinEntities];
+
+    entitiesToRemove.forEach((entity) => {
+      if (selectedEntity === entity) selectedEntity = null;
+      if (hoveredEntity === entity) hoveredEntity = null;
+      if (!viewer.isDestroyed() && viewer.entities.contains(entity)) {
+        viewer.entities.remove(entity);
       }
-      customPinEntity = null;
+      const index = customPinEntities.indexOf(entity);
+      if (index !== -1) customPinEntities.splice(index, 1);
+    });
+    if (entitiesToRemove.length > 0) {
       scene.requestRender();
     }
   };
@@ -431,7 +464,7 @@ export function createEarthFeatures({ viewer, container, callbacks }) {
     }
 
     const target = featureId
-      ? [...sitePinEntities, ...launchSitePinEntities, customPinEntity]
+      ? [...sitePinEntities, ...launchSitePinEntities, ...customPinEntities]
           .filter((entity) => entity && viewer.entities.contains(entity))
           .find(
             (entity) =>
@@ -593,12 +626,15 @@ export function createEarthFeatures({ viewer, container, callbacks }) {
         });
         scene.requestRender();
       }
-      if (layerId === 'earth-custom-pin' && customPinEntity) {
-        customPinEntity.show = visible;
+      if (layerId === 'earth-custom-pin') {
+        customPinEntities.forEach((entity) => {
+          entity.show = visible;
+        });
         scene.requestRender();
       }
     },
     destroy() {
+      unsubscribeComparison();
       if (!viewer.isDestroyed()) {
         clearCustomPin();
         sitePinEntities.forEach((entity) => viewer.entities.remove(entity));

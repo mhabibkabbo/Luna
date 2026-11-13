@@ -19,6 +19,7 @@ import {
   SlidersHorizontal,
   Download,
   Compass,
+  Globe2,
   MoveLeft,
   MoveRight,
   AlertTriangle,
@@ -194,7 +195,10 @@ export default function SiteComparisonPage({
     };
   }, [isParamFilterOpen]);
   const [highlightExtrema, setHighlightExtrema] = useState(true);
-  const [sortConfig, setSortConfig] = useState({ paramId: null, direction: 'desc' });
+  const [sortConfig, setSortConfig] = useState({
+    paramId: 'overallSuitability',
+    direction: 'desc',
+  });
   const [activeProvenanceParamId, setActiveProvenanceParamId] = useState(null);
 
   const [openSections, setOpenSections] = useState({
@@ -359,23 +363,29 @@ export default function SiteComparisonPage({
   const handleResetComparison = () => {
     comparisonSelectionStore.resetLocations();
     setDurationDays(14);
-    setSortConfig({ paramId: null, direction: 'desc' });
+    setSortConfig({ paramId: 'overallSuitability', direction: 'desc' });
     setActiveCategoryFilter('All');
     setHiddenParamIds(new Set());
     notifyInfo('Comparison Cleared', 'All locations cleared from comparison.');
   };
 
   const visibleColumns = useMemo(() => {
-    return COMPARISON_PARAMETER_DEFINITIONS.filter((col) => {
-      if (hiddenParamIds.has(col.id)) return false;
-      if (activeCategoryFilter !== 'All' && col.category !== activeCategoryFilter && col.id !== 'coordinates') {
-        return false;
-      }
-      if (matrixMode === 'standard' && activeCategoryFilter === 'All') {
-        return col.inStandardView;
-      }
-      return true;
-    });
+    return COMPARISON_PARAMETER_DEFINITIONS
+      .filter((col) => {
+        if (hiddenParamIds.has(col.id)) return false;
+        if (activeCategoryFilter !== 'All' && col.category !== activeCategoryFilter && col.id !== 'coordinates') {
+          return false;
+        }
+        if (matrixMode === 'standard' && activeCategoryFilter === 'All') {
+          return col.inStandardView;
+        }
+        return true;
+      })
+      .sort((a, b) => {
+        const priority = (id) =>
+          id === 'coordinates' ? 0 : id === 'overallSuitability' ? 1 : 2;
+        return priority(a.id) - priority(b.id);
+      });
   }, [matrixMode, activeCategoryFilter, hiddenParamIds]);
 
   const sortedEvaluationsWithIndex = useMemo(() => {
@@ -1072,14 +1082,19 @@ export default function SiteComparisonPage({
 
           {selectedLocations.length < 8 && (
             <div className="p-4 rounded-xl bg-[#050507]/80 border border-dashed border-[#1E2028] hover:border-white/30 flex flex-col justify-center items-center gap-2.5 text-center transition-colors min-h-[104px]">
-              <div className="text-xs font-sans font-medium text-slate-300 flex items-center gap-1.5">
-                <Plus className="w-3.5 h-3.5 text-[#F8FAFC]" />
+              <button
+                type="button"
+                onClick={handleSelectLocationsFrom3DMap}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-[#050507] transition-colors hover:bg-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400"
+                title="Add a location from the 3D lunar map"
+              >
+                <Globe2 className="h-3.5 w-3.5" aria-hidden="true" />
                 <span>
                   {selectedLocations.length === 1
-                    ? 'Add 2nd Site to Compare'
-                    : `Add Site (${selectedLocations.length}/8)`}
+                    ? `Add Site (${selectedLocations.length}/8)`
+                    : `Add Sites (${selectedLocations.length}/8)`}
                 </span>
-              </div>
+              </button>
               <div className="flex items-center gap-1.5 w-full">
                 <select
                   aria-label="Add comparison site"
@@ -1665,7 +1680,7 @@ export default function SiteComparisonPage({
                 3. Terrain Characteristics (NASA LRO LOLA 400 m/px DEM)
               </span>
               <span className="block text-[12px] font-sans text-[#8E95A5] mt-0.5">
-                Surface elevation, Horn 3×3 slope gradient, 2 km RMS roughness, local relief, crater density status, and landing hazards.
+                Surface elevation, Horn 3×3 slope gradient, 2 km RMS roughness, local relief, and landing hazards.
               </span>
             </div>
             {openSections.terrain ? (
@@ -1685,7 +1700,6 @@ export default function SiteComparisonPage({
                     <th className="py-2.5 px-3">Slope (°)</th>
                     <th className="py-2.5 px-3">Roughness (RMS)</th>
                     <th className="py-2.5 px-3">Local Relief (2 km)</th>
-                    <th className="py-2.5 px-3">Crater Density</th>
                     <th className="py-2.5 px-3">Classification</th>
                     <th className="py-2.5 pl-3">Identified Landing Hazards</th>
                   </tr>

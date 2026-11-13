@@ -9,7 +9,6 @@ import {
   Menu,
   X,
   ChevronDown,
-  Compass,
   Clock,
   FileText,
 } from 'lucide-react';
@@ -18,7 +17,7 @@ import { celestialTimeStore } from '../../utils/celestialTime.js';
 import { LunaStencilWordmark } from '../common/LunaBrandLogo.jsx';
 
 export const WORKSPACE_PAGES = [
-  { id: 'explorer', label: 'Lunar Map (3D / 2D)', shortLabel: 'Map', icon: Compass, shortcut: '1/2' },
+  { id: 'explorer', label: 'Lunar Map (3D / 2D)', shortLabel: 'Map', icon: Globe2, shortcut: '1/2' },
   { id: 'trajectory', label: 'Orbit Planner', shortLabel: 'Orbit', icon: Orbit, shortcut: 'O' },
   { id: 'planner', label: 'Landing Recommendations', shortLabel: 'Planner', icon: Target, shortcut: 'P' },
   { id: 'comparison', label: 'Site Comparison', shortLabel: 'Compare', icon: GitCompare, shortcut: 'C' },

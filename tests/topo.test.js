@@ -185,9 +185,6 @@ test('Lunar Terrain Metrics & Slope Hazard Warnings (Custom Dropped Pin Terrain 
   assert.equal(safeMetrics.isSlopeHazard, false);
   assert.equal(safeMetrics.terrainClassification, 'Polar Illuminated Massif / Ridge');
   assert.ok(safeMetrics.roughnessM > 0);
-  assert.equal(safeMetrics.craterDensityPer100Km2, null);
-  assert.equal(safeMetrics.craterDensityLabel, 'Not present in loaded dataset');
-
   // Steep slope hazard (>= 15°)
   const steepMetrics = sampleLunarTerrainMetrics(-88.5, 45.0, {
     elevationMeters: -1200,
@@ -613,4 +610,3 @@ test('Planar Sub-Solar/Sub-Earth Directional DEM Horizon Ray-Marching (CRITICAL-
     'Crater floor horizon obstruction must exceed rim horizon by > 10°'
   );
 });
-

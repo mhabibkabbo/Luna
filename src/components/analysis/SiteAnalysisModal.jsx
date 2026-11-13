@@ -970,8 +970,10 @@ export default function SiteAnalysisModal({
             <button
               type="button"
               onClick={() => {
-                onClose();
-                onClearCustomPin(feature.body === 'earth' ? 'earth' : 'moon');
+                onClearCustomPin(
+                  feature.body === 'earth' ? 'earth' : 'moon',
+                  feature.id
+                );
               }}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-rose-950/40 text-rose-300 hover:bg-rose-900/60 text-xs font-medium border border-rose-500/30 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400/50"
             >

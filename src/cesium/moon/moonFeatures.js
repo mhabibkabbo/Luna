@@ -3,13 +3,20 @@ import { LUNAR_FEATURES } from '../../data/lunarFeatures.js';
 import { LANDING_SITES } from '../../data/landingSites.js';
 import { formatLunarCoordinates, getLunarRegionInfo, findNearestLunarFeature } from '../../utils/coordinates.js';
 import { selectBestPickedMarker } from '../../utils/markerHitSelection.js';
+import { comparisonSelectionStore } from '../../utils/comparisonEngine.js';
+import { createCustomPinId } from '../../utils/customPinId.js';
 
 export function createMoonFeatures({ viewer, container, callbacks, isMobile, flyToCoordinate, getLunarMarkerDataUrl }) {
   const scene = viewer.scene;
   const ALL_CATALOG_FEATURES = [...LUNAR_FEATURES, ...LANDING_SITES];
   const pinEntities = [];
+  const customPinEntities = [];
   let selectedEntity = null;
-  let customPinEntity = null;
+  let hoveredEntity = null;
+  const isCompared = (entity) =>
+    comparisonSelectionStore.isFeatureInComparison(
+      entity?.properties?.feature?.getValue?.()
+    );
 
   /**
    * Helper to add an entity pin with LOD distance culling and categorized vector icons.
@@ -105,7 +112,7 @@ export function createMoonFeatures({ viewer, container, callbacks, isMobile, fly
     }
 
     const target = featureId
-      ? [...pinEntities, customPinEntity]
+      ? [...pinEntities, ...customPinEntities]
           .filter((e) => e && viewer.entities.contains(e))
           .find((e) => {
             const f = e?.properties?.feature?.getValue();
@@ -127,7 +134,7 @@ export function createMoonFeatures({ viewer, container, callbacks, isMobile, fly
 
         if (selectedEntity.billboard) {
           selectedEntity.billboard.scale = prevScale;
-          selectedEntity.billboard.image = getLunarMarkerDataUrl(prevType, false);
+          selectedEntity.billboard.image = getLunarMarkerDataUrl(prevType, false, isCompared(selectedEntity));
           const maxBillboardDist =
             prevProps.maxBillboardDist?.getValue() ?? 2.8e6;
           selectedEntity.billboard.distanceDisplayCondition =
@@ -135,7 +142,9 @@ export function createMoonFeatures({ viewer, container, callbacks, isMobile, fly
         }
         if (selectedEntity.label) {
           selectedEntity.label.distanceDisplayCondition = new Cesium.DistanceDisplayCondition(0.0, prevMaxDist);
-          selectedEntity.label.fillColor = Cesium.Color.fromCssColorString('#F8FAFC');
+          selectedEntity.label.fillColor = Cesium.Color.fromCssColorString(
+            isCompared(selectedEntity) ? '#00D2C4' : '#F8FAFC'
+          );
           selectedEntity.label.style = Cesium.LabelStyle.FILL;
         }
       } catch {}
@@ -154,13 +163,15 @@ export function createMoonFeatures({ viewer, container, callbacks, isMobile, fly
         const base = target.properties?.baseScale?.getValue() || 0.22;
         if (target.billboard) {
           target.billboard.scale = base * 1.4;
-          target.billboard.image = getLunarMarkerDataUrl(markerType, true);
+          target.billboard.image = getLunarMarkerDataUrl(markerType, true, isCompared(target));
           target.billboard.distanceDisplayCondition =
             new Cesium.DistanceDisplayCondition(0.0, 1.0e9);
         }
         if (target.label) {
           target.label.distanceDisplayCondition = new Cesium.DistanceDisplayCondition(0.0, 5.0e7);
-          target.label.fillColor = Cesium.Color.fromCssColorString('#FDE68A');
+          target.label.fillColor = Cesium.Color.fromCssColorString(
+            isCompared(target) ? '#00D2C4' : '#FDE68A'
+          );
           target.label.style = Cesium.LabelStyle.FILL;
         }
       } catch {}
@@ -228,6 +239,25 @@ export function createMoonFeatures({ viewer, container, callbacks, isMobile, fly
     }
   });
 
+  const refreshComparisonStyles = () => {
+    [...pinEntities, ...customPinEntities].forEach((entity) => {
+      const compared = isCompared(entity);
+      const selected = entity === selectedEntity || entity === hoveredEntity;
+      const markerType = entity.properties?.markerType?.getValue() || 'crater_minor';
+      if (entity.billboard) {
+        entity.billboard.image = getLunarMarkerDataUrl(markerType, selected, compared);
+      }
+      if (entity.label) {
+        entity.label.fillColor = Cesium.Color.fromCssColorString(
+          compared ? '#00D2C4' : entity === selectedEntity ? '#FDE68A' : '#F8FAFC'
+        );
+      }
+    });
+    scene.requestRender();
+  };
+  const unsubscribeComparison = comparisonSelectionStore.subscribe(refreshComparisonStyles);
+  refreshComparisonStyles();
+
   const setLayerVisibility = (layerId, isVisible) => {
     pinEntities.forEach((entity) => {
       const cat = entity.properties?.category?.getValue();
@@ -239,7 +269,6 @@ export function createMoonFeatures({ viewer, container, callbacks, isMobile, fly
 
   const handler = new Cesium.ScreenSpaceEventHandler(scene.canvas);
 
-  let hoveredEntity = null;
   let clickStartPosition = null;
 
   const dropCustomPin = (lon, lat, customName) => {
@@ -250,17 +279,22 @@ export function createMoonFeatures({ viewer, container, callbacks, isMobile, fly
     const normLat = Math.max(-90, Math.min(90, lat));
     const pinTitle = customName || 'Custom Dropped Pin';
 
-    if (customPinEntity && viewer.entities.contains(customPinEntity)) {
-      const existing = customPinEntity.properties?.feature?.getValue?.();
-      if (
+    const matchingEntity = customPinEntities.find((entity) => {
+      const existing = entity.properties?.feature?.getValue?.();
+      return (
+        viewer.entities.contains(entity) &&
         existing &&
         Math.abs(existing.longitude - normLon) < 1e-5 &&
         Math.abs(existing.latitude - normLat) < 1e-5 &&
         existing.name === pinTitle
-      ) {
-        selectFeaturePin(existing.id);
+      );
+    });
+    if (matchingEntity) {
+      const existingFeature = matchingEntity.properties?.feature?.getValue?.();
+      if (existingFeature) {
+        selectFeaturePin(existingFeature.id);
         scene.requestRender();
-        return existing;
+        return existingFeature;
       }
     }
 
@@ -269,7 +303,7 @@ export function createMoonFeatures({ viewer, container, callbacks, isMobile, fly
     const nearest = findNearestLunarFeature(normLon, normLat, ALL_CATALOG_FEATURES);
 
     const customPinData = {
-      id: 'custom-user-pin',
+      id: createCustomPinId('custom-user-pin', normLat, normLon),
       name: pinTitle,
       type: 'custom_pin',
       latitude: normLat,
@@ -286,20 +320,9 @@ export function createMoonFeatures({ viewer, container, callbacks, isMobile, fly
       source: 'User Selenographic Waypoint',
     };
 
-    if (customPinEntity) {
-      if (hoveredEntity === customPinEntity) {
-        hoveredEntity = null;
-      }
-      if (selectedEntity === customPinEntity) {
-        selectedEntity = null;
-      }
-      viewer.entities.remove(customPinEntity);
-      customPinEntity = null;
-    }
-
     const pinIconUrl = getLunarMarkerDataUrl('custom_pin', true);
 
-    customPinEntity = viewer.entities.add({
+    const customPinEntity = viewer.entities.add({
       name: pinTitle,
       position: Cesium.Cartesian3.fromDegrees(normLon, normLat, 3000, Cesium.Ellipsoid.MOON),
       billboard: {
@@ -332,25 +355,29 @@ export function createMoonFeatures({ viewer, container, callbacks, isMobile, fly
         maxBillboardDist: 2.8e6,
       },
     });
+    customPinEntities.push(customPinEntity);
 
     selectFeaturePin(customPinData.id);
     return customPinData;
   };
 
-  const clearCustomPin = () => {
-    if (customPinEntity) {
-      if (hoveredEntity === customPinEntity) {
-        hoveredEntity = null;
+  const clearCustomPin = (featureId) => {
+    const entitiesToRemove = featureId
+      ? customPinEntities.filter(
+          (entity) => entity.properties?.feature?.getValue?.()?.id === featureId
+        )
+      : [...customPinEntities];
+
+    entitiesToRemove.forEach((entity) => {
+      if (hoveredEntity === entity) hoveredEntity = null;
+      if (selectedEntity === entity) selectedEntity = null;
+      if (!viewer.isDestroyed() && viewer.entities.contains(entity)) {
+        viewer.entities.remove(entity);
       }
-      if (selectedEntity === customPinEntity) {
-        selectedEntity = null;
-      }
-      if (!viewer.isDestroyed() && viewer.entities.contains(customPinEntity)) {
-        viewer.entities.remove(customPinEntity);
-      }
-      customPinEntity = null;
-      scene.requestRender();
-    }
+      const index = customPinEntities.indexOf(entity);
+      if (index !== -1) customPinEntities.splice(index, 1);
+    });
+    if (entitiesToRemove.length > 0) scene.requestRender();
   };
 
   // Throttled mouse move event handler to avoid 60fps React state updates during navigation
@@ -440,13 +467,21 @@ export function createMoonFeatures({ viewer, container, callbacks, isMobile, fly
             const remainsSelected = hoveredEntity === selectedEntity;
             if (hoveredEntity.billboard) {
               hoveredEntity.billboard.scale = remainsSelected ? prevBase * 1.4 : prevBase;
-              hoveredEntity.billboard.image = getLunarMarkerDataUrl(prevType, remainsSelected);
+              hoveredEntity.billboard.image = getLunarMarkerDataUrl(
+                prevType,
+                remainsSelected,
+                isCompared(hoveredEntity)
+              );
             }
           }
           hoveredEntity = pickedEntity;
           if (hoveredEntity.billboard) {
             hoveredEntity.billboard.scale = baseScale * 1.35;
-            hoveredEntity.billboard.image = getLunarMarkerDataUrl(markerType, true);
+            hoveredEntity.billboard.image = getLunarMarkerDataUrl(
+              markerType,
+              true,
+              isCompared(hoveredEntity)
+            );
           }
           scene.requestRender();
         }
@@ -461,7 +496,11 @@ export function createMoonFeatures({ viewer, container, callbacks, isMobile, fly
           const remainsSelected = hoveredEntity === selectedEntity;
           if (hoveredEntity.billboard) {
             hoveredEntity.billboard.scale = remainsSelected ? prevBase * 1.4 : prevBase;
-            hoveredEntity.billboard.image = getLunarMarkerDataUrl(prevType, remainsSelected);
+            hoveredEntity.billboard.image = getLunarMarkerDataUrl(
+              prevType,
+              remainsSelected,
+              isCompared(hoveredEntity)
+            );
           }
         }
         hoveredEntity = null;
@@ -545,10 +584,10 @@ export function createMoonFeatures({ viewer, container, callbacks, isMobile, fly
     const canvasW = scene.canvas.clientWidth || 1280;
     const canvasH = scene.canvas.clientHeight || 800;
 
-    const allEntities = [...pinEntities, customPinEntity].filter(Boolean);
+    const allEntities = [...pinEntities, ...customPinEntities];
     allEntities.sort((a, b) => {
-      const aForce = a === selectedEntity ? 3 : a === hoveredEntity ? 2 : a === customPinEntity ? 1 : 0;
-      const bForce = b === selectedEntity ? 3 : b === hoveredEntity ? 2 : b === customPinEntity ? 1 : 0;
+      const aForce = a === selectedEntity ? 3 : a === hoveredEntity ? 2 : customPinEntities.includes(a) ? 1 : 0;
+      const bForce = b === selectedEntity ? 3 : b === hoveredEntity ? 2 : customPinEntities.includes(b) ? 1 : 0;
       if (aForce !== bForce) return bForce - aForce;
       const aTier = a.properties?.tier?.getValue?.() ?? 3;
       const bTier = b.properties?.tier?.getValue?.() ?? 3;
@@ -568,7 +607,7 @@ export function createMoonFeatures({ viewer, container, callbacks, isMobile, fly
     for (const entity of allEntities) {
       if (!entity.show || !entity.label) continue;
       const isPriority =
-        entity === selectedEntity || entity === hoveredEntity || entity === customPinEntity;
+        entity === selectedEntity || entity === hoveredEntity || customPinEntities.includes(entity);
 
       const pos = entity.position?.getValue(viewer.clock.currentTime);
       if (!pos) {
@@ -654,12 +693,13 @@ export function createMoonFeatures({ viewer, container, callbacks, isMobile, fly
   });
 
   const destroy = () => {
+    unsubscribeComparison();
     if (removePostRender) {
       removePostRender();
     }
-    if (customPinEntity && !viewer.isDestroyed()) {
-      viewer.entities.remove(customPinEntity);
-      customPinEntity = null;
+    if (!viewer.isDestroyed()) {
+      customPinEntities.forEach((entity) => viewer.entities.remove(entity));
+      customPinEntities.length = 0;
     }
     if (handler && !handler.isDestroyed()) {
       handler.destroy();

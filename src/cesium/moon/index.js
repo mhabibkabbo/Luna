@@ -30,9 +30,10 @@ const pinTextureCache = new Map();
  * Rendered at 2x resolution (112x112) for razor-sharp display on Retina/4K displays.
  * @param {'landing_apollo' | 'landing_robotic' | 'south_pole' | 'crater_major' | 'crater_minor' | 'mountain' | 'mare' | 'valley' | 'custom_pin'} category
  * @param {boolean} isSelected
+ * @param {boolean} isCompared
  */
-function getLunarMarkerDataUrl(category = 'crater_minor', isSelected = false) {
-  const cacheKey = `${category}_${isSelected ? 'sel' : 'norm'}`;
+function getLunarMarkerDataUrl(category = 'crater_minor', isSelected = false, isCompared = false) {
+  const cacheKey = `${category}_${isSelected ? 'sel' : 'norm'}_${isCompared ? 'cmp' : 'regular'}`;
   if (pinTextureCache.has(cacheKey)) {
     return pinTextureCache.get(cacheKey);
   }
@@ -88,6 +89,11 @@ function getLunarMarkerDataUrl(category = 'crater_minor', isSelected = false) {
       primaryColor = isSelected ? '#FDE047' : '#00D2C4';
       glowColor = isSelected ? 'rgba(253, 224, 71, 0.95)' : 'rgba(0, 210, 196, 0.85)';
       break;
+  }
+
+  if (isCompared) {
+    primaryColor = '#00D2C4';
+    glowColor = 'rgba(0, 210, 196, 0.85)';
   }
 
   ctx.save();

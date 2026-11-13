@@ -326,9 +326,9 @@ const PlanetViewport = forwardRef(function PlanetViewport(
       return res;
     },
 
-    clearCustomPin: (planetId = planetManagerRef.current?.activeId) => {
+    clearCustomPin: (planetId = planetManagerRef.current?.activeId, featureId) => {
       if (!planetManagerRef.current?.hasPlanet?.(planetId)) return;
-      planetManagerRef.current?.planet(planetId).extras.features.clearCustomPin();
+      planetManagerRef.current?.planet(planetId).extras.features.clearCustomPin(featureId);
     },
 
     toggleAutoRotate: () => {

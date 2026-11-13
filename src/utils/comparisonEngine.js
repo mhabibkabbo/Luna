@@ -484,25 +484,6 @@ export const COMPARISON_PARAMETER_DEFINITIONS = [
     },
   },
   {
-    id: 'craterDensity',
-    label: 'Crater Density',
-    shortLabel: 'Crater Density',
-    category: 'Terrain',
-    unit: 'per 100 km²',
-    inStandardView: true,
-    sortable: false,
-    higherIsBetter: false,
-    provenance: {
-      datasetName: 'Lunar Crater Spatial Density Catalog (Not Loaded)',
-      organization: 'USGS / LROC / Robbins Lunar Crater Database',
-      version: 'Not present in local application bundle',
-      spatialResolution: 'N/A (Dataset not loaded)',
-      temporalResolution: 'N/A',
-      method: 'Spatial crater count per 100 km² is not loaded in local memory. Reported strictly as Data Not Available per scientific integrity rules.',
-      derivationType: 'Data Not Available',
-    },
-  },
-  {
     id: 'terrainClassification',
     label: 'Terrain Classification',
     shortLabel: 'Terrain Class',
@@ -1035,8 +1016,6 @@ export function evaluateComparisonLocation(location, startMs, durationDays = 14)
   if (!isHorizonAvailable) {
     missingDatasets.push('360° Topographic Horizon Profile (Geometric 0° horizon used)');
   }
-  missingDatasets.push('Crater Spatial Density Catalog (Not loaded in local memory)');
-
   const hasAllCoreTerrainAndEphemeris =
     elevationM !== null && slopeDeg !== null && roughnessM !== null && isHorizonAvailable;
 
@@ -1047,7 +1026,7 @@ export function evaluateComparisonLocation(location, startMs, durationDays = 14)
     : 'Partially Available';
 
   const completenessDetail = hasAllCoreTerrainAndEphemeris
-    ? 'All core LOLA 400 m/px polar DEM terrain, 360° horizon, ephemeris, and radiative thermal models available (Crater catalog not loaded).'
+    ? 'All core LOLA 400 m/px polar DEM terrain, 360° horizon, ephemeris, and radiative thermal models available.'
     : `Ephemeris & thermal models active; ${missingDatasets.slice(0, 2).join('; ')}.`;
 
   const geoRegion = determineLunarGeologicalRegion(lat, lon);
@@ -1116,8 +1095,6 @@ export function evaluateComparisonLocation(location, startMs, durationDays = 14)
       slopeSource: terrainMetrics?.slopeSource || null,
       roughnessM,
       localReliefM,
-      craterDensity: null, // Strictly null — no local crater density dataset loaded
-      craterDensityLabel: 'Data Not Available',
       terrainClassification: terrainMetrics?.terrainClassification || geoRegion.province,
       geologicalProvince: geoRegion.province,
       nearestLandmark: terrainMetrics?.nearestLandmark || null,
@@ -1705,15 +1682,6 @@ export function getMatrixCellDisplay(ev, paramId) {
             : 'unfavorable',
       };
 
-    case 'craterDensity':
-      return {
-        text: 'Data Not Available',
-        subtext: 'Crater catalog not loaded',
-        numericValue: null,
-        isUnavailable: true,
-        status: 'unavailable',
-      };
-
     case 'terrainClassification':
       return {
         text: ev.terrain.terrainClassification,
@@ -2008,7 +1976,7 @@ function createComparisonSelectionStore() {
   };
 
   const isFeatureInComparison = (feature) => {
-    if (!feature) return false;
+    if (!feature || feature.body === 'earth') return false;
     const norm = normalizeFeatureToComparisonLocation(feature, state.locations.length);
     if (!norm) return false;
     return state.locations.some(
@@ -2224,4 +2192,3 @@ function createComparisonSelectionStore() {
 export const comparisonSelectionStore = createComparisonSelectionStore();
 
 export { NASA_DATASETS_REGISTRY };
-

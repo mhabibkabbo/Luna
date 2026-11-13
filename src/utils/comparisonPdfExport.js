@@ -214,7 +214,6 @@ export async function exportComparisonDossierPdf({
     'elevationM',
     'slopeDeg',
     'roughnessM',
-    'craterDensity',
     'overallSuitability',
   ];
 
@@ -499,7 +498,6 @@ export async function exportComparisonDossierPdf({
         'Slope (°)',
         'Roughness (m RMS)',
         'Local Relief (2 km)',
-        'Crater Density',
         'Terrain Classification',
         'Touchdown Temp',
         'Mission Min / Max Temp',
@@ -514,7 +512,6 @@ export async function exportComparisonDossierPdf({
       ev.terrain.slopeDeg !== null ? `${ev.terrain.slopeDeg.toFixed(1)}°` : 'Data Not Available',
       ev.terrain.roughnessM !== null ? `${ev.terrain.roughnessM.toFixed(1)} m` : 'Data Not Available',
       ev.terrain.localReliefM !== null ? `${ev.terrain.localReliefM.toFixed(0)} m` : 'Data Not Available',
-      'Data Not Available',
       ev.terrain.terrainClassification,
       `${ev.thermal.touchdownTempC}°C (${ev.thermal.touchdownTempK} K)`,
       `${ev.thermal.minTempC}°C to ${ev.thermal.maxTempC > 0 ? '+' : ''}${ev.thermal.maxTempC}°C\n(Δ${ev.thermal.tempVariationC}°C)`,
@@ -552,7 +549,6 @@ export async function exportComparisonDossierPdf({
   doc.setTextColor(51, 65, 85);
   const terrainNotes = [
     '• LRO LOLA South Pole DEM Coverage Boundary (80°S–90°S): High-resolution (400 m/px, 0.5 m vertical precision) gridded elevation, Horn 3x3 slope, and 2 km RMS surface roughness are computed directly from the bundled NASA LOLA South Pole binary grid. Custom locations north of 80°S without published catalog values explicitly report Data Not Available.',
-    '• Crater Spatial Density: Local crater count catalogs (e.g., Robbins 2019) are not loaded in local application memory; Crater Density is strictly reported as Data Not Available rather than approximated.',
     '• Surface Temperature Provenance: Temperatures are Model-Derived via an analytical Stefan-Boltzmann radiative equilibrium model parameterized by LRO Diviner literature (Vasavada et al. 2012; Paige et al. 2010) and coupled to local LOLA DEM shadow masking.',
   ];
   terrainNotes.forEach((line, i) => {

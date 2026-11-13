@@ -9,6 +9,7 @@ import {
   COMPARISON_PARAMETER_DEFINITIONS,
   comparisonSelectionStore,
 } from '../src/utils/comparisonEngine.js';
+import { createCustomPinId } from '../src/utils/customPinId.js';
 
 describe('Lunar Landing Site Comparison & Mission Evaluation Engine', () => {
   describe('Coordinate Validation (Section 13.7)', () => {
@@ -27,6 +28,41 @@ describe('Lunar Landing Site Comparison & Mission Evaluation Engine', () => {
       assert.equal(farSide.isValid, true);
       assert.equal(farSide.lat, 15.25);
       assert.equal(farSide.lon, -179.95);
+    });
+
+    it('does not treat Earth features as members of lunar site comparison', () => {
+      const previousLocations = comparisonSelectionStore.get().locations;
+      const lunarLocation = {
+        id: 'lunar-comparison-test',
+        name: 'Lunar comparison test',
+        latitude: 38.9,
+        longitude: -77.0,
+      };
+
+      try {
+        comparisonSelectionStore.setLocations([lunarLocation]);
+        assert.equal(
+          comparisonSelectionStore.isFeatureInComparison({
+            id: 'earth-marker-test',
+            body: 'earth',
+            name: 'Earth marker test',
+            latitude: lunarLocation.latitude,
+            longitude: lunarLocation.longitude,
+          }),
+          false
+        );
+        assert.equal(comparisonSelectionStore.isFeatureInComparison(lunarLocation), true);
+      } finally {
+        comparisonSelectionStore.setLocations(previousLocations);
+      }
+    });
+
+    it('creates distinct custom pin IDs for separate pins at the same coordinates', () => {
+      const pinIds = [
+        createCustomPinId('custom-user-pin', -85, 10),
+        createCustomPinId('custom-user-pin', -85, 10),
+      ];
+      assert.notEqual(pinIds[0], pinIds[1]);
     });
 
     it('rejects out-of-range or invalid coordinates without silently clamping', () => {
@@ -107,7 +143,6 @@ describe('Lunar Landing Site Comparison & Mission Evaluation Engine', () => {
       assert.ok(Number.isFinite(res.terrain.elevationM), 'Elevation should be measured from LOLA DEM');
       assert.ok(Number.isFinite(res.terrain.slopeDeg), 'Slope should be derived via Horn 3x3 on LOLA DEM');
       assert.ok(Number.isFinite(res.terrain.roughnessM), 'Roughness should be derived from LOLA DEM');
-      assert.equal(res.terrain.craterDensity, null, 'Crater density must be null (Data Not Available)');
       assert.equal(res.suitability.hasCompleteScoringInputs, true);
       assert.ok(Number.isFinite(res.suitability.overallSuitability));
     });

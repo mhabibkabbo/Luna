@@ -10,7 +10,6 @@ import {
   EyeOff,
   ChevronUp,
   ChevronDown,
-  Maximize2,
   X,
   Navigation,
 } from 'lucide-react';
@@ -242,18 +241,6 @@ export default function CelestialPanel({
     }
   };
 
-  const handleFrame = () => {
-    if (!overlayVisible) {
-      setOverlayVisible(true);
-      globeRef.current?.setCelestialVisible?.(true);
-    }
-    if (activePlanet === 'earth') {
-      globeRef.current?.resetOverview?.();
-    } else {
-      globeRef.current?.flyToCelestialOverview?.();
-    }
-  };
-
   if (!isActive || !isOpen) return null;
 
   const { earth, sun, moon } = statePlanet === activePlanet ? state || {} : {};
@@ -296,16 +283,6 @@ export default function CelestialPanel({
             ) : (
               <ChevronDown className="h-3.5 w-3.5" />
             )}
-          </button>
-          <button
-            type="button"
-            id="btn-celestial-frame"
-            onClick={handleFrame}
-            className={iconButton}
-            title="Frame the Moon, Earth and Sun"
-            aria-label="Frame the Moon, Earth and Sun"
-          >
-            <Maximize2 className="h-3.5 w-3.5" />
           </button>
           {onClose && (
             <button

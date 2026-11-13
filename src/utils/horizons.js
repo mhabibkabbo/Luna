@@ -572,8 +572,6 @@ export function sampleLunarTerrainMetrics(latDeg, lonDeg, feature = null, option
       roughnessDetails: null,
       roughnessRadiusM: radiusM,
       reliefM: null,
-      craterDensityPer100Km2: null,
-      craterDensityLabel: 'Not present in loaded dataset',
       geologicalRegion: {
         province: feature?.targetRegion || 'Lunar Far Side (TBD)',
         terrane: 'Farside Highlands Terrane (FHT)',
@@ -781,10 +779,6 @@ export function sampleLunarTerrainMetrics(latDeg, lonDeg, feature = null, option
     });
   }
 
-  // No lunar crater catalog dataset is loaded in local memory; never fabricate crater counts.
-  const craterDensityPer100Km2 = null;
-  const craterDensityLabel = "Not present in loaded dataset";
-
   return {
     elevationM,
     elevationSource,
@@ -794,8 +788,6 @@ export function sampleLunarTerrainMetrics(latDeg, lonDeg, feature = null, option
     roughnessDetails,
     roughnessRadiusM: radiusM,
     reliefM,
-    craterDensityPer100Km2,
-    craterDensityLabel,
     geologicalRegion,
     terrainClassification,
     nearestLandmark,
@@ -812,4 +804,3 @@ export function sampleLunarTerrainMetrics(latDeg, lonDeg, feature = null, option
     warnings,
   };
 }
-
