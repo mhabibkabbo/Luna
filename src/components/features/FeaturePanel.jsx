@@ -146,8 +146,11 @@ export default function FeaturePanel({
   const [trackStartMs, setTrackStartMs] = useState(() => celestialTimeStore.get().ms);
 
   useEffect(() => {
-    return celestialTimeStore.subscribe(({ ms }) => {
-      if (feature && !isEarthFeature && !isMinimized) setTabTimeMs(ms);
+    return celestialTimeStore.subscribe(({ ms, source }) => {
+      if (feature && !isEarthFeature) {
+        if (!isMinimized) setTabTimeMs(ms);
+        if (source === 'ephemeris-pause') setTrackStartMs(ms);
+      }
     });
   }, [feature, isEarthFeature, isMinimized]);
 

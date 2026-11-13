@@ -236,7 +236,7 @@ export default function LunarSunlightTimeline({ feature, earthFeature = null }) 
     const unsubscribe = celestialTimeStore.subscribe(({ ms, source }) => {
       currentTimeRef.current = ms;
       setCurrentMs(ms);
-      if (source === 'ephemeris') {
+      if (source === 'ephemeris' || source === 'ephemeris-pause') {
         setPlaying(false);
         calculate(windowStartForTime(ms, rangeDays, zoomLevel > 0));
       } else if (source === 'playback') {
@@ -394,7 +394,7 @@ export default function LunarSunlightTimeline({ feature, earthFeature = null }) 
 
   useEffect(() => {
     updatePlayhead(currentMs);
-  }, [currentMs, anchorMs, forecast, communicationForecast]);
+  }, [currentMs, anchorMs, forecast, communicationForecast, showCommTrack]);
   const changeZoom = (delta) => {
     const nextZoomLevel = Math.max(
       0,

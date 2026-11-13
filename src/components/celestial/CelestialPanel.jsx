@@ -219,7 +219,7 @@ export default function CelestialPanel({
   const handleTogglePlay = () => {
     if (playing) {
       setPlaying(false);
-      applyTime(timeRef.current, { force: true, source: 'ephemeris' });
+      celestialTimeStore.refresh('ephemeris-pause');
     } else {
       setLive(false);
       setPlaying(true);
@@ -265,10 +265,10 @@ export default function CelestialPanel({
   return (
     <div
       id="celestial-panel"
-      className={`fixed left-1/2 z-[60] flex max-h-[calc(100dvh-6rem)] w-[min(23rem,calc(100vw-1.5rem))] -translate-x-1/2 flex-col overflow-hidden rounded-2xl border border-slate-800/90 bg-[#050507]/96 shadow-[0_20px_50px_rgba(0,0,0,0.85)] backdrop-blur-2xl pointer-events-auto transition-all ease-out select-none lg:left-[4.5rem] lg:translate-x-0 ${
+      className={`fixed z-[60] flex max-h-[calc(100dvh-6rem)] w-[min(23rem,calc(100vw-1.5rem))] flex-col overflow-hidden rounded-2xl border border-slate-800/90 bg-[#050507]/96 shadow-[0_20px_50px_rgba(0,0,0,0.85)] backdrop-blur-2xl pointer-events-auto transition-all ease-out select-none ${
         expanded
-          ? 'top-[calc(50%+1.75rem)] -translate-y-1/2'
-          : 'top-auto bottom-4 translate-y-0'
+          ? 'left-1/2 top-[calc(50%+1.75rem)] -translate-x-1/2 -translate-y-1/2 lg:left-[4.5rem] lg:translate-x-0'
+          : 'left-3 top-16 bottom-auto translate-x-0 translate-y-0 lg:left-[4.5rem]'
       }`}
     >
       <div className="flex shrink-0 items-center justify-between gap-2 border-b border-slate-800 bg-slate-900/60 px-3.5 py-2.5">

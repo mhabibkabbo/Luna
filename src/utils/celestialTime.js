@@ -32,6 +32,12 @@ export const celestialTimeStore = {
     return ms;
   },
 
+  refresh(source = 'ephemeris') {
+    const current = store.get();
+    store.set({ ms: current.ms, source });
+    return current.ms;
+  },
+
   setMs(when, source = 'ephemeris') {
     return this.setTime(when, source);
   },
@@ -50,4 +56,3 @@ export function formatMissionDate(when) {
   if (!Number.isFinite(d.getTime())) return 'Invalid Date';
   return `${d.toISOString().replace('T', ' ').substring(0, 16)} UTC`;
 }
-

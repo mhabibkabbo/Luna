@@ -58,7 +58,13 @@ export default function FeaturePanelTerrainTab({
               }`}
             >
               {solarDiscPct > 0 && solarDiscPct < 100
-                ? `${solarDiscPct}% Disc (${solarLightingState?.shortLabel || sunStatusMeta.label})`
+                ? `${solarDiscPct}% Disc (${
+                    solarLightingState?.isTerrainShadowed
+                      ? 'Shadowed'
+                      : solarLightingState?.shortLabel || sunStatusMeta.label
+                  })`
+                : solarLightingState?.isTerrainShadowed
+                ? 'Shadowed'
                 : sunStatusMeta.label}
             </span>
           </div>

@@ -13,8 +13,10 @@ test('celestial time is normalized to minute precision and ignores same-minute u
   const timestamp = Date.UTC(2026, 10, 4, 8, 17, 52, 918);
   const minute = Date.UTC(2026, 10, 4, 8, 17);
   let notifications = 0;
+  let latestSnapshot;
   const unsubscribe = celestialTimeStore.subscribe(() => {
     notifications += 1;
+    latestSnapshot = celestialTimeStore.get();
   });
 
   try {
@@ -32,6 +34,9 @@ test('celestial time is normalized to minute precision and ignores same-minute u
     assert.equal(celestialTimeStore.get().ms, minute);
     assert.equal(celestialTimeStore.setTime(minute + CELESTIAL_MINUTE_MS - 1, 'same-minute'), minute);
     assert.equal(notifications, 1);
+    assert.equal(celestialTimeStore.refresh('ephemeris-pause'), minute);
+    assert.equal(notifications, 2);
+    assert.deepEqual(latestSnapshot, { ms: minute, source: 'ephemeris-pause' });
   } finally {
     unsubscribe();
     celestialTimeStore.setTime(originalTime, 'test-restore');
