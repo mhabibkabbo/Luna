@@ -338,13 +338,16 @@ export default function LunarSunlightTimeline({ feature, earthFeature = null }) 
     setCurrentMs(timeMs);
   };
 
-  const handlePointer = (event) => {
-    if (!dragging.current) return;
+  const pointerFractionForTrack = (event) => {
     const bounds =
       sunlightTrackRef.current?.getBoundingClientRect() ??
       event.currentTarget.getBoundingClientRect();
-    pendingPointerFraction.current =
-      Math.max(0, Math.min(1, (event.clientX - bounds.left) / bounds.width));
+    return Math.max(0, Math.min(1, (event.clientX - bounds.left) / bounds.width));
+  };
+
+  const handlePointer = (event) => {
+    if (!dragging.current) return;
+    pendingPointerFraction.current = pointerFractionForTrack(event);
     if (pointerFrame.current !== 0) return;
     pointerFrame.current = requestAnimationFrame(() => {
       pointerFrame.current = 0;
@@ -357,8 +360,7 @@ export default function LunarSunlightTimeline({ feature, earthFeature = null }) 
   };
 
   const finishPointerDrag = (event) => {
-    const bounds = event.currentTarget.getBoundingClientRect();
-    const fraction = (event.clientX - bounds.left) / bounds.width;
+    const fraction = pointerFractionForTrack(event);
     if (pointerFrame.current !== 0) {
       cancelAnimationFrame(pointerFrame.current);
       pointerFrame.current = 0;
