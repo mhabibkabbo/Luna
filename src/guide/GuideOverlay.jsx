@@ -20,6 +20,7 @@ import { useDialogA11y } from '../hooks/useDialogA11y.js';
 
 const PADDING = 8;
 const BORDER_RADIUS = 8;
+const COMPACT_VIEWPORT_BREAKPOINT = 1024;
 
 export default function GuideOverlay({
   context = {},
@@ -74,7 +75,7 @@ export default function GuideOverlay({
 
   useEffect(() => {
     const checkMobile = () => {
-      setIsMobile(window.innerWidth < 640);
+      setIsMobile(window.innerWidth < COMPACT_VIEWPORT_BREAKPOINT);
     };
     checkMobile();
     window.addEventListener('resize', checkMobile);
@@ -151,6 +152,24 @@ export default function GuideOverlay({
 
       if (isCancelled) return;
 
+      if (isMobile && activeStep.mobileToolbar) {
+        const toolbarSelector = '[aria-label="Mobile visualization toolbar"]';
+        const deadline = Date.now() + 500;
+        let toolbar = document.querySelector(toolbarSelector);
+        while (!toolbar && Date.now() < deadline && !isCancelled) {
+          await new Promise((resolve) => setTimeout(resolve, 25));
+          toolbar = document.querySelector(toolbarSelector);
+        }
+        if (toolbar) {
+          const entranceAnimations = toolbar
+            .getAnimations()
+            .filter((animation) => animation.playState === 'running');
+          await Promise.all(entranceAnimations.map((animation) => animation.finished.catch(() => {})));
+        }
+      }
+
+      if (isCancelled) return;
+
       if (!targetSelector) {
         setTargetRect(null);
         setIsWaitingForTarget(false);
@@ -159,6 +178,14 @@ export default function GuideOverlay({
 
       const el = document.querySelector(targetSelector);
       if (el) {
+        const rect = el.getBoundingClientRect();
+        if (
+          isMobile &&
+          window.getComputedStyle(el).position !== 'fixed' &&
+          (rect.top < 0 || rect.bottom > window.innerHeight)
+        ) {
+          el.scrollIntoView({ block: 'center', inline: 'nearest' });
+        }
         updateTargetRect();
         setIsWaitingForTarget(false);
       } else {
@@ -362,7 +389,10 @@ export default function GuideOverlay({
 
   const isLastStep = guideState.activeStepIndex === guideState.steps.length - 1;
   const isFirstStep = guideState.activeStepIndex === 0;
-  const isMobilePopoverAboveTimeline = isMobile && activeStep.mobilePlacement === 'top';
+  const isMobilePopoverAtTop =
+    isMobile &&
+    ((activeStep.mobilePlacement === 'top' ||
+      (targetRect && targetRect.rawTop + targetRect.rawHeight / 2 > window.innerHeight / 2)) && !activeStep.forceBottom);
 
   return createPortal(
     <div
@@ -397,7 +427,7 @@ export default function GuideOverlay({
         ref={popoverRef}
         className={`fixed z-[61] ${
           isMobile
-            ? `${isMobilePopoverAboveTimeline ? 'bottom-[116px] left-0 right-0 max-h-[55dvh] rounded-2xl border' : 'bottom-0 left-0 right-0 max-h-[55dvh] rounded-t-2xl border-t'} overflow-y-auto overscroll-contain custom-scrollbar p-4 pb-[max(1rem,env(safe-area-inset-bottom))] bg-[#0A0B0E] border-white/[0.14] shadow-2xl animate-in slide-in-from-bottom duration-200`
+            ? `${isMobilePopoverAtTop ? 'top-0 left-0 right-0 max-h-[55dvh] rounded-b-2xl border animate-in slide-in-from-top' : 'bottom-0 left-0 right-0 max-h-[55dvh] rounded-t-2xl border-t animate-in slide-in-from-bottom'} overflow-y-auto overscroll-contain custom-scrollbar p-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))] bg-[#0A0B0E] border-white/[0.14] shadow-2xl duration-200`
             : 'w-80 rounded-xl p-4 bg-[#0A0B0E]/95 backdrop-blur-md border border-white/[0.16] shadow-[0_16px_40px_rgba(0,0,0,0.85)] animate-in fade-in zoom-in-95 duration-200'
         } pointer-events-auto text-white`}
         style={getPopoverStyle()}

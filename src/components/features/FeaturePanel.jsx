@@ -932,7 +932,10 @@ Generated via LUNA — Lunar Landing Site Navigator
           : 'w-[calc(100vw-1.5rem)] sm:w-[29.5rem]'
       } bg-[#050507]/95 backdrop-blur-xl border border-slate-800/90 rounded-2xl flex flex-col shadow-[0_20px_50px_rgba(0,0,0,0.85)] overflow-hidden transition-all duration-300 ease-out pointer-events-auto`}
     >
-      <div className="px-3 sm:px-4 py-3 border-b border-white/[0.08] flex items-center justify-between gap-2 sm:gap-3 bg-[#0C0D12] shrink-0">
+      <div
+        data-guide="feature-panel-header"
+        className="px-3 sm:px-4 py-3 border-b border-white/[0.08] flex items-center justify-between gap-2 sm:gap-3 bg-[#0C0D12] shrink-0"
+      >
         <div className="flex items-center gap-3 min-w-0">
           <div className="w-8 h-8 rounded-lg bg-amber-500/15 border border-amber-500/35 flex items-center justify-center text-amber-400 shrink-0">
             <MapPin className="w-4 h-4" />
@@ -991,6 +994,7 @@ Generated via LUNA — Lunar Landing Site Navigator
         <div
           role="tablist"
           aria-label="Lunar site analysis tabs"
+          data-guide="feature-analysis-tabs"
           className="grid grid-cols-5 border-b border-white/[0.08] bg-[#050507] p-1.5 gap-1 shrink-0"
         >
           {TABS.map((tab) => {
@@ -1247,7 +1251,10 @@ Generated via LUNA — Lunar Landing Site Navigator
               </div>
             )}
 
-            <div className="px-3 sm:px-4 py-2.5 border-t border-white/[0.08] bg-[#0C0D12] grid grid-cols-2 sm:grid-cols-4 gap-2 shrink-0">
+            <div
+              data-guide="site-actions"
+              className="px-3 sm:px-4 py-2.5 border-t border-white/[0.08] bg-[#0C0D12] grid grid-cols-2 sm:grid-cols-4 gap-2 shrink-0"
+            >
               <button
                 type="button"
                 onClick={handleToggleSavePin}

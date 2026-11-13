@@ -201,17 +201,15 @@ export default function MainNavbar({
           <span className="tabular-nums">{formattedUtc}</span>
         </div>
 
-        {currentView === 'explorer' && (
-          <button
-            type="button"
-            onClick={onOpenGuide}
-            aria-label="Open user guide"
-            className="h-8 w-8 sm:w-auto px-2 sm:px-3 rounded-lg bg-[#FACC15] hover:bg-[#FDE047] border border-[#EAB308]/60 text-[#050507] hover:text-black text-[12px] font-sans font-semibold flex items-center justify-center gap-1.5 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FACC15]/60 shrink-0"
-          >
-            <FileText className="w-3.5 h-3.5" aria-hidden="true" />
-            <span className="hidden sm:inline">Guide</span>
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={onOpenGuide}
+          aria-label="Open user guide"
+          className="h-8 w-8 sm:w-auto px-2 sm:px-3 rounded-lg bg-[#FACC15] hover:bg-[#FDE047] border border-[#EAB308]/60 text-[#050507] hover:text-black text-[12px] font-sans font-semibold flex items-center justify-center gap-1.5 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FACC15]/60 shrink-0"
+        >
+          <FileText className="w-3.5 h-3.5" aria-hidden="true" />
+          <span className="hidden sm:inline">Guide</span>
+        </button>
       </div>
     </header>
   );
