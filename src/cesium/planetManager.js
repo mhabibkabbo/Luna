@@ -57,7 +57,11 @@ export function createPlanetManager({
       }
 
       const createController = PLANET_FACTORIES[id];
-      const controller = withDefaults(createController(container, callbacks));
+      const controllerCallbacks = {
+        ...callbacks,
+        onFeatureHover: (feature, x, y) => callbacks.onFeatureHover?.(feature, x, y, id),
+      };
+      const controller = withDefaults(createController(container, controllerCallbacks));
       controllers.set(id, controller);
       try {
         controller.setActive(false);

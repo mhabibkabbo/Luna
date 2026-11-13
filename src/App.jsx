@@ -777,12 +777,27 @@ export default function App() {
     const updateLineOfSight = (timeMs) => {
       if (!alive) return;
       try {
+        const state = computeCelestialState(timeMs);
         const link = computeCommunicationLink({
           moonFeature: selectedMoonFeature,
           earthFeature: selectedEarthFeature,
-          when: timeMs,
+          state,
         });
-        globeRef.current?.setCommunicationLink?.(link);
+        const dte = evaluateEarthLink({
+          state,
+          moonFeature: selectedMoonFeature,
+          earthFeature: selectedEarthFeature,
+          constraints: DEFAULT_DTE_CONSTRAINTS,
+          terrainFn: (azimuthDeg) =>
+            horizonAt(
+              HORIZON_TABLE,
+              selectedMoonFeature.id,
+              azimuthDeg,
+              selectedMoonFeature.latitude,
+              selectedMoonFeature.longitude
+            ),
+        });
+        globeRef.current?.setCommunicationLink?.({ ...link, status: dte.status });
       } catch (error) {
         console.error('Failed to update the Earth-Moon line of sight.', error);
         globeRef.current?.setCommunicationLink?.(null);

@@ -61,6 +61,7 @@ import {
   evaluateCandidateForMissionWindow,
   DEFAULT_PLANNER_CONSTRAINTS,
 } from '../../utils/plannerEngine.js';
+import { LOLA_VALIDATION_BENCHMARKS } from '../../data/nasaProvenance.js';
 import { comparisonSelectionStore } from '../../utils/comparisonEngine.js';
 
 const TABS = [
@@ -438,18 +439,18 @@ export default function FeaturePanel({
 
     void demLoadedTick;
     const isFarside = Boolean(regionInfo?.isFarside ?? regionInfo?.face === 'Farside');
-
+    const candidate = {
+      id: siteId,
+      name: moonPoint.name,
+      latitude: featLat,
+      longitude: featLon,
+      isFarSide: isFarside,
+      slopeDeg: terrainMetrics?.slopeDeg ?? null,
+      elevationM: terrainMetrics?.elevationM ?? null,
+      roughnessM: terrainMetrics?.roughnessM ?? null,
+    };
     const unifiedEval = evaluateCandidateForMissionWindow(
-      {
-        id: siteId,
-        name: moonPoint.name,
-        latitude: featLat,
-        longitude: featLon,
-        isFarSide: isFarside,
-        slopeDeg: terrainMetrics?.slopeDeg ?? null,
-        elevationM: terrainMetrics?.elevationM ?? null,
-        roughnessM: terrainMetrics?.roughnessM ?? null,
-      },
+      candidate,
       settledTabTimeMs,
       missionWindowDays,
       {
@@ -457,6 +458,15 @@ export default function FeaturePanel({
         includeDailyBreakdown: true,
       }
     );
+    const benchmark = LOLA_VALIDATION_BENCHMARKS.find((item) => item.siteId === siteId);
+    const annualEval = benchmark
+      ? evaluateCandidateForMissionWindow(candidate, {
+          landingMs: settledTabTimeMs,
+          durationDays: 365,
+          stepHours: 24,
+          constraints: DEFAULT_PLANNER_CONSTRAINTS,
+        })
+      : null;
 
     const windowScore =
       unifiedEval?.isPartialScore && unifiedEval?.overallScore === null
@@ -473,6 +483,16 @@ export default function FeaturePanel({
       dailyScores: unifiedEval?.dailyScores ?? [],
       formulaString: unifiedEval?.formulaString,
       isPartialScore: unifiedEval?.isPartialScore ?? (windowScore === null),
+      lolaBenchmark: benchmark
+        ? {
+          ...benchmark,
+          annualSunlitPct: annualEval?.sunlitRatio ?? null,
+          annualEarthVisibilityDays:
+            annualEval?.dteUptimeRatio != null
+              ? Number(((annualEval.dteUptimeRatio / 100) * 365).toFixed(1))
+                : null,
+          }
+        : null,
     };
   }, [
     feature,
@@ -938,19 +958,6 @@ Generated via LUNA — Lunar Landing Site Navigator
         <div className="flex items-center gap-1.5 shrink-0">
           <button
             type="button"
-            onClick={handleToggleSavePin}
-            aria-label={isSaved ? 'Remove from saved pins' : 'Save pin'}
-            title={isSaved ? 'Saved location (Click to remove)' : 'Save pin to quick access panel'}
-            className={`p-1.5 rounded-lg border transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/70 ${
-              isSaved
-                ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-[0_0_12px_rgba(245,158,11,0.25)]'
-                : 'bg-white/[0.04] hover:bg-white/[0.08] text-[#94A3B8] hover:text-amber-300 border-white/[0.08]'
-            }`}
-          >
-            <Bookmark className={`w-3.5 h-3.5 ${isSaved ? 'fill-amber-400 text-amber-400' : ''}`} />
-          </button>
-          <button
-            type="button"
             onClick={() => setIsExpanded((prev) => !prev)}
             aria-pressed={isExpanded}
             aria-label={isExpanded ? 'Compact panel width' : 'Expand panel width'}
@@ -1145,6 +1152,7 @@ Generated via LUNA — Lunar Landing Site Navigator
             copiedDossier={copiedDossier}
             isPlaceholderLocation={isPlaceholderLocation}
             missionWindowAssessment={missionWindowAssessment}
+            siteName={moonPoint.name}
             dossierAssessment={dossierAssessment}
             solarLightingState={solarLightingState}
             sun={sun}
@@ -1261,7 +1269,7 @@ Generated via LUNA — Lunar Landing Site Navigator
                 className="min-w-0 min-h-8 py-1.5 px-2 rounded-lg bg-white/[0.08] hover:bg-white/[0.14] text-white border border-white/[0.14] font-sans text-[10px] sm:text-[12px] font-medium flex items-center justify-center gap-1.5 text-center leading-tight transition-colors whitespace-normal"
               >
                 <Navigation className="w-3.5 h-3.5 shrink-0" />
-                <span>{isCustomPin ? 'Center' : 'Center View'}</span>
+                <span>{isCustomPin ? 'Center' : 'Center'}</span>
               </button>
 
               <button

@@ -20,7 +20,7 @@
 | :--- | :--- |
 | **Explorer** (`#explorer`) | CesiumJS Moon/Earth globe plus a 2D South Pole polar-stereographic map (80°S–90°S, 400 m/px LOLA DEM) with contours, slope hazards, PSRs, and an A* least-cost EVA/rover route planner. Real-time 360° horizon mask classifies sites as Sunlit, Terrain-Shadowed, Night, or PSR. |
 | **Trajectory** (`#trajectory`) | Cislunar planner for Direct TLI, Low-Energy WSB/BLT, Free-Return, and NRHO transfers with Δv budgets, transit timelines, and 3D/2D viewports. |
-| **Landing Planner** (`#planner`) | Ranks 19 candidate sites over 3/7/14/28-day windows with a 4-factor suitability index: **Solar Illumination 35%**, **Direct-to-Earth 30%**, **Terrain & Slope 20%**, **Thermal 15%**. Includes polar ridge discovery and a LOLA literature validation panel. |
+| **Landing Planner** (`#planner`) | Ranks 19 candidate sites over 3/7/14/28-day windows with a 4-factor suitability index: **Solar Illumination 35%**, **Direct-to-Earth 30%**, **Terrain & Slope 20%**, **Thermal 15%**. Includes polar ridge discovery, a LOLA literature validation panel, and a selected-site illumination/visibility summary in the Dossier with published comparisons for benchmark locations. |
 | **Comparison** (`#comparison`) | Side-by-side trade study of up to 8 sites/pins across mission epochs, with multi-page PDF export. |
 | **Library** (`#library`) | CLPS and historic lander archive (IM-1/2, Blue Ghost etc.) with outcome filters, plus 25 Earth ground stations and their link specs. |
 
@@ -88,7 +88,7 @@ npm run lint         # type checking
 
 ## Team
 
-**NASA Space Apps Challenge 2026 — Team `awaylander.exe`**
+**NASA Space Apps Challenge 2026 — Team `Awaylander.exe`**
 
 - Mishkatul Habib
 - Nahid Iqbal

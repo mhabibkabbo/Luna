@@ -22,6 +22,7 @@ export default function FeaturePanelDossierTab({
   copiedDossier,
   isPlaceholderLocation,
   missionWindowAssessment,
+  siteName,
   dossierAssessment,
   solarLightingState,
   sun,
@@ -33,6 +34,12 @@ export default function FeaturePanelDossierTab({
   clpsData,
   payloadsList,
 }) {
+  const lolaBenchmark = missionWindowAssessment?.lolaBenchmark ?? null;
+  const illuminationDelta =
+    lolaBenchmark?.annualSunlitPct != null
+      ? Number((lolaBenchmark.annualSunlitPct - lolaBenchmark.publishedIllumPct).toFixed(1))
+      : null;
+
   return (
     <div className="space-y-2.5">
       <div className="p-3 rounded-xl bg-[#0C0D12] border border-slate-800/80 space-y-3">
@@ -251,6 +258,84 @@ export default function FeaturePanelDossierTab({
                 </div>
               </div>
             </div>
+
+            <section
+              aria-label="Site illumination and Earth-visibility summary"
+              className="space-y-2 rounded-xl bg-[#050507] border border-cyan-900/40 p-3"
+            >
+              <div>
+                <h4 className="text-[11px] font-semibold text-white">
+                  Illumination &amp; Earth-Visibility Summary
+                </h4>
+                <p className="text-[10px] text-slate-400 mt-0.5">
+                  {siteName} · selected {missionWindowDays}-day mission window
+                </p>
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-[10px] font-mono">
+                <div className="rounded-lg bg-[#0C0D12] border border-slate-800/80 p-2">
+                  <span className="block text-slate-400">Sunlit</span>
+                  <span className="text-white font-semibold">
+                    {missionWindowAssessment.sunlitRatio}% of window
+                  </span>
+                </div>
+                <div className="rounded-lg bg-[#0C0D12] border border-slate-800/80 p-2">
+                  <span className="block text-slate-400">Estimated Earth visibility</span>
+                  <span className="text-white font-semibold">
+                    {(
+                      (missionWindowAssessment.dsnRatio / 100) *
+                      missionWindowDays
+                    ).toFixed(1)}{' '}
+                    of {missionWindowDays} days
+                  </span>
+                </div>
+              </div>
+
+              {lolaBenchmark ? (
+                <div className="space-y-1.5 border-t border-slate-800/80 pt-2">
+                  <div className="text-[10px] font-semibold text-cyan-300">
+                    Published LOLA benchmark · annual comparison
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-[10px] font-mono">
+                    <div className="rounded-lg bg-[#0C0D12] border border-slate-800/80 p-2">
+                      <span className="block text-slate-400">Annual sunlit · LUNA / published</span>
+                      <span className="text-white font-semibold">
+                        {lolaBenchmark.annualSunlitPct ?? '—'}% / {lolaBenchmark.publishedIllumPct}%
+                      </span>
+                      {illuminationDelta != null && (
+                        <span className="block text-slate-400 mt-0.5">
+                          Δ {illuminationDelta >= 0 ? '+' : ''}
+                          {illuminationDelta} percentage points · published range{' '}
+                          {lolaBenchmark.publishedIllumRange}
+                        </span>
+                      )}
+                    </div>
+                    <div className="rounded-lg bg-[#0C0D12] border border-slate-800/80 p-2">
+                      <span className="block text-slate-400">Earth-visible days/year · LUNA</span>
+                      <span className="text-white font-semibold">
+                        {lolaBenchmark.annualEarthVisibilityDays ?? '—'} days
+                      </span>
+                      <span className="block text-slate-400 mt-0.5">
+                        Published: {lolaBenchmark.publishedDteDaysNote}
+                      </span>
+                    </div>
+                  </div>
+                  <p className="text-[9.5px] text-slate-400 leading-snug">
+                    {lolaBenchmark.studyCitation}. Annual LUNA estimates use 24-hour sampling;
+                    published values may use different terrain resolution, observer height, and
+                    study periods. Earth visibility is geometric and does not guarantee an RF link.
+                  </p>
+                  <p className="text-[9.5px] text-slate-500 leading-snug">
+                    {lolaBenchmark.resolutionNote}
+                  </p>
+                </div>
+              ) : (
+                <p className="border-t border-slate-800/80 pt-2 text-[10px] text-slate-400 leading-snug">
+                  No direct published LOLA benchmark is registered for this site. The values above
+                  are LUNA estimates for the selected mission window, not a comparison with a nearby
+                  study.
+                </p>
+              )}
+            </section>
 
             <div className="space-y-1 pt-1">
               <div className="flex items-center justify-between text-[10px] font-mono text-slate-400">

@@ -338,7 +338,7 @@ export function createEarth(container, callbacks = {}) {
 
   function getCommunicationTubeRadius() {
     const cameraHeight = viewer.camera.positionCartographic.height;
-    return Cesium.Math.clamp(cameraHeight * 0.001, 100, 10_000);
+    return Cesium.Math.clamp(cameraHeight * 0.0012, 120, 12_000);
   }
 
   function updateCommunicationTube() {
@@ -383,7 +383,7 @@ export function createEarth(container, callbacks = {}) {
       clear: '#34D399',
       doubtful: '#F59E0B',
       blocked: '#F43F5E',
-      away: '#64748B',
+      away: '#F43F5E',
     }[link.status];
     if (!statusColor) {
       throw new TypeError(`Unknown communication-link status: ${link.status}`);

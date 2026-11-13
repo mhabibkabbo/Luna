@@ -25,6 +25,7 @@ const PlanetViewport = forwardRef(function PlanetViewport(
   const planetManagerRef = useRef(null);
   const communicationLinkRef = useRef(null);
   const planetSwitchSeqRef = useRef(0);
+  const activePlanetRef = useRef(activePlanet || 'moon');
   const [initRetryKey, setInitRetryKey] = useState(0);
   const [currentPlanet, setCurrentPlanet] = useState(activePlanet || 'moon');
   const [initializedPlanets, setInitializedPlanets] = useState(() => [
@@ -82,7 +83,9 @@ const PlanetViewport = forwardRef(function PlanetViewport(
     if (manager.activeId === targetPlanet && currentPlanet === targetPlanet) return;
 
     const seq = ++planetSwitchSeqRef.current;
+    activePlanetRef.current = targetPlanet;
     setCurrentPlanet(targetPlanet);
+    setHoveredInfo(null);
     setIsCesiumLoading(true);
     setLoadingStage(
       targetPlanet === 'earth'
@@ -173,7 +176,8 @@ const PlanetViewport = forwardRef(function PlanetViewport(
             setIsCesiumLoading(false);
           },
 
-          onFeatureHover: (feature, x, y) => {
+          onFeatureHover: (feature, x, y, sourcePlanet) => {
+            if (sourcePlanet !== activePlanetRef.current) return;
             if (feature) {
               setHoveredInfo((prev) =>
                 prev &&
@@ -193,6 +197,7 @@ const PlanetViewport = forwardRef(function PlanetViewport(
       });
 
       planetManagerRef.current = planetManager;
+      activePlanetRef.current = planetManager.activeId;
       setCurrentPlanet(planetManager.activeId);
       refreshInitializedPlanets();
       syncPlanetLayerVisibility(planetManager.activeId);
