@@ -44,6 +44,7 @@ test('Guide Steps Configuration & Schema', () => {
     'feature-panel',
     'timeline',
     'workspace-switcher',
+    'workspace-guides',
   ];
 
   expectedIds.forEach((id) => {
@@ -68,6 +69,48 @@ test('Explorer guide targets the mobile toolbar and keeps timeline guidance clea
     assert.match(step.mobileTarget, /Mobile visualization toolbar/);
   });
   assert.equal(timelineStep.mobilePlacement, 'top');
+});
+
+test('Workspace guides cover current screens and mobile workspace navigation', () => {
+  const workspaceStep = GUIDE_STEPS_BY_VIEW.explorer.find(
+    (step) => step.id === 'workspace-switcher'
+  );
+  assert.equal(workspaceStep.mobileTarget, '[aria-label="Mission workspace"]');
+  const featurePanelStep = GUIDE_STEPS_BY_VIEW.explorer.find(
+    (step) => step.id === 'feature-panel'
+  );
+  assert.equal(featurePanelStep.mobileTarget, '[data-guide="feature-panel-header"]');
+  const finalExplorerStep = GUIDE_STEPS_BY_VIEW.explorer[GUIDE_STEPS_BY_VIEW.explorer.length - 1];
+  assert.equal(finalExplorerStep.id, 'workspace-guides');
+  assert.equal(finalExplorerStep.since, GUIDE_VERSION);
+  assert.match(finalExplorerStep.body, /Orbit, Planner, Compare, or Library/);
+
+  const expectedViewSteps = {
+    trajectory: ['trajectory-paths', 'trajectory-playback'],
+    planner: ['planner-recommendations'],
+    comparison: ['comparison-matrix'],
+    library: ['library-sections', 'library-replay'],
+  };
+
+  Object.entries(expectedViewSteps).forEach(([view, ids]) => {
+    ids.forEach((id) => {
+      const step = GUIDE_STEPS_BY_VIEW[view].find((item) => item.id === id);
+      assert.ok(step, `Expected '${id}' in the ${view} guide`);
+      assert.ok(step.target, `Expected '${id}' to spotlight a current control`);
+      assert.ok(step.since <= GUIDE_VERSION);
+    });
+  });
+});
+
+test('Guide can start from every workspace that defines walkthrough steps', () => {
+  for (const view of ['explorer', 'trajectory', 'planner', 'comparison', 'library']) {
+    startGuide(view);
+    const state = guideStore.get();
+    assert.equal(state.isActive, true);
+    assert.equal(state.activeView, view);
+    assert.deepEqual(state.steps, GUIDE_STEPS_BY_VIEW[view]);
+    skipGuide();
+  }
 });
 
 test('Guide Store: First-visit detection and persistence', () => {
@@ -110,6 +153,19 @@ test("Guide Store: Incremental 'What's New' step computation", () => {
   saveGuideProgress({ seenVersion: 0, completed: [], dismissedViews: ['explorer'] });
   const newSteps = getNewStepsForView('explorer');
   assert.equal(newSteps.length, GUIDE_STEPS_BY_VIEW.explorer.length);
+
+  const previouslySeenSteps = GUIDE_STEPS_BY_VIEW.explorer
+    .filter((step) => step.since <= GUIDE_VERSION - 1)
+    .map((step) => step.id);
+  saveGuideProgress({
+    seenVersion: GUIDE_VERSION - 1,
+    completed: previouslySeenSteps,
+    dismissedViews: ['explorer'],
+  });
+  assert.deepEqual(
+    getNewStepsForView('explorer').map((step) => step.id),
+    ['workspace-guides']
+  );
 
   saveGuideProgress({ seenVersion: GUIDE_VERSION, completed: ['toolbar'], dismissedViews: ['explorer'] });
   const afterVersionBump = getNewStepsForView('explorer');

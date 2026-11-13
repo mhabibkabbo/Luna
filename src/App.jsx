@@ -1964,6 +1964,7 @@ export default function App() {
       <GuideOverlay
         context={{
           hasSelection: Boolean(selectedFeature),
+          hasLunarSelection: Boolean(selectedFeature && selectedFeature.body !== 'earth'),
           selectTargetFeature: (siteId) => {
             const targetSite =
               LANDING_SITES.find((s) => s.id === siteId) ||

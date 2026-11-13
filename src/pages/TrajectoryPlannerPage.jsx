@@ -493,7 +493,7 @@ export default function TrajectoryPlannerPage({ onNavigate }) {
               )}
             </div>
 
-            <div>
+            <div data-guide="trajectory-paths">
               <div className="flex items-center justify-between mb-1.5">
                 <span className="text-[11px] font-sans uppercase text-[#8E95A5] font-semibold tracking-[0.08em] flex items-center gap-1.5">
                   <Sparkles className="w-3.5 h-3.5 text-[#F8FAFC]" />
@@ -638,7 +638,10 @@ export default function TrajectoryPlannerPage({ onNavigate }) {
             </div>
           </div>
 
-          <div className="pt-2.5 border-t border-[#1E2028] space-y-2 flex-shrink-0">
+          <div
+            data-guide="trajectory-playback"
+            className="pt-2.5 border-t border-[#1E2028] space-y-2 flex-shrink-0"
+          >
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-sans uppercase text-[#8E95A5] font-semibold tracking-[0.08em] flex items-center gap-1.5">
                 <Clock className="w-3.5 h-3.5 text-[#F8FAFC]" />

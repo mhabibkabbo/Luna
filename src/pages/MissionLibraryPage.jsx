@@ -208,7 +208,10 @@ export default function MissionLibraryPage({
         </div>
       </div>
 
-      <div className="p-5 rounded-xl bg-[#0C0D12] border border-[#1E2028] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div
+        data-guide="library-replays"
+        className="p-5 rounded-xl bg-[#0C0D12] border border-[#1E2028] flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+      >
         <div className="flex items-center gap-3">
           <Clock className="w-4 h-4 text-amber-400 shrink-0" />
           <div>
@@ -243,6 +246,7 @@ export default function MissionLibraryPage({
       <div
         role="tablist"
         aria-label="Mission Library sections"
+        data-guide="library-sections"
         className="flex items-center gap-2 border-b border-[#1E2028] pb-3 overflow-x-auto"
       >
         <button

@@ -247,7 +247,10 @@ export default function LandingPlannerPage({
         </div>
       </div>
 
-      <div className="p-5 sm:p-6 rounded-2xl bg-[#0A0B0E] border border-white/[0.08] space-y-5">
+      <div
+        data-guide="planner-configuration"
+        className="p-5 sm:p-6 rounded-2xl bg-[#0A0B0E] border border-white/[0.08] space-y-5"
+      >
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           <div className="space-y-1.5">
             <label
@@ -755,7 +758,7 @@ export default function LandingPlannerPage({
           </div>
         )}
 
-        <div className="space-y-4">
+        <div data-guide="planner-recommendations" className="space-y-4">
           {displayedEvaluations.map((evalItem, idx) => {
             const c = evalItem.candidate;
             const rankNum = evalItem.isCompliant ? (evalItem.rank ?? idx + 1) : null;

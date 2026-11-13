@@ -842,7 +842,11 @@ export default function SiteComparisonPage({
         </div>
       </section>
 
-      <section aria-label="Selected Locations" className="space-y-2.5">
+      <section
+        aria-label="Selected Locations"
+        data-guide="comparison-sites"
+        className="space-y-2.5"
+      >
         {selectedLocations.length === 0 ? (
           <div className="p-8 rounded-xl bg-[#0C0D12] border border-dashed border-[#1E2028] text-center space-y-4">
             <div className="w-12 h-12 rounded-xl bg-white/[0.08] border border-white/25 flex items-center justify-center text-[#F8FAFC] mx-auto">
@@ -1101,6 +1105,7 @@ export default function SiteComparisonPage({
 
       <section
         aria-label="Landing Site Comparison Matrix"
+        data-guide="comparison-matrix"
         className="rounded-xl bg-[#0C0D12] border border-[#1E2028] flex flex-col"
       >
         <div className="p-4 border-b border-[#1E2028] bg-[#0C0D12] rounded-t-xl flex flex-wrap items-center justify-between gap-3">
